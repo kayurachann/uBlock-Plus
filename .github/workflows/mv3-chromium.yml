@@ -45,10 +45,12 @@ jobs:
 
       - name: Build MV3 Chromium package
         shell: pwsh
-        run: ./tools/make-mv3.ps1 -Platform chromium -Full
+        run: >-
+          ./tools/make-mv3.ps1 -Platform chromium
+          -Version "1.0.${{ github.run_number }}.${{ github.run_attempt }}"
 
       - name: Validate MV3 Chromium artifact
-        run: node tools/validate-mv3.mjs dist/build/uBOLite.chromium
+        run: node tools/validate-mv3.mjs dist/build/uBOLite.chromium --release
 
       - name: Upload unpacked extension and zip
         uses: actions/upload-artifact@v4

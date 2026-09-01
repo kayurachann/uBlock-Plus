@@ -158,6 +158,8 @@ async function renderPrivacyControls() {
 async function setPrivacyControl(id, state) {
     const definitions = privacyControlDefinitions.get(id);
     if ( definitions === undefined ) { return; }
+    const status = qs$('#privacyHardening .privacyPermissionStatus');
+    dom.text(status, '');
     const operations = [];
     for ( const definition of definitions ) {
         const setting = privacySettingFromPath(definition.path);
@@ -167,7 +169,10 @@ async function setPrivacyControl(id, state) {
             : setting.clear({ scope: 'regular' })
         );
     }
-    await Promise.allSettled(operations);
+    const results = await Promise.allSettled(operations);
+    if ( results.some(result => result.status === 'rejected') ) {
+        dom.text(status, i18n.getMessage('privacySettingUpdateFailed'));
+    }
     await renderPrivacyControls();
 }
 
@@ -176,7 +181,7 @@ dom.on('#grantPrivacyPermission', 'click', async ( ) => {
     dom.text(status, '');
     const granted = await browser.permissions.request({
         permissions: [ 'privacy' ],
-    });
+    }).catch(( ) => false);
     if ( granted === false ) {
         dom.text(status, i18n.getMessage('privacyPermissionDenied'));
     }

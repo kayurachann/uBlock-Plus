@@ -279,6 +279,10 @@
     "message": "The optional privacy permission was not granted.",
     "description": "Shown when the user declines the optional privacy permission"
   },
+  "privacySettingUpdateFailed": {
+    "message": "Chrome could not update one or more privacy settings.",
+    "description": "Shown when a requested Chrome privacy setting change fails"
+  },
   "privacyDisableHyperlinkAuditing": {
     "message": "Disable hyperlink auditing pings",
     "description": "Privacy setting label"

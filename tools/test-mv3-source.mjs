@@ -81,6 +81,7 @@ for ( const locale of [ 'en', 'vi' ] ) {
     for ( const key of [
         'privacyHardeningSectionLabel',
         'privacyHardeningDescription',
+        'privacySettingUpdateFailed',
         'privacyPermissionButton',
         'privacyDisableHyperlinkAuditing',
         'privacyDisableNetworkPrediction',

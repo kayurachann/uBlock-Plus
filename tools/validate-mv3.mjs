@@ -26,10 +26,16 @@ import process from 'node:process';
 
 /******************************************************************************/
 
-const extensionDir = path.resolve(process.argv[2] || 'dist/build/uBOLite.chromium');
+const releaseMode = process.argv.includes('--release');
+const extensionArgument = process.argv.slice(2)
+    .find(argument => argument !== '--release');
+const extensionDir = path.resolve(
+    extensionArgument || 'dist/build/uBOLite.chromium'
+);
 const errors = [];
 let jsonFileCount = 0;
 let jsonByteCount = 0;
+let dnrRuleCount = 0;
 
 const reportError = message => {
     errors.push(message);
@@ -86,6 +92,40 @@ const validateJsonFiles = async directory => {
     }
 };
 
+const validateDnrRuleset = async resource => {
+    const details = relativeExtensionPath(resource.path);
+    if ( details === undefined ) { return; }
+    const rules = await fs.readFile(details.resolved, { encoding: 'utf8' })
+        .then(text => JSON.parse(text))
+        .catch(reason => {
+            reportError(`Unable to read DNR ruleset ${resource.id}: ${reason.message}`);
+        });
+    if ( Array.isArray(rules) === false ) {
+        reportError(`DNR ruleset ${resource.id} must contain a JSON array`);
+        return;
+    }
+    const ids = new Set();
+    for ( const rule of rules ) {
+        dnrRuleCount += 1;
+        if ( Number.isInteger(rule?.id) === false || rule.id < 1 ) {
+            reportError(`DNR ruleset ${resource.id} contains an invalid rule ID`);
+        } else if ( ids.has(rule.id) ) {
+            reportError(`DNR ruleset ${resource.id} has duplicate rule ID ${rule.id}`);
+        } else {
+            ids.add(rule.id);
+        }
+        if ( typeof rule?.action?.type !== 'string' ) {
+            reportError(`DNR rule ${resource.id}/${rule?.id} has no action type`);
+        }
+        if (
+            rule?.condition instanceof Object === false ||
+            Array.isArray(rule.condition)
+        ) {
+            reportError(`DNR rule ${resource.id}/${rule?.id} has no condition`);
+        }
+    }
+};
+
 /******************************************************************************/
 
 const rootStat = await fs.stat(extensionDir).catch(( ) => { });
@@ -114,6 +154,14 @@ if ( manifest.background?.service_worker === undefined ) {
 if ( manifest.permissions?.includes('declarativeNetRequest') !== true ) {
     reportError('manifest.json does not request declarativeNetRequest');
 }
+if (
+    releaseMode &&
+    manifest.permissions?.includes('declarativeNetRequestFeedback')
+) {
+    reportError(
+        'Release builds must not request declarativeNetRequestFeedback'
+    );
+}
 
 const ruleResources = manifest.declarative_net_request?.rule_resources;
 if ( Array.isArray(ruleResources) === false || ruleResources.length === 0 ) {
@@ -132,6 +180,7 @@ if ( Array.isArray(ruleResources) === false || ruleResources.length === 0 ) {
             resource.path,
             `DNR ruleset ${resource.id || '<missing ID>'}`
         );
+        await validateDnrRuleset(resource);
     }
 }
 
@@ -152,6 +201,13 @@ if ( typeof manifest.default_locale === 'string' ) {
     );
 }
 await validateFileReference('LICENSE.txt', 'License');
+if ( releaseMode ) {
+    const debugRules = path.join(extensionDir, 'rulesets', 'debug');
+    const debugRulesStat = await fs.stat(debugRules).catch(( ) => { });
+    if ( debugRulesStat !== undefined ) {
+        reportError('Release builds must not contain rulesets/debug');
+    }
+}
 await validateJsonFiles(extensionDir);
 
 if ( errors.length !== 0 ) {
@@ -163,6 +219,6 @@ if ( errors.length !== 0 ) {
     const mib = (jsonByteCount / (1024 * 1024)).toFixed(1);
     console.log(
         `Validated MV3 Chromium extension: ${ruleResources.length} rulesets, ` +
-        `${jsonFileCount} JSON files (${mib} MiB).`
+        `${dnrRuleCount} DNR rules, ${jsonFileCount} JSON files (${mib} MiB).`
     );
 }
