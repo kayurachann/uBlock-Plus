@@ -20,19 +20,19 @@ jobs:
 
     steps:
       - name: Clone repository and submodules
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
           submodules: recursive
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: 22
+          node-version: 22.22.0
           cache: npm
 
       - name: Set up npm
-        run: npm install --global npm@11
+        run: npm install --global npm@11.19.1
 
       - name: Install lint dependencies
         run: npm ci
@@ -53,10 +53,11 @@ jobs:
         run: node tools/validate-mv3.mjs dist/build/uBOLite.chromium --release
 
       - name: Upload unpacked extension and zip
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: uBOLite-chromium-${{ github.sha }}
+          name: uBlock-Plus-chromium-${{ github.sha }}
           if-no-files-found: error
           path: |
             dist/build/uBOLite.chromium/
-            dist/build/uBOLite_*.chromium.zip
+            dist/build/uBlock-Plus_*.chromium.zip
+            dist/build/uBlock-Plus_*.chromium.zip.sha256

@@ -105,7 +105,7 @@ cleanassets:
 publish-chromium publish-edge publish-firefox \
 publish-dev-chromium publish-dev-firefox \
 upload-firefox upload-dev-firefox:
-	@echo "Store publishing is intentionally disabled in uBlock MV3 Community."
+	@echo "Store publishing is intentionally disabled in uBlock Plus+."
 	@false
 
 # Not real targets, just convenient for auto-completion at shell prompt

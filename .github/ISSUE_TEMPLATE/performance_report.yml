@@ -1,0 +1,57 @@
+name: Performance / low-memory report
+description: Báo RAM, CPU, compile hoặc wake-up regression có số đo tái hiện được.
+title: "[Performance]: "
+labels: ["performance", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Số RAM tuyệt đối thay đổi theo Chrome/OS. Hãy cung cấp baseline và delta trong cùng điều kiện; không đăng browsing data.
+  - type: input
+    id: version
+    attributes:
+      label: uBlock Plus+ version/commit
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: CPU, RAM, OS, Chrome version
+      placeholder: 4 GB RAM, 2 cores, Windows 10, Chrome 140.0.x
+    validations:
+      required: true
+  - type: dropdown
+    id: profile
+    attributes:
+      label: memoryProfile
+      options:
+        - auto (resolved low-memory)
+        - auto (resolved balanced)
+        - low-memory
+        - balanced
+    validations:
+      required: true
+  - type: textarea
+    id: workload
+    attributes:
+      label: Workload tái hiện
+      description: Ruleset/catalog entries, số tab, thao tác, thời gian chờ và lần chạy warm/cold.
+    validations:
+      required: true
+  - type: textarea
+    id: measurements
+    attributes:
+      label: Baseline và kết quả đo
+      description: Nêu tool, sample count, median/p95/peak nếu có, cùng bản stable dùng để so sánh.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: local_telemetry
+    attributes:
+      label: Local memory telemetry đã redacted
+      render: text
+  - type: textarea
+    id: notes
+    attributes:
+      label: Quan sát thêm / workaround

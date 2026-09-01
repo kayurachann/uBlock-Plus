@@ -1,6 +1,6 @@
 {
   "extName": {
-    "message": "uBlock MV3 Community",
+    "message": "uBlock Plus+",
     "description": "extension name."
   },
   "extShortDesc": {
@@ -12,8 +12,8 @@
     "description": "Appears aside each filter list in the _3rd-party filters_ pane"
   },
   "dashboardName": {
-    "message": "uBO Lite — Бақылау тақтасы",
-    "description": "English: uBO Lite — Dashboard"
+    "message": "uBlock Plus+ — Бақылау тақтасы",
+    "description": "English: uBlock Plus+ — Dashboard"
   },
   "settingsPageName": {
     "message": "Баптаулар",
@@ -104,7 +104,7 @@
     "description": "Placeholder text which describes the purpose of the textarea widget"
   },
   "customListImportUserScriptsInfo": {
-    "message": "To enforce cosmetic or scriptlet filters from imported lists, you must grant uBO Lite permission to run user scripts.",
+    "message": "To enforce cosmetic or scriptlet filters from imported lists, you must grant uBlock Plus+ permission to run user scripts.",
     "description": "A notice to inform user that the enforcement of some filters requires permission to execute 'user scripts'"
   },
   "customFiltersImportExportLabel": {
@@ -116,7 +116,7 @@
     "description": "Placeholder text which describes the purpose of the textarea widget"
   },
   "userScriptsInfo": {
-    "message": "Импортталған тізімдерден алынған көрнекілік немесе скрипт сүзгілерін қолдану үшін сіз uBO Lite-ке пайдаланушы скрипттерін іске қосу рұқсатын беруіңіз керек. Браузеріңіздің кеңейтулер бетін ашыңыз (<code>chrome://extensions</code> Chrome-да немесе <code>about:addons</code> Firefox-та), <b>uBO Lite</b> мәліметтерін ашып, <b>Пайдаланушы скрипттеріне рұқсат ету</b> (сонымен қатар “расталмаған үшінші тарап скрипттері” деп аталады) қосқышын қосыңыз.",
+    "message": "Импортталған тізімдерден алынған көрнекілік немесе скрипт сүзгілерін қолдану үшін сіз uBlock Plus+-ке пайдаланушы скрипттерін іске қосу рұқсатын беруіңіз керек. Браузеріңіздің кеңейтулер бетін ашыңыз (<code>chrome://extensions</code> Chrome-да немесе <code>about:addons</code> Firefox-та), <b>uBlock Plus+</b> мәліметтерін ашып, <b>Пайдаланушы скрипттеріне рұқсат ету</b> (сонымен қатар “расталмаған үшінші тарап скрипттері” деп аталады) қосқышын қосыңыз.",
     "description": "A notice to inform user on how to enable 'user scripts' permission"
   },
   "aboutChangelog": {
@@ -188,7 +188,7 @@
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option3": {
-    "message": "uBO Lite-ты анықтайды",
+    "message": "uBlock Plus+-ты анықтайды",
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option4": {
@@ -196,7 +196,7 @@
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option5": {
-    "message": "uBO Lite іске қосылғанда дұрыс жұмыс істемейді",
+    "message": "uBlock Plus+ іске қосылғанда дұрыс жұмыс істемейді",
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option6": {
@@ -292,7 +292,7 @@
     "description": "Header for filter-creation section in the dashboard"
   },
   "sandboxEditorUserScriptsInfo": {
-    "message": "To enforce cosmetic or scriptlet filters from the sandbox, you must grant uBO Lite permission to run user scripts.",
+    "message": "To enforce cosmetic or scriptlet filters from the sandbox, you must grant uBlock Plus+ permission to run user scripts.",
     "description": "A notice to inform user that the enforcement of some filters requires permission to execute 'user scripts'"
   },
   "developerModeLabel": {
@@ -324,7 +324,7 @@
     "description": "Web page title for the strict-blocked page"
   },
   "strictblockSentence1": {
-    "message": "uBO Lite келесі беттің жүктелуіне жол бермеді:",
+    "message": "uBlock Plus+ келесі беттің жүктелуіне жол бермеді:",
     "description": "Sentence used in the strict-blocked page"
   },
   "strictblockReasonSentence1": {

@@ -1,0 +1,100 @@
+name: Filter Store submission
+description: Đề xuất thêm một filter list vào catalog đóng gói của uBlock Plus+.
+title: "[Filter Store]: add "
+labels: ["filter-store", "catalog-submission", "needs-review"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Catalog chỉ chứa metadata và HTTPS filter data. Nó không phải plugin/code store. Entry mới thường bắt đầu ở trust tier `community`.
+  - type: input
+    id: catalog_id
+    attributes:
+      label: ID đề xuất
+      description: Chữ thường/kebab-case và ổn định.
+      placeholder: vietnamese-privacy-example
+    validations:
+      required: true
+  - type: input
+    id: title
+    attributes:
+      label: Tên filter list
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Mục tiêu và phạm vi
+    validations:
+      required: true
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      options:
+        - ads
+        - privacy
+        - annoyances
+        - regional
+        - security
+        - multipurpose
+        - other
+    validations:
+      required: true
+  - type: input
+    id: languages
+    attributes:
+      label: Languages
+      description: BCP-47, ngăn cách bằng dấu phẩy; dùng * nếu không phụ thuộc ngôn ngữ.
+      placeholder: vi, en
+    validations:
+      required: true
+  - type: textarea
+    id: source_urls
+    attributes:
+      label: HTTPS sourceURLs
+      description: Một URL mỗi dòng; dòng đầu là primary source.
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: homepage
+    attributes:
+      label: Homepage/repository
+      placeholder: https://github.com/owner/list
+    validations:
+      required: true
+  - type: input
+    id: license
+    attributes:
+      label: License
+      description: SPDX identifier hoặc URL/license text có thể kiểm tra.
+      placeholder: GPL-3.0-or-later
+    validations:
+      required: true
+  - type: input
+    id: maintainer
+    attributes:
+      label: Maintainer và kênh báo lỗi
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Ownership, lịch sử duy trì và test evidence
+      description: Nêu cách xác minh nguồn, update cadence, sample site, false-positive handling và compiler report nếu có.
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Cam kết submission
+      options:
+        - label: Tất cả source URL dùng HTTPS và không cung cấp/chỉ dẫn tải executable code.
+          required: true
+        - label: Tôi có quyền đề xuất/phân phối hoặc tham chiếu list theo license đã khai báo.
+          required: true
+        - label: Tôi hiểu catalog inclusion không phải chứng thực của uBlock Origin/Raymond Hill.
+          required: true
+        - label: Tôi đồng ý entry có thể bị quarantine/remove nếu compromised, abandoned, vi phạm license hoặc gây hại.
+          required: true

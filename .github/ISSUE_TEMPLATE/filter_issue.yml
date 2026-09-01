@@ -1,0 +1,62 @@
+name: Filter issue
+description: Báo false positive, missed content hoặc vấn đề một entry trong Filter Store.
+title: "[Filter]: "
+labels: ["filter-issue", "needs-triage"]
+body:
+  - type: dropdown
+    id: type
+    attributes:
+      label: Loại vấn đề
+      options:
+        - False positive / website bị hỏng
+        - Quảng cáo/tracker chưa bị chặn
+        - Performance / quá nhiều rule hoặc RAM
+        - Source/maintainer có dấu hiệu bị compromise
+        - License/attribution
+        - Metadata catalog sai
+    validations:
+      required: true
+  - type: input
+    id: entry
+    attributes:
+      label: Catalog entry ID và trust tier
+      placeholder: entry-id (community)
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: uBlock Plus+ version/commit
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser/OS
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: URL mẫu công khai và bước tái hiện
+      description: Không đăng URL nội bộ, tài khoản, token hoặc browsing history.
+    validations:
+      required: true
+  - type: textarea
+    id: minimal_config
+    attributes:
+      label: Cấu hình tối thiểu và filter/rule nghi ngờ
+      description: Tắt list không liên quan nếu có thể và ghi kết quả.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence đã redacted
+  - type: checkboxes
+    id: routing
+    attributes:
+      label: Routing
+      options:
+        - label: Tôi đã kiểm tra homepage của list; nếu maintainer có tracker riêng, tôi sẽ liên kết báo cáo tương ứng.
+          required: true

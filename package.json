@@ -1,23 +1,23 @@
 {
-  "name": "ublock-mv3-community",
+  "name": "ublock-plus",
   "version": "1.0.0",
-  "description": "Development tools for the uBlock MV3 Community browser extension",
+  "description": "Development tools for the uBlock Plus+ browser extension",
   "type": "module",
   "scripts": {
-    "lint": "eslint --no-warn-ignored --global chrome --global browser --ignore-pattern \"**/lib/\" -- \"./platform/mv3/**/*.js\" \"./tools/validate-mv3.mjs\" \"./tools/test-mv3-source.mjs\" \"./tools/set-product-name.mjs\"",
+    "lint": "eslint --no-warn-ignored --global chrome --global browser --ignore-pattern \"**/lib/\" -- \"./platform/mv3/**/*.js\" \"./platform/mv3/test-filter-store.mjs\" \"./tools/validate-mv3.mjs\" \"./tools/test-mv3-source.mjs\" \"./tools/test-backup-schema.mjs\" \"./tools/test-memory-profile.mjs\" \"./tools/test-compile-timeout.mjs\" \"./tools/test-compiler-faults.mjs\" \"./tools/test-imported-list-metadata.mjs\" \"./tools/test-runtime-durability.mjs\" \"./tools/test-verified-source-handoff.mjs\" \"./tools/set-product-name.mjs\"",
     "lint:all": "eslint --no-warn-ignored --ignore-pattern \"**/lib/\" --ignore-pattern \"**/npm/\" -- \"./src/js/*.js\" \"./src/js/**/*.js\" \"./**/*.json\" \"./platform/**/*.js\"",
-    "test": "node tools/test-mv3-source.mjs"
+    "test": "node tools/test-mv3-source.mjs && node tools/test-backup-schema.mjs && node tools/test-memory-profile.mjs && node tools/test-compile-timeout.mjs && node tools/test-compiler-faults.mjs && node tools/test-imported-list-metadata.mjs && node tools/test-runtime-durability.mjs && node tools/test-verified-source-handoff.mjs && node platform/mv3/test-filter-store.mjs"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kayurachann/uBlock-MV3-Community.git"
+    "url": "git+https://github.com/kayurachann/uBlock-Plus.git"
   },
-  "author": "Raymond Hill, uBlock Origin contributors, and uBlock MV3 Community contributors",
+  "author": "Raymond Hill, uBlock Origin contributors, and uBlock Plus+ contributors",
   "license": "GPL-3.0-or-later",
   "bugs": {
-    "url": "https://github.com/kayurachann/uBlock-MV3-Community/issues"
+    "url": "https://github.com/kayurachann/uBlock-Plus/issues"
   },
-  "homepage": "https://github.com/kayurachann/uBlock-MV3-Community#readme",
+  "homepage": "https://github.com/kayurachann/uBlock-Plus#readme",
   "engines": {
     "node": ">=22",
     "npm": ">=11"

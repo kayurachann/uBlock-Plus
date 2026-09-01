@@ -21,12 +21,37 @@
 
 import * as sfp from '../static-filtering-parser.js';
 
-/******************************************************************************/
+import {
+    createImportedFetchBudget,
+    isCredentialFreeHTTPS,
+} from '../imported-fetch-policy.js';
 
-async function fetchText(url, progressFn) {
-    const response = await fetch(url).catch(( ) => { });
+async function fetchText(url, progressFn, budget) {
+    if ( isCredentialFreeHTTPS(url) === false ) {
+        return { url, error: `Non-HTTPS filter source rejected: "${url}"` };
+    }
+    const options = {
+        cache: 'no-store',
+        credentials: 'omit',
+        // Fetch only the URL the user/repository supplied. Following a chain
+        // would hide an HTTPS -> HTTP -> HTTPS downgrade from response.url.
+        redirect: 'error',
+        referrerPolicy: 'no-referrer',
+    };
+    if ( typeof globalThis.AbortSignal?.timeout === 'function' ) {
+        options.signal = globalThis.AbortSignal.timeout(30000);
+    }
+    const response = await fetch(url, options).catch(( ) => { });
     if ( response?.ok !== true ) {
         return { url, error: `Fetching from "${url}" failed` };
+    }
+    if ( isCredentialFreeHTTPS(response.url) === false ) {
+        return { url, error: `Non-HTTPS redirect rejected: "${response.url}"` };
+    }
+    const contentLength = response.headers.get('content-length');
+    if ( contentLength !== null &&
+        Number(contentLength) > budget.maximumBytes - budget.usedBytes ) {
+        return { url, error: `Content from "${url}" exceeds its size limit` };
     }
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
@@ -35,6 +60,14 @@ async function fetchText(url, progressFn) {
         for (;;) {
             const { done, value } = await reader.read();
             if ( done ) { break; }
+            budget.usedBytes += value.byteLength;
+            if ( budget.usedBytes > budget.maximumBytes ) {
+                await reader.cancel();
+                return {
+                    url,
+                    error: `Content from "${url}" exceeds its size limit`,
+                };
+            }
             parts.push(decoder.decode(value, { stream: true }));
             if ( progressFn ) { progressFn(); }
         }
@@ -68,6 +101,7 @@ export async function fetchList(context, asset, progressFn) {
 
     // Remember fetched URLs
     const fetchedURLs = new Set();
+    const budget = createImportedFetchBudget(asset);
 
     // Fetch list and expand `!#include` directives
     let parts = asset.urls.map(url => ({ url: effectiveURL(url) }));
@@ -83,11 +117,22 @@ export async function fetchList(context, asset, progressFn) {
                 continue;
             }
             fetchedURLs.add(effectiveURL(part.url));
+            if ( fetchedURLs.size > budget.maximumFetches ) {
+                newParts.push({
+                    url: effectiveURL(part.url),
+                    error: 'Filter list contains too many include sources',
+                });
+                continue;
+            }
             if ( isTrusted(context, asset, part.url) && context.secret ) {
                 newParts.push(`!#trusted on ${context.secret}`);
             }
             newParts.push(
-                fetchText(effectiveURL(part.url), progressFn).then(details => {
+                fetchText(
+                    effectiveURL(part.url),
+                    progressFn,
+                    budget
+                ).then(details => {
                     const { url, error } = details;
                     if ( error !== undefined ) { return details; }
                     const content = details.content.trim();

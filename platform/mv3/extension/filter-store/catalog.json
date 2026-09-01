@@ -1,0 +1,333 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-09-01T00:00:00Z",
+  "repository": {
+    "id": "ublock-plus-curated",
+    "title": "uBlock Plus+ Curated Filter Store",
+    "homepage": "https://github.com/kayurachann/uBlock-Plus"
+  },
+  "profiles": [
+    {
+      "id": "low-memory",
+      "title": "Low memory",
+      "description": "Small, high-value lists that favor packaged rules and a tiny dynamic-rule budget.",
+      "entryIds": [
+        "ubp-url-tracking",
+        "ubp-block-lan",
+        "community-nocoin"
+      ]
+    },
+    {
+      "id": "balanced",
+      "title": "Balanced",
+      "description": "Privacy, malware and lightweight annoyance protection for daily browsing.",
+      "entryIds": [
+        "ubp-url-tracking",
+        "ubp-block-lan",
+        "ubp-malware-urls",
+        "ubp-ai-widgets",
+        "community-nocoin",
+        "community-windows-telemetry"
+      ]
+    },
+    {
+      "id": "strict",
+      "title": "Strict",
+      "description": "Broader annoyance and device telemetry coverage with a higher breakage and resource cost.",
+      "entryIds": [
+        "ubp-url-tracking",
+        "ubp-block-lan",
+        "ubp-malware-urls",
+        "ubp-ai-widgets",
+        "ubp-cookie-notices",
+        "ubp-mobile-ads",
+        "ubp-vietnamese",
+        "community-nocoin",
+        "community-windows-telemetry"
+      ]
+    }
+  ],
+  "bundles": [
+    {
+      "id": "low-memory-essentials",
+      "title": "Low-memory essentials",
+      "description": "Adds URL cleanup, LAN protection and a tiny cryptominer list.",
+      "entryIds": [
+        "ubp-url-tracking",
+        "ubp-block-lan",
+        "community-nocoin"
+      ]
+    },
+    {
+      "id": "privacy-plus",
+      "title": "Privacy Plus",
+      "description": "Adds tracking-parameter cleanup, LAN protection and pinned Windows telemetry blocking.",
+      "entryIds": [
+        "ubp-url-tracking",
+        "ubp-block-lan",
+        "community-windows-telemetry"
+      ]
+    },
+    {
+      "id": "annoyance-control",
+      "title": "Annoyance control",
+      "description": "Adds AI-widget and cookie-notice filtering. This may hide wanted consent controls.",
+      "entryIds": [
+        "ubp-ai-widgets",
+        "ubp-cookie-notices"
+      ]
+    }
+  ],
+  "entries": [
+    {
+      "id": "ubp-url-tracking",
+      "title": "AdGuard/uBO URL Tracking Protection",
+      "description": "Removes common tracking parameters from navigations and requests using packaged MV3 rules.",
+      "category": "privacy",
+      "languages": [ "*" ],
+      "sourceURLs": [
+        "https://ublockorigin.github.io/uAssets/filters/privacy-removeparam.txt"
+      ],
+      "homepage": "https://github.com/uBlockOrigin/uAssets",
+      "license": "GPL-3.0-only",
+      "trustTier": "community",
+      "profiles": [ "low-memory", "balanced", "strict" ],
+      "installation": {
+        "type": "stock",
+        "rulesetIds": [ "adguard-spyware-url" ]
+      },
+      "ruleCost": {
+        "staticRulesets": 1,
+        "packagedRules": 2103,
+        "dynamicRules": 0,
+        "regexRules": 0,
+        "cosmeticFilters": 3,
+        "confidence": "measured"
+      }
+    },
+    {
+      "id": "ubp-block-lan",
+      "title": "Block Outsider Intrusion into LAN",
+      "description": "Blocks public websites from reaching common private-network endpoints through the browser.",
+      "category": "security",
+      "languages": [ "*" ],
+      "sourceURLs": [
+        "https://ublockorigin.github.io/uAssets/filters/lan-block.txt"
+      ],
+      "homepage": "https://github.com/uBlockOrigin/uAssets",
+      "license": "GPL-3.0-only",
+      "trustTier": "community",
+      "profiles": [ "low-memory", "balanced", "strict" ],
+      "installation": {
+        "type": "stock",
+        "rulesetIds": [ "block-lan" ]
+      },
+      "ruleCost": {
+        "staticRulesets": 1,
+        "packagedRules": 20,
+        "dynamicRules": 0,
+        "regexRules": 0,
+        "cosmeticFilters": 0,
+        "confidence": "measured"
+      }
+    },
+    {
+      "id": "ubp-malware-urls",
+      "title": "Malicious URL Blocklist",
+      "description": "Blocks currently active malicious URLs through a compact packaged ruleset.",
+      "category": "security",
+      "languages": [ "*" ],
+      "sourceURLs": [
+        "https://malware-filter.gitlab.io/malware-filter/urlhaus-filter-hosts.txt"
+      ],
+      "homepage": "https://gitlab.com/malware-filter/urlhaus-filter",
+      "license": "CC0-1.0",
+      "trustTier": "community",
+      "profiles": [ "balanced", "strict" ],
+      "installation": {
+        "type": "stock",
+        "rulesetIds": [ "urlhaus-full" ]
+      },
+      "ruleCost": {
+        "staticRulesets": 1,
+        "packagedRules": 1,
+        "dynamicRules": 0,
+        "regexRules": 0,
+        "cosmeticFilters": 0,
+        "confidence": "measured"
+      }
+    },
+    {
+      "id": "ubp-ai-widgets",
+      "title": "EasyList AI Widgets",
+      "description": "Hides optional AI assistants and AI widgets embedded in websites.",
+      "category": "annoyances",
+      "languages": [ "*" ],
+      "sourceURLs": [
+        "https://ublockorigin.github.io/uAssets/thirdparties/easylist-ai.txt"
+      ],
+      "homepage": "https://github.com/easylist/easylist",
+      "license": "GPL-3.0-or-later AND CC-BY-SA-3.0",
+      "trustTier": "community",
+      "profiles": [ "balanced", "strict" ],
+      "installation": {
+        "type": "stock",
+        "rulesetIds": [ "annoyances-ai" ]
+      },
+      "ruleCost": {
+        "staticRulesets": 1,
+        "packagedRules": 9,
+        "dynamicRules": 0,
+        "regexRules": 0,
+        "cosmeticFilters": 154,
+        "confidence": "measured"
+      }
+    },
+    {
+      "id": "ubp-cookie-notices",
+      "title": "EasyList/uBO Cookie Notices",
+      "description": "Hides many cookie banners and consent overlays; can interfere with consent choices on some sites.",
+      "category": "annoyances",
+      "languages": [ "*" ],
+      "sourceURLs": [
+        "https://ublockorigin.github.io/uAssets/thirdparties/easylist-cookies.txt",
+        "https://ublockorigin.github.io/uAssets/filters/annoyances-cookies.txt"
+      ],
+      "homepage": "https://github.com/easylist/easylist",
+      "license": "GPL-3.0-or-later AND CC-BY-SA-3.0",
+      "trustTier": "community",
+      "profiles": [ "strict" ],
+      "installation": {
+        "type": "stock",
+        "rulesetIds": [ "annoyances-cookies" ]
+      },
+      "ruleCost": {
+        "staticRulesets": 1,
+        "packagedRules": 1826,
+        "dynamicRules": 0,
+        "regexRules": 0,
+        "cosmeticFilters": 33546,
+        "confidence": "measured"
+      }
+    },
+    {
+      "id": "ubp-mobile-ads",
+      "title": "AdGuard/uBO Mobile Ads",
+      "description": "Adds filters specialized for mobile layouts and mobile advertising systems.",
+      "category": "ads",
+      "languages": [ "*" ],
+      "sourceURLs": [
+        "https://ublockorigin.github.io/uAssets/filters/filters-mobile.txt",
+        "https://filters.adtidy.org/extension/ublock/filters/11.txt"
+      ],
+      "homepage": "https://github.com/AdguardTeam/AdguardFilters",
+      "license": "GPL-3.0-only",
+      "trustTier": "community",
+      "profiles": [ "strict" ],
+      "installation": {
+        "type": "stock",
+        "rulesetIds": [ "adguard-mobile" ]
+      },
+      "ruleCost": {
+        "staticRulesets": 1,
+        "packagedRules": 568,
+        "dynamicRules": 0,
+        "regexRules": 0,
+        "cosmeticFilters": 4629,
+        "confidence": "measured"
+      }
+    },
+    {
+      "id": "ubp-vietnamese",
+      "title": "ABPVN Vietnamese Filters",
+      "description": "Vietnam-focused ad and tracker filtering from the ABPVN community.",
+      "category": "regional",
+      "languages": [ "vi" ],
+      "sourceURLs": [
+        "https://raw.githubusercontent.com/abpvn/abpvn/master/filter/abpvn_ublock.txt"
+      ],
+      "homepage": "https://abpvn.com/",
+      "license": "GPL-3.0-only",
+      "trustTier": "community",
+      "profiles": [ "strict" ],
+      "installation": {
+        "type": "stock",
+        "rulesetIds": [ "vie-1" ]
+      },
+      "ruleCost": {
+        "staticRulesets": 1,
+        "packagedRules": 299,
+        "dynamicRules": 0,
+        "regexRules": 0,
+        "cosmeticFilters": 402,
+        "confidence": "measured"
+      }
+    },
+    {
+      "id": "community-nocoin",
+      "title": "NoCoin",
+      "description": "A very small pinned list that blocks known browser-based cryptocurrency miners.",
+      "category": "security",
+      "languages": [ "*" ],
+      "sourceURLs": [
+        "https://raw.githubusercontent.com/hoshsadiq/adblock-nocoin-list/10de585960ac026e9817591ddd4d5123dbde2d18/nocoin-ublock.txt"
+      ],
+      "homepage": "https://github.com/hoshsadiq/adblock-nocoin-list",
+      "license": "MIT",
+      "trustTier": "community",
+      "profiles": [ "low-memory", "balanced", "strict" ],
+      "installation": {
+        "type": "imported",
+        "sourceURL": "https://raw.githubusercontent.com/hoshsadiq/adblock-nocoin-list/10de585960ac026e9817591ddd4d5123dbde2d18/nocoin-ublock.txt"
+      },
+      "sourceIntegrity": {
+        "algorithm": "sha256",
+        "digest": "d9fc49a4279fb36348f3cdb7a8efa3aa7705d9dda7645ef5989d631cad19b202",
+        "bytes": 459
+      },
+      "ruleCost": {
+        "staticRulesets": 0,
+        "packagedRules": 0,
+        "dynamicRules": 10,
+        "regexRules": 0,
+        "cosmeticFilters": 0,
+        "confidence": "upper-bound"
+      }
+    },
+    {
+      "id": "community-windows-telemetry",
+      "title": "HaGeZi Windows and Office Telemetry",
+      "description": "Pinned device-telemetry list for Microsoft Windows, Office and related services.",
+      "category": "privacy",
+      "languages": [ "*" ],
+      "sourceURLs": [
+        "https://raw.githubusercontent.com/hagezi/dns-blocklists/5cc4fdcba4322bea2fe1c9e79e9ec8f5624286b7/adblock/native.winoffice.txt"
+      ],
+      "homepage": "https://github.com/hagezi/dns-blocklists",
+      "license": "GPL-3.0-only",
+      "trustTier": "community",
+      "profiles": [ "balanced", "strict" ],
+      "installation": {
+        "type": "imported",
+        "sourceURL": "https://raw.githubusercontent.com/hagezi/dns-blocklists/5cc4fdcba4322bea2fe1c9e79e9ec8f5624286b7/adblock/native.winoffice.txt"
+      },
+      "sourceIntegrity": {
+        "algorithm": "sha256",
+        "digest": "96a4fb49dd431420f30db6d750a56f7feb8b15e0f59f1f2aace837a62ed920d4",
+        "bytes": 13897
+      },
+      "ruleCost": {
+        "staticRulesets": 0,
+        "packagedRules": 0,
+        "dynamicRules": 403,
+        "regexRules": 0,
+        "cosmeticFilters": 0,
+        "confidence": "upper-bound"
+      }
+    }
+  ],
+  "integrity": {
+    "algorithm": "sha256",
+    "digest": "72258edb0fe6d7dff27241e94974d264be336a2a570eff022b4eb3b0fd1bee46"
+  }
+}

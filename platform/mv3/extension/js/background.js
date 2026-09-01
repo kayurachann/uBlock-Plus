@@ -34,6 +34,11 @@ import {
 } from './mode-manager.js';
 
 import {
+    PENDING_COMPILED_ACTIVATION_KEY,
+    STAGING_COMPILED_GENERATION_KEY,
+} from './compiled-storage.js';
+
+import {
     addCustomFilters,
     customFiltersFromHostname,
     getAllCustomFilters,
@@ -49,8 +54,11 @@ import {
 
 import {
     addImportedLists,
+    cleanupCommittedImportedListUpdates,
+    commitImportedListUpdates,
     getImportedLists,
     removeImportedLists,
+    replaceImportedLists,
     updateImportedLists,
 } from './imported-lists.js';
 
@@ -75,6 +83,20 @@ import {
     supportsUserScripts,
     webextFlavor,
 } from './ext.js';
+
+import {
+    closeOffscreenDocument,
+    supportsOffscreenDocument,
+} from './ext-offscreen.js';
+
+import {
+    commitCompiledGeneration,
+    getActiveCompiledGeneration,
+    registerUserScripts,
+    removeCompiledGeneration,
+    restoreUserScripts,
+    updateCompiledFilters,
+} from './compiled-filters.js';
 
 import {
     defaultConfig,
@@ -110,9 +132,18 @@ import {
 } from './debug.js';
 
 import {
+    getMemoryProfileConfig,
+    getMemoryTelemetry,
+    initializeMemoryProfile,
+    runMemoryCleanup,
+    setMemoryProfile,
+} from './memory-manager.js';
+
+import {
     getRegisteredContentScripts,
     pruneCSSCache,
     registerContentScripts,
+    releaseScriptingMetadata,
 } from './scripting-manager.js';
 
 import {
@@ -122,23 +153,31 @@ import {
 
 import {
     processDueJobs,
+    registerJob,
+    removeJob,
     resetJobsAlarm,
 } from './alarms.js';
 
-import {
-    registerUserScripts,
-    updateCompiledFilters,
-} from './compiled-filters.js';
-
 import { dnr } from './ext-compat.js';
 import { setPopupBlockMode } from './prevent-popup.js';
-import { supportsOffscreenDocument } from './ext-offscreen.js';
 import { toggleToolbarIcon } from './action.js';
 
 /******************************************************************************/
 
 const UBOL_ORIGIN = runtime.getURL('').replace(/\/$/, '').toLowerCase();
 const canShowBlockedCount = typeof dnr.setExtensionActionOptions === 'function';
+const COMPILED_FILTERS_DIRTY_KEY = 'compiledFilters.dirtySources';
+const COMPILED_FILTERS_RETRY_JOB = 'retryCompiledFilters';
+const COMPILED_FILTER_WARNINGS_KEY = 'compiledFilters.lastWarnings';
+const RULESET_TRANSACTION_KEY = 'rulesets.pendingTransaction';
+let pendingFilteringMutation = Promise.resolve();
+let cssCacheWritesSincePrune = 0;
+
+function enqueueFilteringMutation(task) {
+    const result = pendingFilteringMutation.then(task);
+    pendingFilteringMutation = result.catch(( ) => { });
+    return result;
+}
 
 let pendingPermissionRequest;
 
@@ -234,27 +273,533 @@ onPermissionsChanged.pending = [];
 
 /******************************************************************************/
 
-async function applyRulesets(rulesets) {
-    const result = await enableRulesets(rulesets);
-    const stockUpdated = result.stockUpdated ?? false;
-    const importedUpdated = result.importedUpdated ?? false;
-    if ( stockUpdated || importedUpdated ) {
-        rulesetConfig.enabledRulesets = result.enabledRulesets;
-        await saveRulesetConfig();
-        const promises = [];
-        if ( importedUpdated ) {
-            promises.push(
-                updateCompiledFilters().then(( ) =>
-                    Promise.all([ registerUserScripts(), updateUserRules() ])
-                )
+async function activateCompiledFilterRulesNow(options = {}) {
+    const compilationResult = await updateCompiledFilters();
+    const generation = compilationResult?.generation;
+    if ( typeof generation !== 'string' || generation === '' ) {
+        throw new Error('Filter compiler did not produce a valid generation');
+    }
+    const previousGeneration = await getActiveCompiledGeneration();
+    const pendingActivation = {
+        generation,
+        previousGeneration,
+        importedListUpdates: [
+            ...(compilationResult.importedListUpdates || []),
+            ...(compilationResult.compiledIntegrityUpdates || []),
+        ],
+    };
+    await localWrite(PENDING_COMPILED_ACTIVATION_KEY, pendingActivation);
+    await localRemove(STAGING_COMPILED_GENERATION_KEY);
+    let previousRegistration;
+    let result;
+    try {
+        previousRegistration = await registerUserScripts(generation);
+        result = await updateUserRules(generation);
+        if ( result?.fatalError ) {
+            throw new Error(
+                `Unable to activate compiled DNR rules: ${result.fatalError}`
             );
         }
-        if ( stockUpdated ) {
-            promises.push(registerContentScripts());
+        await commitCompiledGeneration(generation);
+        if ( options.deferImportedListFinalization !== true ) {
+            await commitImportedListUpdates(
+                pendingActivation.importedListUpdates
+            );
+            await localRemove(PENDING_COMPILED_ACTIVATION_KEY);
+            await recordCompiledFilterWarnings(result?.errors || []);
         }
-        await Promise.all(promises);
+    } catch ( reason ) {
+        const rollbackErrors = [];
+        try {
+            await restoreUserScripts(previousRegistration);
+        } catch ( rollbackReason ) {
+            rollbackErrors.push(`user scripts: ${rollbackReason}`);
+        }
+        try {
+            const rollbackResult = await updateUserRules(previousGeneration);
+            if ( rollbackResult?.fatalError ) {
+                rollbackErrors.push(`DNR: ${rollbackResult.fatalError}`);
+            }
+        } catch ( rollbackReason ) {
+            rollbackErrors.push(`DNR: ${rollbackReason}`);
+        }
+        try {
+            await commitCompiledGeneration(previousGeneration);
+        } catch ( rollbackReason ) {
+            rollbackErrors.push(`generation pointer: ${rollbackReason}`);
+        }
+        if ( rollbackErrors.length === 0 ) {
+            await localRemove(PENDING_COMPILED_ACTIVATION_KEY);
+            await removeCompiledGeneration(generation);
+        }
+        if ( rollbackErrors.length !== 0 ) {
+            throw new Error(
+                `${reason}; activation rollback failed (${rollbackErrors.join('; ')})`
+            );
+        }
+        throw reason;
+    }
+    if ( options.retainPreviousGeneration !== true &&
+        previousGeneration !== generation ) {
+        removeCompiledGeneration(previousGeneration)
+            .catch(reason => ubolErr(`removeCompiledGeneration/${reason}`));
+    }
+    return {
+        ...result,
+        generation,
+        previousGeneration,
+        importedListUpdates: pendingActivation.importedListUpdates,
+    };
+}
+
+async function recordCompiledFilterWarnings(warnings) {
+    if ( warnings.length !== 0 ) {
+        await localWrite(COMPILED_FILTER_WARNINGS_KEY, {
+            count: warnings.length,
+            recordedAt: Date.now(),
+            messages: warnings.slice(0, 50),
+        }).catch(reason => {
+            ubolErr(`compiledFilterWarnings/${reason}`);
+        });
+    } else {
+        await localRemove(COMPILED_FILTER_WARNINGS_KEY).catch(( ) => { });
+    }
+}
+
+function activateCompiledFilterRules(options = {}) {
+    return enqueueFilteringMutation(( ) =>
+        activateCompiledFilterRulesNow(options)
+    );
+}
+
+async function markCompiledFilterSourcesDirty(flags) {
+    const previous = await localRead(COMPILED_FILTERS_DIRTY_KEY);
+    const marker = {
+        compiled: flags.compiled === true || previous?.compiled === true,
+        contentScripts:
+            flags.contentScripts === true || previous?.contentScripts === true,
+        updatedAt: Date.now(),
+    };
+    await localWrite(COMPILED_FILTERS_DIRTY_KEY, marker);
+    return { marker, hadPending: previous instanceof Object };
+}
+
+async function scheduleCompiledFilterRetry() {
+    await registerJob(
+        COMPILED_FILTERS_RETRY_JOB,
+        Date.now() + 5 * 60 * 1000
+    );
+}
+
+async function flushDirtyCompiledFilterSourcesNow() {
+    const marker = await localRead(COMPILED_FILTERS_DIRTY_KEY);
+    if ( marker instanceof Object === false ) { return false; }
+    if ( marker.compiled === true ) {
+        await activateCompiledFilterRulesNow();
+    }
+    if ( marker.contentScripts === true ) {
+        await registerContentScripts();
+    }
+    await localRemove(COMPILED_FILTERS_DIRTY_KEY);
+    await removeJob(COMPILED_FILTERS_RETRY_JOB);
+    return true;
+}
+
+async function mutateCompiledFilterSources(flags, mutation) {
+    const { hadPending } = await markCompiledFilterSourcesDirty(flags);
+    try {
+        const result = await mutation();
+        if ( result === false && hadPending === false ) {
+            await localRemove(COMPILED_FILTERS_DIRTY_KEY);
+            return result;
+        }
+        await flushDirtyCompiledFilterSourcesNow();
+        return result;
+    } catch ( reason ) {
+        await scheduleCompiledFilterRetry().catch(retryReason => {
+            ubolErr(`scheduleCompiledFilterRetry/${retryReason}`);
+        });
+        throw reason;
+    }
+}
+
+async function retryDirtyCompiledFilterSourcesNow() {
+    try {
+        return await flushDirtyCompiledFilterSourcesNow();
+    } catch ( reason ) {
+        ubolErr(`retryDirtyCompiledFilterSources/${reason}`);
+        await scheduleCompiledFilterRetry().catch(retryReason => {
+            ubolErr(`scheduleCompiledFilterRetry/${retryReason}`);
+        });
+        return false;
+    }
+}
+
+/******************************************************************************/
+
+async function recoverPendingCompiledActivation(options = {}) {
+    const pending = await localRead(PENDING_COMPILED_ACTIVATION_KEY);
+    if ( pending instanceof Object === false ) { return false; }
+    const activeGeneration = await getActiveCompiledGeneration();
+    const shouldCommit = options.rollback !== true &&
+        activeGeneration === pending.generation;
+    if ( shouldCommit ) {
+        await commitImportedListUpdates(
+            pending.importedListUpdates || []
+        );
+        await localRemove(PENDING_COMPILED_ACTIVATION_KEY);
+        await removeCompiledGeneration(pending.previousGeneration);
+        return true;
+    }
+    const previousGeneration = typeof pending.previousGeneration === 'string'
+        ? pending.previousGeneration
+        : '';
+    await registerUserScripts(previousGeneration);
+    const result = await updateUserRules(previousGeneration);
+    if ( result?.fatalError ) {
+        throw new Error(`Unable to recover previous DNR rules: ${result.fatalError}`);
+    }
+    await commitCompiledGeneration(previousGeneration);
+    await localRemove(PENDING_COMPILED_ACTIVATION_KEY);
+    await removeCompiledGeneration(pending.generation);
+    return true;
+}
+
+/******************************************************************************/
+
+async function snapshotRulesetTransaction() {
+    const [ previousRulesets, previousImportedLists, previousGeneration ] =
+        await Promise.all([
+            getEnabledRulesets(),
+            getImportedLists(),
+            getActiveCompiledGeneration(),
+        ]);
+    return {
+        schemaVersion: 1,
+        previousRulesets,
+        previousImportedLists: structuredClone(previousImportedLists),
+        previousConfigEnabledRulesets:
+            rulesetConfig.enabledRulesets.slice(),
+        previousGeneration,
+    };
+}
+
+async function rollbackRulesetTransaction(transaction) {
+    await replaceImportedLists(transaction.previousImportedLists || []);
+
+    const pendingActivation = await localRead(PENDING_COMPILED_ACTIVATION_KEY);
+    if ( pendingActivation instanceof Object ) {
+        await recoverPendingCompiledActivation({ rollback: true });
+    }
+    const currentGeneration = await getActiveCompiledGeneration();
+    const previousGeneration = typeof transaction.previousGeneration === 'string'
+        ? transaction.previousGeneration
+        : '';
+    if ( currentGeneration !== previousGeneration ) {
+        await registerUserScripts(previousGeneration);
+        const dnrResult = await updateUserRules(previousGeneration);
+        if ( dnrResult?.fatalError ) {
+            throw new Error(`DNR rollback failed: ${dnrResult.fatalError}`);
+        }
+        await commitCompiledGeneration(previousGeneration);
+        await removeCompiledGeneration(currentGeneration);
+    }
+
+    const rulesetResult = await enableRulesets(
+        transaction.previousRulesets || []
+    );
+    if ( rulesetResult.error ) {
+        throw new Error(`Static ruleset rollback failed: ${rulesetResult.error}`);
+    }
+    rulesetConfig.enabledRulesets = Array.isArray(
+        transaction.previousConfigEnabledRulesets
+    )
+        ? transaction.previousConfigEnabledRulesets.slice()
+        : transaction.previousRulesets.slice();
+    await saveRulesetConfig();
+    await registerContentScripts();
+    await localRemove(RULESET_TRANSACTION_KEY);
+    broadcastMessage({ enabledRulesets: rulesetConfig.enabledRulesets });
+}
+
+async function applyRulesetsNow(rulesets, options = {}) {
+    const transaction = await snapshotRulesetTransaction();
+    await localWrite(RULESET_TRANSACTION_KEY, transaction);
+    let activationResult;
+    let transactionCommitted = false;
+    let stockUpdated = false;
+    let importedUpdated = false;
+    try {
+        if ( typeof options.beforeApply === 'function' ) {
+            await options.beforeApply();
+        }
+        const result = await enableRulesets(rulesets);
+        if ( result.error ) {
+            throw new Error(`Unable to update static rulesets: ${result.error}`);
+        }
+        stockUpdated = result.stockUpdated ?? false;
+        importedUpdated = result.importedUpdated ?? false;
+        if ( stockUpdated || importedUpdated ) {
+            rulesetConfig.enabledRulesets = result.enabledRulesets;
+            await saveRulesetConfig();
+        }
+        if ( importedUpdated || options.forceCompiledActivation === true ) {
+            activationResult = await activateCompiledFilterRulesNow({
+                deferImportedListFinalization: true,
+                retainPreviousGeneration: true,
+            });
+        }
+        if ( stockUpdated ) {
+            await registerContentScripts();
+        }
+        if ( typeof options.afterApply === 'function' ) {
+            await options.afterApply();
+        }
+        if ( activationResult ) {
+            await commitImportedListUpdates(
+                activationResult.importedListUpdates || [],
+                { cleanup: false }
+            );
+        }
+        // This is the outer transaction's commit point. If the worker stops
+        // after this remove, the remaining activation journal is completed
+        // (not rolled back) by recoverPendingCompiledActivation().
+        await localRemove(RULESET_TRANSACTION_KEY);
+        transactionCommitted = true;
+        if ( activationResult ) {
+            await localRemove(PENDING_COMPILED_ACTIVATION_KEY).catch(reason => {
+                ubolErr(`finalizeCompiledActivation/${reason}`);
+            });
+        }
+    } catch ( reason ) {
+        if ( transactionCommitted ) { throw reason; }
+        const rollbackErrors = [];
+        try {
+            await rollbackRulesetTransaction(transaction);
+        } catch ( rollbackReason ) {
+            rollbackErrors.push(`ruleset state: ${rollbackReason}`);
+        }
+        if ( rollbackErrors.length !== 0 ) {
+            throw new Error(
+                `${reason}; ruleset rollback failed (${rollbackErrors.join('; ')})`
+            );
+        }
+        throw reason;
+    }
+
+    if ( activationResult ) {
+        cleanupCommittedImportedListUpdates(
+            activationResult.importedListUpdates || []
+        ).catch(reason => {
+            ubolErr(`cleanupImportedListMetadata/${reason}`);
+        });
+        recordCompiledFilterWarnings(activationResult.errors || []);
+    }
+
+    if ( activationResult &&
+        activationResult.previousGeneration !== activationResult.generation ) {
+        removeCompiledGeneration(activationResult.previousGeneration)
+            .catch(reason => ubolErr(`removeCompiledGeneration/${reason}`));
     }
     broadcastMessage({ enabledRulesets: rulesetConfig.enabledRulesets });
+    return {
+        stockUpdated,
+        importedUpdated,
+        warnings: activationResult?.errors || [],
+    };
+}
+
+function applyRulesets(rulesets, options = {}) {
+    return enqueueFilteringMutation(( ) =>
+        applyRulesetsNow(rulesets, options)
+    );
+}
+
+/******************************************************************************/
+
+async function updateRulesetSelection(enableIds = [], disableIds = []) {
+    if ( Array.isArray(enableIds) === false ||
+        Array.isArray(disableIds) === false ||
+        enableIds.length + disableIds.length > 128 ) {
+        throw new Error('Invalid ruleset selection delta');
+    }
+    const normalizedEnable = new Set();
+    const normalizedDisable = new Set();
+    for ( const [ values, target ] of [
+        [ enableIds, normalizedEnable ],
+        [ disableIds, normalizedDisable ],
+    ] ) {
+        for ( const id of values ) {
+            if ( typeof id !== 'string' || id === '' ) {
+                throw new Error('Ruleset selection ids must be non-empty strings');
+            }
+            target.add(id);
+        }
+    }
+    return enqueueFilteringMutation(async ( ) => {
+        const current = await getEnabledRulesets();
+        const next = new Set(current);
+        for ( const id of normalizedDisable ) { next.delete(id); }
+        for ( const id of normalizedEnable ) { next.add(id); }
+        return applyRulesetsNow(Array.from(next));
+    });
+}
+
+/******************************************************************************/
+
+async function importFilterLists(lists, rulesetIdsToEnable) {
+    if ( Array.isArray(lists) === false || lists.length === 0 ||
+        lists.length > 16 ) {
+        throw new Error('A Filter Store batch must contain 1-16 lists');
+    }
+    const urls = new Set();
+    const normalizedLists = [];
+    for ( const list of lists ) {
+        let url;
+        try {
+            url = new URL(list?.url);
+        } catch {
+            throw new Error('Filter Store imports require HTTPS URLs');
+        }
+        if ( url.protocol !== 'https:' || url.username || url.password ) {
+            throw new Error(
+                'Filter Store imports require credential-free HTTPS URLs'
+            );
+        }
+        if ( urls.has(url.href) ) {
+            throw new Error(`Duplicate Filter Store source: ${url.href}`);
+        }
+        urls.add(url.href);
+        normalizedLists.push({ ...list, url: url.href });
+    }
+    return enqueueFilteringMutation(async ( ) => {
+        // Imports are additive. Merge with the current set only after entering
+        // the global mutation queue so concurrent installs cannot overwrite
+        // one another with stale UI snapshots.
+        const rulesets = await getEnabledRulesets();
+        if ( Array.isArray(rulesetIdsToEnable) ) {
+            if ( rulesetIdsToEnable.length > 128 ) {
+                throw new Error('Too many rulesets in Filter Store batch');
+            }
+            for ( const id of rulesetIdsToEnable ) {
+                if ( typeof id !== 'string' || id === '' ) {
+                    throw new Error('Invalid Filter Store ruleset id');
+                }
+                if ( /^[a-z-]+:\/\//.test(id) && urls.has(id) === false ) {
+                    throw new Error('Filter Store batch contains an unrelated URL');
+                }
+                if ( rulesets.includes(id) === false ) { rulesets.push(id); }
+            }
+        }
+        for ( const url of urls ) {
+            if ( rulesets.includes(url) === false ) { rulesets.push(url); }
+        }
+        const result = await applyRulesetsNow(rulesets, {
+            forceCompiledActivation: true,
+            beforeApply: async ( ) => {
+                await addImportedLists(normalizedLists);
+                await localRemove(
+                    Array.from(urls, url =>
+                        `rulesets.imported.compiled.${url}`
+                    )
+                );
+            },
+        });
+        return result;
+    });
+}
+
+/******************************************************************************/
+
+async function restoreImportedListState(lists, enabledRulesets) {
+    if ( Array.isArray(lists) === false || lists.length > 32 ) {
+        throw new Error('A backup may restore at most 32 imported lists');
+    }
+    const normalized = [];
+    const targetIds = new Set();
+    for ( const details of lists ) {
+        let url;
+        try {
+            url = new URL(details?.url);
+        } catch {
+            throw new Error('Backup contains an invalid imported-list URL');
+        }
+        if ( url.protocol !== 'https:' || url.username || url.password ) {
+            throw new Error('Restored filter lists must use HTTPS without credentials');
+        }
+        if ( targetIds.has(url.href) ) {
+            throw new Error(`Backup contains duplicate filter list ${url.href}`);
+        }
+        targetIds.add(url.href);
+        const maxSourceBytes = Number.isSafeInteger(details.maxSourceBytes) &&
+            details.maxSourceBytes > 0 &&
+            details.maxSourceBytes <= 5 * 1024 * 1024
+            ? details.maxSourceBytes
+            : 5 * 1024 * 1024;
+        const maxSourceFetches = Number.isSafeInteger(details.maxSourceFetches) &&
+            details.maxSourceFetches > 0 && details.maxSourceFetches <= 32
+            ? details.maxSourceFetches
+            : 32;
+        const sourceIntegrity = details.sourceIntegrity;
+        if ( sourceIntegrity !== undefined && (
+            sourceIntegrity?.algorithm !== 'sha256' ||
+            /^[a-f0-9]{64}$/.test(sourceIntegrity.digest) === false ||
+            Number.isSafeInteger(sourceIntegrity.bytes) === false ||
+            sourceIntegrity.bytes < 0 ||
+            sourceIntegrity.bytes > 5 * 1024 * 1024
+        ) ) {
+            throw new Error(`Backup has invalid integrity for ${url.href}`);
+        }
+        normalized.push({
+            url: url.href,
+            name: typeof details.name === 'string'
+                ? details.name.slice(0, 200)
+                : url.href,
+            homeURL: typeof details.homeURL === 'string' &&
+                /^https:\/\//i.test(details.homeURL)
+                ? details.homeURL
+                : '',
+            sourceIntegrity,
+            maxSourceBytes,
+            maxSourceFetches,
+            requireHTTPSSource: true,
+        });
+    }
+
+    const desiredRulesets = Array.isArray(enabledRulesets)
+        ? enabledRulesets.filter(id =>
+            /^[a-z-]+:\/\//.test(id) === false || targetIds.has(id)
+        )
+        : [];
+    let sourceBudget = 0;
+    for ( const list of normalized ) {
+        if ( desiredRulesets.includes(list.url) === false ) { continue; }
+        sourceBudget += list.sourceIntegrity?.bytes ?? list.maxSourceBytes;
+    }
+    if ( sourceBudget > 20 * 1024 * 1024 ) {
+        throw new Error('Restored enabled lists exceed the 20 MiB source budget');
+    }
+
+    const existing = await getImportedLists();
+    const toRemove = existing
+        .map(list => list.id)
+        .filter(id => targetIds.has(id) === false);
+    await applyRulesets(desiredRulesets, {
+        forceCompiledActivation: desiredRulesets.some(id => targetIds.has(id)),
+        beforeApply: async ( ) => {
+            await addImportedLists(normalized);
+            const cacheKeys = normalized.map(list =>
+                `rulesets.imported.compiled.${list.url}`
+            );
+            if ( cacheKeys.length !== 0 ) { await localRemove(cacheKeys); }
+        },
+        afterApply: async ( ) => {
+            if ( toRemove.length !== 0 ) {
+                await removeImportedLists(toRemove);
+            }
+        },
+    });
+    return true;
 }
 
 /******************************************************************************/
@@ -344,6 +889,12 @@ async function onMessage(request, sender) {
         if ( frameId === false ) { return; }
         return injectCustomFilters(tabId, frameId, request.hostname);
 
+    case 'noteCSSCacheWrite':
+        cssCacheWritesSincePrune += 1;
+        if ( cssCacheWritesSincePrune < 8 ) { return; }
+        cssCacheWritesSincePrune = 0;
+        return pruneCSSCache();
+
     default:
         break;
     }
@@ -359,12 +910,18 @@ async function onMessage(request, sender) {
     switch ( request.what ) {
 
     case 'applyRulesets': {
-        await applyRulesets(request.enabledRulesets);
-        if ( request.toRemove ) {
-            await removeImportedLists(request.toRemove);
-        }
-        return;
+        return applyRulesets(request.enabledRulesets, {
+            afterApply: request.toRemove
+                ? ( ) => removeImportedLists(request.toRemove)
+                : undefined,
+        });
     }
+
+    case 'updateRulesetSelection':
+        return updateRulesetSelection(
+            request.enableRulesetIds,
+            request.disableRulesetIds
+        );
 
     case 'getDefaultConfig': {
         const rulesets = await getDefaultRulesetsFromEnv();
@@ -381,6 +938,35 @@ async function onMessage(request, sender) {
 
     case 'getCurrentConfig':
         return rulesetConfig;
+
+    case 'getMemoryProfile':
+        return getMemoryProfileConfig(request.deviceMemoryGiB);
+
+    case 'setMemoryProfile': {
+        const profile = await setMemoryProfile(
+            request.profile,
+            request.deviceMemoryGiB
+        );
+        if ( profile.retainScriptingMetadata === false ) {
+            releaseScriptingMetadata();
+        }
+        await pruneCSSCache({ force: true });
+        return profile;
+    }
+
+    case 'getMemoryTelemetry':
+        return getMemoryTelemetry({
+            refresh: request.refresh === true,
+            deviceMemoryGiB: request.deviceMemoryGiB,
+        });
+
+    case 'runMemoryCleanup':
+        return enqueueFilteringMutation(async ( ) => {
+            await pruneCSSCache({ force: true });
+            return runMemoryCleanup({
+                deviceMemoryGiB: request.deviceMemoryGiB,
+            });
+        });
 
     case 'getOptionsPageData': {
         const [
@@ -494,11 +1080,13 @@ async function onMessage(request, sender) {
         return gotoURL(request.url, request.type);
 
     case 'setFilteringMode': {
-        const beforeLevel = await getFilteringMode(request.hostname);
-        if ( request.level === beforeLevel ) { return beforeLevel; }
-        const afterLevel = await setFilteringMode(request.hostname, request.level);
-        await Promise.all([ registerContentScripts(), registerUserScripts() ]);
-        return afterLevel;
+        return enqueueFilteringMutation(async ( ) => {
+            const beforeLevel = await getFilteringMode(request.hostname);
+            if ( request.level === beforeLevel ) { return beforeLevel; }
+            const afterLevel = await setFilteringMode(request.hostname, request.level);
+            await Promise.all([ registerContentScripts(), registerUserScripts() ]);
+            return afterLevel;
+        });
     }
 
     case 'setPendingFilteringMode':
@@ -510,23 +1098,27 @@ async function onMessage(request, sender) {
     }
 
     case 'setDefaultFilteringMode': {
-        const beforeLevel = await getDefaultFilteringMode();
-        const afterLevel = await setDefaultFilteringMode(request.level);
-        if ( afterLevel !== beforeLevel ) {
-            await Promise.all([ registerContentScripts(), registerUserScripts() ]);
-        }
-        return afterLevel;
+        return enqueueFilteringMutation(async ( ) => {
+            const beforeLevel = await getDefaultFilteringMode();
+            const afterLevel = await setDefaultFilteringMode(request.level);
+            if ( afterLevel !== beforeLevel ) {
+                await Promise.all([ registerContentScripts(), registerUserScripts() ]);
+            }
+            return afterLevel;
+        });
     }
 
     case 'getFilteringModeDetails':
         return getFilteringModeDetails(true);
 
     case 'setFilteringModeDetails': {
-        await setFilteringModeDetails(request.modes);
-        await Promise.all([ registerContentScripts(), registerUserScripts() ]);
-        const defaultFilteringMode = await getDefaultFilteringMode();
-        broadcastMessage({ defaultFilteringMode });
-        return getFilteringModeDetails(true);
+        return enqueueFilteringMutation(async ( ) => {
+            await setFilteringModeDetails(request.modes);
+            await Promise.all([ registerContentScripts(), registerUserScripts() ]);
+            const defaultFilteringMode = await getDefaultFilteringMode();
+            broadcastMessage({ defaultFilteringMode });
+            return getFilteringModeDetails(true);
+        });
     }
 
     case 'excludeFromStrictBlock':
@@ -552,94 +1144,82 @@ async function onMessage(request, sender) {
         return getEffectiveUserRules();
 
     case 'updateUserDnrRules':
-        return updateUserRules();
+        return enqueueFilteringMutation(( ) => updateUserRules());
 
     case 'getAllCustomFilters':
         return getAllCustomFilters();
 
     case 'addCustomFilters': {
-        const modified = await addCustomFilters(request.hostname, request.selectors);
-        if ( modified !== true ) { return; }
-        const hasScriptletFilters = request.selectors.some(a => isScriptlet(a));
-        const hasPlainFilters = request.selectors.some(a => isScriptlet(a) === false);
-        const promises = [];
-        if ( hasPlainFilters ) {
-            promises.push(registerContentScripts());
-        }
-        if ( hasScriptletFilters ) {
-            promises.push(
-                updateCompiledFilters().then(( ) => registerUserScripts())
-            );
-        }
-        await Promise.all(promises);
-        return;
+        return enqueueFilteringMutation(async ( ) => {
+            const hasScriptletFilters = request.selectors.some(a => isScriptlet(a));
+            const hasPlainFilters = request.selectors.some(a => isScriptlet(a) === false);
+            return mutateCompiledFilterSources({
+                compiled: hasScriptletFilters,
+                contentScripts: hasPlainFilters,
+            }, ( ) => addCustomFilters(
+                request.hostname,
+                request.selectors
+            ));
+        });
     }
 
     case 'addManyCustomFilters': {
-        const promises = [];
-        let hasScriptletFilters = false;
-        let hasPlainFilters = false;
-        for ( const [ hostname, selectors ] of request.entries ) {
-            if ( typeof hostname !== 'string' ) { continue; }
-            if ( hostname === '' ) { continue; }
-            if ( Array.isArray(selectors) === false ) { continue; }
-            if ( selectors.length === 0 ) { continue; }
-            hasScriptletFilters ||= selectors.some(a => isScriptlet(a));
-            hasPlainFilters ||= selectors.some(a => isScriptlet(a) === false);
-            promises.push(addCustomFilters(hostname, selectors));
-        }
-        const results = await Promise.all(promises);
-        if ( results.some(a => a) === false ) { return; }
-        promises.length = 0;
-        if ( hasPlainFilters ) {
-            promises.push(registerContentScripts());
-        }
-        if ( hasScriptletFilters ) {
-            promises.push(
-                updateCompiledFilters().then(( ) => registerUserScripts())
-            );
-        }
-        await Promise.all(promises);
-        return;
+        return enqueueFilteringMutation(async ( ) => {
+            let hasScriptletFilters = false;
+            let hasPlainFilters = false;
+            const validEntries = [];
+            for ( const [ hostname, selectors ] of request.entries ) {
+                if ( typeof hostname !== 'string' ) { continue; }
+                if ( hostname === '' ) { continue; }
+                if ( Array.isArray(selectors) === false ) { continue; }
+                if ( selectors.length === 0 ) { continue; }
+                hasScriptletFilters ||= selectors.some(a => isScriptlet(a));
+                hasPlainFilters ||= selectors.some(a => isScriptlet(a) === false);
+                validEntries.push([ hostname, selectors ]);
+            }
+            return mutateCompiledFilterSources({
+                compiled: hasScriptletFilters,
+                contentScripts: hasPlainFilters,
+            }, async ( ) => {
+                const results = await Promise.all(validEntries.map(
+                    ([ hostname, selectors ]) =>
+                        addCustomFilters(hostname, selectors)
+                ));
+                return results.some(Boolean);
+            });
+        });
     }
 
     case 'removeCustomFilters': {
-        const { selectors } = request;
-        const modified = await removeCustomFilters(request.hostname, selectors);
-        if ( modified !== true ) { return; }
-        const hasScriptletFilters = selectors.some(a => isScriptlet(a));
-        const hasPlainFilters = selectors.some(a => isScriptlet(a) === false);
-        const promises = [];
-        if ( hasPlainFilters ) {
-            promises.push(registerContentScripts());
-        }
-        if ( hasScriptletFilters ) {
-            promises.push(
-                updateCompiledFilters().then(( ) => registerUserScripts())
-            );
-        }
-        await Promise.all(promises);
-        return;
+        return enqueueFilteringMutation(async ( ) => {
+            const { selectors } = request;
+            const hasScriptletFilters = selectors.some(a => isScriptlet(a));
+            const hasPlainFilters = selectors.some(a => isScriptlet(a) === false);
+            return mutateCompiledFilterSources({
+                compiled: hasScriptletFilters,
+                contentScripts: hasPlainFilters,
+            }, ( ) => removeCustomFilters(request.hostname, selectors));
+        });
     }
 
     case 'removeAllCustomFilters': {
-        const modified = await removeAllCustomFilters(request.hostname);
-        if ( modified !== true ) { return; }
-        await Promise.all([
-            registerContentScripts(),
-            updateCompiledFilters().then(( ) => registerUserScripts()),
-        ]);
-        return;
+        return enqueueFilteringMutation(async ( ) => {
+            return mutateCompiledFilterSources({
+                compiled: true,
+                contentScripts: true,
+            }, ( ) => removeAllCustomFilters(request.hostname));
+        });
     }
 
     case 'getSandboxFilters':
         return getSandboxFilters();
 
     case 'setSandboxFilters': {
-        await setSandboxFilters(request.text);
-        await updateCompiledFilters();
-        await Promise.all([ registerUserScripts(), updateUserRules() ]);
-        return;
+        return enqueueFilteringMutation(async ( ) => {
+            await mutateCompiledFilterSources({ compiled: true }, ( ) =>
+                setSandboxFilters(request.text)
+            );
+        });
     }
 
     case 'customFiltersFromHostname':
@@ -652,12 +1232,30 @@ async function onMessage(request, sender) {
         return getConsoleOutput();
 
     case 'importFilterList': {
-        const modified = await addImportedLists([ request.url ]);
-        if ( modified !== true ) { break; }
-        const rulesets = await getEnabledRulesets();
-        rulesets.push(request.url);
-        await applyRulesets(rulesets);
-        return;
+        return importFilterLists([ {
+            url: request.url,
+            name: request.name,
+            homeURL: request.homeURL,
+            sourceIntegrity: request.sourceIntegrity,
+            verifiedSourceKey: request.verifiedSourceKey,
+            maxSourceBytes: request.maxSourceBytes,
+            maxSourceFetches: request.maxSourceFetches,
+            requireHTTPSSource: request.requireHTTPSSource,
+        } ]);
+    }
+
+    case 'importFilterLists': {
+        return importFilterLists(
+            request.lists,
+            request.rulesetIdsToEnable
+        );
+    }
+
+    case 'restoreImportedLists': {
+        return restoreImportedListState(
+            request.lists,
+            request.enabledRulesets
+        );
     }
 
     case 'getImportedLists': {
@@ -665,12 +1263,16 @@ async function onMessage(request, sender) {
     }
 
     case 'updateImportedLists': {
-        const count = await updateImportedLists();
-        if ( count === 0 ) { break; }
-        await updateCompiledFilters();
-        await Promise.all([ registerUserScripts(), updateUserRules() ]);
-        return;
+        return enqueueFilteringMutation(async ( ) => {
+            return mutateCompiledFilterSources({ compiled: true }, async ( ) => {
+                const count = await updateImportedLists();
+                return count === 0 ? false : count;
+            });
+        });
     }
+
+    case COMPILED_FILTERS_RETRY_JOB:
+        return enqueueFilteringMutation(retryDirtyCompiledFilterSourcesNow);
 
     case 'pruneCSSCache': {
         return pruneCSSCache();
@@ -775,11 +1377,7 @@ async function startSession() {
         promises.push(registerContentScripts());
     }
     if ( importedUpdated ) {
-        promises.push(
-            updateCompiledFilters().then(( ) =>
-                Promise.all([ registerUserScripts(), updateUserRules() ])
-            )
-        );
+        promises.push(activateCompiledFilterRules());
     } else if ( shouldInject ) {
         promises.push(registerUserScripts(), updateUserRules());
     } else if ( userScriptsChanged ) {
@@ -828,10 +1426,34 @@ async function startSession() {
 /******************************************************************************/
 
 async function start() {
-    await loadRulesetConfig();
+    const [ , memoryProfile ] = await Promise.all([
+        loadRulesetConfig(),
+        initializeMemoryProfile(),
+    ]);
+
+    const pendingRuleset = await localRead(RULESET_TRANSACTION_KEY);
+    if ( pendingRuleset instanceof Object ) {
+        await rollbackRulesetTransaction(pendingRuleset);
+    } else {
+        await recoverPendingCompiledActivation();
+    }
+    // A service-worker termination during offscreen compilation can leave an
+    // offscreen document and generation alive. Stop it, delete its four
+    // deterministic generation keys, then clear the stale marker.
+    await closeOffscreenDocument().catch(( ) => { });
+    const staleGeneration = await localRead(STAGING_COMPILED_GENERATION_KEY);
+    if ( typeof staleGeneration === 'string' ) {
+        await removeCompiledGeneration(staleGeneration);
+    }
+    await localRemove(STAGING_COMPILED_GENERATION_KEY);
+    await retryDirtyCompiledFilterSourcesNow();
 
     if ( process.wakeupRun === false ) {
         await startSession();
+        if ( memoryProfile.retainScriptingMetadata === false ) {
+            releaseScriptingMetadata();
+        }
+        await runMemoryCleanup();
     }
 
     const scripts = await getRegisteredContentScripts();
@@ -866,34 +1488,50 @@ const isFullyInitialized = start().then(( ) => {
 });
 
 runtime.onMessage.addListener((request, sender, callback) => {
+    if ( typeof request?.what !== 'string' ) { return; }
     if ( request.what.includes(':') ) { return; }
-    onMessage(request, sender).then(callback);
+    onMessage(request, sender).then(callback, reason => {
+        ubolErr(`onMessage/${request.what}/${reason}`);
+        callback({ __ublockPlusError: reason?.message || `${reason}` });
+    });
     return true;
 });
 
 if ( supportsUserScripts() && runtime.onUserScriptMessage ) {
-    browser.userScripts.configureWorld({ messaging: true });
+    browser.userScripts.configureWorld({ messaging: true }).catch(reason => {
+        ubolErr(`configureUserScriptWorld/${reason}`);
+    });
     runtime.onUserScriptMessage.addListener((request, sender, callback) => {
-        onMessage(request, sender).then(callback);
+        if ( typeof request?.what !== 'string' ) { return; }
+        onMessage(request, sender).then(callback, reason => {
+            ubolErr(`onUserScriptMessage/${request.what}/${reason}`);
+            callback({ __ublockPlusError: reason?.message || `${reason}` });
+        });
         return true;
     });
 }
 
 browser.permissions.onRemoved.addListener((...args) => {
     isFullyInitialized.then(( ) => {
-        onPermissionsChanged('removed', ...args);
+        return onPermissionsChanged('removed', ...args);
+    }).catch(reason => {
+        ubolErr(`permissionsRemoved/${reason}`);
     });
 });
 
 browser.permissions.onAdded.addListener((...args) => {
     isFullyInitialized.then(( ) => {
-        onPermissionsChanged('added', ...args);
+        return onPermissionsChanged('added', ...args);
+    }).catch(reason => {
+        ubolErr(`permissionsAdded/${reason}`);
     });
 });
 
 browser.commands.onCommand.addListener((...args) => {
     isFullyInitialized.then(( ) => {
-        onCommand(...args);
+        return onCommand(...args);
+    }).catch(reason => {
+        ubolErr(`onCommand/${reason}`);
     });
 });
 
@@ -904,6 +1542,10 @@ browser.alarms.onAlarm.addListener(alarm => {
             process.firstAlarm = true;
             return resetJobsAlarm();
         }
-        processDueJobs(onMessage);
+        return processDueJobs(onMessage);
+    }).catch(reason => {
+        // Failed jobs remain durably leased for retry; consume the rejection
+        // here so the service worker does not report an unhandled promise.
+        ubolErr(`processDueJobs/${reason}`);
     });
 });

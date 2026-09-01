@@ -24,7 +24,7 @@
 <!-- -------- -->
 <header>
     <nav id="dashboard-nav">
-        <span class="logo"><img data-i18n-title="extName" src="img/ublock.svg" alt="uBO Lite"></span><!--
+        <span class="logo"><img data-i18n-title="extName" src="img/ublock.svg" alt="uBlock Plus+"></span><!--
      --><button class="tabButton" type="button" data-pane="settings" data-i18n="settingsPageName" tabindex="0"></button><!--
      --><button class="tabButton" type="button" data-pane="rulesets" data-i18n="aboutFilterLists" tabindex="0"></button><!--
      --><button class="tabButton" type="button" data-pane="filters" data-i18n="customFiltersPageName"tabindex="0"></button><!--
@@ -101,6 +101,23 @@
         <p><label id="popupBlockMode" data-i18n="enablePopupBlockLabel"><span class="input checkbox"><input type="checkbox"><svg viewBox="0 0 24 24"><path d="M1.73,12.91 8.1,19.28 22.79,4.59"/></svg></span>_</label><legend data-i18n="enablePopupBlockLegend"></legend>
         <p id="developerMode"><label data-i18n="developerModeLabel"><span class="input checkbox"><input type="checkbox"><svg viewBox="0 0 24 24"><path d="M1.73,12.91 8.1,19.28 22.79,4.59"/></svg></span>_</label><legend data-i18n="developerModeLegend"></legend>
     </div>
+    <div id="memoryProfile">
+        <h3 data-i18n="memoryProfileSectionLabel">_</h3>
+        <p data-i18n="memoryProfileDescription">_</p>
+        <p class="memoryProfileControls">
+            <select aria-label="Memory profile">
+                <option value="auto" data-i18n="memoryProfileAuto">_</option>
+                <option value="balanced" data-i18n="memoryProfileBalanced">_</option>
+                <option value="low-memory" data-i18n="memoryProfileLow">_</option>
+            </select>
+            <span class="memoryProfileStatus" role="status" aria-live="polite"></span>
+        </p>
+        <p class="memoryProfileMetrics"></p>
+        <p>
+            <button class="memoryProfileRefresh" type="button" data-i18n="memoryProfileRefresh">_</button>
+            <button class="memoryProfileCleanup" type="button" data-i18n="memoryProfileCleanup">_</button>
+        </p>
+    </div>
     <div id="privacyHardening" data-platform-only="chromium">
         <h3 data-i18n="privacyHardeningSectionLabel"></h3>
         <p data-i18n="privacyHardeningDescription"></p>
@@ -136,6 +153,34 @@
             <input type="url" spellcheck="false" placeholder="customListImportPlaceholder">
             <button class="iconified dontshrink" type="button"><span class="fa-icon">check</span><span data-i18n="addButton">_</span><span class="hover"></span></button>
         </p>
+        </details>
+    </aside>
+    <aside id="filterStore">
+        <details open>
+            <summary data-i18n="filterStoreTitle">_</summary>
+            <p class="filterStoreIntro" data-i18n="filterStoreDescription">_</p>
+            <div class="filterStoreToolbar">
+                <input id="filterStoreSearch" type="search" spellcheck="false" placeholder="filterStoreSearchPlaceholder">
+                <select id="filterStoreCategory" aria-label="Filter Store category"></select>
+                <select id="filterStoreLanguage" aria-label="Filter Store language"></select>
+                <select id="filterStoreProfile" aria-label="Filter Store profile"></select>
+            </div>
+            <p id="filterStoreQuota"></p>
+            <section id="filterStoreBundleSection">
+                <h4 data-i18n="filterStoreBundles">_</h4>
+                <div id="filterStoreBundles"></div>
+            </section>
+            <div id="filterStoreEntries"></div>
+            <p id="filterStoreStatus" role="status" aria-live="polite"></p>
+            <details class="filterStoreRepositories">
+                <summary data-i18n="filterStoreRepositories">_</summary>
+                <p data-i18n="filterStoreRepositoryWarning">_</p>
+                <div class="filterStoreRepositoryInput">
+                    <input id="filterStoreRepositoryURL" type="url" spellcheck="false" placeholder="filterStoreRepositoryPlaceholder">
+                    <button id="filterStoreAddRepository" class="iconified dontshrink" type="button"><span class="fa-icon">plus</span><span data-i18n="filterStoreAddRepository">_</span><span class="hover"></span></button>
+                </div>
+                <ul id="filterStoreRepositoryList"></ul>
+            </details>
         </details>
     </aside>
 </section>
@@ -185,13 +230,13 @@
         <div class="liul">
             <div class="li">Copyright (c) Raymond Hill 2014-present</div>
         </div>
-        <div class="li"><a href="https://github.com/kayurachann/uBlock-MV3-Community/blob/main/docs/PRIVACY.md" data-i18n="aboutPrivacyPolicy"></a></div>
-        <div class="li"><a href="https://github.com/kayurachann/uBlock-MV3-Community#readme" data-i18n="aboutDocumentation"></a></div>
-        <div class="li"><a href="https://github.com/kayurachann/uBlock-MV3-Community/releases" data-i18n="aboutChangelog"></a></div>
-        <div class="li"><a href="https://github.com/kayurachann/uBlock-MV3-Community" data-i18n="aboutCode"></a></div>
+        <div class="li"><a href="https://github.com/kayurachann/uBlock-Plus/blob/main/docs/PRIVACY.md" data-i18n="aboutPrivacyPolicy"></a></div>
+        <div class="li"><a href="https://github.com/kayurachann/uBlock-Plus#readme" data-i18n="aboutDocumentation"></a></div>
+        <div class="li"><a href="https://github.com/kayurachann/uBlock-Plus/releases" data-i18n="aboutChangelog"></a></div>
+        <div class="li"><a href="https://github.com/kayurachann/uBlock-Plus" data-i18n="aboutCode"></a></div>
         <div class="li"><span data-i18n="aboutContributors"></span></div>
         <div class="liul">
-            <div class="li"><a href="https://github.com/kayurachann/uBlock-MV3-Community/graphs/contributors" data-i18n="aboutSourceCode"></a></div>
+            <div class="li"><a href="https://github.com/kayurachann/uBlock-Plus/graphs/contributors" data-i18n="aboutSourceCode"></a></div>
             <div class="li"><a href="https://github.com/gorhill/uBlock/graphs/contributors">Upstream contributors</a></div>
             <div class="li"><a href="https://crowdin.com/project/ublock" data-i18n="aboutTranslations"></a></div>
             <div class="li"><a href="https://github.com/uBlockOrigin/uAssets/graphs/contributors" data-i18n="aboutFilterLists"></a></div>

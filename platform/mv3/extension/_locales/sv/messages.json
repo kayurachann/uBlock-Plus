@@ -1,6 +1,6 @@
 {
   "extName": {
-    "message": "uBlock MV3 Community",
+    "message": "uBlock Plus+",
     "description": "extension name."
   },
   "extShortDesc": {
@@ -12,8 +12,8 @@
     "description": "Appears aside each filter list in the _3rd-party filters_ pane"
   },
   "dashboardName": {
-    "message": "uBO Lite — Kontrollpanel",
-    "description": "English: uBO Lite — Dashboard"
+    "message": "uBlock Plus+ — Kontrollpanel",
+    "description": "English: uBlock Plus+ — Dashboard"
   },
   "settingsPageName": {
     "message": "Inställningar",
@@ -104,7 +104,7 @@
     "description": "Placeholder text which describes the purpose of the textarea widget"
   },
   "customListImportUserScriptsInfo": {
-    "message": "För att tillämpa kosmetiska filter eller skriptfilter från importerade listor måste du ge uBO Lite behörighet att köra användarskript.",
+    "message": "För att tillämpa kosmetiska filter eller skriptfilter från importerade listor måste du ge uBlock Plus+ behörighet att köra användarskript.",
     "description": "A notice to inform user that the enforcement of some filters requires permission to execute 'user scripts'"
   },
   "customFiltersImportExportLabel": {
@@ -116,7 +116,7 @@
     "description": "Placeholder text which describes the purpose of the textarea widget"
   },
   "userScriptsInfo": {
-    "message": "Öppna webbläsarens tilläggssida (<code>chrome://extensions</code> i Chrome eller <code>about:addons</code> i Firefox), öppna <b>uBO Lite</b> detaljer och aktivera <b>Tillåt användarskript</b> (även kallade \"obekräftade tredjepartsskript\").",
+    "message": "Öppna webbläsarens tilläggssida (<code>chrome://extensions</code> i Chrome eller <code>about:addons</code> i Firefox), öppna <b>uBlock Plus+</b> detaljer och aktivera <b>Tillåt användarskript</b> (även kallade \"obekräftade tredjepartsskript\").",
     "description": "A notice to inform user on how to enable 'user scripts' permission"
   },
   "aboutChangelog": {
@@ -188,7 +188,7 @@
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option3": {
-    "message": "Upptäcker uBO Lite",
+    "message": "Upptäcker uBlock Plus+",
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option4": {
@@ -196,7 +196,7 @@
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option5": {
-    "message": "Fungerar inte när uBO Lite är aktiverad",
+    "message": "Fungerar inte när uBlock Plus+ är aktiverad",
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option6": {
@@ -292,7 +292,7 @@
     "description": "Header for filter-creation section in the dashboard"
   },
   "sandboxEditorUserScriptsInfo": {
-    "message": "För att tillämpa kosmetiska filter eller skriptfilter från sandlådan måste du ge uBO Lite behörighet att köra användarskript.",
+    "message": "För att tillämpa kosmetiska filter eller skriptfilter från sandlådan måste du ge uBlock Plus+ behörighet att köra användarskript.",
     "description": "A notice to inform user that the enforcement of some filters requires permission to execute 'user scripts'"
   },
   "developerModeLabel": {
@@ -324,7 +324,7 @@
     "description": "Web page title for the strict-blocked page"
   },
   "strictblockSentence1": {
-    "message": "uBO Lite har förhindrat följande sida från att läsas in:",
+    "message": "uBlock Plus+ har förhindrat följande sida från att läsas in:",
     "description": "Sentence used in the strict-blocked page"
   },
   "strictblockReasonSentence1": {

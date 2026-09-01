@@ -1,6 +1,6 @@
 {
   "extName": {
-    "message": "uBlock MV3 Community",
+    "message": "uBlock Plus+",
     "description": "extension name."
   },
   "extShortDesc": {
@@ -12,8 +12,8 @@
     "description": "Appears aside each filter list in the _3rd-party filters_ pane"
   },
   "dashboardName": {
-    "message": "uBO Lite — მაჩვენებლები",
-    "description": "English: uBO Lite — Dashboard"
+    "message": "uBlock Plus+ — მაჩვენებლები",
+    "description": "English: uBlock Plus+ — Dashboard"
   },
   "settingsPageName": {
     "message": "პარამეტრები",
@@ -104,7 +104,7 @@
     "description": "Placeholder text which describes the purpose of the textarea widget"
   },
   "customListImportUserScriptsInfo": {
-    "message": "გარეგნული ან სკრიპტული ფილტრების იძულებით ამოქმედებისთვის შემოტანილი სიებიდან, uBO Lite საჭიროებს მომხმარებლის სკრიპტების გაშვების ნებართვებს.",
+    "message": "გარეგნული ან სკრიპტული ფილტრების იძულებით ამოქმედებისთვის შემოტანილი სიებიდან, uBlock Plus+ საჭიროებს მომხმარებლის სკრიპტების გაშვების ნებართვებს.",
     "description": "A notice to inform user that the enforcement of some filters requires permission to execute 'user scripts'"
   },
   "customFiltersImportExportLabel": {
@@ -116,7 +116,7 @@
     "description": "Placeholder text which describes the purpose of the textarea widget"
   },
   "userScriptsInfo": {
-    "message": "გარეგნული ან მცირე სკრიპტის ფილტრების იძულებით ასამოქმედებლად შემოტანილი სიებიდან, uBO Lite უნდა იყოს სკრიპტების გაშვების ნებართვის მქონე. გახსენით ბრაუზერის გაფართოებების გვერდი (<code>chrome://extensions</code> Chrome-ში ან <code>about:addons</code> Firefox-ში), იხილეთ <b>uBO Lite</b> ვრცლად და გადართეთ <b>მომხმარებლის სკრიპტების ნებართვა</b> (აგრეთვე შეიძლება ეწეროს „დაუმოწმებელი გარეშე სკრიპტები“).",
+    "message": "გარეგნული ან მცირე სკრიპტის ფილტრების იძულებით ასამოქმედებლად შემოტანილი სიებიდან, uBlock Plus+ უნდა იყოს სკრიპტების გაშვების ნებართვის მქონე. გახსენით ბრაუზერის გაფართოებების გვერდი (<code>chrome://extensions</code> Chrome-ში ან <code>about:addons</code> Firefox-ში), იხილეთ <b>uBlock Plus+</b> ვრცლად და გადართეთ <b>მომხმარებლის სკრიპტების ნებართვა</b> (აგრეთვე შეიძლება ეწეროს „დაუმოწმებელი გარეშე სკრიპტები“).",
     "description": "A notice to inform user on how to enable 'user scripts' permission"
   },
   "aboutChangelog": {
@@ -188,7 +188,7 @@
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option3": {
-    "message": "ამჩნევს, რომ uBO Lite ჩართულია",
+    "message": "ამჩნევს, რომ uBlock Plus+ ჩართულია",
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option4": {
@@ -196,7 +196,7 @@
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option5": {
-    "message": "შეფერხებით მუშაობს, როცა uBO Lite ჩართულია",
+    "message": "შეფერხებით მუშაობს, როცა uBlock Plus+ ჩართულია",
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option6": {
@@ -292,7 +292,7 @@
     "description": "Header for filter-creation section in the dashboard"
   },
   "sandboxEditorUserScriptsInfo": {
-    "message": "გარეგნული ან სკრიპტული ფილტრების იძულებით ამოქმედებისთვის განცაკლევებული გარემოდან, uBO Lite საჭიროებს მომხმარებლის სკრიპტების გაშვების ნებართვებს.",
+    "message": "გარეგნული ან სკრიპტული ფილტრების იძულებით ამოქმედებისთვის განცაკლევებული გარემოდან, uBlock Plus+ საჭიროებს მომხმარებლის სკრიპტების გაშვების ნებართვებს.",
     "description": "A notice to inform user that the enforcement of some filters requires permission to execute 'user scripts'"
   },
   "developerModeLabel": {
@@ -324,7 +324,7 @@
     "description": "Web page title for the strict-blocked page"
   },
   "strictblockSentence1": {
-    "message": "uBO Lite ზღუდავს მოცემული გვერდის ჩატვირთვას:",
+    "message": "uBlock Plus+ ზღუდავს მოცემული გვერდის ჩატვირთვას:",
     "description": "Sentence used in the strict-blocked page"
   },
   "strictblockReasonSentence1": {

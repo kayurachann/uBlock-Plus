@@ -1,6 +1,6 @@
 {
   "extName": {
-    "message": "uBlock MV3 Community",
+    "message": "uBlock Plus+",
     "description": "extension name."
   },
   "extShortDesc": {
@@ -12,8 +12,8 @@
     "description": "Appears aside each filter list in the _3rd-party filters_ pane"
   },
   "dashboardName": {
-    "message": "uBlock MV3 Community — Dashboard",
-    "description": "English: uBO Lite — Dashboard"
+    "message": "uBlock Plus+ — Dashboard",
+    "description": "English: uBlock Plus+ — Dashboard"
   },
   "settingsPageName": {
     "message": "Settings",
@@ -104,8 +104,216 @@
     "description": "Placeholder text which describes the purpose of the textarea widget"
   },
   "customListImportUserScriptsInfo": {
-    "message": "To enforce cosmetic or scriptlet filters from imported lists, you must grant uBO Lite permission to run user scripts.",
+    "message": "To enforce cosmetic or scriptlet filters from imported lists, you must grant uBlock Plus+ permission to run user scripts.",
     "description": "A notice to inform user that the enforcement of some filters requires permission to execute 'user scripts'"
+  },
+  "memoryProfileSectionLabel": {
+    "message": "Memory profile",
+    "description": "Heading for the memory optimization controls"
+  },
+  "memoryProfileDescription": {
+    "message": "Controls compilation concurrency and cache budgets. Low-memory mode is designed to reduce peak memory without disabling enabled filters.",
+    "description": "Description of the memory profile setting"
+  },
+  "memoryProfileAuto": {
+    "message": "Auto",
+    "description": "Automatically selected memory profile"
+  },
+  "memoryProfileBalanced": {
+    "message": "Balanced",
+    "description": "Balanced memory profile"
+  },
+  "memoryProfileLow": {
+    "message": "Low memory",
+    "description": "Low-memory profile"
+  },
+  "memoryProfileEffective": {
+    "message": "Effective profile: $1",
+    "description": "Currently effective memory profile"
+  },
+  "memoryProfileStorageMetrics": {
+    "message": "Local cache/storage footprint (not live RAM): $1 local, $2 session.",
+    "description": "Local extension storage size metrics"
+  },
+  "memoryProfileUnavailable": {
+    "message": "unavailable",
+    "description": "Metric is unavailable in this browser"
+  },
+  "memoryProfileRefresh": {
+    "message": "Refresh metrics",
+    "description": "Refresh local memory/storage metrics"
+  },
+  "memoryProfileCleanup": {
+    "message": "Clean orphan caches",
+    "description": "Remove unused compiled list caches"
+  },
+  "memoryProfileCleanupDone": {
+    "message": "Cleanup complete; removed $1 orphan cache item(s).",
+    "description": "Memory cleanup result"
+  },
+  "memoryProfileCleanupUnavailable": {
+    "message": "This Chrome version can report total storage but cannot enumerate orphan cache keys (Chrome 130+ is required for cleanup).",
+    "description": "Memory cleanup API unavailable"
+  },
+  "memoryProfileError": {
+    "message": "Could not update the memory profile.",
+    "description": "Memory profile operation error"
+  },
+  "filterStoreTitle": {
+    "message": "Filter Store (Power Edition)",
+    "description": "Heading for the curated and custom filter repository browser"
+  },
+  "filterStoreDescription": {
+    "message": "Browse verified and community filter data. Catalogs never provide executable extension code; imported lists are parsed by uBlock Plus+ and compiled to MV3 rules.",
+    "description": "Filter Store security summary"
+  },
+  "filterStoreSearchPlaceholder": {
+    "message": "Search filter lists",
+    "description": "Filter Store search field placeholder"
+  },
+  "filterStoreAllCategories": {
+    "message": "All categories",
+    "description": "Filter Store category filter"
+  },
+  "filterStoreAllLanguages": {
+    "message": "All languages",
+    "description": "Filter Store language filter"
+  },
+  "filterStoreAllProfiles": {
+    "message": "All profiles",
+    "description": "Filter Store resource profile filter"
+  },
+  "filterStoreGlobal": {
+    "message": "Global",
+    "description": "A filter list intended for all languages"
+  },
+  "filterStoreStaticSlots": {
+    "message": "static slots",
+    "description": "MV3 static ruleset quota unit"
+  },
+  "filterStoreDynamicRules": {
+    "message": "dynamic rules",
+    "description": "MV3 dynamic rule quota unit"
+  },
+  "filterStoreRegexRules": {
+    "message": "regex rules",
+    "description": "MV3 regular expression rule quota unit"
+  },
+  "filterStoreUnknownCosts": {
+    "message": "$1 imported list(s) have unknown cost",
+    "description": "Filter Store unknown quota-cost notice"
+  },
+  "filterStoreStaticCost": {
+    "message": "$1 static slot(s), $2 packaged rule(s)",
+    "description": "Estimated cost of a packaged filter list"
+  },
+  "filterStoreDynamicCost": {
+    "message": "Up to $1 dynamic / $2 regex rules",
+    "description": "Estimated cost of an imported filter list"
+  },
+  "filterStoreVerified": {
+    "message": "Verified",
+    "description": "Trust badge for a reviewed catalog entry"
+  },
+  "filterStoreCommunity": {
+    "message": "Community",
+    "description": "Trust badge for a user-provided catalog entry"
+  },
+  "filterStoreHomepage": {
+    "message": "Homepage",
+    "description": "Link to a filter list homepage"
+  },
+  "filterStoreEnable": {
+    "message": "Enable",
+    "description": "Enable a Filter Store entry"
+  },
+  "filterStoreDisable": {
+    "message": "Disable",
+    "description": "Disable a Filter Store entry"
+  },
+  "filterStoreNoResults": {
+    "message": "No matching filter lists.",
+    "description": "Empty Filter Store search result"
+  },
+  "filterStoreResultsLimited": {
+    "message": "Showing the first $1 of $2 results. Refine your search to see the rest.",
+    "description": "Filter Store rendering limit notice"
+  },
+  "filterStoreBundles": {
+    "message": "Bundles",
+    "description": "Filter Store bundle section heading"
+  },
+  "filterStoreBundleEnabled": {
+    "message": "Bundle enabled",
+    "description": "Filter Store bundle state"
+  },
+  "filterStoreEnableBundle": {
+    "message": "Enable bundle",
+    "description": "Enable all entries in a Filter Store bundle"
+  },
+  "filterStoreRepositories": {
+    "message": "Custom repositories",
+    "description": "Filter Store custom repository section"
+  },
+  "filterStoreRepositoryWarning": {
+    "message": "Only add HTTPS JSON catalogs you control or trust. Custom repositories are always shown as Community, even if they claim a higher trust tier.",
+    "description": "Security warning for custom Filter Store repositories"
+  },
+  "filterStoreRepositoryPlaceholder": {
+    "message": "HTTPS URL of catalog.json",
+    "description": "Custom Filter Store repository URL placeholder"
+  },
+  "filterStoreAddRepository": {
+    "message": "Add repository",
+    "description": "Add a custom Filter Store repository"
+  },
+  "filterStoreRemoveRepository": {
+    "message": "Remove",
+    "description": "Remove a custom Filter Store repository"
+  },
+  "filterStoreRepositoryFailed": {
+    "message": "Could not load repository: $1",
+    "description": "Custom repository load error"
+  },
+  "filterStoreQuotaExceeded": {
+    "message": "This selection would exceed an MV3 ruleset quota.",
+    "description": "Filter Store MV3 quota error"
+  },
+  "filterStoreCommunityConfirm": {
+    "message": "This community repository is not verified by uBlock Plus+. Import its filter data?",
+    "description": "Confirmation before enabling a custom repository entry"
+  },
+  "filterStoreVerifying": {
+    "message": "Verifying $1…",
+    "description": "Filter data integrity check status"
+  },
+  "filterStoreDisabledStatus": {
+    "message": "Disabled $1.",
+    "description": "Filter Store disabled status"
+  },
+  "filterStoreEnabledStatus": {
+    "message": "Enabled $1.",
+    "description": "Filter Store enabled status"
+  },
+  "filterStoreActivationWarnings": {
+    "message": "Activated with $1 Chrome-incompatible regex filters skipped.",
+    "description": "Filter Store partial compatibility warning"
+  },
+  "filterStoreBundleStatus": {
+    "message": "Bundle enabled: $1.",
+    "description": "Filter Store bundle enabled status"
+  },
+  "filterStoreInvalidRepository": {
+    "message": "Enter a valid HTTPS catalog URL.",
+    "description": "Custom Filter Store repository validation error"
+  },
+  "filterStoreRepositoryAdded": {
+    "message": "Repository added.",
+    "description": "Custom Filter Store repository added status"
+  },
+  "filterStoreRepositoryRemoved": {
+    "message": "Repository removed. Its enabled lists remain available under Imported lists.",
+    "description": "Custom Filter Store repository removed status"
   },
   "customFiltersImportExportLabel": {
     "message": "Import / Export",
@@ -116,7 +324,7 @@
     "description": "Placeholder text which describes the purpose of the textarea widget"
   },
   "userScriptsInfo": {
-    "message": "Open your browser's extensions page (<code>chrome://extensions</code> in Chrome or <code>about:addons</code> in Firefox), open <b>uBO Lite</b> details, and toggle on <b>Allow user scripts</b> (also referred to as “unverified third-party scripts”).",
+    "message": "Open your browser's extensions page (<code>chrome://extensions</code> in Chrome or <code>about:addons</code> in Firefox), open <b>uBlock Plus+</b> details, and toggle on <b>Allow user scripts</b> (also referred to as “unverified third-party scripts”).",
     "description": "A notice to inform user on how to enable 'user scripts' permission"
   },
   "aboutChangelog": {
@@ -188,7 +396,7 @@
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option3": {
-    "message": "Detects uBO Lite",
+    "message": "Detects uBlock Plus+",
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option4": {
@@ -196,7 +404,7 @@
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option5": {
-    "message": "Malfunctions when uBO Lite is enabled",
+    "message": "Malfunctions when uBlock Plus+ is enabled",
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option6": {
@@ -332,7 +540,7 @@
     "description": "Header for filter-creation section in the dashboard"
   },
   "sandboxEditorUserScriptsInfo": {
-    "message": "To enforce cosmetic or scriptlet filters from the sandbox, you must grant uBO Lite permission to run user scripts.",
+    "message": "To enforce cosmetic or scriptlet filters from the sandbox, you must grant uBlock Plus+ permission to run user scripts.",
     "description": "A notice to inform user that the enforcement of some filters requires permission to execute 'user scripts'"
   },
   "developerModeLabel": {
@@ -364,7 +572,7 @@
     "description": "Web page title for the strict-blocked page"
   },
   "strictblockSentence1": {
-    "message": "uBO Lite has prevented the following page from loading:",
+    "message": "uBlock Plus+ has prevented the following page from loading:",
     "description": "Sentence used in the strict-blocked page"
   },
   "strictblockReasonSentence1": {

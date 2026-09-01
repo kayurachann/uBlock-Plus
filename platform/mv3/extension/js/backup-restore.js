@@ -20,16 +20,13 @@
 */
 
 import {
-    addImportedLists,
-    getImportedLists,
-    removeImportedLists,
-} from './imported-lists.js';
-
-import {
     localRead, localRemove, localWrite,
     runtime,
     sendMessage,
 } from './ext.js';
+
+import { getImportedLists } from './imported-lists.js';
+import { normalizeBackupObject } from './backup-schema.js';
 
 /******************************************************************************/
 
@@ -40,9 +37,13 @@ export async function backupToObject(currentConfig) {
     const [
         defaultConfig,
         sandboxFilters,
+        memoryProfile,
+        filterStoreRepositories,
     ] = await Promise.all([
         sendMessage({ what: 'getDefaultConfig' }),
         sendMessage({ what: 'getSandboxFilters' }).then(a => a?.trim() ?? ''),
+        sendMessage({ what: 'getMemoryProfile' }),
+        localRead('filterStore.repositories'),
     ]);
     if ( currentConfig.autoReload !== defaultConfig.autoReload ) {
         out.autoReload = currentConfig.autoReload;
@@ -58,6 +59,12 @@ export async function backupToObject(currentConfig) {
     }
     if ( currentConfig.strictBlockMode !== defaultConfig.strictBlockMode ) {
         out.strictBlockMode = currentConfig.strictBlockMode;
+    }
+    if ( memoryProfile?.selected && memoryProfile.selected !== 'auto' ) {
+        out.memoryProfile = memoryProfile.selected;
+    }
+    if ( Array.isArray(filterStoreRepositories) && filterStoreRepositories.length ) {
+        out.filterStoreRepositories = filterStoreRepositories.slice();
     }
     const { enabledRulesets } = currentConfig;
     const customRulesets = [];
@@ -84,12 +91,28 @@ export async function backupToObject(currentConfig) {
     if ( typeof dnrRules === 'string' && dnrRules.length !== 0 ) {
         out.dnrRules = dnrRules.split(/\n+/);
     }
+    const importedLists = await getImportedLists();
+    if ( importedLists.length ) {
+        out.importedLists = importedLists.map(list => ({
+            url: list.id,
+            enabled: list.enabled === true,
+            name: list.name,
+            homeURL: list.homeURL,
+            sourceIntegrity: list.sourceIntegrity,
+            maxSourceBytes: list.maxSourceBytes,
+            maxSourceFetches: list.maxSourceFetches,
+            requireHTTPSSource: list.requireHTTPSSource,
+        }));
+    }
     return out;
 }
 
 /******************************************************************************/
 
 export async function restoreFromObject(targetConfig) {
+    // Validate and clone every field before the first mutation. A malformed
+    // backup must fail closed instead of partially resetting live settings.
+    targetConfig = normalizeBackupObject(targetConfig);
     const defaultConfig = await sendMessage({ what: 'getDefaultConfig' });
 
     await sendMessage({
@@ -117,6 +140,38 @@ export async function restoreFromObject(targetConfig) {
         state: targetConfig.popupBlockMode ?? defaultConfig.popupBlockMode
     });
 
+    const memoryProfile = [ 'auto', 'balanced', 'low-memory' ]
+        .includes(targetConfig.memoryProfile)
+        ? targetConfig.memoryProfile
+        : 'auto';
+    await sendMessage({
+        what: 'setMemoryProfile',
+        profile: memoryProfile,
+    });
+
+    const repositories = [];
+    for ( const value of targetConfig.filterStoreRepositories || [] ) {
+        if ( repositories.length === 8 ) { break; }
+        if ( typeof value !== 'string' ) { continue; }
+        let url;
+        try {
+            url = new URL(value);
+        } catch {
+            continue;
+        }
+        if ( url.protocol !== 'https:' || url.username || url.password ) {
+            continue;
+        }
+        if ( repositories.includes(url.href) === false ) {
+            repositories.push(url.href);
+        }
+    }
+    if ( repositories.length ) {
+        await localWrite('filterStore.repositories', repositories);
+    } else {
+        await localRemove('filterStore.repositories');
+    }
+
     const enabledRulesets = defaultConfig.rulesets;
     for ( const entry of targetConfig.rulesets || [] ) {
         const id = entry.slice(1);
@@ -129,23 +184,52 @@ export async function restoreFromObject(targetConfig) {
             enabledRulesets.splice(i, 1);
         }
     }
-    const importedLists = await getImportedLists();
-    const importedListIds = importedLists.map(a => a.id);
     const reImport = /^[a-z-]+:\/\//;
-    const importedListsToAdd = enabledRulesets.filter(a =>
-        reImport.test(a) && importedListIds.includes(a) === false
-    );
-    const importedListsToRemove = importedListIds.filter(a =>
-        enabledRulesets.includes(a) === false
-    );
-    if ( importedListsToRemove.length ) {
-        await removeImportedLists(importedListsToRemove);
+    const restoredLists = [];
+    for ( const details of targetConfig.importedLists || [] ) {
+        if ( restoredLists.length === 32 ) { break; }
+        if ( typeof details?.url !== 'string' ) { continue; }
+        let url;
+        try {
+            url = new URL(details.url);
+        } catch {
+            continue;
+        }
+        if ( url.protocol !== 'https:' || url.username || url.password ) {
+            continue;
+        }
+        const restored = {
+            ...details,
+            url: url.href,
+            maxSourceBytes: Number.isSafeInteger(details.maxSourceBytes)
+                ? details.maxSourceBytes
+                : 5 * 1024 * 1024,
+            maxSourceFetches: Number.isSafeInteger(details.maxSourceFetches)
+                ? details.maxSourceFetches
+                : 32,
+            requireHTTPSSource: true,
+        };
+        restoredLists.push(restored);
+        const wasExplicitlyEnabled = details.enabled === true ||
+            details.enabled === undefined && enabledRulesets.includes(url.href);
+        const index = enabledRulesets.indexOf(url.href);
+        if ( wasExplicitlyEnabled && index === -1 ) {
+            enabledRulesets.push(url.href);
+        } else if ( wasExplicitlyEnabled === false && index !== -1 ) {
+            enabledRulesets.splice(index, 1);
+        }
     }
-    if ( importedListsToAdd.length ) {
-        await addImportedLists(importedListsToAdd);
+    // Do not retain imported URLs which have no restored subscription record.
+    const restoredIds = new Set(restoredLists.map(list => list.url));
+    for ( let i = enabledRulesets.length - 1; i >= 0; i-- ) {
+        const id = enabledRulesets[i];
+        if ( reImport.test(id) && restoredIds.has(id) === false ) {
+            enabledRulesets.splice(i, 1);
+        }
     }
     await sendMessage({
-        what: 'applyRulesets',
+        what: 'restoreImportedLists',
+        lists: restoredLists,
         enabledRulesets: Array.from(enabledRulesets),
     });
 

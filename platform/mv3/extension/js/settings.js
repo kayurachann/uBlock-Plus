@@ -120,6 +120,14 @@ function canControlPrivacySetting(details) {
         details?.levelOfControl === 'controlled_by_this_extension';
 }
 
+function reportPrivacyError(reason) {
+    console.error(reason);
+    const status = qs$('#privacyHardening .privacyPermissionStatus');
+    if ( status !== null ) {
+        dom.text(status, i18n.getMessage('privacySettingUpdateFailed'));
+    }
+}
+
 async function renderPrivacyControls() {
     if ( browser.privacy instanceof Object === false ) { return; }
     const section = qs$('#privacyHardening');
@@ -185,24 +193,137 @@ dom.on('#grantPrivacyPermission', 'click', async ( ) => {
     if ( granted === false ) {
         dom.text(status, i18n.getMessage('privacyPermissionDenied'));
     }
-    await renderPrivacyControls();
+    await renderPrivacyControls().catch(reportPrivacyError);
 });
 
 dom.on('#privacyHardening .privacyControls', 'change', 'input[type="checkbox"]', ev => {
     const id = ev.target.closest('label')?.id;
     if ( id === undefined ) { return; }
-    setPrivacyControl(id, ev.target.checked);
+    setPrivacyControl(id, ev.target.checked).catch(reportPrivacyError);
 });
 
 browser.permissions.onAdded.addListener(permissions => {
     if ( permissions.permissions?.includes('privacy') ) {
-        renderPrivacyControls();
+        renderPrivacyControls().catch(reportPrivacyError);
     }
 });
 
 browser.permissions.onRemoved.addListener(permissions => {
     if ( permissions.permissions?.includes('privacy') ) {
-        renderPrivacyControls();
+        renderPrivacyControls().catch(reportPrivacyError);
+    }
+});
+
+/******************************************************************************/
+
+const deviceMemoryGiB = globalThis.navigator?.deviceMemory;
+
+function formatStorageBytes(value) {
+    if ( Number.isFinite(value) === false ) {
+        return i18n.getMessage('memoryProfileUnavailable');
+    }
+    const units = [ 'B', 'KiB', 'MiB', 'GiB' ];
+    let amount = value;
+    let unit = 0;
+    while ( amount >= 1024 && unit < units.length - 1 ) {
+        amount /= 1024;
+        unit += 1;
+    }
+    const digits = unit === 0 ? 0 : 1;
+    return `${amount.toFixed(digits)} ${units[unit]}`;
+}
+
+function memoryProfileName(value) {
+    const key = value === 'low-memory'
+        ? 'memoryProfileLow'
+        : value === 'balanced'
+            ? 'memoryProfileBalanced'
+            : 'memoryProfileAuto';
+    return i18n.getMessage(key);
+}
+
+async function renderMemoryProfile(options = {}) {
+    const section = qs$('#memoryProfile');
+    if ( section === null ) { return; }
+    const select = qs$('#memoryProfile select');
+    const status = qs$('#memoryProfile .memoryProfileStatus');
+    const metrics = qs$('#memoryProfile .memoryProfileMetrics');
+    const profile = await sendMessage({
+        what: 'getMemoryProfile',
+        deviceMemoryGiB,
+    });
+    if ( profile instanceof Object === false ) { return; }
+    select.value = profile.selected;
+    dom.text(status, i18n.getMessage(
+        'memoryProfileEffective',
+        memoryProfileName(profile.effective)
+    ));
+    const telemetry = await sendMessage({
+        what: 'getMemoryTelemetry',
+        refresh: options.refresh === true,
+        deviceMemoryGiB,
+    });
+    if ( telemetry instanceof Object === false ) { return; }
+    dom.text(metrics, i18n.getMessage('memoryProfileStorageMetrics', [
+        formatStorageBytes(telemetry.storage?.local?.bytes),
+        formatStorageBytes(telemetry.storage?.session?.bytes),
+    ]));
+}
+
+function reportMemoryProfileError(reason) {
+    console.error(reason);
+    dom.text(
+        '#memoryProfile .memoryProfileStatus',
+        i18n.getMessage('memoryProfileError')
+    );
+}
+
+dom.on('#memoryProfile select', 'change', async ev => {
+    ev.target.disabled = true;
+    try {
+        const profile = await sendMessage({
+            what: 'setMemoryProfile',
+            profile: ev.target.value,
+            deviceMemoryGiB,
+        });
+        if ( profile instanceof Object === false ) {
+            throw new Error('Memory profile update returned no result');
+        }
+        await renderMemoryProfile({ refresh: true });
+    } catch ( reason ) {
+        reportMemoryProfileError(reason);
+    } finally {
+        ev.target.disabled = false;
+    }
+});
+
+dom.on('#memoryProfile .memoryProfileRefresh', 'click', ( ) => {
+    renderMemoryProfile({ refresh: true }).catch(reportMemoryProfileError);
+});
+
+dom.on('#memoryProfile .memoryProfileCleanup', 'click', async ( ) => {
+    try {
+        const result = await sendMessage({
+            what: 'runMemoryCleanup',
+            deviceMemoryGiB,
+        });
+        if ( result instanceof Object === false ||
+            result.cleanup instanceof Object === false ) {
+            throw new Error('Memory cleanup returned no result');
+        }
+        await renderMemoryProfile({ refresh: true });
+        const cleanupMessage = result?.cleanup?.skippedKeyCleanup
+            ? i18n.getMessage('memoryProfileCleanupUnavailable')
+            : i18n.getMessage(
+                'memoryProfileCleanupDone',
+                `${result?.cleanup?.removedLocalKeys ?? 0}`
+            );
+        dom.text(
+            '#memoryProfile .memoryProfileStatus',
+            cleanupMessage
+        );
+    } catch ( reason ) {
+        reportMemoryProfileError(reason);
     }
 });
 
@@ -251,6 +372,8 @@ dom.on('#defaultFilteringMode',
 
 /******************************************************************************/
 
+const MAX_BACKUP_FILE_BYTES = 32 * 1024 * 1024;
+
 async function backupSettings() {
     const api = await import('./backup-restore.js');
     const data = await api.backupToObject(self.cachedRulesetData);
@@ -258,32 +381,45 @@ async function backupSettings() {
     const json = JSON.stringify(data, null, 2)  + '\n';
     const a = document.createElement('a');
     a.href = `data:text/plain;charset=utf-8,${encodeURIComponent(json)}`;
-    dom.attr(a, 'download', 'my-ubol-settings.json');
+    dom.attr(a, 'download', 'my-ublock-plus-settings.json');
     dom.attr(a, 'type', 'application/json');
     a.click();
 }
 
 async function restoreSettings() {
-    const promise = new Promise(resolve => {
+    const promise = new Promise((resolve, reject) => {
         const input = qs$('section[data-pane="settings"] input[type="file"]');
         input.onchange = ev => {
             dom.cl.add(dom.body, 'busy');
             input.onchange = null;
             const file = ev.target.files[0];
             if ( file === undefined || file.name === '' ) { return resolve(); }
+            if ( file.size > MAX_BACKUP_FILE_BYTES ) {
+                return reject(new Error('Backup file exceeds the 32 MiB limit'));
+            }
             const fr = new FileReader();
+            fr.onerror = ( ) => {
+                reject(fr.error || new Error('Unable to read backup file'));
+            };
             fr.onload = ( ) => {
                 fr.onload = null;
-                if ( typeof fr.result !== 'string' ) { return resolve(); }
+                fr.onerror = null;
+                if ( typeof fr.result !== 'string' ) {
+                    return reject(new Error('Backup file is not text'));
+                }
                 let data;
                 try {
                     data = JSON.parse(fr.result);
                 } catch {
+                    return reject(new Error('Backup file is not valid JSON'));
                 }
-                if ( data instanceof Object === false ) { return resolve(); }
-                import('./backup-restore.js').then(api => {
-                    resolve(api.restoreFromObject(data));
-                });
+                if ( data instanceof Object === false ) {
+                    return reject(new Error('Backup root must be an object'));
+                }
+                import('./backup-restore.js').then(
+                    api => resolve(api.restoreFromObject(data)),
+                    reject
+                );
             };
             fr.readAsText(file);
         };
@@ -296,44 +432,59 @@ async function restoreSettings() {
         input.value = '';
         input.click();
     });
-    await promise;
-    dom.cl.remove(dom.body, 'busy');
+    try {
+        await promise;
+        await renderMemoryProfile({ refresh: true });
+    } finally {
+        dom.cl.remove(dom.body, 'busy');
+    }
 }
 
 async function resetSettings() {
     const response = self.confirm(i18n.getMessage('resetToDefaultConfirm'));
     if ( response !== true ) { return; }
     dom.cl.add(dom.body, 'busy');
-    const api = await import('./backup-restore.js');
-    await api.restoreFromObject({});
-    dom.cl.remove(dom.body, 'busy');
+    try {
+        const api = await import('./backup-restore.js');
+        await api.restoreFromObject({});
+        await renderMemoryProfile({ refresh: true });
+    } finally {
+        dom.cl.remove(dom.body, 'busy');
+    }
 }
 
 /******************************************************************************/
 
+function updateSetting(message) {
+    sendMessage(message).catch(reason => {
+        console.error(reason);
+        renderWidgets();
+    });
+}
+
 dom.on('#autoReload input[type="checkbox"]', 'change', ev => {
-    sendMessage({
+    updateSetting({
         what: 'setAutoReload',
         state: ev.target.checked,
     });
 });
 
 dom.on('#showBlockedCount input[type="checkbox"]', 'change', ev => {
-    sendMessage({
+    updateSetting({
         what: 'setShowBlockedCount',
         state: ev.target.checked,
     });
 });
 
 dom.on('#strictBlockMode input[type="checkbox"]', 'change', ev => {
-    sendMessage({
+    updateSetting({
         what: 'setStrictBlockMode',
         state: ev.target.checked,
     });
 });
 
 dom.on('#popupBlockMode input[type="checkbox"]', 'change', ev => {
-    sendMessage({
+    updateSetting({
         what: 'setPopupBlockMode',
         state: ev.target.checked,
     });
@@ -341,20 +492,20 @@ dom.on('#popupBlockMode input[type="checkbox"]', 'change', ev => {
 
 dom.on('#developerMode input[type="checkbox"]', 'change', ev => {
     const state = ev.target.checked;
-    sendMessage({ what: 'setDeveloperMode', state });
+    updateSetting({ what: 'setDeveloperMode', state });
     dom.body.dataset.develop = `${state}`;
 });
 
 dom.on('section[data-pane="settings"] button:has([data-i18n="backupButton"])', 'click', ( ) => {
-    backupSettings();
+    backupSettings().catch(reason => console.error(reason));
 });
 
 dom.on('section[data-pane="settings"] button:has([data-i18n="restoreButton"])', 'click', ( ) => {
-    restoreSettings();
+    restoreSettings().catch(reason => console.error(reason));
 });
 
 dom.on('section[data-pane="settings"] button:has([data-i18n="resetToDefaultButton"])', 'click', ( ) => {
-    resetSettings();
+    resetSettings().catch(reason => console.error(reason));
 });
 
 /******************************************************************************/
@@ -446,7 +597,7 @@ self.cachedRulesetData = {};
 
 sendMessage({
     what: 'getOptionsPageData',
-}).then(data => {
+}).then(async data => {
     if ( !data ) { return; }
     self.cachedRulesetData = data;
     const supports = []
@@ -460,7 +611,10 @@ sendMessage({
     try {
         renderAdminRules();
         renderWidgets();
-        renderPrivacyControls();
+        await Promise.all([
+            renderPrivacyControls(),
+            renderMemoryProfile(),
+        ]);
     } catch(reason) {
         console.error(reason);
     } finally {

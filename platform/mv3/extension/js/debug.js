@@ -205,6 +205,9 @@ export const toggleDeveloperMode = state => {
         dnr.onRuleMatchedDebug.addListener(matchedRuleListener);
     } else {
         dnr.onRuleMatchedDebug.removeListener(matchedRuleListener);
+        rulesets.clear();
+        matchedRules.fill(null);
+        writePtr = 0;
     }
 };
 

@@ -1,7 +1,7 @@
 /*******************************************************************************
 
-    uBlock MV3 Community
-    Copyright (C) 2026-present uBlock MV3 Community contributors
+    uBlock Plus+
+    Copyright (C) 2026-present uBlock Plus+ contributors
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -14,7 +14,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 
-const productName = process.argv[2] || 'uBlock MV3 Community';
+const productName = process.argv[2] || 'uBlock Plus+';
+const previousProductNames = [ 'uBO Lite', 'uBlock Plus+' ];
 const localesDir = process.argv[3] ||
     path.join('platform', 'mv3', 'extension', '_locales');
 const extNamePattern = /("extName"\s*:\s*\{\s*"message"\s*:\s*)"(?:[^"\\]|\\.)*"/;
@@ -31,7 +32,10 @@ for ( const entry of entries ) {
         throw new Error(`Missing extName.message in ${filePath}`);
     }
     const replacement = `${match[1]}${JSON.stringify(productName)}`;
-    const updated = text.replace(extNamePattern, replacement);
+    let updated = text.replace(extNamePattern, replacement);
+    for ( const previousProductName of previousProductNames ) {
+        updated = updated.replaceAll(previousProductName, productName);
+    }
     if ( updated === text ) { continue; }
     await fs.writeFile(filePath, updated);
     modifiedCount += 1;

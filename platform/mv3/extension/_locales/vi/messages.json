@@ -1,10 +1,10 @@
 {
   "extName": {
-    "message": "uBlock MV3 Community",
+    "message": "uBlock Plus+",
     "description": "extension name."
   },
   "extShortDesc": {
-    "message": "Trình chặn nội dung không cần quyền. Chặn quảng cáo, trình theo dõi, công cụ khai thác tiền số và hơn thế nữa ngay sau khi cài đặt.",
+    "message": "Trình chặn nội dung hiệu quả trên MV3. Chặn quảng cáo, trình theo dõi, công cụ khai thác tiền số và hơn thế nữa.",
     "description": "this will be in the Chrome web store: must be 132 characters or less"
   },
   "perRulesetStats": {
@@ -12,8 +12,8 @@
     "description": "Appears aside each filter list in the _3rd-party filters_ pane"
   },
   "dashboardName": {
-    "message": "uBlock MV3 Community — Bảng điều khiển",
-    "description": "English: uBO Lite — Dashboard"
+    "message": "uBlock Plus+ — Bảng điều khiển",
+    "description": "English: uBlock Plus+ — Dashboard"
   },
   "settingsPageName": {
     "message": "Cài đặt",
@@ -104,8 +104,216 @@
     "description": "Placeholder text which describes the purpose of the textarea widget"
   },
   "customListImportUserScriptsInfo": {
-    "message": "Để áp dụng các bộ lọc trong danh sách đã nhập, bạn phải cấp cho uBO Lite quyền thực thi 'các tập lệnh người dùng'.",
+    "message": "Để áp dụng các bộ lọc trong danh sách đã nhập, bạn phải cấp cho uBlock Plus+ quyền thực thi 'các tập lệnh người dùng'.",
     "description": "A notice to inform user that the enforcement of some filters requires permission to execute 'user scripts'"
+  },
+  "memoryProfileSectionLabel": {
+    "message": "Cấu hình bộ nhớ",
+    "description": "Heading for the memory optimization controls"
+  },
+  "memoryProfileDescription": {
+    "message": "Điều chỉnh mức song song khi biên dịch và ngân sách cache. Chế độ RAM thấp được thiết kế để giảm đỉnh bộ nhớ mà không tắt các bộ lọc đang bật.",
+    "description": "Description of the memory profile setting"
+  },
+  "memoryProfileAuto": {
+    "message": "Tự động",
+    "description": "Automatically selected memory profile"
+  },
+  "memoryProfileBalanced": {
+    "message": "Cân bằng",
+    "description": "Balanced memory profile"
+  },
+  "memoryProfileLow": {
+    "message": "RAM thấp",
+    "description": "Low-memory profile"
+  },
+  "memoryProfileEffective": {
+    "message": "Cấu hình đang dùng: $1",
+    "description": "Currently effective memory profile"
+  },
+  "memoryProfileStorageMetrics": {
+    "message": "Dung lượng cache/lưu trữ cục bộ (không phải RAM trực tiếp): $1 local, $2 session.",
+    "description": "Local extension storage size metrics"
+  },
+  "memoryProfileUnavailable": {
+    "message": "không khả dụng",
+    "description": "Metric is unavailable in this browser"
+  },
+  "memoryProfileRefresh": {
+    "message": "Làm mới số liệu",
+    "description": "Refresh local memory/storage metrics"
+  },
+  "memoryProfileCleanup": {
+    "message": "Dọn cache mồ côi",
+    "description": "Remove unused compiled list caches"
+  },
+  "memoryProfileCleanupDone": {
+    "message": "Đã dọn xong; xóa $1 mục cache mồ côi.",
+    "description": "Memory cleanup result"
+  },
+  "memoryProfileCleanupUnavailable": {
+    "message": "Phiên bản Chrome này báo được tổng dung lượng nhưng chưa thể liệt kê khóa cache mồ côi (cần Chrome 130+ để dọn).",
+    "description": "Memory cleanup API unavailable"
+  },
+  "memoryProfileError": {
+    "message": "Không thể cập nhật cấu hình bộ nhớ.",
+    "description": "Memory profile operation error"
+  },
+  "filterStoreTitle": {
+    "message": "Kho bộ lọc (Power Edition)",
+    "description": "Heading for the curated and custom filter repository browser"
+  },
+  "filterStoreDescription": {
+    "message": "Duyệt dữ liệu bộ lọc đã xác minh và từ cộng đồng. Catalog không cung cấp mã tiện ích thực thi; danh sách được uBlock Plus+ phân tích và biên dịch thành quy tắc MV3.",
+    "description": "Filter Store security summary"
+  },
+  "filterStoreSearchPlaceholder": {
+    "message": "Tìm danh sách bộ lọc",
+    "description": "Filter Store search field placeholder"
+  },
+  "filterStoreAllCategories": {
+    "message": "Mọi danh mục",
+    "description": "Filter Store category filter"
+  },
+  "filterStoreAllLanguages": {
+    "message": "Mọi ngôn ngữ",
+    "description": "Filter Store language filter"
+  },
+  "filterStoreAllProfiles": {
+    "message": "Mọi cấu hình",
+    "description": "Filter Store resource profile filter"
+  },
+  "filterStoreGlobal": {
+    "message": "Toàn cầu",
+    "description": "A filter list intended for all languages"
+  },
+  "filterStoreStaticSlots": {
+    "message": "khe quy tắc tĩnh",
+    "description": "MV3 static ruleset quota unit"
+  },
+  "filterStoreDynamicRules": {
+    "message": "quy tắc động",
+    "description": "MV3 dynamic rule quota unit"
+  },
+  "filterStoreRegexRules": {
+    "message": "quy tắc regex",
+    "description": "MV3 regular expression rule quota unit"
+  },
+  "filterStoreUnknownCosts": {
+    "message": "$1 danh sách đã nhập chưa rõ chi phí",
+    "description": "Filter Store unknown quota-cost notice"
+  },
+  "filterStoreStaticCost": {
+    "message": "$1 khe tĩnh, $2 quy tắc đóng gói",
+    "description": "Estimated cost of a packaged filter list"
+  },
+  "filterStoreDynamicCost": {
+    "message": "Tối đa $1 quy tắc động / $2 quy tắc regex",
+    "description": "Estimated cost of an imported filter list"
+  },
+  "filterStoreVerified": {
+    "message": "Đã xác minh",
+    "description": "Trust badge for a reviewed catalog entry"
+  },
+  "filterStoreCommunity": {
+    "message": "Cộng đồng",
+    "description": "Trust badge for a user-provided catalog entry"
+  },
+  "filterStoreHomepage": {
+    "message": "Trang chủ",
+    "description": "Link to a filter list homepage"
+  },
+  "filterStoreEnable": {
+    "message": "Bật",
+    "description": "Enable a Filter Store entry"
+  },
+  "filterStoreDisable": {
+    "message": "Tắt",
+    "description": "Disable a Filter Store entry"
+  },
+  "filterStoreNoResults": {
+    "message": "Không có danh sách phù hợp.",
+    "description": "Empty Filter Store search result"
+  },
+  "filterStoreResultsLimited": {
+    "message": "Đang hiển thị $1 trong $2 kết quả đầu tiên. Hãy thu hẹp tìm kiếm để xem phần còn lại.",
+    "description": "Filter Store rendering limit notice"
+  },
+  "filterStoreBundles": {
+    "message": "Gói bộ lọc",
+    "description": "Filter Store bundle section heading"
+  },
+  "filterStoreBundleEnabled": {
+    "message": "Đã bật gói",
+    "description": "Filter Store bundle state"
+  },
+  "filterStoreEnableBundle": {
+    "message": "Bật gói",
+    "description": "Enable all entries in a Filter Store bundle"
+  },
+  "filterStoreRepositories": {
+    "message": "Kho tùy chỉnh",
+    "description": "Filter Store custom repository section"
+  },
+  "filterStoreRepositoryWarning": {
+    "message": "Chỉ thêm catalog JSON HTTPS do bạn kiểm soát hoặc tin cậy. Kho tùy chỉnh luôn được đánh dấu Cộng đồng dù tự khai báo mức tin cậy cao hơn.",
+    "description": "Security warning for custom Filter Store repositories"
+  },
+  "filterStoreRepositoryPlaceholder": {
+    "message": "URL HTTPS của catalog.json",
+    "description": "Custom Filter Store repository URL placeholder"
+  },
+  "filterStoreAddRepository": {
+    "message": "Thêm kho",
+    "description": "Add a custom Filter Store repository"
+  },
+  "filterStoreRemoveRepository": {
+    "message": "Xóa",
+    "description": "Remove a custom Filter Store repository"
+  },
+  "filterStoreRepositoryFailed": {
+    "message": "Không thể tải kho: $1",
+    "description": "Custom repository load error"
+  },
+  "filterStoreQuotaExceeded": {
+    "message": "Lựa chọn này sẽ vượt hạn mức ruleset của MV3.",
+    "description": "Filter Store MV3 quota error"
+  },
+  "filterStoreCommunityConfirm": {
+    "message": "Kho cộng đồng này chưa được uBlock Plus+ xác minh. Bạn có muốn nhập dữ liệu bộ lọc không?",
+    "description": "Confirmation before enabling a custom repository entry"
+  },
+  "filterStoreVerifying": {
+    "message": "Đang xác minh $1…",
+    "description": "Filter data integrity check status"
+  },
+  "filterStoreDisabledStatus": {
+    "message": "Đã tắt $1.",
+    "description": "Filter Store disabled status"
+  },
+  "filterStoreEnabledStatus": {
+    "message": "Đã bật $1.",
+    "description": "Filter Store enabled status"
+  },
+  "filterStoreActivationWarnings": {
+    "message": "Đã kích hoạt; bỏ qua $1 bộ lọc regex không tương thích với Chrome.",
+    "description": "Filter Store partial compatibility warning"
+  },
+  "filterStoreBundleStatus": {
+    "message": "Đã bật gói: $1.",
+    "description": "Filter Store bundle enabled status"
+  },
+  "filterStoreInvalidRepository": {
+    "message": "Hãy nhập URL catalog HTTPS hợp lệ.",
+    "description": "Custom Filter Store repository validation error"
+  },
+  "filterStoreRepositoryAdded": {
+    "message": "Đã thêm kho.",
+    "description": "Custom Filter Store repository added status"
+  },
+  "filterStoreRepositoryRemoved": {
+    "message": "Đã xóa kho. Các danh sách đang bật vẫn còn trong mục Danh sách đã nhập.",
+    "description": "Custom Filter Store repository removed status"
   },
   "customFiltersImportExportLabel": {
     "message": "Nhập / Xuất",
@@ -116,7 +324,7 @@
     "description": "Placeholder text which describes the purpose of the textarea widget"
   },
   "userScriptsInfo": {
-    "message": "Để áp dụng các bộ lọc giao diện hoặc tập lệnh từ danh sách đã nhập, bạn phải cấp quyền cho uBO Lite chạy các tập lệnh người dùng. Mở trang tiện ích mở rộng của trình duyệt (<code>chrome://extensions</code> trong Chrome hoặc <code>about:addons</code> trong Firefox), mở chi tiết <b>uBO Lite</b> và bật <b>Cho phép tập lệnh người dùng</b> (còn được gọi là “tập lệnh của bên thứ ba chưa được xác minh”).",
+    "message": "Để áp dụng các bộ lọc giao diện hoặc tập lệnh từ danh sách đã nhập, bạn phải cấp quyền cho uBlock Plus+ chạy các tập lệnh người dùng. Mở trang tiện ích mở rộng của trình duyệt (<code>chrome://extensions</code> trong Chrome hoặc <code>about:addons</code> trong Firefox), mở chi tiết <b>uBlock Plus+</b> và bật <b>Cho phép tập lệnh người dùng</b> (còn được gọi là “tập lệnh của bên thứ ba chưa được xác minh”).",
     "description": "A notice to inform user on how to enable 'user scripts' permission"
   },
   "aboutChangelog": {
@@ -188,7 +396,7 @@
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option3": {
-    "message": "Phát hiện uBO Lite",
+    "message": "Phát hiện uBlock Plus+",
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option4": {
@@ -196,7 +404,7 @@
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option5": {
-    "message": "Trục trặc khi bật uBO Lite",
+    "message": "Trục trặc khi bật uBlock Plus+",
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option6": {
@@ -332,7 +540,7 @@
     "description": "Header for filter-creation section in the dashboard"
   },
   "sandboxEditorUserScriptsInfo": {
-    "message": "Để áp dụng các bộ lọc trong hộp thử nghiệm, bạn phải cấp cho uBO Lite quyền thực thi 'các tập lệnh người dùng'.",
+    "message": "Để áp dụng các bộ lọc trong hộp thử nghiệm, bạn phải cấp cho uBlock Plus+ quyền thực thi 'các tập lệnh người dùng'.",
     "description": "A notice to inform user that the enforcement of some filters requires permission to execute 'user scripts'"
   },
   "developerModeLabel": {
@@ -364,7 +572,7 @@
     "description": "Web page title for the strict-blocked page"
   },
   "strictblockSentence1": {
-    "message": "uBO Lite đã ngăn tải trang sau:",
+    "message": "uBlock Plus+ đã ngăn tải trang sau:",
     "description": "Sentence used in the strict-blocked page"
   },
   "strictblockReasonSentence1": {

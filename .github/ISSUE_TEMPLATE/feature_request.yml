@@ -1,0 +1,76 @@
+name: Feature request / community proposal
+description: Đề xuất tính năng để cộng đồng thảo luận và vote bằng reaction.
+title: "[Feature]: "
+labels: ["enhancement", "proposal", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Hãy mô tả vấn đề người dùng trước giải pháp. Vote 👍 là tín hiệu ưu tiên, không thể ghi đè giới hạn MV3, security, privacy hoặc license.
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Kiểm tra trước
+      options:
+        - label: Tôi đã tìm issue/roadmap trùng.
+          required: true
+        - label: Tôi không yêu cầu chạy remote code hoặc bypass sandbox/quota không được hỗ trợ.
+          required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Vấn đề và nhóm người dùng
+      description: Ai gặp vấn đề, thường xuyên thế nào, workflow hiện tại ra sao?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Hành vi mong muốn và acceptance criteria
+    validations:
+      required: true
+  - type: dropdown
+    id: layer
+    attributes:
+      label: Tầng capability phù hợp nhất
+      options:
+        - Power Edition MV3
+        - Managed Enterprise (tương lai)
+        - Native Companion / Power Mode (tương lai)
+        - Chưa biết, cần nghiên cứu
+    validations:
+      required: true
+  - type: dropdown
+    id: mv3_mapping
+    attributes:
+      label: Khả năng trên MV3
+      options:
+        - Có API công khai tương đương
+        - Chỉ làm được một phần
+        - Không có API tương đương
+        - Chưa xác định
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence / ví dụ / tài liệu API
+      description: Link tài liệu chính thức, reproduction hoặc benchmark nếu có.
+  - type: textarea
+    id: privacy_security
+    attributes:
+      label: Privacy, permission và threat model
+      description: Dữ liệu nào được đọc/lưu/truyền? Có cần quyền mới, enterprise policy hay native IPC không?
+    validations:
+      required: true
+  - type: textarea
+    id: resources
+    attributes:
+      label: Ảnh hưởng RAM/CPU/quota
+      description: Nêu DNR/regex/storage/cache/wake-up cost và phương án cho low-memory.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Phương án khác hoặc fallback

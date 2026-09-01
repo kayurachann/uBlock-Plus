@@ -7,7 +7,7 @@
     },
     "default_popup": "popup.html"
   },
-  "author": "Raymond Hill, uBlock Origin contributors, and uBlock MV3 Community contributors",
+  "author": "Raymond Hill, uBlock Origin contributors, and uBlock Plus+ contributors",
   "background": {
       "service_worker": "/js/background.js",
       "type": "module"
@@ -29,7 +29,7 @@
   "host_permissions": [
     "<all_urls>"
   ],
-  "homepage_url": "https://github.com/kayurachann/uBlock-MV3-Community",
+  "homepage_url": "https://github.com/kayurachann/uBlock-Plus",
   "incognito": "split",
   "icons": {
     "16": "img/icon_16.png",
@@ -38,13 +38,14 @@
     "128": "img/icon_128.png"
   },
   "manifest_version": 3,
-  "minimum_chrome_version": "122.0",
+  "minimum_chrome_version": "130.0",
   "name": "__MSG_extName__",
   "options_page": "dashboard.html",
   "permissions": [
     "activeTab",
     "alarms",
     "declarativeNetRequest",
+    "declarativeNetRequestFeedback",
     "offscreen",
     "scripting",
     "storage",
@@ -54,7 +55,7 @@
   "optional_permissions": [
     "privacy"
   ],
-  "short_name": "uBlock MV3",
+  "short_name": "uBlock Plus+",
   "storage": {
     "managed_schema": "managed_storage.json"
   },

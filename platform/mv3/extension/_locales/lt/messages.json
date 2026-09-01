@@ -1,6 +1,6 @@
 {
   "extName": {
-    "message": "uBlock MV3 Community",
+    "message": "uBlock Plus+",
     "description": "extension name."
   },
   "extShortDesc": {
@@ -12,8 +12,8 @@
     "description": "Appears aside each filter list in the _3rd-party filters_ pane"
   },
   "dashboardName": {
-    "message": "uBO Lite — Skydelis",
-    "description": "English: uBO Lite — Dashboard"
+    "message": "uBlock Plus+ — Skydelis",
+    "description": "English: uBlock Plus+ — Dashboard"
   },
   "settingsPageName": {
     "message": "Nustatymai",
@@ -104,7 +104,7 @@
     "description": "Placeholder text which describes the purpose of the textarea widget"
   },
   "customListImportUserScriptsInfo": {
-    "message": "To enforce cosmetic or scriptlet filters from imported lists, you must grant uBO Lite permission to run user scripts.",
+    "message": "To enforce cosmetic or scriptlet filters from imported lists, you must grant uBlock Plus+ permission to run user scripts.",
     "description": "A notice to inform user that the enforcement of some filters requires permission to execute 'user scripts'"
   },
   "customFiltersImportExportLabel": {
@@ -116,7 +116,7 @@
     "description": "Placeholder text which describes the purpose of the textarea widget"
   },
   "userScriptsInfo": {
-    "message": "Kad galėtumėte taikyti kosmetinius ar scenarijų filtrus iš importuotų sąrašų, turite suteikti uBO Lite leidimą vykdyti vartotojo scenarijus. Atidarykite naršyklės plėtinių puslapį (<code>chrome://extensions</code> sistemoje Chrome arba <code>about:addons</code> sistemoje Firefox), atidarykite <b>uBO Lite</b> išsamią informaciją ir įjunkite <b>Leisti vartotojo scenarijus</b> (taip pat vadinama „nepatikrintais trečiųjų šalių scenarijais“).",
+    "message": "Kad galėtumėte taikyti kosmetinius ar scenarijų filtrus iš importuotų sąrašų, turite suteikti uBlock Plus+ leidimą vykdyti vartotojo scenarijus. Atidarykite naršyklės plėtinių puslapį (<code>chrome://extensions</code> sistemoje Chrome arba <code>about:addons</code> sistemoje Firefox), atidarykite <b>uBlock Plus+</b> išsamią informaciją ir įjunkite <b>Leisti vartotojo scenarijus</b> (taip pat vadinama „nepatikrintais trečiųjų šalių scenarijais“).",
     "description": "A notice to inform user on how to enable 'user scripts' permission"
   },
   "aboutChangelog": {
@@ -188,7 +188,7 @@
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option3": {
-    "message": "Aptinka uBO Lite",
+    "message": "Aptinka uBlock Plus+",
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option4": {
@@ -196,7 +196,7 @@
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option5": {
-    "message": "Veikia netinkamai, kai įjungtas uBO Lite",
+    "message": "Veikia netinkamai, kai įjungtas uBlock Plus+",
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option6": {
@@ -292,7 +292,7 @@
     "description": "Header for filter-creation section in the dashboard"
   },
   "sandboxEditorUserScriptsInfo": {
-    "message": "To enforce cosmetic or scriptlet filters from the sandbox, you must grant uBO Lite permission to run user scripts.",
+    "message": "To enforce cosmetic or scriptlet filters from the sandbox, you must grant uBlock Plus+ permission to run user scripts.",
     "description": "A notice to inform user that the enforcement of some filters requires permission to execute 'user scripts'"
   },
   "developerModeLabel": {
@@ -324,7 +324,7 @@
     "description": "Web page title for the strict-blocked page"
   },
   "strictblockSentence1": {
-    "message": "uBO Lite neleido įkelti šio puslapio:",
+    "message": "uBlock Plus+ neleido įkelti šio puslapio:",
     "description": "Sentence used in the strict-blocked page"
   },
   "strictblockReasonSentence1": {

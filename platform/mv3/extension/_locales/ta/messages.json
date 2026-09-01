@@ -1,6 +1,6 @@
 {
   "extName": {
-    "message": "uBlock MV3 Community",
+    "message": "uBlock Plus+",
     "description": "extension name."
   },
   "extShortDesc": {
@@ -12,8 +12,8 @@
     "description": "Appears aside each filter list in the _3rd-party filters_ pane"
   },
   "dashboardName": {
-    "message": "uBO Lite — டாஷ்போர்டு",
-    "description": "English: uBO Lite — Dashboard"
+    "message": "uBlock Plus+ — டாஷ்போர்டு",
+    "description": "English: uBlock Plus+ — Dashboard"
   },
   "settingsPageName": {
     "message": "அமைப்புகள்",
@@ -104,7 +104,7 @@
     "description": "Placeholder text which describes the purpose of the textarea widget"
   },
   "customListImportUserScriptsInfo": {
-    "message": "To enforce cosmetic or scriptlet filters from imported lists, you must grant uBO Lite permission to run user scripts.",
+    "message": "To enforce cosmetic or scriptlet filters from imported lists, you must grant uBlock Plus+ permission to run user scripts.",
     "description": "A notice to inform user that the enforcement of some filters requires permission to execute 'user scripts'"
   },
   "customFiltersImportExportLabel": {
@@ -116,7 +116,7 @@
     "description": "Placeholder text which describes the purpose of the textarea widget"
   },
   "userScriptsInfo": {
-    "message": "இறக்குமதி செய்யப்பட்ட பட்டியல்களில் இருந்து அழகியல் அல்லது ஸ்கிரிப்ட்லெட் வடிப்பான்களை செயல்படுத்த, நீங்கள் uBO Lite க்கு பயனர் ஸ்கிரிப்ட்களை இயக்க அனுமதி வழங்க வேண்டும். உங்கள் உலாவியின் நீட்டிப்புகள் பக்கத்தைத் திறக்கவும் (Chrome இல் <code>chrome://extensions</code> அல்லது Firefox இல் <code>about:addons</code>), <b>uBO Lite</b> விவரங்களைத் திறக்கவும், மேலும் <b>பயனர் ஸ்கிரிப்ட்களை அனுமதி</b> (இது “சரிபார்க்கப்படாத மூன்றாம் தரப்பு ஸ்கிரிப்ட்கள்” என்றும் குறிப்பிடப்படுகிறது) என்பதை இயக்கவும்.",
+    "message": "இறக்குமதி செய்யப்பட்ட பட்டியல்களில் இருந்து அழகியல் அல்லது ஸ்கிரிப்ட்லெட் வடிப்பான்களை செயல்படுத்த, நீங்கள் uBlock Plus+ க்கு பயனர் ஸ்கிரிப்ட்களை இயக்க அனுமதி வழங்க வேண்டும். உங்கள் உலாவியின் நீட்டிப்புகள் பக்கத்தைத் திறக்கவும் (Chrome இல் <code>chrome://extensions</code> அல்லது Firefox இல் <code>about:addons</code>), <b>uBlock Plus+</b> விவரங்களைத் திறக்கவும், மேலும் <b>பயனர் ஸ்கிரிப்ட்களை அனுமதி</b> (இது “சரிபார்க்கப்படாத மூன்றாம் தரப்பு ஸ்கிரிப்ட்கள்” என்றும் குறிப்பிடப்படுகிறது) என்பதை இயக்கவும்.",
     "description": "A notice to inform user on how to enable 'user scripts' permission"
   },
   "aboutChangelog": {
@@ -188,7 +188,7 @@
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option3": {
-    "message": "uBO Lite ஐ கண்டறிகிறது",
+    "message": "uBlock Plus+ ஐ கண்டறிகிறது",
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option4": {
@@ -196,7 +196,7 @@
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option5": {
-    "message": "uBO Lite இயக்கப்பட்டிருக்கும் போது செயலிழக்கிறது",
+    "message": "uBlock Plus+ இயக்கப்பட்டிருக்கும் போது செயலிழக்கிறது",
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option6": {
@@ -292,7 +292,7 @@
     "description": "Header for filter-creation section in the dashboard"
   },
   "sandboxEditorUserScriptsInfo": {
-    "message": "To enforce cosmetic or scriptlet filters from the sandbox, you must grant uBO Lite permission to run user scripts.",
+    "message": "To enforce cosmetic or scriptlet filters from the sandbox, you must grant uBlock Plus+ permission to run user scripts.",
     "description": "A notice to inform user that the enforcement of some filters requires permission to execute 'user scripts'"
   },
   "developerModeLabel": {
@@ -324,7 +324,7 @@
     "description": "Web page title for the strict-blocked page"
   },
   "strictblockSentence1": {
-    "message": "uBO Lite பின்வரும் பக்கம் ஏற்றப்படுவதைத் தடுத்துள்ளது:",
+    "message": "uBlock Plus+ பின்வரும் பக்கம் ஏற்றப்படுவதைத் தடுத்துள்ளது:",
     "description": "Sentence used in the strict-blocked page"
   },
   "strictblockReasonSentence1": {

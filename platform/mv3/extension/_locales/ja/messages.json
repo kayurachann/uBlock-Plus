@@ -1,6 +1,6 @@
 {
   "extName": {
-    "message": "uBlock MV3 Community",
+    "message": "uBlock Plus+",
     "description": "extension name."
   },
   "extShortDesc": {
@@ -12,8 +12,8 @@
     "description": "Appears aside each filter list in the _3rd-party filters_ pane"
   },
   "dashboardName": {
-    "message": "uBO Lite — ダッシュボード",
-    "description": "English: uBO Lite — Dashboard"
+    "message": "uBlock Plus+ — ダッシュボード",
+    "description": "English: uBlock Plus+ — Dashboard"
   },
   "settingsPageName": {
     "message": "設定",
@@ -28,7 +28,7 @@
     "description": "appears as tab name in dashboard. Inspired from 'Develop' menu in Safari, see https://developer.apple.com/documentation/safari-developer-tools/develop-menu"
   },
   "aboutPageName": {
-    "message": "uBO Lite について",
+    "message": "uBlock Plus+ について",
     "description": "appears as tab name in dashboard"
   },
   "aboutPrivacyPolicy": {
@@ -104,7 +104,7 @@
     "description": "Placeholder text which describes the purpose of the textarea widget"
   },
   "customListImportUserScriptsInfo": {
-    "message": "インポートしたリストの整形・スクリプトレットフィルターを適用するには、uBO Lite にユーザースクリプトの実行を許可する必要があります。",
+    "message": "インポートしたリストの整形・スクリプトレットフィルターを適用するには、uBlock Plus+ にユーザースクリプトの実行を許可する必要があります。",
     "description": "A notice to inform user that the enforcement of some filters requires permission to execute 'user scripts'"
   },
   "customFiltersImportExportLabel": {
@@ -116,7 +116,7 @@
     "description": "Placeholder text which describes the purpose of the textarea widget"
   },
   "userScriptsInfo": {
-    "message": "ブラウザの拡張機能ページ（Chrome の場合は <code>chrome://extensions</code>、Firefox の場合は <code>about:addons</code>）を開き、<b>uBO Lite</b> の詳細を開いて、<b>ユーザー スクリプトを許可する</b>（「未検証のサードパーティ スクリプト」とも呼ばれます）をオンに切り替えてください。",
+    "message": "ブラウザの拡張機能ページ（Chrome の場合は <code>chrome://extensions</code>、Firefox の場合は <code>about:addons</code>）を開き、<b>uBlock Plus+</b> の詳細を開いて、<b>ユーザー スクリプトを許可する</b>（「未検証のサードパーティ スクリプト」とも呼ばれます）をオンに切り替えてください。",
     "description": "A notice to inform user on how to enable 'user scripts' permission"
   },
   "aboutChangelog": {
@@ -188,7 +188,7 @@
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option3": {
-    "message": "uBO Lite が検出される",
+    "message": "uBlock Plus+ が検出される",
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option4": {
@@ -196,7 +196,7 @@
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option5": {
-    "message": "uBO Lite 有効時に機能しなくなる",
+    "message": "uBlock Plus+ 有効時に機能しなくなる",
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option6": {
@@ -292,7 +292,7 @@
     "description": "Header for filter-creation section in the dashboard"
   },
   "sandboxEditorUserScriptsInfo": {
-    "message": "サンドボックスから整形・スクリプトレットフィルターを適用するには、uBO Lite にユーザースクリプトの実行を許可する必要があります。",
+    "message": "サンドボックスから整形・スクリプトレットフィルターを適用するには、uBlock Plus+ にユーザースクリプトの実行を許可する必要があります。",
     "description": "A notice to inform user that the enforcement of some filters requires permission to execute 'user scripts'"
   },
   "developerModeLabel": {
@@ -324,7 +324,7 @@
     "description": "Web page title for the strict-blocked page"
   },
   "strictblockSentence1": {
-    "message": "uBO Lite はこのページの読み込みをブロックしています：",
+    "message": "uBlock Plus+ はこのページの読み込みをブロックしています：",
     "description": "Sentence used in the strict-blocked page"
   },
   "strictblockReasonSentence1": {

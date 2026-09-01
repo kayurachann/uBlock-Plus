@@ -1,6 +1,6 @@
 {
   "extName": {
-    "message": "uBlock MV3 Community",
+    "message": "uBlock Plus+",
     "description": "extension name."
   },
   "extShortDesc": {
@@ -12,8 +12,8 @@
     "description": "Appears aside each filter list in the _3rd-party filters_ pane"
   },
   "dashboardName": {
-    "message": "uBO Lite — Papan pemuka",
-    "description": "English: uBO Lite — Dashboard"
+    "message": "uBlock Plus+ — Papan pemuka",
+    "description": "English: uBlock Plus+ — Dashboard"
   },
   "settingsPageName": {
     "message": "Tetapan",
@@ -104,7 +104,7 @@
     "description": "Placeholder text which describes the purpose of the textarea widget"
   },
   "customListImportUserScriptsInfo": {
-    "message": "To enforce cosmetic or scriptlet filters from imported lists, you must grant uBO Lite permission to run user scripts.",
+    "message": "To enforce cosmetic or scriptlet filters from imported lists, you must grant uBlock Plus+ permission to run user scripts.",
     "description": "A notice to inform user that the enforcement of some filters requires permission to execute 'user scripts'"
   },
   "customFiltersImportExportLabel": {
@@ -116,7 +116,7 @@
     "description": "Placeholder text which describes the purpose of the textarea widget"
   },
   "userScriptsInfo": {
-    "message": "Untuk menguatkuasakan penapis kosmetik atau scriptlet daripada senarai yang diimport, anda mesti memberikan kebenaran kepada uBO Lite untuk menjalankan skrip pengguna. Buka halaman sambungan pelayar anda (<code>chrome://extensions</code> dalam Chrome atau <code>about:addons</code> dalam Firefox), buka butiran <b>uBO Lite</b>, dan aktifkan <b>Benarkan skrip pengguna</b> (juga dirujuk sebagai \"skrip pihak ketiga yang tidak disahkan\").",
+    "message": "Untuk menguatkuasakan penapis kosmetik atau scriptlet daripada senarai yang diimport, anda mesti memberikan kebenaran kepada uBlock Plus+ untuk menjalankan skrip pengguna. Buka halaman sambungan pelayar anda (<code>chrome://extensions</code> dalam Chrome atau <code>about:addons</code> dalam Firefox), buka butiran <b>uBlock Plus+</b>, dan aktifkan <b>Benarkan skrip pengguna</b> (juga dirujuk sebagai \"skrip pihak ketiga yang tidak disahkan\").",
     "description": "A notice to inform user on how to enable 'user scripts' permission"
   },
   "aboutChangelog": {
@@ -188,7 +188,7 @@
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option3": {
-    "message": "Mengesan uBO Lite",
+    "message": "Mengesan uBlock Plus+",
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option4": {
@@ -196,7 +196,7 @@
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option5": {
-    "message": "Berfungsi dengan tidak betul apabila uBO Lite diaktifkan",
+    "message": "Berfungsi dengan tidak betul apabila uBlock Plus+ diaktifkan",
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option6": {
@@ -292,7 +292,7 @@
     "description": "Header for filter-creation section in the dashboard"
   },
   "sandboxEditorUserScriptsInfo": {
-    "message": "To enforce cosmetic or scriptlet filters from the sandbox, you must grant uBO Lite permission to run user scripts.",
+    "message": "To enforce cosmetic or scriptlet filters from the sandbox, you must grant uBlock Plus+ permission to run user scripts.",
     "description": "A notice to inform user that the enforcement of some filters requires permission to execute 'user scripts'"
   },
   "developerModeLabel": {
@@ -324,7 +324,7 @@
     "description": "Web page title for the strict-blocked page"
   },
   "strictblockSentence1": {
-    "message": "uBO Lite telah menghalang halaman berikut daripada dimuatkan:",
+    "message": "uBlock Plus+ telah menghalang halaman berikut daripada dimuatkan:",
     "description": "Sentence used in the strict-blocked page"
   },
   "strictblockReasonSentence1": {

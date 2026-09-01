@@ -20,6 +20,19 @@
 */
 
 import {
+    ACTIVE_COMPILED_GENERATION_KEY,
+    COMPILED_LOGICAL_KEYS,
+    STAGING_COMPILED_GENERATION_KEY,
+    compiledStorageKey,
+    newCompiledGeneration,
+} from './compiled-storage.js';
+
+import {
+    COMPILE_IDLE_TIMEOUT_MS,
+    getCompileHardTimeout,
+} from './compile-timeout.js';
+
+import {
     browser,
     localRead,
     localRemove,
@@ -29,8 +42,15 @@ import {
 } from './ext.js';
 
 import {
+    cleanupFailedCompiledGeneration,
+    finalizeFailedOffscreenCompilation,
+    setupManagedOffscreenDocument,
+} from './offscreen-lifecycle.js';
+
+import {
     closeOffscreenDocument,
     createOffscreenDocument,
+    supportsOffscreenDocument,
 } from './ext-offscreen.js';
 
 import {
@@ -39,19 +59,14 @@ import {
 } from './filter-manager.js';
 
 import {
-    getEnabledImportedLists,
-    getImportedListCompiledData,
-    updateImportedListData,
-} from './imported-lists.js';
-
-import {
     isScriptlet,
     matchesFromHostnames,
 } from './utils.js';
 
 import { dnr } from './ext-compat.js';
+import { getEnabledImportedLists } from './imported-lists.js';
 import { getFilteringModeDetails } from './mode-manager.js';
-import { supportsOffscreenDocument } from './ext-offscreen.js';
+import { getMemoryProfileConfig } from './memory-manager.js';
 import { ubolLog } from './debug.js';
 
 /******************************************************************************/
@@ -75,12 +90,51 @@ async function getUserList() {
 /******************************************************************************/
 
 async function parseRawFilters() {
+    const generation = newCompiledGeneration();
+    await localWrite(STAGING_COMPILED_GENERATION_KEY, generation);
+    const offscreenPath =
+        `/js/offscreen/compile-filters.html?generation=${generation}`;
+    const offscreenURL = runtime.getURL(offscreenPath);
     const {
         promise: offscreenPromise,
         resolve: offscreenResolve,
     } = Promise.withResolvers();
+    let setupPromise = Promise.resolve();
+    let idleTimeoutId;
+    let hardTimeoutId;
+    let timedOut = false;
+    let lifecycleClosed = false;
+    const {
+        promise: timeoutPromise,
+        reject: timeoutReject,
+    } = Promise.withResolvers();
+    const rejectOnTimeout = message => {
+        if ( timedOut ) { return; }
+        timedOut = true;
+        timeoutReject(new Error(message));
+    };
+    const resetIdleWatchdog = ( ) => {
+        if ( timedOut ) { return; }
+        if ( idleTimeoutId !== undefined ) {
+            self.clearTimeout(idleTimeoutId);
+        }
+        idleTimeoutId = self.setTimeout(( ) => {
+            rejectOnTimeout('Imported filter compilation stopped making progress');
+        }, COMPILE_IDLE_TIMEOUT_MS);
+    };
+    const setHardTimeout = lists => {
+        if ( timedOut ) { return; }
+        if ( hardTimeoutId !== undefined ) {
+            self.clearTimeout(hardTimeoutId);
+        }
+        hardTimeoutId = self.setTimeout(( ) => {
+            rejectOnTimeout('Imported filter compilation exceeded its workload budget');
+        }, getCompileHardTimeout(lists));
+    };
     const handler = (request, sender, callback) => {
         if ( typeof request !== 'object' ) { return; }
+        if ( sender?.url !== offscreenURL ) { return; }
+        resetIdleWatchdog();
         switch ( request?.what ) {
         case 'compileFilters:getResourceTypes':
             callback(Object.values(dnr.ResourceType));
@@ -97,38 +151,65 @@ async function parseRawFilters() {
         case 'compileFilters:getEnabledImportedLists':
             getEnabledImportedLists().then(result => {
                 if ( result?.length ) { ubolLog(`Compiling ${result.length} imported lists`); }
+                setHardTimeout(result);
                 callback(result);
             });
             return true;
-        case 'compileFilters:getImportedListCompiledData':
-            getImportedListCompiledData(request.listid).then(result => {
-                if ( result?.serialized ) { ubolLog(`Reusing cached data for ${result.listid}`); }
+        case 'compileFilters:getMemoryProfile':
+            getMemoryProfileConfig(request.deviceMemoryGiB).then(result => {
                 callback(result);
             });
             return true;
-        case 'compileFilters:updateImportedListData':
-            updateImportedListData(request.listid, request).then(result => {
-                if ( result ) { ubolLog(`Updated cached data for ${result.listid}`); }
-                callback(result);
-            });
-            return true;
+        case 'compileFilters:progress':
+        case 'keepAlive':
+            break;
         default:
             break;
         }
     };
+    let keepStaging = false;
     runtime.onMessage.addListener(handler);
-    const {
-        promise: timeoutPromise,
-        resolve: timeoutResolve,
-    } = Promise.withResolvers();
-    self.setTimeout(timeoutResolve, 60000);
-    const [ result ] = await Promise.all([
-        Promise.race([ offscreenPromise, timeoutPromise ]),
-        createOffscreenDocument('/js/offscreen/compile-filters.html'),
-    ]);
-    runtime.onMessage.removeListener(handler);
-    await closeOffscreenDocument();
-    return result;
+    try {
+        resetIdleWatchdog();
+        setHardTimeout([]);
+        // A service-worker restart can leave the prior offscreen document
+        // alive. Closing first gives every compile one unambiguous sender.
+        setupPromise = setupManagedOffscreenDocument({
+            closeDocument: closeOffscreenDocument,
+            createDocument: ( ) => createOffscreenDocument(offscreenPath),
+            isCancelled: ( ) => lifecycleClosed || timedOut,
+        });
+        await Promise.race([ setupPromise, timeoutPromise ]);
+        const result = await Promise.race([ offscreenPromise, timeoutPromise ]);
+        if ( result?.generation !== generation ) {
+            throw new Error('Filter compiler returned a mismatched generation');
+        }
+        if ( result.errors?.length ) { return result; }
+        if ( result.persisted !== true ) {
+            throw new Error('Filter compiler did not persist its generation');
+        }
+        keepStaging = true;
+        return result;
+    } finally {
+        lifecycleClosed = true;
+        if ( idleTimeoutId !== undefined ) { self.clearTimeout(idleTimeoutId); }
+        if ( hardTimeoutId !== undefined ) { self.clearTimeout(hardTimeoutId); }
+        runtime.onMessage.removeListener(handler);
+        if ( keepStaging === false ) {
+            await finalizeFailedOffscreenCompilation({
+                setupPromise,
+                closeDocument: closeOffscreenDocument,
+                cleanupGeneration: ( ) => cleanupFailedCompiledGeneration({
+                    removeGeneration: ( ) => removeCompiledGeneration(generation),
+                    removeMarker: ( ) => localRemove(
+                        STAGING_COMPILED_GENERATION_KEY
+                    ),
+                }),
+            });
+        } else {
+            await closeOffscreenDocument().catch(( ) => { });
+        }
+    }
 }
 
 /******************************************************************************/
@@ -178,91 +259,78 @@ function prepareUserScripts(id, none, result) {
 
 /******************************************************************************/
 
-async function saveRules(id, rules) {
-    const storageId = `${id}Filters.dnrRules`;
-    const beforeRules = await localRead(storageId);
-    const afterRules = rules?.length && rules;
-    const modified = JSON.stringify(afterRules) !== JSON.stringify(beforeRules);
-    if ( modified === false ) { return false; }
-    if ( Array.isArray(afterRules) ) {
-        await localWrite(storageId, afterRules);
-    } else {
-        await localRemove(storageId);
-    }
-    return true;
-}
-
-/******************************************************************************/
-
-async function saveUserScripts(result = {}) {
-    return Promise.all([
-        localWrite('sandboxFilters.userScripts', {
-            ISOLATED: result.sandbox?.ISOLATED ?? [],
-            MAIN: result.sandbox?.MAIN ?? [],
-        }),
-        localWrite('importedFilters.userScripts', {
-            ISOLATED: result.imported?.ISOLATED ?? [],
-            MAIN: result.imported?.MAIN ?? [],
-        }),
-    ]);
-}
-
-async function readUserScripts() {
-    const [
-        sandbox = {},
-        imported = {},
-    ] = await Promise.all([
-        localRead('sandboxFilters.userScripts'),
-        localRead('importedFilters.userScripts'),
-    ]);
-    return { sandbox, imported };
-}
-
-/******************************************************************************/
-
-async function register() {
+async function register(generation) {
     if ( supportsUserScripts() ) {
+        let previousScripts;
         try {
-            const toRemove = await browser.userScripts.getScripts();
-            if ( toRemove.length !== 0 ) {
+            previousScripts = await browser.userScripts.getScripts();
+        } catch {
+            // Chrome exposes the namespace even when the user-controlled
+            // User Scripts toggle is off. In that state there is nothing we
+            // can safely replace, so leave any browser-managed state alone.
+            return false;
+        }
+
+        const { none, basic } = await getFilteringModeDetails();
+        const realms = [
+            [ 'sandbox', none ],
+            [ 'imported', new Set([ ...none, ...basic ]) ],
+        ];
+        const toAdd = [];
+        for ( const [ id, excluded ] of realms ) {
+            const stored = await localRead(compiledStorageKey(
+                generation,
+                `${id}Filters.userScripts`
+            )) || {};
+            toAdd.push(...prepareUserScripts(id, excluded, stored));
+        }
+
+        let unregistered = false;
+        try {
+            if ( previousScripts.length !== 0 ) {
                 await browser.userScripts.unregister();
-                ubolLog(`Unregistered userscript ${toRemove.map(a => a.id).join()}`);
+                unregistered = true;
+                ubolLog(`Unregistered userscript ${previousScripts.map(a => a.id).join()}`);
             }
-        } catch {
-        }
-    }
-
-    const [
-        { none, basic },
-        { sandbox, imported },
-    ] = await Promise.all([
-        getFilteringModeDetails(),
-        readUserScripts(),
-    ]);
-
-    const toAdd = [];
-    const sandboxScripts = await prepareUserScripts('sandbox',
-        none,
-        sandbox
-    );
-    if ( sandboxScripts.length ) {
-        toAdd.push(...sandboxScripts);
-    }
-    const importedScripts = await prepareUserScripts('imported',
-        new Set([ ...none, ...basic ]),
-        imported
-    );
-    if ( importedScripts.length ) {
-        toAdd.push(...importedScripts);
-    }
-    if ( supportsUserScripts() && toAdd.length ) {
-        try {
-            await browser.userScripts.register(toAdd).then(( ) => {
+            if ( toAdd.length !== 0 ) {
+                await browser.userScripts.register(toAdd);
                 ubolLog(`Registered userscript ${toAdd.map(v => v.id)}`);
-            });
-        } catch {
+            }
+        } catch ( reason ) {
+            if ( unregistered && previousScripts.length !== 0 ) {
+                try {
+                    // Clear any partially registered replacement before
+                    // restoring the last known-good set.
+                    await browser.userScripts.unregister();
+                    await browser.userScripts.register(previousScripts);
+                } catch ( rollbackReason ) {
+                    throw new Error(
+                        `Unable to register user scripts (${reason}); ` +
+                        `rollback also failed (${rollbackReason})`
+                    );
+                }
+            }
+            throw reason;
         }
+        return { previousScripts };
     }
+    return false;
+}
+
+/******************************************************************************/
+
+async function restore(previousRegistration) {
+    const previousScripts = previousRegistration?.previousScripts;
+    if ( Array.isArray(previousScripts) === false ) { return false; }
+    const currentScripts = await browser.userScripts.getScripts();
+    if ( currentScripts.length !== 0 ) {
+        await browser.userScripts.unregister();
+    }
+    if ( previousScripts.length !== 0 ) {
+        await browser.userScripts.register(previousScripts);
+    }
+    ubolLog(`Restored ${previousScripts.length} previous userscript(s)`);
+    return true;
 }
 
 /******************************************************************************/
@@ -279,14 +347,23 @@ async function update() {
     let result;
     if ( hasUserFilters || hasImportedLists ) {
         result = await parseRawFilters();
-        if ( Boolean(result) === false ) { return; }
+        if ( Boolean(result) === false ) {
+            throw new Error('Imported filter compilation timed out');
+        }
+        if ( result.errors?.length ) {
+            const summary = result.errors
+                .map(entry => `${entry.listid}: ${entry.message}`)
+                .join('; ');
+            throw new Error(`Imported filter compilation failed: ${summary}`);
+        }
+        return result;
     }
-
-    await Promise.all([
-        saveRules('sandbox', result?.sandbox?.dnrRules),
-        saveRules('imported', result?.imported?.dnrRules),
-        saveUserScripts(result),
-    ]);
+    return {
+        persisted: true,
+        generation: newCompiledGeneration(),
+        compiledIntegrityUpdates: [],
+        importedListUpdates: [],
+    };
 }
 
 /******************************************************************************/
@@ -295,8 +372,7 @@ async function update() {
 
 export async function updateCompiledFilters() {
     if ( supportsOffscreenDocument !== true ) { return false; }
-    pendingRegister = pendingRegister.then(( ) => update());
-    return pendingRegister;
+    return enqueue(( ) => update());
 }
 
 /******************************************************************************/
@@ -304,12 +380,52 @@ export async function updateCompiledFilters() {
 // This registers previously compiled external filters, according to current
 // filtering mode details.
 
-export async function registerUserScripts() {
+export async function registerUserScripts(generation) {
     if ( supportsOffscreenDocument !== true ) { return false; }
-    pendingRegister = pendingRegister.then(( ) => register());
-    return pendingRegister;
+    const effectiveGeneration = generation === undefined
+        ? await getActiveCompiledGeneration()
+        : generation;
+    return enqueue(( ) => register(effectiveGeneration));
+}
+
+/******************************************************************************/
+
+export async function restoreUserScripts(previousRegistration) {
+    if ( supportsOffscreenDocument !== true ) { return false; }
+    return enqueue(( ) =>
+        restore(previousRegistration)
+    );
+}
+
+/******************************************************************************/
+
+export async function getActiveCompiledGeneration() {
+    return await localRead(ACTIVE_COMPILED_GENERATION_KEY) || '';
+}
+
+export async function commitCompiledGeneration(generation) {
+    await localWrite(ACTIVE_COMPILED_GENERATION_KEY, generation);
+}
+
+export async function removeCompiledGeneration(generation) {
+    if ( generation === undefined || generation === null ) { return; }
+    if ( generation === '' ) {
+        await localRemove(COMPILED_LOGICAL_KEYS);
+        return;
+    }
+    await localRemove(COMPILED_LOGICAL_KEYS.map(logicalKey =>
+        compiledStorageKey(generation, logicalKey)
+    ));
 }
 
 /******************************************************************************/
 
 let pendingRegister = Promise.resolve();
+
+function enqueue(task) {
+    const result = pendingRegister.then(task);
+    // Preserve the failure for the current caller, but keep a failed compile
+    // or registration attempt from permanently poisoning later retries.
+    pendingRegister = result.catch(( ) => { });
+    return result;
+}

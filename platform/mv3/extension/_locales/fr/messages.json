@@ -1,6 +1,6 @@
 {
   "extName": {
-    "message": "uBlock MV3 Community",
+    "message": "uBlock Plus+",
     "description": "extension name."
   },
   "extShortDesc": {
@@ -12,8 +12,8 @@
     "description": "Appears aside each filter list in the _3rd-party filters_ pane"
   },
   "dashboardName": {
-    "message": "uBO Lite — Tableau de bord",
-    "description": "English: uBO Lite — Dashboard"
+    "message": "uBlock Plus+ — Tableau de bord",
+    "description": "English: uBlock Plus+ — Dashboard"
   },
   "settingsPageName": {
     "message": "Paramètres",
@@ -104,7 +104,7 @@
     "description": "Placeholder text which describes the purpose of the textarea widget"
   },
   "customListImportUserScriptsInfo": {
-    "message": "Pour appliquer les filtres cosmétiques / scriptlets depuis les listes importées, vous devez accorder à uBO Lite la permission d'exécuter des scripts utilisateurs.",
+    "message": "Pour appliquer les filtres cosmétiques / scriptlets depuis les listes importées, vous devez accorder à uBlock Plus+ la permission d'exécuter des scripts utilisateurs.",
     "description": "A notice to inform user that the enforcement of some filters requires permission to execute 'user scripts'"
   },
   "customFiltersImportExportLabel": {
@@ -116,7 +116,7 @@
     "description": "Placeholder text which describes the purpose of the textarea widget"
   },
   "userScriptsInfo": {
-    "message": "Ouvrez la page des extensions de votre navigateur (<code>chrome://extensions</code> dans Chrome, ou <code>about:addons</code> dans Firefox), ouvrez la page des détails d'<b>uBO Lite</b>, et activez l'option <b>Autoriser les scripts utilisateurs</b> (aussi appelés \"scripts tiers non-vérifiés\").",
+    "message": "Ouvrez la page des extensions de votre navigateur (<code>chrome://extensions</code> dans Chrome, ou <code>about:addons</code> dans Firefox), ouvrez la page des détails d'<b>uBlock Plus+</b>, et activez l'option <b>Autoriser les scripts utilisateurs</b> (aussi appelés \"scripts tiers non-vérifiés\").",
     "description": "A notice to inform user on how to enable 'user scripts' permission"
   },
   "aboutChangelog": {
@@ -188,7 +188,7 @@
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option3": {
-    "message": "détecte uBO Lite",
+    "message": "détecte uBlock Plus+",
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option4": {
@@ -196,7 +196,7 @@
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option5": {
-    "message": "fonctionne mal quand uBO Lite est activé",
+    "message": "fonctionne mal quand uBlock Plus+ est activé",
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option6": {
@@ -292,7 +292,7 @@
     "description": "Header for filter-creation section in the dashboard"
   },
   "sandboxEditorUserScriptsInfo": {
-    "message": "Pour appliquer les filtres cosmétiques / scriptlets depuis le bac à sable, vous devez accorder à uBO Lite la permission d'exécuter des scripts utilisateurs.",
+    "message": "Pour appliquer les filtres cosmétiques / scriptlets depuis le bac à sable, vous devez accorder à uBlock Plus+ la permission d'exécuter des scripts utilisateurs.",
     "description": "A notice to inform user that the enforcement of some filters requires permission to execute 'user scripts'"
   },
   "developerModeLabel": {
@@ -324,7 +324,7 @@
     "description": "Web page title for the strict-blocked page"
   },
   "strictblockSentence1": {
-    "message": "uBO Lite a empêché le chargement de cette page :",
+    "message": "uBlock Plus+ a empêché le chargement de cette page :",
     "description": "Sentence used in the strict-blocked page"
   },
   "strictblockReasonSentence1": {

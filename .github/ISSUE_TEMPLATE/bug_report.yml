@@ -1,0 +1,90 @@
+name: Bug report
+description: Báo lỗi có thể tái hiện trong uBlock Plus+ Power Edition.
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Cảm ơn bạn đã báo lỗi. Không đăng token, lịch sử duyệt web, dữ liệu cá nhân hoặc exploit chưa được vá. Lỗ hổng bảo mật dùng liên kết báo cáo riêng.
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Kiểm tra trước
+      options:
+        - label: Tôi đã tìm issue trùng và thử bản phát hành mới nhất.
+          required: true
+        - label: Tôi hiểu uBlock Plus+ là fork độc lập, không phải release chính thức của uBlock Origin.
+          required: true
+        - label: Tôi đã xóa dữ liệu nhạy cảm khỏi log/ảnh chụp.
+          required: true
+  - type: input
+    id: version
+    attributes:
+      label: Phiên bản/commit uBlock Plus+
+      placeholder: "v0.x.y hoặc commit SHA"
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Trình duyệt và hệ điều hành
+      placeholder: "Chrome 140.0.x, Windows 11 24H2"
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: Cách cài
+      options:
+        - Load unpacked / Power Edition
+        - GitHub release package / Power Edition
+        - Managed Enterprise build
+        - Native Companion / Power Mode
+    validations:
+      required: true
+  - type: dropdown
+    id: memory_profile
+    attributes:
+      label: Memory profile
+      options:
+        - auto
+        - balanced
+        - low-memory
+        - Không biết / không áp dụng
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Các bước tái hiện tối thiểu
+      placeholder: |
+        1. Bật ruleset/list...
+        2. Mở URL mẫu...
+        3. Thực hiện...
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Kết quả mong đợi
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Kết quả thực tế
+    validations:
+      required: true
+  - type: textarea
+    id: filters
+    attributes:
+      label: Ruleset/filter liên quan
+      description: Ghi ID catalog và custom/imported list; thử lại với cấu hình tối thiểu nếu có thể.
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics đã ẩn dữ liệu nhạy cảm
+      description: Chỉ dán export do bạn chủ động tạo; không đăng toàn bộ lịch sử/URL cá nhân.
+      render: text

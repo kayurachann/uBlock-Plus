@@ -40,9 +40,9 @@ const sessionRead = async function(key) {
     }
 };
 
-const sessionWrite = function(key, data) {
+const sessionWrite = async function(key, data) {
     try {
-        chrome.storage.session.set({ [key]: data });
+        await chrome.storage.session.set({ [key]: data });
     } catch {
     }
 };
@@ -137,14 +137,18 @@ const cachePath = topHostname !== thisHostname ? `${topHostname}/` : '';
 const cacheKey = `cache.css.${cachePath}${thisHostname}`;
 
 let cacheEntry = await sessionRead(cacheKey) ?? { t: 0 };
-if ( cacheEntry.t === 0 ) {
+const cacheMiss = cacheEntry.t === 0;
+if ( cacheMiss ) {
     cacheEntry = await fillCache(specificImports);
 }
 const now = Math.round(Date.now() / (5 * 60000));
 const since = now - cacheEntry.t;
 if ( since > 1 ) {
     cacheEntry.t = now;
-    sessionWrite(cacheKey, cacheEntry);
+    await sessionWrite(cacheKey, cacheEntry);
+    if ( cacheMiss ) {
+        chrome.runtime.sendMessage({ what: 'noteCSSCacheWrite' }).catch(( ) => { });
+    }
 }
 
 const { s, p } = cacheEntry;

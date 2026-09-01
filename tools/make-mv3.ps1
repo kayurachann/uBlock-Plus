@@ -1,7 +1,7 @@
 #*******************************************************************************
 #
-#     uBlock MV3 Community
-#     Copyright (C) 2026-present uBlock MV3 Community contributors
+#     uBlock Plus+
+#     Copyright (C) 2026-present uBlock Plus+ contributors
 #
 #     This program is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
 #     You should have received a copy of the GNU General Public License
 #     along with this program.  If not, see {http://www.gnu.org/licenses/}.
 #
-#     Home: https://github.com/kayurachann/uBlock-MV3-Community
+#     Home: https://github.com/kayurachann/uBlock-Plus
 #
 #*******************************************************************************
 
@@ -32,7 +32,7 @@ PowerShell and the Node.js ruleset generator already shipped in the repository;
 GNU make, jq, a Unix shell, and an external zip executable are not required.
 
 .PARAMETER Full
-Also creates dist/build/uBOLite_<version>.chromium.zip.
+Also creates dist/build/uBlock-Plus_<version>.chromium.zip.
 
 .PARAMETER Version
 Overrides the manifest version and creates a release-style zip. When omitted,
@@ -192,6 +192,57 @@ function Convert-WasmToJson {
     Write-Utf8NoBom $Destination ('[' + ($bytes -join ',') + "]`n")
 }
 
+function New-ZipFromDirectory {
+    param(
+        [Parameter(Mandatory)][string] $Source,
+        [Parameter(Mandatory)][string] $Destination
+    )
+
+    Add-Type -AssemblyName System.IO.Compression
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $sourceRoot = [IO.Path]::GetFullPath($Source)
+    if ( $sourceRoot.EndsWith([IO.Path]::DirectorySeparatorChar) -eq $false ) {
+        $sourceRoot += [IO.Path]::DirectorySeparatorChar
+    }
+    $archive = [IO.Compression.ZipFile]::Open(
+        $Destination,
+        [IO.Compression.ZipArchiveMode]::Create
+    )
+    try {
+        foreach ( $file in Get-ChildItem -LiteralPath $Source -File -Recurse |
+            Sort-Object FullName ) {
+            $entryName = $file.FullName.Substring($sourceRoot.Length).Replace(
+                [IO.Path]::DirectorySeparatorChar,
+                [char] '/'
+            )
+            [IO.Compression.ZipFileExtensions]::CreateEntryFromFile(
+                $archive,
+                $file.FullName,
+                $entryName,
+                [IO.Compression.CompressionLevel]::Optimal
+            ) | Out-Null
+        }
+    } finally {
+        $archive.Dispose()
+    }
+}
+
+function Test-ChromiumExtensionVersion {
+    param([Parameter(Mandatory)][string] $Value)
+
+    $parts = $Value.Split('.')
+    if ( $parts.Count -lt 1 -or $parts.Count -gt 4 ) { return $false }
+    $hasNonZeroPart = $false
+    foreach ( $part in $parts ) {
+        if ( $part -notmatch '^(?:0|[1-9][0-9]*)$' ) { return $false }
+        if ( $part.Length -gt 5 ) { return $false }
+        $number = [uint32] $part
+        if ( $number -gt 65535 ) { return $false }
+        if ( $number -ne 0 ) { $hasNonZeroPart = $true }
+    }
+    return $hasNonZeroPart
+}
+
 $projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $buildRoot = Join-Path $projectRoot 'dist/build'
 $outputDirectory = Join-Path $buildRoot "uBOLite.$Platform"
@@ -203,7 +254,7 @@ if ( $null -eq $nodeCommand ) {
 $node = [string] $nodeCommand.Source
 $temporaryDirectories = [Collections.Generic.List[string]]::new()
 
-if ( $Version -ne '' -and $Version -notmatch '^\d+(?:\.\d+){0,3}$' ) {
+if ( $Version -ne '' -and (Test-ChromiumExtensionVersion $Version) -eq $false ) {
     throw "Invalid Chromium extension version: $Version"
 }
 
@@ -292,6 +343,8 @@ try {
         (Join-Path $outputDirectory 'img/flags-of-the-world')
     Copy-RequiredFile (Join-Path $projectRoot 'LICENSE.txt') `
         (Join-Path $outputDirectory 'LICENSE.txt')
+    Copy-RequiredFile (Join-Path $projectRoot 'NOTICE.md') `
+        (Join-Path $outputDirectory 'NOTICE.md')
 
     Write-Host '*** uBOLite.mv3: Copying MV3-specific files'
     $mv3Root = Join-Path $projectRoot 'platform/mv3'
@@ -300,6 +353,8 @@ try {
         (Join-Path $outputDirectory 'manifest.json')
     Copy-MatchingFiles $extensionRoot '*.html' $outputDirectory
     Copy-MatchingFiles $extensionRoot '*.json' $outputDirectory
+    Copy-TreeContents (Join-Path $extensionRoot 'filter-store') `
+        (Join-Path $outputDirectory 'filter-store')
     Copy-TreeContents (Join-Path $extensionRoot 'css') `
         (Join-Path $outputDirectory 'css')
     Copy-TreeContents (Join-Path $extensionRoot 'js') `
@@ -338,6 +393,9 @@ try {
     Copy-RequiredFile (
         Join-Path $extensionRoot 'lib/s14e-serializer/s14e-serializer.js'
     ) (Join-Path $outputDirectory 'lib/s14e-serializer.js')
+    Copy-RequiredFile (
+        Join-Path $extensionRoot 'lib/s14e-serializer/LICENSE'
+    ) (Join-Path $outputDirectory 'lib/s14e-serializer.LICENSE')
 
     Write-Host '*** uBOLite.mv3: Generating rulesets'
     $rulesetBuildDirectory = New-BuildTempDirectory
@@ -401,6 +459,10 @@ try {
         (Join-Path $rulesetBuildDirectory 'js/ubo-parser.js')
     Copy-RequiredFile (Join-Path $extensionRoot 'js/utils.js') `
         (Join-Path $rulesetBuildDirectory 'js/utils.js')
+    # make-rulesets imports offscreen/fetch-list.js, whose fetch-policy module
+    # lives one directory above the copied offscreen tree.
+    Copy-RequiredFile (Join-Path $extensionRoot 'js/imported-fetch-policy.js') `
+        (Join-Path $rulesetBuildDirectory 'js/imported-fetch-policy.js')
     Copy-RequiredFile (Join-Path $uboRoot 'src/lib/punycode.js') `
         (Join-Path $rulesetBuildDirectory 'js/punycode.js')
     Copy-TreeContents (Join-Path $uboRoot 'src/lib/regexanalyzer') `
@@ -418,12 +480,28 @@ try {
     Copy-TreeContents (Join-Path $mv3Root 'chromium') `
         (Join-Path $rulesetBuildDirectory 'chromium')
 
-    Invoke-NativeCommand $node @(
+    $rulesetArguments = @(
         '--no-warnings',
         'make-rulesets.js',
         "output=$outputDirectory",
         "platform=$Platform"
-    ) $rulesetBuildDirectory
+    )
+    $maximumAttempts = 3
+    for ( $attempt = 1; $attempt -le $maximumAttempts; $attempt += 1 ) {
+        try {
+            Invoke-NativeCommand $node $rulesetArguments $rulesetBuildDirectory
+            break
+        } catch {
+            if ( $attempt -eq $maximumAttempts ) { throw }
+            Write-Warning (
+                "Ruleset generation failed on attempt $attempt; retrying " +
+                'with the downloaded-list cache.'
+            )
+            Copy-RequiredFile (Join-Path $mv3Root 'chromium/manifest.json') `
+                (Join-Path $outputDirectory 'manifest.json')
+            Start-Sleep -Seconds (2 * $attempt)
+        }
+    }
 
     if ( $beforeDirectory -ne '' ) {
         Write-Host '*** uBOLite.mv3: Salvaging rule IDs to minimize diff size'
@@ -470,19 +548,18 @@ try {
             Remove-Item -LiteralPath $logFile -Force
         }
 
-        $packageName = "uBOLite_$packageVersion.$Platform.zip"
+        $packageName = "uBlock-Plus_$packageVersion.$Platform.zip"
         $packagePath = Join-Path $buildRoot $packageName
         if ( Test-Path -LiteralPath $packagePath ) {
             Remove-Item -LiteralPath $packagePath -Force
         }
-        Add-Type -AssemblyName System.IO.Compression.FileSystem
-        [IO.Compression.ZipFile]::CreateFromDirectory(
-            $packageDirectory,
-            $packagePath,
-            [IO.Compression.CompressionLevel]::Optimal,
-            $false
-        )
+        New-ZipFromDirectory $packageDirectory $packagePath
+        $checksumPath = "$packagePath.sha256"
+        $checksum = (Get-FileHash -LiteralPath $packagePath `
+            -Algorithm SHA256).Hash.ToLowerInvariant()
+        Write-Utf8NoBom $checksumPath "$checksum  $packageName`n"
         Write-Host "Package location: $packagePath"
+        Write-Host "Checksum location: $checksumPath"
     }
 } finally {
     foreach ( $directory in $temporaryDirectories ) {

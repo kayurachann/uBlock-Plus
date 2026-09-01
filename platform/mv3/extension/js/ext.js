@@ -45,12 +45,20 @@ export function supportsUserScripts() {
 
 /******************************************************************************/
 
-// The extension's service worker can be evicted at any time, so when we
-// send a message, we try a few more times when the message fails to be sent.
+// Never turn a transport or service-worker failure into an apparent success.
+// Mutation callers need the rejection so their UI can retain the pending
+// state or report an actionable error. Automatic retries are intentionally
+// avoided because a response can be lost after a mutation already committed.
 
 export function sendMessage(msg) {
-    return runtime.sendMessage(msg).catch(reason => {
+    return runtime.sendMessage(msg).then(response => {
+        if ( typeof response?.__ublockPlusError === 'string' ) {
+            throw new Error(response.__ublockPlusError);
+        }
+        return response;
+    }, reason => {
         console.log(reason);
+        throw reason;
     });
 }
 

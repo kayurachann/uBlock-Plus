@@ -1,9 +1,9 @@
 # Attribution and fork notice
 
-uBlock MV3 Community is a derivative work based on [uBlock Origin](https://github.com/gorhill/uBlock) and its MV3/uBO Lite implementation.
+uBlock Plus+ is a derivative work based on [uBlock Origin](https://github.com/gorhill/uBlock) and its MV3/uBO Lite implementation.
 
 - Original project: Copyright (C) 2014-present Raymond Hill and uBlock Origin contributors.
-- Community fork additions: Copyright (C) 2026-present uBlock MV3 Community contributors.
+- Community fork additions: Copyright (C) 2026-present uBlock Plus+ contributors.
 - License: GNU General Public License version 3 or, at your option, any later version. See [LICENSE.txt](LICENSE.txt).
 - Initial fork base: upstream commit `76508405c71cdee1771becd5fefd6bf137412470` (2026-08-31).
 

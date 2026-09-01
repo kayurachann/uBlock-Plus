@@ -309,6 +309,184 @@ body section[data-pane="rulesets"] .importRulesetURL input:is(:placeholder-shown
     display: none;
     }
 
+#memoryProfile .memoryProfileControls {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--default-gap-small);
+    }
+#memoryProfile select {
+    min-width: 12em;
+    }
+#memoryProfile .memoryProfileStatus,
+#memoryProfile .memoryProfileMetrics {
+    color: var(--ink-2);
+    font-size: var(--font-size-smaller);
+    }
+
+#filterStore {
+    border-top: 1px solid var(--border-1);
+    padding-block-start: var(--default-gap-small);
+    }
+#filterStore > details > summary {
+    cursor: pointer;
+    font-size: var(--font-size-large);
+    font-weight: 600;
+    }
+#filterStore .filterStoreIntro,
+#filterStore .filterStoreMetadata,
+#filterStoreStatus,
+#filterStoreQuota,
+#filterStore .filterStoreRepositories > p {
+    color: var(--ink-2);
+    font-size: var(--font-size-smaller);
+    }
+.filterStoreToolbar {
+    display: grid;
+    gap: var(--default-gap-small);
+    grid-template-columns: minmax(14em, 2fr) repeat(3, minmax(9em, 1fr));
+    }
+.filterStoreToolbar > * {
+    min-width: 0;
+    }
+#filterStoreQuota {
+    background: var(--surface-1);
+    border: 1px solid var(--border-1);
+    border-radius: 4px;
+    padding: var(--default-gap-small);
+    }
+#filterStoreQuota[data-level="warning"],
+#filterStoreStatus[data-level="warning"] {
+    color: var(--info2-ink);
+    }
+#filterStoreQuota[data-level="error"],
+#filterStoreStatus[data-level="error"] {
+    color: var(--info3-ink);
+    }
+#filterStoreBundleSection {
+    margin-block: var(--default-gap-small) var(--default-gap-large);
+    }
+#filterStoreBundleSection h4 {
+    margin-block: var(--default-gap-small);
+    }
+#filterStoreBundles {
+    display: grid;
+    gap: var(--default-gap-small);
+    grid-template-columns: repeat(auto-fit, minmax(15em, 1fr));
+    }
+.filterStoreBundle {
+    align-items: start;
+    background: var(--surface-1);
+    border: 1px solid var(--border-1);
+    border-radius: 4px;
+    display: grid;
+    gap: var(--default-gap-xsmall);
+    padding: var(--default-gap-small);
+    }
+.filterStoreBundle > span {
+    color: var(--ink-2);
+    font-size: var(--font-size-smaller);
+    }
+.filterStoreBundle > button {
+    justify-self: start;
+    }
+#filterStoreEntries {
+    display: grid;
+    gap: var(--default-gap-small);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 24em), 1fr));
+    }
+.filterStoreCard {
+    border: 1px solid var(--border-1);
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--default-gap-small);
+    padding: var(--default-gap-small);
+    }
+.filterStoreCard[data-enabled] {
+    border-color: var(--accent-surface-1);
+    box-shadow: inset 3px 0 var(--accent-surface-1);
+    }
+.filterStoreCard h4,
+.filterStoreCard p {
+    margin: 0;
+    }
+.filterStoreCardHeading {
+    display: flex;
+    flex-direction: column;
+    gap: var(--default-gap-xsmall);
+    }
+.filterStoreBadges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--default-gap-xxsmall);
+    }
+.filterStoreBadge {
+    background: var(--surface-2);
+    border-radius: 1em;
+    color: var(--ink-2);
+    font-size: var(--font-size-smallest);
+    padding: 0.15em 0.55em;
+    }
+.filterStoreBadge[data-kind="verified"] {
+    background: color-mix(in srgb, var(--accent-surface-1) 20%, var(--surface-1));
+    color: var(--accent-ink-1);
+    }
+.filterStoreBadge[data-kind="community"] {
+    background: color-mix(in srgb, var(--info2-ink) 16%, var(--surface-1));
+    }
+.filterStoreDescription {
+    flex-grow: 1;
+    }
+.filterStoreActions {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    }
+.filterStoreEmpty {
+    color: var(--ink-2);
+    grid-column: 1 / -1;
+    }
+.filterStoreRepositories {
+    border-top: 1px solid var(--border-1);
+    margin-block-start: var(--default-gap-large);
+    padding-block-start: var(--default-gap-small);
+    }
+.filterStoreRepositoryInput {
+    display: flex;
+    gap: var(--default-gap-small);
+    }
+.filterStoreRepositoryInput input {
+    flex-grow: 1;
+    min-width: 0;
+    }
+#filterStoreRepositoryList {
+    list-style: none;
+    padding: 0;
+    }
+#filterStoreRepositoryList li {
+    align-items: center;
+    display: flex;
+    gap: var(--default-gap-small);
+    justify-content: space-between;
+    margin-block: var(--default-gap-xsmall);
+    }
+#filterStoreRepositoryList li span {
+    direction: ltr;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    }
+
+@media (max-width: 800px) {
+    .filterStoreToolbar {
+        grid-template-columns: 1fr 1fr;
+        }
+    .filterStoreToolbar #filterStoreSearch {
+        grid-column: 1 / -1;
+        }
+    }
+
 body section[data-pane="filters"] {
     padding-inline: 0;
     }

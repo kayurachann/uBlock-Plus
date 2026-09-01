@@ -1,6 +1,6 @@
 {
   "extName": {
-    "message": "uBlock MV3 Community",
+    "message": "uBlock Plus+",
     "description": "extension name."
   },
   "extShortDesc": {
@@ -12,8 +12,8 @@
     "description": "Appears aside each filter list in the _3rd-party filters_ pane"
   },
   "dashboardName": {
-    "message": "uBO Lite — Табло",
-    "description": "English: uBO Lite — Dashboard"
+    "message": "uBlock Plus+ — Табло",
+    "description": "English: uBlock Plus+ — Dashboard"
   },
   "settingsPageName": {
     "message": "Настройки",
@@ -104,7 +104,7 @@
     "description": "Placeholder text which describes the purpose of the textarea widget"
   },
   "customListImportUserScriptsInfo": {
-    "message": "За да приложите козметични филтри или скриптови филтри от импортирани списъци, трябва да предоставите на uBO Lite разрешение за изпълнение на потребителски скриптове.",
+    "message": "За да приложите козметични филтри или скриптови филтри от импортирани списъци, трябва да предоставите на uBlock Plus+ разрешение за изпълнение на потребителски скриптове.",
     "description": "A notice to inform user that the enforcement of some filters requires permission to execute 'user scripts'"
   },
   "customFiltersImportExportLabel": {
@@ -116,7 +116,7 @@
     "description": "Placeholder text which describes the purpose of the textarea widget"
   },
   "userScriptsInfo": {
-    "message": "Отворете страницата с разширенията на браузъра си (<code>chrome://extensions</code> в Chrome или <code>about:addons</code> във Firefox), отворете подробностите за <b>uBO Lite</b> и активирайте опцията <b>Разрешаване на потребителски скриптове</b> (наричани още „непроверени скриптове от трети страни“).",
+    "message": "Отворете страницата с разширенията на браузъра си (<code>chrome://extensions</code> в Chrome или <code>about:addons</code> във Firefox), отворете подробностите за <b>uBlock Plus+</b> и активирайте опцията <b>Разрешаване на потребителски скриптове</b> (наричани още „непроверени скриптове от трети страни“).",
     "description": "A notice to inform user on how to enable 'user scripts' permission"
   },
   "aboutChangelog": {
@@ -188,7 +188,7 @@
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option3": {
-    "message": "Засича uBO Lite",
+    "message": "Засича uBlock Plus+",
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option4": {
@@ -196,7 +196,7 @@
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option5": {
-    "message": "Неправилно функциониране, когато uBO Lite е активиран",
+    "message": "Неправилно функциониране, когато uBlock Plus+ е активиран",
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option6": {
@@ -292,7 +292,7 @@
     "description": "Header for filter-creation section in the dashboard"
   },
   "sandboxEditorUserScriptsInfo": {
-    "message": "За да активирате козметични филтри или скриптлет филтри от пясъчника, трябва да предоставите на uBO Lite разрешение за изпълнение на потребителски скриптове.",
+    "message": "За да активирате козметични филтри или скриптлет филтри от пясъчника, трябва да предоставите на uBlock Plus+ разрешение за изпълнение на потребителски скриптове.",
     "description": "A notice to inform user that the enforcement of some filters requires permission to execute 'user scripts'"
   },
   "developerModeLabel": {
@@ -324,7 +324,7 @@
     "description": "Web page title for the strict-blocked page"
   },
   "strictblockSentence1": {
-    "message": "uBO Lite попречи на зареждането на следната страница:",
+    "message": "uBlock Plus+ попречи на зареждането на следната страница:",
     "description": "Sentence used in the strict-blocked page"
   },
   "strictblockReasonSentence1": {

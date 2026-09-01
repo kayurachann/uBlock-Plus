@@ -1,8 +1,11 @@
-blank_issues_enabled: true
+blank_issues_enabled: false
 contact_links:
-  - name: Filter List Issues
+  - name: Security vulnerability (private)
+    url: https://github.com/kayurachann/uBlock-Plus/security/advisories/new
+    about: Report an unpatched vulnerability privately; do not publish exploit details or browsing data.
+  - name: Upstream uBlock Origin
+    url: https://github.com/gorhill/uBlock/issues
+    about: Check whether the problem belongs to the official upstream project.
+  - name: Upstream uAssets filter issues
     url: https://github.com/uBlockOrigin/uAssets/issues
-    about: Report uBlock-maintained filter-list content problems in the uAssets tracker.
-  - name: Official upstream projects
-    url: https://github.com/gorhill/uBlock
-    about: Check whether the issue also exists in the official upstream implementation.
+    about: Report content problems in a filter list maintained by uBlock Origin/uAssets.

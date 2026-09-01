@@ -1,6 +1,6 @@
 {
   "extName": {
-    "message": "uBlock MV3 Community",
+    "message": "uBlock Plus+",
     "description": "extension name."
   },
   "extShortDesc": {
@@ -12,8 +12,8 @@
     "description": "Appears aside each filter list in the _3rd-party filters_ pane"
   },
   "dashboardName": {
-    "message": "uBO Lite — Kontrolpanel",
-    "description": "English: uBO Lite — Dashboard"
+    "message": "uBlock Plus+ — Kontrolpanel",
+    "description": "English: uBlock Plus+ — Dashboard"
   },
   "settingsPageName": {
     "message": "Indstillinger",
@@ -116,7 +116,7 @@
     "description": "Placeholder text which describes the purpose of the textarea widget"
   },
   "userScriptsInfo": {
-    "message": "Åbn webbrowserens udvidelsesside (<code>chrome://extensions</code> i Chrome eller <code>Om:tilføjelser</code> i Firefox), åbn <b>uBO Lite</b>-detaljerne, og slå <b>Tillad bruger-scripts</b> til (også kaldet “ubekræftede tredjeparts-scripts”).",
+    "message": "Åbn webbrowserens udvidelsesside (<code>chrome://extensions</code> i Chrome eller <code>Om:tilføjelser</code> i Firefox), åbn <b>uBlock Plus+</b>-detaljerne, og slå <b>Tillad bruger-scripts</b> til (også kaldet “ubekræftede tredjeparts-scripts”).",
     "description": "A notice to inform user on how to enable 'user scripts' permission"
   },
   "aboutChangelog": {
@@ -188,7 +188,7 @@
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option3": {
-    "message": "Detekterer uBO Lite",
+    "message": "Detekterer uBlock Plus+",
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option4": {
@@ -196,7 +196,7 @@
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option5": {
-    "message": "Fejlfungerer, når uBO Lite er aktiveret",
+    "message": "Fejlfungerer, når uBlock Plus+ er aktiveret",
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option6": {
@@ -324,7 +324,7 @@
     "description": "Web page title for the strict-blocked page"
   },
   "strictblockSentence1": {
-    "message": "uBO Lite har forhindret flg. side i at blive indlæst:",
+    "message": "uBlock Plus+ har forhindret flg. side i at blive indlæst:",
     "description": "Sentence used in the strict-blocked page"
   },
   "strictblockReasonSentence1": {

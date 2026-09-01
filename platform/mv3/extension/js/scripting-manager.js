@@ -27,19 +27,25 @@ import {
     sessionKeys, sessionRead, sessionRemove,
     webextFlavor,
 } from './ext.js';
-import { ubolErr, ubolLog } from './debug.js';
+
+import { registerJob, removeJob } from './alarms.js';
 
 import { fetchJSON } from './fetch.js';
 import { getEnabledRulesetsDetails } from './ruleset-manager.js';
 import { getFilteringModeDetails } from './mode-manager.js';
+import { getMemoryProfileConfig } from './memory-manager.js';
 import { registerCustomFilters } from './filter-manager.js';
-import { registerJob } from './alarms.js';
 import { registerPreventPopup } from './prevent-popup.js';
 import { registerToolbarIconToggler } from './action.js';
+import { ubolLog } from './debug.js';
 
 /******************************************************************************/
 
 const resourceDetailPromises = new Map();
+
+export function releaseScriptingMetadata() {
+    resourceDetailPromises.clear();
+}
 
 function getScriptletDetails() {
     let promise = resourceDetailPromises.get('scriptlet');
@@ -75,7 +81,7 @@ const normalizeMatches = matches => {
 /******************************************************************************/
 
 async function resetCSSCache() {
-    const keys = await sessionKeys();
+    const keys = await sessionKeys() || [];
     return sessionRemove(keys.filter(a => a.startsWith('cache.css.')));
 }
 
@@ -167,7 +173,11 @@ function registerGeneric(context, genericDetails) {
 /******************************************************************************/
 
 async function registerCosmetic(context) {
-    const { filteringModeDetails, rulesetsDetails } = context;
+    const {
+        filteringModeDetails,
+        memoryProfile,
+        rulesetsDetails,
+    } = context;
 
     {
         const keys = await localKeys();
@@ -191,16 +201,14 @@ async function registerCosmetic(context) {
     ];
     if ( matches.length === 0 ) { return; }
 
-    {
-        const promises = [];
-        for ( const id of rulesetIds ) {
-            promises.push(
-                fetchJSON(`/rulesets/scripting/specific/${id}`).then(data => {
-                    return localWrite(`css.specific.${id}`, data);
-                })
-            );
-        }
-        await Promise.all(promises);
+    const concurrency = memoryProfile.importCompileConcurrency;
+    for ( let i = 0; i < rulesetIds.length; i += concurrency ) {
+        const batch = rulesetIds.slice(i, i + concurrency);
+        await Promise.all(batch.map(id =>
+            fetchJSON(`/rulesets/scripting/specific/${id}`).then(data => {
+                return localWrite(`css.specific.${id}`, data);
+            })
+        ));
     }
 
     normalizeMatches(matches);
@@ -309,62 +317,135 @@ function registerScriptlet(context, scriptletDetails) {
 
 export async function registerContentScripts() {
     if ( browser.scripting === undefined ) { return false; }
-    registerContentScripts.pendingOp =
-        registerContentScripts.pendingOp.then(( ) => registerContentScripts.register());
-    return registerContentScripts.pendingOp;
+    return enqueueContentScriptOperation(( ) =>
+        registerContentScripts.register()
+    );
 }
 registerContentScripts.pendingOp = Promise.resolve();
+
+function enqueueContentScriptOperation(task) {
+    const result = registerContentScripts.pendingOp.then(task);
+    registerContentScripts.pendingOp = result.catch(( ) => { });
+    return result;
+}
+
+async function replaceRegisteredContentScripts(toAdd) {
+    const previousScripts = await browser.scripting.getRegisteredContentScripts();
+    let replacementStarted = false;
+    try {
+        if ( previousScripts.length !== 0 ) {
+            await browser.scripting.unregisterContentScripts();
+            replacementStarted = true;
+            ubolLog(`Unregistered all content (css/js)`);
+        }
+        if ( toAdd.length !== 0 ) {
+            replacementStarted = true;
+            await browser.scripting.registerContentScripts(toAdd);
+            ubolLog(`Registered ${toAdd.map(v => v.id)} content (css/js)`);
+        }
+    } catch ( reason ) {
+        if ( replacementStarted ) {
+            try {
+                await browser.scripting.unregisterContentScripts();
+                if ( previousScripts.length !== 0 ) {
+                    await browser.scripting.registerContentScripts(previousScripts);
+                }
+            } catch ( rollbackReason ) {
+                throw new Error(
+                    `Unable to register content scripts (${reason}); ` +
+                    `rollback also failed (${rollbackReason})`
+                );
+            }
+        }
+        throw reason;
+    }
+    return { previousScripts };
+}
+
+async function restoreRegisteredContentScripts(snapshot) {
+    if ( Array.isArray(snapshot?.previousScripts) === false ) { return false; }
+    const currentScripts = await browser.scripting.getRegisteredContentScripts();
+    if ( currentScripts.length !== 0 ) {
+        await browser.scripting.unregisterContentScripts();
+    }
+    if ( snapshot.previousScripts.length !== 0 ) {
+        await browser.scripting.registerContentScripts(snapshot.previousScripts);
+    }
+    return true;
+}
+
+export async function restoreContentScripts(snapshot) {
+    if ( browser.scripting === undefined ) { return false; }
+    return enqueueContentScriptOperation(( ) =>
+        restoreRegisteredContentScripts(snapshot)
+    );
+}
 
 registerContentScripts.register = async function register() {
     const [
         filteringModeDetails,
         rulesetsDetails,
-        scriptletDetails,
-        genericDetails,
+        memoryProfile,
     ] = await Promise.all([
         getFilteringModeDetails(),
         getEnabledRulesetsDetails(true),
-        getScriptletDetails(),
-        getGenericDetails(),
+        getMemoryProfileConfig(),
     ]);
     const toAdd = [];
     const context = {
         filteringModeDetails,
+        memoryProfile,
         rulesetsDetails,
         toAdd,
     };
 
+    if ( memoryProfile.retainScriptingMetadata ) {
+        const [ scriptletDetails, genericDetails ] = await Promise.all([
+            getScriptletDetails(),
+            getGenericDetails(),
+        ]);
+        registerScriptlet(context, scriptletDetails);
+        registerGeneric(context, genericDetails);
+    } else {
+        registerScriptlet(context, await getScriptletDetails());
+        resourceDetailPromises.delete('scriptlet');
+        registerGeneric(context, await getGenericDetails());
+        resourceDetailPromises.delete('generic');
+    }
+
     await Promise.all([
-        registerScriptlet(context, scriptletDetails),
         registerCosmetic(context),
-        registerGeneric(context, genericDetails),
         registerCustomFilters(context),
         registerPreventPopup(context),
         registerToolbarIconToggler(context),
     ]);
 
-    ubolLog(`Unregistered all content (css/js)`);
+    const previousRegistration = await replaceRegisteredContentScripts(toAdd);
+
+    const pruneMinutes = memoryProfile.cssCachePruneMinutes;
     try {
-        await browser.scripting.unregisterContentScripts();
-    } catch(reason) {
-        ubolErr(`unregisterContentScripts/${reason}`);
-    }
-
-    if ( toAdd.length !== 0 ) {
-        ubolLog(`Registered ${toAdd.map(v => v.id)} content (css/js)`);
+        await Promise.all([
+            resetCSSCache(),
+            pruneMinutes !== 0
+                ? registerJob(
+                    'pruneCSSCache',
+                    Date.now() + pruneMinutes * 60 * 1000
+                )
+                : removeJob('pruneCSSCache'),
+        ]);
+    } catch ( reason ) {
         try {
-            await browser.scripting.registerContentScripts(toAdd);
-        } catch(reason) {
-            ubolErr(`registerContentScripts/${reason}`);
+            await restoreRegisteredContentScripts(previousRegistration);
+        } catch ( rollbackReason ) {
+            throw new Error(
+                `Content-script cache reset failed (${reason}); ` +
+                `registration rollback also failed (${rollbackReason})`
+            );
         }
+        throw reason;
     }
 
-    await Promise.all([
-        resetCSSCache(),
-        registerJob('pruneCSSCache', Date.now() + 15 * 60 * 1000),
-    ]);
-
-    return true;
+    return previousRegistration;
 };
 
 /******************************************************************************/
@@ -376,21 +457,55 @@ export async function getRegisteredContentScripts() {
 
 /******************************************************************************/
 
-export async function pruneCSSCache() {
-    registerJob('pruneCSSCache', Date.now() + 15 * 60 * 1000);
-    const MAX_CACHE_ENTRY_LOW = 256;
-    const MAX_CACHE_ENTRY_HIGH = MAX_CACHE_ENTRY_LOW +
-        Math.max(Math.round(MAX_CACHE_ENTRY_LOW / 8), 8);
+let pendingCSSCachePrune;
+
+async function pruneCSSCacheNow(options = {}) {
+    const memoryProfile = await getMemoryProfileConfig();
+    const pruneMinutes = memoryProfile.cssCachePruneMinutes;
+    if ( pruneMinutes !== 0 ) {
+        await registerJob(
+            'pruneCSSCache',
+            Date.now() + pruneMinutes * 60 * 1000
+        );
+    } else {
+        await removeJob('pruneCSSCache');
+    }
+    const maxEntries = memoryProfile.cssCacheMaxEntries;
+    const highWatermark = memoryProfile.cssCacheHighWatermark;
     const keys = await sessionKeys() || [];
     const cacheKeys = keys.filter(a => a.startsWith('cache.css.'));
-    if ( cacheKeys.length < MAX_CACHE_ENTRY_HIGH ) { return; }
-    const entries = await Promise.all(cacheKeys.map(async a => {
-        const entry = await sessionRead(a) || {};
-        entry.key = a;
-        return entry;
-    }));
+    if ( maxEntries === 0 ) {
+        return sessionRemove(cacheKeys);
+    }
+    if (
+        options.force !== true &&
+        cacheKeys.length < highWatermark
+    ) { return; }
+    if ( cacheKeys.length <= maxEntries ) { return; }
+
+    // Read only a small batch at once and retain timestamps, not the cached
+    // selector arrays themselves, while computing the least-recently-used set.
+    const entries = [];
+    const concurrency = memoryProfile.importCompileConcurrency === 1 ? 1 : 8;
+    for ( let i = 0; i < cacheKeys.length; i += concurrency ) {
+        const batch = cacheKeys.slice(i, i + concurrency);
+        const batchEntries = await Promise.all(batch.map(async key => {
+            const entry = await sessionRead(key) || {};
+            return { key, t: entry.t ?? 0 };
+        }));
+        entries.push(...batchEntries);
+    }
     entries.sort((a, b) => b.t - a.t);
-    sessionRemove(entries.slice(MAX_CACHE_ENTRY_LOW).map(a => a.key));
+    return sessionRemove(entries.slice(maxEntries).map(a => a.key));
+}
+
+export function pruneCSSCache(options = {}) {
+    if ( pendingCSSCachePrune ) { return pendingCSSCachePrune; }
+    const result = pruneCSSCacheNow(options);
+    pendingCSSCachePrune = result.finally(( ) => {
+        pendingCSSCachePrune = undefined;
+    });
+    return pendingCSSCachePrune;
 }
 
 /******************************************************************************/

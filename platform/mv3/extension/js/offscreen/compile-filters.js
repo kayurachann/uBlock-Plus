@@ -22,19 +22,70 @@
 import * as makeScriptlets from './make-scriptlets.js';
 import * as s14e from '../../lib/s14e-serializer.js';
 import * as sfp from '../static-filtering-parser.js';
+
+import {
+    compiledStorageKey,
+    newCompiledGeneration,
+} from '../compiled-storage.js';
+
 import { minimizeRules, minimizeRuleset, validateRules } from '../ubo-parser.js';
+
+import { deserializeCompiledListOr } from '../compiled-cache.js';
 import { fetchList } from './fetch-list.js';
+import { isCredentialFreeHTTPS } from '../imported-fetch-policy.js';
+import { isVerifiedSourceKey } from '../verified-source-handoff.js';
 import { makeCosmeticScripts } from './make-cosmetic-filters.js';
 import { parseNetworkFilter } from '../ubo-parser.js';
+import { pendingImportedMetadataKey } from '../imported-list-metadata.js';
 import { safeReplace } from './safe-replace.js';
 
 /******************************************************************************/
 
 const browser = (self.browser || self.chrome);
 
-const resourceTypes = await browser.runtime.sendMessage({
-    what: 'compileFilters:getResourceTypes'
-});
+let resourceTypes;
+const compilationErrors = [];
+const compiledIntegrityUpdates = [];
+const importedListUpdates = [];
+const requestedGeneration = new URL(self.location.href)
+    .searchParams.get('generation');
+const compiledGeneration = /^[a-f0-9]{32}$/.test(requestedGeneration)
+    ? requestedGeneration
+    : newCompiledGeneration();
+
+function reportProgress(stage, listid = '') {
+    const pending = browser.runtime.sendMessage({
+        what: 'compileFilters:progress',
+        generation: compiledGeneration,
+        stage,
+        listid,
+    });
+    pending?.catch?.(( ) => { });
+}
+
+function stageImportedListUpdate(update) {
+    if ( typeof update?.listid !== 'string' ) { return; }
+    if ( /^[a-f0-9]{32}$/.test(update.metadataToken) === false ) { return; }
+    const index = importedListUpdates.findIndex(
+        candidate => candidate.listid === update.listid
+    );
+    if ( index === -1 ) {
+        importedListUpdates.push(update);
+    } else {
+        importedListUpdates[index] = update;
+    }
+}
+
+function stageCompiledIntegrity(list) {
+    if ( list.sourceIntegrity === undefined ) { return; }
+    if ( compiledIntegrityUpdates.some(update => update.listid === list.id) ) {
+        return;
+    }
+    compiledIntegrityUpdates.push({
+        listid: list.id,
+        compiledIntegrity: list.sourceIntegrity,
+    });
+}
 
 /******************************************************************************/
 
@@ -176,13 +227,17 @@ export function compileFilters(listid, text, context = {}) {
     const specificCosmeticDetails = new Map();
     const scriptletDetails = new Map();
 
-    const lines = text.split(/\n/).map(a => a.trim());
     const filterStats = {
        total: 0,
        accepted: 0,
        rejected: 0,
     };
-    for ( const line of lines ) {
+    let lineBeg = 0;
+    while ( lineBeg <= text.length ) {
+        let lineEnd = text.indexOf('\n', lineBeg);
+        if ( lineEnd === -1 ) { lineEnd = text.length; }
+        const line = text.slice(lineBeg, lineEnd).trim();
+        lineBeg = lineEnd + 1;
         parser.parse(line);
         if ( parser.hasError() ) { continue; }
         if ( parser.isScriptletFilter() ) {
@@ -319,6 +374,129 @@ export async function toMv3Data(rulesetid, compiledData) {
 
 /******************************************************************************/
 
+async function sha256Hex(bytes) {
+    const digest = await globalThis.crypto.subtle.digest('SHA-256', bytes);
+    return Array.from(new Uint8Array(digest), byte =>
+        byte.toString(16).padStart(2, '0')
+    ).join('');
+}
+
+async function verifyPinnedText(text, integrity) {
+    const bytes = new TextEncoder().encode(text);
+    if ( bytes.byteLength !== integrity.bytes ) {
+        throw new Error('Pinned filter data has an unexpected size');
+    }
+    if ( await sha256Hex(bytes) !== integrity.digest ) {
+        throw new Error('Pinned filter data failed SHA-256 verification');
+    }
+    if ( /^\s*!#include\b/im.test(text) ) {
+        throw new Error(
+            'Pinned Filter Store sources must be self-contained and ' +
+            'cannot use !#include'
+        );
+    }
+    return text;
+}
+
+async function readPinnedResponse(response, maximumBytes) {
+    const reader = response.body?.getReader?.();
+    if ( reader === undefined ) {
+        throw new Error('Pinned filter response is not stream-readable');
+    }
+    const chunks = [];
+    let total = 0;
+    for (;;) {
+        const { done, value } = await reader.read();
+        if ( done ) { break; }
+        total += value.byteLength;
+        if ( total > maximumBytes ) {
+            await reader.cancel();
+            throw new Error('Pinned filter response exceeds its size limit');
+        }
+        chunks.push(value);
+    }
+    const bytes = new Uint8Array(total);
+    let offset = 0;
+    for ( const chunk of chunks ) {
+        bytes.set(chunk, offset);
+        offset += chunk.byteLength;
+    }
+    return bytes;
+}
+
+async function fetchPinnedText(list) {
+    const { sourceIntegrity: integrity } = list;
+    if ( isCredentialFreeHTTPS(list.id) === false ) {
+        throw new Error('Pinned filter source must use credential-free HTTPS');
+    }
+    if ( isVerifiedSourceKey(
+        list.verifiedSourceKey,
+        integrity.digest
+    ) ) {
+        const bin = await browser.storage.local.get(list.verifiedSourceKey);
+        const cached = bin?.[list.verifiedSourceKey];
+        await browser.storage.local.remove(list.verifiedSourceKey);
+        if ( cached !== undefined ) {
+            const metadataMatches = cached.sourceURL === list.id &&
+                cached.digest === integrity.digest &&
+                cached.bytes === integrity.bytes &&
+                typeof cached.text === 'string';
+            if ( metadataMatches ) {
+                try {
+                    return await verifyPinnedText(cached.text, integrity);
+                } catch {
+                }
+            }
+            // Fall through to a credential-free network refetch. The handoff
+            // is one-shot and cannot be trusted after any mismatch.
+        }
+    }
+
+    const options = {
+        cache: 'no-store',
+        credentials: 'omit',
+        // Pinned sources must name their final HTTPS resource directly. This
+        // prevents an otherwise invisible HTTPS -> HTTP -> HTTPS redirect.
+        redirect: 'error',
+        referrerPolicy: 'no-referrer',
+    };
+    if ( typeof globalThis.AbortSignal?.timeout === 'function' ) {
+        options.signal = globalThis.AbortSignal.timeout(30000);
+    }
+    const response = await fetch(list.id, options);
+    if ( response.ok === false ||
+        isCredentialFreeHTTPS(response.url) === false ) {
+        throw new Error('Pinned filter source could not be fetched over HTTPS');
+    }
+    const contentLength = response.headers.get('content-length');
+    if ( contentLength !== null ) {
+        const declaredSize = Number(contentLength);
+        if ( Number.isFinite(declaredSize) && declaredSize !== integrity.bytes ) {
+            throw new Error('Pinned filter response has an unexpected size');
+        }
+    }
+    const bytes = await readPinnedResponse(response, integrity.bytes);
+    if ( bytes.byteLength !== integrity.bytes ) {
+        throw new Error('Pinned filter response has an unexpected size');
+    }
+    if ( await sha256Hex(bytes) !== integrity.digest ) {
+        throw new Error('Pinned filter response failed SHA-256 verification');
+    }
+    try {
+        return verifyPinnedText(
+            new TextDecoder('utf-8', {
+                fatal: true,
+                ignoreBOM: true,
+            }).decode(bytes),
+            integrity
+        );
+    } catch {
+        throw new Error('Pinned filter response is not valid UTF-8 text');
+    }
+}
+
+/******************************************************************************/
+
 async function updateList(list) {
     const context = {
         env: [
@@ -329,11 +507,31 @@ async function updateList(list) {
             'ubol',
         ],
     };
-    const asset = { urls: [ list.id ] };
-    const text = await fetchList(context, asset, ( ) => {
-        browser.runtime.sendMessage({ what: 'keepAlive' });
-    });
-    if ( Boolean(text) === false ) { return; }
+    let text;
+    try {
+        if ( list.sourceIntegrity ) {
+            text = await fetchPinnedText(list);
+        } else {
+            const asset = {
+                urls: [ list.id ],
+                maxBytes: list.maxSourceBytes,
+                maxFetches: list.maxSourceFetches,
+                requireHTTPS: true,
+            };
+            text = await fetchList(context, asset, ( ) => {
+                browser.runtime.sendMessage({ what: 'keepAlive' });
+            });
+        }
+        if ( Boolean(text) === false ) {
+            throw new Error('Filter source returned no usable data');
+        }
+    } catch ( reason ) {
+        compilationErrors.push({
+            listid: list.id,
+            message: reason?.message || `${reason}`,
+        });
+        return;
+    }
 
     const metadata = extractMetadataFromList(text, [
         'Expires',
@@ -349,16 +547,36 @@ async function updateList(list) {
     });
     if ( Boolean(compiled) === false ) { return; }
 
-    await browser.runtime.sendMessage({
-        what: 'compileFilters:updateImportedListData',
+    const cacheKey = `rulesets.imported.compiled.${list.id}`;
+    const pendingMetadata = {
         listid: list.id,
-        compiled: s14e.serialize(compiled, { compress: true }),
+        metadataToken: newCompiledGeneration(),
         title: metadata.title,
         homeURL: metadata.homepage,
         expires: metadata.expires || 7,
+        verifiedSourceKey: '',
         filterStats: compiled.filterStats,
         ruleStats: compiled.ruleStats,
+    };
+    const metadataKey = pendingImportedMetadataKey(list.id);
+    await browser.storage.local.set({
+        [cacheKey]: {
+            serialized: s14e.serialize(compiled, { compress: true }),
+            sourceDigest: list.sourceIntegrity?.digest || '',
+            sourceBytes: list.sourceIntegrity?.bytes ?? null,
+            // A compile can fail after this individual list was refreshed.
+            // The envelope points to a small metadata sidecar so the next
+            // attempt can stage it without fetching again. Keeping the
+            // sidecar separate avoids rewriting a multi-MiB cache entry when
+            // the service worker commits metadata.
+            pendingMetadataToken: pendingMetadata.metadataToken,
+        },
+        [metadataKey]: pendingMetadata,
     });
+    stageImportedListUpdate(pendingMetadata);
+    if ( list.sourceIntegrity ) {
+        stageCompiledIntegrity(list);
+    }
 
     return compiled;
 }
@@ -366,14 +584,42 @@ async function updateList(list) {
 /******************************************************************************/
 
 async function getCompiledListData(list) {
-    const result = await browser.runtime.sendMessage({
-        what: 'compileFilters:getImportedListCompiledData',
-        listid: list.id,
-    });
-    if ( Boolean(result?.serialized) === false ) {
+    const cacheKey = `rulesets.imported.compiled.${list.id}`;
+    const metadataKey = pendingImportedMetadataKey(list.id);
+    const bin = await browser.storage.local.get(cacheKey);
+    const cached = bin?.[cacheKey];
+    const serialized = typeof cached === 'string'
+        ? cached
+        : cached?.serialized;
+    if ( Boolean(serialized) === false ) {
         return updateList(list);
     }
-    return s14e.deserialize(result.serialized);
+    if ( list.sourceIntegrity ) {
+        if ( cached?.sourceDigest !== list.sourceIntegrity.digest ||
+            cached?.sourceBytes !== list.sourceIntegrity.bytes ) {
+            return updateList(list);
+        }
+    }
+    const compiled = await deserializeCompiledListOr(
+        serialized,
+        s14e.deserialize,
+        async ( ) => {
+            await browser.storage.local.remove([ cacheKey, metadataKey ]);
+            return updateList(list);
+        }
+    );
+    if ( Boolean(compiled) === false ) { return; }
+    if ( list.sourceIntegrity ) { stageCompiledIntegrity(list); }
+    const pendingMetadataToken = cached?.pendingMetadataToken;
+    if ( pendingMetadataToken !== list.compiledMetadataToken &&
+        /^[a-f0-9]{32}$/.test(pendingMetadataToken) ) {
+        const metadataBin = await browser.storage.local.get(metadataKey);
+        const pendingMetadata = metadataBin?.[metadataKey];
+        if ( pendingMetadata?.metadataToken === pendingMetadataToken ) {
+            stageImportedListUpdate(pendingMetadata);
+        }
+    }
+    return compiled;
 }
 
 /******************************************************************************/
@@ -381,7 +627,9 @@ async function getCompiledListData(list) {
 function mergeCompiledData(to, from) {
     if ( from.dnrRules ) {
         if ( to.dnrRules ) {
-            to.dnrRules = to.dnrRules.concat(from.dnrRules);
+            for ( const rule of from.dnrRules ) {
+                to.dnrRules.push(rule);
+            }
         } else {
             to.dnrRules = from.dnrRules;
         }
@@ -391,15 +639,23 @@ function mergeCompiledData(to, from) {
             for ( const [ fromSelector, fromDetails ] of from.specificCosmeticDetails ) {
                 const toDetails = to.specificCosmeticDetails.get(fromSelector);
                 if ( toDetails ) {
-                    if ( toDetails.matches?.length ) {
-                        toDetails.matches = toDetails.matches.concat(fromDetails.matches);
-                    } else {
-                        toDetails.matches = fromDetails.matches;
+                    if ( fromDetails.matches?.length ) {
+                        if ( toDetails.matches?.length ) {
+                            for ( const hostname of fromDetails.matches ) {
+                                toDetails.matches.push(hostname);
+                            }
+                        } else {
+                            toDetails.matches = fromDetails.matches;
+                        }
                     }
-                    if ( toDetails.excludeMatches?.length ) {
-                        toDetails.excludeMatches = toDetails.excludeMatches.concat(fromDetails.excludeMatches);
-                    } else {
-                        toDetails.excludeMatches = fromDetails.excludeMatches;
+                    if ( fromDetails.excludeMatches?.length ) {
+                        if ( toDetails.excludeMatches?.length ) {
+                            for ( const hostname of fromDetails.excludeMatches ) {
+                                toDetails.excludeMatches.push(hostname);
+                            }
+                        } else {
+                            toDetails.excludeMatches = fromDetails.excludeMatches;
+                        }
                     }
                 } else {
                     to.specificCosmeticDetails.set(fromSelector, fromDetails);
@@ -415,15 +671,23 @@ function mergeCompiledData(to, from) {
                 const toDetails = to.scriptletDetails.get(fromKey);
                 if ( toDetails ) {
                     toDetails.trustedSource ||= fromDetails.trustedSource;
-                    if ( toDetails.matches?.length ) {
-                        toDetails.matches = toDetails.matches.concat(fromDetails.matches);
-                    } else {
-                        toDetails.matches = fromDetails.matches;
+                    if ( fromDetails.matches?.length ) {
+                        if ( toDetails.matches?.length ) {
+                            for ( const hostname of fromDetails.matches ) {
+                                toDetails.matches.push(hostname);
+                            }
+                        } else {
+                            toDetails.matches = fromDetails.matches;
+                        }
                     }
-                    if ( toDetails.excludeMatches?.length ) {
-                        toDetails.excludeMatches = toDetails.excludeMatches.concat(fromDetails.excludeMatches);
-                    } else {
-                        toDetails.excludeMatches = fromDetails.excludeMatches;
+                    if ( fromDetails.excludeMatches?.length ) {
+                        if ( toDetails.excludeMatches?.length ) {
+                            for ( const hostname of fromDetails.excludeMatches ) {
+                                toDetails.excludeMatches.push(hostname);
+                            }
+                        } else {
+                            toDetails.excludeMatches = fromDetails.excludeMatches;
+                        }
                     }
                 } else {
                     to.scriptletDetails.set(fromKey, fromDetails);
@@ -437,22 +701,35 @@ function mergeCompiledData(to, from) {
 
 /******************************************************************************/
 
-async function compileImportedList() {
+async function compileImportedList(memoryProfile) {
     const lists = await browser.runtime.sendMessage({
         what: 'compileFilters:getEnabledImportedLists'
     });
     if ( Boolean(lists?.length) === false ) { return; }
-    const promises = [];
-    for ( const list of lists ) {
-        if ( list.enabled !== true ) { continue; }
-        promises.push(getCompiledListData(list));
-    }
-    const compiledData = await Promise.all(promises);
-    const toMerge = compiledData.filter(a => a);
-    if ( toMerge.length === 0 ) { return; }
-    const merged = toMerge[0];
-    while ( toMerge.length > 1 ) {
-        mergeCompiledData(merged, toMerge.pop());
+    const enabledLists = lists.filter(a => a.enabled === true);
+    const concurrency = Math.max(
+        1,
+        Math.min(memoryProfile?.importCompileConcurrency ?? 1, enabledLists.length)
+    );
+    let merged;
+    for ( let i = 0; i < enabledLists.length; i += concurrency ) {
+        const batch = enabledLists.slice(i, i + concurrency);
+        const compiledData = await Promise.all(
+            batch.map(async list => {
+                reportProgress('list-start', list.id);
+                const compiled = await getCompiledListData(list);
+                reportProgress('list-complete', list.id);
+                return compiled;
+            })
+        );
+        for ( const compiled of compiledData ) {
+            if ( Boolean(compiled) === false ) { continue; }
+            if ( merged === undefined ) {
+                merged = compiled;
+            } else {
+                mergeCompiledData(merged, compiled);
+            }
+        }
     }
     return merged;
 }
@@ -473,40 +750,101 @@ async function compileSandboxFilters() {
 
 /******************************************************************************/
 
-(async ( ) => {
-    const [
-        sandboxResult,
-        importedResult,
-    ] = await Promise.all([
-        compileSandboxFilters(),
-        compileImportedList(),
-    ]);
+async function runCompiler() {
+    reportProgress('compiler-start');
+    resourceTypes = await browser.runtime.sendMessage({
+        what: 'compileFilters:getResourceTypes'
+    });
+    const memoryProfile = await browser.runtime.sendMessage({
+        what: 'compileFilters:getMemoryProfile',
+        deviceMemoryGiB: globalThis.navigator?.deviceMemory,
+    });
+    let sandboxResult;
+    let importedResult;
+    if ( memoryProfile?.importCompileConcurrency === 1 ) {
+        sandboxResult = await compileSandboxFilters();
+        importedResult = await compileImportedList(memoryProfile);
+    } else {
+        [ sandboxResult, importedResult ] = await Promise.all([
+            compileSandboxFilters(),
+            compileImportedList(memoryProfile),
+        ]);
+    }
+    reportProgress('source-compilation-complete');
     const sandboxCompiled = await toMv3Data('sandbox', sandboxResult) ?? {};
+    reportProgress('sandbox-conversion-complete');
     const importedCompiled = await toMv3Data('imported', importedResult) ?? {};
-    const msg = {
+    reportProgress('imported-conversion-complete');
+    if ( compilationErrors.length ) {
+        await browser.runtime.sendMessage({
+            what: 'compileFilters:result',
+            generation: compiledGeneration,
+            persisted: false,
+            errors: compilationErrors,
+        });
+        return;
+    }
+    const values = {};
+    const toRemove = [];
+    for ( const [ id, compiled ] of [
+        [ 'sandbox', sandboxCompiled ],
+        [ 'imported', importedCompiled ],
+    ] ) {
+        const dnrKey = compiledStorageKey(
+            compiledGeneration,
+            `${id}Filters.dnrRules`
+        );
+        if ( compiled.dnrRules?.length ) {
+            values[dnrKey] = compiled.dnrRules;
+        } else {
+            toRemove.push(dnrKey);
+        }
+        const scriptsKey = compiledStorageKey(
+            compiledGeneration,
+            `${id}Filters.userScripts`
+        );
+        if ( compiled.isolated?.length || compiled.main?.length ) {
+            values[scriptsKey] = {
+                ISOLATED: compiled.isolated ?? [],
+                MAIN: compiled.main ?? [],
+            };
+        } else {
+            toRemove.push(scriptsKey);
+        }
+    }
+    if ( Object.keys(values).length !== 0 ) {
+        await browser.storage.local.set(values);
+    }
+    if ( toRemove.length !== 0 ) {
+        await browser.storage.local.remove(toRemove);
+    }
+    reportProgress('generation-persisted');
+    await browser.runtime.sendMessage({
         what: 'compileFilters:result',
-        sandbox: {},
-        imported: {},
-    };
-    if ( sandboxCompiled.isolated?.length ) {
-        msg.sandbox.ISOLATED = sandboxCompiled.isolated;
-    }
-    if ( sandboxCompiled.main?.length ) {
-        msg.sandbox.MAIN = sandboxCompiled.main;
-    }
-    if ( sandboxCompiled.dnrRules?.length ) {
-        msg.sandbox.dnrRules = sandboxCompiled.dnrRules;
-    }
-    if ( importedCompiled.isolated?.length ) {
-        msg.imported.ISOLATED = importedCompiled.isolated;
-    }
-    if ( importedCompiled.main?.length ) {
-        msg.imported.MAIN = importedCompiled.main;
-    }
-    if ( importedCompiled.dnrRules?.length ) {
-        msg.imported.dnrRules = importedCompiled.dnrRules;
-    }
-    browser.runtime.sendMessage(msg);
-})();
+        persisted: true,
+        generation: compiledGeneration,
+        // The service worker commits these provenance markers only after the
+        // corresponding DNR rules and user scripts have activated. Keeping
+        // them out of this staging phase prevents the UI from reporting a
+        // newly compiled digest while Chrome is still enforcing older rules.
+        compiledIntegrityUpdates,
+        importedListUpdates,
+    });
+}
+
+runCompiler().catch(reason => {
+    const errors = compilationErrors.slice();
+    errors.push({
+        listid: 'compiler',
+        message: reason?.message || `${reason}`,
+    });
+    const pending = browser.runtime.sendMessage({
+        what: 'compileFilters:result',
+        generation: compiledGeneration,
+        persisted: false,
+        errors,
+    });
+    pending?.catch?.(( ) => { });
+});
 
 /******************************************************************************/

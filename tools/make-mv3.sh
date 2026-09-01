@@ -97,11 +97,13 @@ cp -R "$UBO_DIR"/src/lib/regexanalyzer "$UBOL_DIR"/lib/
 cp -R "$UBO_DIR/src/img/flags-of-the-world" "$UBOL_DIR"/img
 
 cp LICENSE.txt "$UBOL_DIR"/
+cp NOTICE.md "$UBOL_DIR"/
 
 echo "*** uBOLite.mv3: Copying mv3-specific files"
 cp platform/mv3/"$MANIFEST_DIR"/manifest.json "$UBOL_DIR"/
 cp platform/mv3/extension/*.html "$UBOL_DIR"/
 cp platform/mv3/extension/*.json "$UBOL_DIR"/
+cp -R platform/mv3/extension/filter-store "$UBOL_DIR"/
 cp platform/mv3/extension/css/* "$UBOL_DIR"/css/
 cp -R platform/mv3/extension/js/* "$UBOL_DIR"/js/
 cp platform/mv3/"$PLATFORM"/ext-compat.js "$UBOL_DIR"/js/ 2>/dev/null || :
@@ -127,6 +129,8 @@ mkdir -p "$UBOL_DIR"/lib/csstree
 cp "$UBO_DIR"/src/lib/csstree/* "$UBOL_DIR"/lib/csstree/
 cp platform/mv3/extension/lib/s14e-serializer/s14e-serializer.js \
     "$UBOL_DIR"/lib/
+cp platform/mv3/extension/lib/s14e-serializer/LICENSE \
+    "$UBOL_DIR"/lib/s14e-serializer.LICENSE
 
 echo "*** uBOLite.mv3: Generating rulesets"
 UBOL_BUILD_DIR=$(mktemp -d)
@@ -137,6 +141,9 @@ cp platform/mv3/*.js "$UBOL_BUILD_DIR"/
 cp platform/mv3/*.mjs "$UBOL_BUILD_DIR"/
 cp platform/mv3/extension/js/ubo-parser.js "$UBOL_BUILD_DIR"/js/
 cp platform/mv3/extension/js/utils.js "$UBOL_BUILD_DIR"/js/
+# make-rulesets imports offscreen/fetch-list.js, whose fetch-policy module
+# lives one directory above the copied offscreen tree.
+cp platform/mv3/extension/js/imported-fetch-policy.js "$UBOL_BUILD_DIR"/js/
 cp "$UBO_DIR"/src/lib/punycode.js "$UBOL_BUILD_DIR"/js/
 cp -R "$UBO_DIR"/src/lib/regexanalyzer "$UBOL_BUILD_DIR"/js/
 cp -R "$UBO_DIR"/src/js/resources "$UBOL_BUILD_DIR"/js/
@@ -167,7 +174,7 @@ chmod '=rw' "$tmp_manifest"
 if [ -z "$TAGNAME" ]; then
     TAGNAME="$(jq -r .version "$UBOL_DIR"/manifest.json)"
     # Enable DNR rule debugging
-    jq '.permissions += ["declarativeNetRequestFeedback"]' \
+    jq 'if (.permissions | index("declarativeNetRequestFeedback")) then . else .permissions += ["declarativeNetRequestFeedback"] end' \
         "$UBOL_DIR/manifest.json" > "$tmp_manifest" \
         && mv "$tmp_manifest" "$UBOL_DIR/manifest.json"
     # Use a different extension id than the official one
@@ -199,7 +206,7 @@ if [ "$FULL" = "yes" ]; then
         EXTENSION="xpi"
     fi
     echo "*** uBOLite.mv3: Creating publishable package..."
-    UBOL_PACKAGE_NAME="uBOLite_$TAGNAME.$PLATFORM.$EXTENSION"
+    UBOL_PACKAGE_NAME="uBlock-Plus_$TAGNAME.$PLATFORM.$EXTENSION"
     UBOL_PACKAGE_DIR=$(mktemp -d)
     mkdir -p "$UBOL_PACKAGE_DIR"
     cp -R "$UBOL_DIR"/* "$UBOL_PACKAGE_DIR"/
@@ -209,5 +216,14 @@ if [ "$FULL" = "yes" ]; then
     cd - > /dev/null
     cp "$UBOL_PACKAGE_DIR"/"$UBOL_PACKAGE_NAME" dist/build/
     rm -rf "$UBOL_PACKAGE_DIR"
+    (
+        cd dist/build
+        if command -v sha256sum >/dev/null 2>&1; then
+            sha256sum "$UBOL_PACKAGE_NAME" > "$UBOL_PACKAGE_NAME.sha256"
+        else
+            shasum -a 256 "$UBOL_PACKAGE_NAME" > "$UBOL_PACKAGE_NAME.sha256"
+        fi
+    )
     echo "Package location: $(pwd)/dist/build/$UBOL_PACKAGE_NAME"
+    echo "Checksum location: $(pwd)/dist/build/$UBOL_PACKAGE_NAME.sha256"
 fi

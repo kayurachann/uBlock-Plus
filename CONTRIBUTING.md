@@ -1,6 +1,6 @@
 # Contributing
 
-Thank you for helping improve uBlock MV3 Community.
+Thank you for helping improve uBlock Plus+.
 
 ## Before opening an issue
 

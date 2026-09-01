@@ -1,65 +1,76 @@
-# uBlock MV3 Community
+# uBlock Plus+
 
-[Tiếng Việt](docs/README.vi.md) · [Feature compatibility](docs/FEATURE-MATRIX.md) · [Architecture](docs/ARCHITECTURE.md) · [Privacy](docs/PRIVACY.md)
+[Tiếng Việt](docs/README.vi.md) · [Compatibility](docs/FEATURE-MATRIX.md) · [Architecture](docs/ARCHITECTURE.md) · [Privacy](docs/PRIVACY.md)
 
-An independent, GPL-3.0-or-later community fork of the current uBlock Origin codebase, focused on a transparent and maintainable Manifest V3 build for Chromium.
+uBlock Plus+ is an independent, sideload-first, GPL-3.0-or-later content-blocking platform for Chromium Manifest V3. It keeps the proven upstream filtering/compiler foundation while building a user-sovereign product around community filter repositories, explicit power-user modes and low-memory operation. Chrome Web Store submission is not a project goal.
 
 > [!IMPORTANT]
-> This project is not an official uBlock Origin or uBO Lite release and is not endorsed by Raymond Hill. Chrome MV3 does not expose the blocking APIs needed for exact uBlock Origin MV2 parity. This fork aims for the closest reliable behavior the public MV3 platform permits and documents the gaps instead of claiming 1:1 compatibility.
+> This is not an official uBlock Origin or uBO Lite release and is not endorsed by Raymond Hill. Public Chrome MV3 does not expose every blocking primitive available to the original MV2 extension. uBlock Plus+ documents those API gaps and uses separate, opt-in distribution modes where Chrome officially provides stronger capabilities; it does not bypass browser security controls or misrepresent feature parity.
 
-## What is included
+## User sovereignty
 
-- Declarative network blocking through bundled static rulesets and runtime dynamic/session rules.
-- Cosmetic filtering, packaged scriptlets, per-site filtering modes, strict blocking, popup blocking, element picker/zapper, custom filters, imported lists, backup/restore, and matched-rule diagnostics.
-- A thin event-driven service worker with persisted state; request filtering stays in Chrome's DNR engine.
-- Optional Chrome privacy controls for hyperlink auditing, network prediction, WebRTC non-proxied UDP, and Privacy Sandbox advertising APIs. The `privacy` permission is optional and requested only from the settings page.
-- Automatic language-appropriate regional lists, including ABPVN when the browser language is Vietnamese.
-- Reproducible source builds on Linux and a native PowerShell build path on Windows.
+- Core settings, subscriptions, repositories and custom filters can be exported and restored by the user.
+- Any compatible HTTPS filter repository may be added; the built-in catalog is a convenience, not a lock-in mechanism.
+- Core filtering permissions are documented; the separate `privacy` permission is optional, requested at the point of use and reversible.
+- Remote filter lists are treated as data. Executable extension code remains packaged and reviewable.
+- No network telemetry, advertising, analytics account or project-operated browsing-history service. Storage-size diagnostics remain local.
 
-The implementation is based on upstream's actively maintained `platform/mv3` architecture rather than a manifest-only conversion of the old MV2 release bundle.
+## Power distribution modes
 
-## Build
+| Mode | Installation | Purpose |
+| --- | --- | --- |
+| Power | Source build / Load unpacked | Default distribution with custom repositories, advanced user lists/scripts, DNR feedback diagnostics and portable core configuration. |
+| Enterprise | Organization policy | May use policy-only Chrome capabilities such as `webRequestBlocking` where administrators explicitly deploy them. |
+| Native companion | Optional separate open-source install | Future DNS/CNAME and local diagnostic capabilities unavailable to the public extension API; never required for core blocking. |
 
-Prerequisites: Git with submodules, Node.js 22 or newer, and network access for downloading filter-list data.
+All modes share the same auditable filtering core. Sideloading removes Chrome Web Store policy constraints, but it does not remove Chrome's MV3 runtime quotas or security boundaries.
 
-### Windows (PowerShell)
+## Current foundation
+
+- Static, dynamic and session Declarative Net Request rules.
+- Cosmetic filtering and packaged scriptlets.
+- Per-site filtering modes, strict blocking and popup blocking.
+- Element picker, zapper and unpicker.
+- Custom filters, imported lists, matched-rule diagnostics and backup/restore.
+- Unpacked-only `declarativeNetRequestFeedback` access for richer matched-rule diagnostics.
+- Automatic regional lists, including ABPVN for Vietnamese browser profiles.
+- Optional privacy controls for hyperlink auditing, network prediction, non-proxied WebRTC UDP and Privacy Sandbox advertising APIs.
+- Event-driven service worker with persistent state and no permanent MV2 background page.
+- Native PowerShell and Linux build paths, release validation and pinned GitHub Actions dependencies.
+
+The current MVP adds a packaged curated Filter Store, up to eight user-supplied HTTPS catalogs, source-integrity/provenance checks, quota-cost visibility, selectable Low-memory Mode and community feature governance. Custom repositories are not publisher-signed in this release and are always labeled Community. See the architecture and roadmap documents for measured status rather than relying on marketing claims.
+
+## Build and sideload
+
+Prerequisites: Chrome/Chromium or Edge 130+, Git with submodules, Node.js 22 or newer and network access for downloading filter-list data.
+
+### Windows
 
 ```powershell
-git clone --recurse-submodules https://github.com/kayurachann/uBlock-MV3-Community.git
-cd uBlock-MV3-Community
-.\tools\make-mv3.ps1 -Platform chromium
+git clone --recurse-submodules https://github.com/kayurachann/uBlock-Plus.git
+cd uBlock-Plus
+.\tools\make-mv3.ps1 -Platform chromium -Version 1.0.0
 ```
 
 ### Linux/macOS
 
 ```bash
-git clone --recurse-submodules https://github.com/kayurachann/uBlock-MV3-Community.git
-cd uBlock-MV3-Community
+git clone --recurse-submodules https://github.com/kayurachann/uBlock-Plus.git
+cd uBlock-Plus
 make mv3-chromium
 ```
 
-The unpacked Chromium extension is generated at `dist/build/uBOLite.chromium`. Load it from `chrome://extensions` by enabling Developer mode and choosing **Load unpacked**.
+Open `chrome://extensions` (or `edge://extensions`), enable **Developer mode**, choose **Load unpacked**, and select `dist/build/uBOLite.chromium`. Then open the extension's **Details** page and, whenever the browser shows it, enable **Allow User Scripts** so cosmetic and packaged-scriptlet filters from imported lists can run. Release ZIP files and their SHA-256 checksum files are created under `dist/build/` with the `uBlock-Plus_` prefix.
 
-Filter lists are live external inputs and the build creates a local cache/secret, so separate builds are functionally equivalent but are not expected to be byte-for-byte identical.
-
-## Development
+## Development checks
 
 ```bash
 npm ci
 npm run lint
 npm test
+node tools/validate-mv3.mjs dist/build/uBOLite.chromium --release
 ```
 
-Run the MV3 validator against an assembled extension:
-
-```bash
-node tools/validate-mv3.mjs dist/build/uBOLite.chromium
-```
-
-The CI workflow builds the extension, validates its manifest and DNR resources, and uploads the unpacked artifact. Do not use the upstream store-publishing targets: this fork has no access to official uBlock Origin store identities or signing keys.
-
-## Upstream and attribution
-
-This repository preserves the full upstream Git history and keeps [`gorhill/uBlock`](https://github.com/gorhill/uBlock) configured as `upstream`. See [NOTICE.md](NOTICE.md) for attribution and [CONTRIBUTING.md](CONTRIBUTING.md) before opening a change.
+The repository preserves upstream Git history and keeps [`gorhill/uBlock`](https://github.com/gorhill/uBlock) configured as a fetch-only `upstream` remote. See [NOTICE.md](NOTICE.md), [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
 
 Licensed under the [GNU General Public License v3.0 or later](LICENSE.txt).

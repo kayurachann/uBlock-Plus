@@ -425,17 +425,18 @@ const perListHaystack = new WeakMap();
 const applyEnabledRulesets = (( ) => {
     const apply = async (final = false) => {
         dom.cl.add(dom.body, 'committing');
+        try {
 
-        const enabledRulesets = [];
-        const rulesetEntries =
+            const enabledRulesets = [];
+            const rulesetEntries =
             qsa$('#lists [data-role="leaf"][data-rulesetid]');
-        for ( const listEntry of rulesetEntries ) {
-            const checked = qs$(listEntry, 'input[type="checkbox"]:checked') !== null;
-            if ( checked === false ) { continue; }
-            const { rulesetid } = listEntry.dataset;
-            if ( dom.cl.has(listEntry, 'fromAdmin') ) { continue; }
+            for ( const listEntry of rulesetEntries ) {
+                const checked = qs$(listEntry, 'input[type="checkbox"]:checked') !== null;
+                if ( checked === false ) { continue; }
+                const { rulesetid } = listEntry.dataset;
+                if ( dom.cl.has(listEntry, 'fromAdmin') ) { continue; }
             enabledRulesets.push(rulesetid);
-        }
+            }
 
         dom.cl.remove('#lists .listEntry.toggled', 'toggled');
 
@@ -455,18 +456,26 @@ const applyEnabledRulesets = (( ) => {
                 msg.toRemove = toRemove;
             }
             const result = await sendMessage(msg);
-            dom.text('#dnrError', result?.error || '');
+            dom.text(
+                '#dnrError',
+                result?.error || result?.warnings?.slice(0, 3).join('; ') || ''
+            );
         }
 
-        dom.cl.remove(dom.body, 'committing');
+        } catch ( reason ) {
+            dom.text('#dnrError', reason?.message || `${reason}`);
+        } finally {
+            dom.cl.remove(dom.body, 'committing');
+        }
     };
 
     let timer;
 
     self.addEventListener('beforeunload', ( ) => {
-        if ( timer !== undefined ) { return; }
-        self.clearTimeout(timer);
-        timer = undefined;
+        if ( timer !== undefined ) {
+            self.clearTimeout(timer);
+            timer = undefined;
+        }
         apply(true);
     });
 
@@ -489,13 +498,27 @@ const applyEnabledRulesets = (( ) => {
 
 async function importFromInput() {
     const input = qs$('.importRulesetURL input[type="url"]');
-    const url = input.value;
-    if ( /^[a-z-]+:\/\/(?:\S+\/\S*|\/\S+)/m.test(url) === false ) { return; }
     dom.cl.add(dom.body, 'committing');
-    await sendMessage({ what: 'importFilterList', url });
-    qs$('.importRulesetURL').open = false;
-    input.value = '';
-    dom.cl.remove(dom.body, 'committing');
+    try {
+        const url = new URL(input.value.trim());
+        if ( url.protocol !== 'https:' || url.username || url.password ) {
+            throw new Error('Imported filter lists require an HTTPS URL');
+        }
+        const result = await sendMessage({
+            what: 'importFilterList',
+            url: url.href,
+        });
+        dom.text(
+            '#dnrError',
+            result?.warnings?.slice(0, 3).join('; ') || ''
+        );
+        qs$('.importRulesetURL').open = false;
+        input.value = '';
+    } catch ( reason ) {
+        dom.text('#dnrError', reason?.message || `${reason}`);
+    } finally {
+        dom.cl.remove(dom.body, 'committing');
+    }
 }
 
 function removeImportedList(ev) {
@@ -526,6 +549,11 @@ function unremoveImportedList(ev) {
 
 async function start() {
     await renderFilterLists();
+    import('./filter-store.js').then(module => {
+        module.initializeFilterStore();
+    }).catch(reason => {
+        console.error(reason);
+    });
 
     dom.on('#findInLists', 'input', searchFilterLists);
     dom.on('#lists', 'click', '.listEntry[data-nodeid] > .detailbar, .listExpander', ev => {

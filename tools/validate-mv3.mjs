@@ -1,7 +1,7 @@
 /*******************************************************************************
 
-    uBlock MV3 Community
-    Copyright (C) 2026-present uBlock MV3 Community contributors
+    uBlock Plus+
+    Copyright (C) 2026-present uBlock Plus+ contributors
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see {http://www.gnu.org/licenses/}.
 
-    Home: https://github.com/kayurachann/uBlock-MV3-Community
+    Home: https://github.com/kayurachann/uBlock-Plus
 */
 
 import { Buffer } from 'node:buffer';
@@ -39,6 +39,22 @@ let dnrRuleCount = 0;
 
 const reportError = message => {
     errors.push(message);
+};
+
+const isValidChromiumVersion = value => {
+    if ( typeof value !== 'string' ) { return false; }
+    const parts = value.split('.');
+    if ( parts.length < 1 || parts.length > 4 ) { return false; }
+    let hasNonZeroPart = false;
+    for ( const part of parts ) {
+        if ( /^(?:0|[1-9]\d*)$/.test(part) === false ) { return false; }
+        const number = Number(part);
+        if ( Number.isSafeInteger(number) === false || number > 65535 ) {
+            return false;
+        }
+        hasNonZeroPart ||= number !== 0;
+    }
+    return hasNonZeroPart;
 };
 
 const relativeExtensionPath = value => {
@@ -140,8 +156,24 @@ const manifest = await fs.readFile(manifestPath, { encoding: 'utf8' })
 if ( manifest.manifest_version !== 3 ) {
     reportError('manifest.json must declare manifest_version 3');
 }
-if ( /^\d+(?:\.\d+){0,3}$/.test(manifest.version) === false ) {
+if ( isValidChromiumVersion(manifest.version) === false ) {
     reportError(`Invalid Chromium extension version: ${manifest.version}`);
+}
+if ( Number.parseInt(manifest.minimum_chrome_version, 10) < 130 ) {
+    reportError(
+        'minimum_chrome_version must be 130+ for memory-safe storage cleanup'
+    );
+}
+for ( const field of [ 'permissions', 'optional_permissions' ] ) {
+    const values = manifest[field] || [];
+    if ( new Set(values).size !== values.length ) {
+        reportError(`manifest.json ${field} contains duplicates`);
+    }
+}
+for ( const permission of manifest.optional_permissions || [] ) {
+    if ( manifest.permissions?.includes(permission) ) {
+        reportError(`Permission is both required and optional: ${permission}`);
+    }
 }
 if ( manifest.background?.service_worker === undefined ) {
     reportError('manifest.json does not declare a background service worker');
@@ -154,12 +186,19 @@ if ( manifest.background?.service_worker === undefined ) {
 if ( manifest.permissions?.includes('declarativeNetRequest') !== true ) {
     reportError('manifest.json does not request declarativeNetRequest');
 }
-if (
-    releaseMode &&
-    manifest.permissions?.includes('declarativeNetRequestFeedback')
-) {
+if ( manifest.permissions?.includes('declarativeNetRequestFeedback') !== true ) {
     reportError(
-        'Release builds must not request declarativeNetRequestFeedback'
+        'Sideload builds must request declarativeNetRequestFeedback for ' +
+        'matched-rule diagnostics'
+    );
+}
+if ( manifest.permissions?.includes('userScripts') !== true ) {
+    reportError('Sideload builds must request userScripts');
+}
+if ( manifest.permissions?.includes('webRequestBlocking') ) {
+    reportError(
+        'The unpacked Power build must not request the policy-only ' +
+        'webRequestBlocking permission'
     );
 }
 
@@ -201,7 +240,23 @@ if ( typeof manifest.default_locale === 'string' ) {
     );
 }
 await validateFileReference('LICENSE.txt', 'License');
+for ( const requiredPath of [
+    'filter-store/catalog.json',
+    'js/compiled-filters.js',
+    'js/compiled-storage.js',
+    'js/filter-store.js',
+    'js/filter-store-model.js',
+    'js/imported-fetch-policy.js',
+    'js/memory-manager.js',
+] ) {
+    await validateFileReference(requiredPath, 'Required uBlock Plus+ component');
+}
 if ( releaseMode ) {
+    await validateFileReference('NOTICE.md', 'Attribution notice');
+    await validateFileReference(
+        'lib/s14e-serializer.LICENSE',
+        's14e serializer license'
+    );
     const debugRules = path.join(extensionDir, 'rulesets', 'debug');
     const debugRulesStat = await fs.stat(debugRules).catch(( ) => { });
     if ( debugRulesStat !== undefined ) {

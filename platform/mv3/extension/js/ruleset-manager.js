@@ -20,6 +20,11 @@
 */
 
 import {
+    ACTIVE_COMPILED_GENERATION_KEY,
+    compiledStorageKey,
+} from './compiled-storage.js';
+
+import {
     addImportedLists,
     getEnabledImportedLists,
     getImportedLists,
@@ -213,13 +218,29 @@ export async function updateDynamicAndSessionRules() {
     await updateRegexRules(currentRules, addRules, removeRuleIds);
     if ( addRules.length === 0 && removeRuleIds.length === 0 ) { return; }
 
-    const dynamicRegexCountBefore = await getDynamicRegexRuleCount();
-    let dynamicRegexCountAfter = 0;
+    const safeAddRules = toSafeDynamicRules(addRules) || [];
+    const dynamicRegexCountBefore = currentRules.reduce((count, rule) =>
+        count + (rule?.condition?.regexFilter ? 1 : 0), 0
+    );
+    // Rules in the special/user realms are not replaced by this operation.
+    // Include them in the projected total so an increase in stock regex rules
+    // still clears session rules before Chrome evaluates the shared regex
+    // quota.
+    const retainedRegexCount = currentRules.reduce((count, rule) =>
+        count + (
+            rule?.id >= SPECIAL_RULES_REALM &&
+            rule.condition?.regexFilter
+                ? 1
+                : 0
+        ), 0
+    );
+    let addedRegexCount = 0;
     let ruleId = 1;
-    for ( const rule of addRules ) {
-        if ( rule?.condition.regexFilter ) { dynamicRegexCountAfter += 1; }
+    for ( const rule of safeAddRules ) {
+        if ( rule?.condition?.regexFilter ) { addedRegexCount += 1; }
         rule.id = ruleId++;
     }
+    const dynamicRegexCountAfter = retainedRegexCount + addedRegexCount;
     if ( dynamicRegexCountAfter !== 0 ) {
         ubolLog(`Using ${dynamicRegexCountAfter}/${dnr.MAX_NUMBER_OF_REGEX_RULES} dynamic regex-based DNR rules`);
     }
@@ -233,14 +254,14 @@ export async function updateDynamicAndSessionRules() {
 
     try {
         await dnr.updateDynamicRules({
-            addRules: toSafeDynamicRules(addRules),
+            addRules: safeAddRules,
             removeRuleIds,
         });
         if ( removeRuleIds.length !== 0 ) {
             ubolLog(`Remove ${removeRuleIds.length} dynamic DNR rules`);
         }
-        if ( addRules.length !== 0 ) {
-            ubolLog(`Add ${addRules.length} dynamic DNR rules`);
+        if ( safeAddRules.length !== 0 ) {
+            ubolLog(`Add ${safeAddRules.length} dynamic DNR rules`);
         }
     } catch(reason) {
         ubolErr(`updateDynamicAndSessionRules/${reason}`);
@@ -563,7 +584,10 @@ export async function getRulesetRules(id) {
     const ruleset = rulesetDetails.get(id);
     if ( ruleset === undefined ) { return; }
     if ( /^[a-z-]+:\/\//.test(id) ) {
-        const serialized = await localRead(`rulesets.imported.compiled.${id}`);
+        const cached = await localRead(`rulesets.imported.compiled.${id}`);
+        const serialized = typeof cached === 'string'
+            ? cached
+            : cached?.serialized;
         return { serialized };
     }
     if ( Boolean(ruleset.rules) === false ) { return; }
@@ -653,10 +677,6 @@ async function enableRulesets(ids) {
         disableRulesetSet.delete(id);
     }
 
-    if ( enableRulesetSet.size === 0 && disableRulesetSet.size === 0 ) {
-        return response;
-    }
-
     const enableRulesetIds = Array.from(enableRulesetSet);
     const disableRulesetIds = Array.from(disableRulesetSet);
 
@@ -742,18 +762,15 @@ async function getEffectiveUserRules() {
     return userRules;
 }
 
-async function updateUserRules() {
-    const [
-        userRules,
-        userRulesText = '',
-        sandboxRules,
-        importedRules,
-    ] = await Promise.all([
-        getEffectiveUserRules(),
-        localRead('userDnrRules'),
-        localRead('sandboxFilters.dnrRules'),
-        localRead('importedFilters.dnrRules'),
-    ]);
+async function updateUserRules(generation) {
+    // Keep only ids from the existing dynamic rules before loading compiled
+    // filter arrays. Holding all three large representations at once causes a
+    // pronounced peak in a MV3 service worker on low-memory devices.
+    const removeRuleIds = (await getEffectiveUserRules()).map(a => a.id);
+    const userRulesText = await localRead('userDnrRules') || '';
+    const effectiveGeneration = generation === undefined
+        ? await localRead(ACTIVE_COMPILED_GENERATION_KEY) || ''
+        : generation;
 
     const effectiveRulesText = rulesetConfig.developerMode
         ? userRulesText
@@ -761,20 +778,35 @@ async function updateUserRules() {
 
     const parsed = rulesFromText(effectiveRulesText);
     const { rules } = parsed;
-    if ( Array.isArray(sandboxRules) ) {
-        sandboxRules.forEach(a => rules.push(a));
+    {
+        const sandboxRules = await localRead(compiledStorageKey(
+            effectiveGeneration,
+            'sandboxFilters.dnrRules'
+        ));
+        if ( Array.isArray(sandboxRules) ) {
+            for ( const rule of sandboxRules ) {
+                rules.push(rule);
+            }
+        }
     }
     // User rules have high priority
     rules.forEach(a => {
         a.priority = (a.priority || 1) + USER_RULES_PRIORITY;
     });
-    if ( Array.isArray(importedRules) ) {
-        importedRules.forEach(a => rules.push(a));
+    {
+        const importedRules = await localRead(compiledStorageKey(
+            effectiveGeneration,
+            'importedFilters.dnrRules'
+        ));
+        if ( Array.isArray(importedRules) ) {
+            for ( const rule of importedRules ) {
+                rules.push(rule);
+            }
+        }
     }
-    const removeRuleIds = [ ...userRules.map(a => a.id) ];
     const rejectedRegexes = [];
     const addRules = await pruneInvalidRegexRules('user', rules, rejectedRegexes);
-    const out = { added: 0, removed: 0, errors: [] };
+    const out = { added: 0, removed: 0, errors: [], fatalError: '' };
 
     if ( rejectedRegexes.length !== 0 ) {
         rejectedRegexes.forEach(e =>
@@ -792,30 +824,39 @@ async function updateUserRules() {
         rule.id = USER_RULES_BASE_RULE_ID + ruleId++;
     }
 
-    // Rules are first removed separately to ensure registered rules match
-    // user rules text. A bad rule in user rules text would prevent the
-    // rules from being removed if the removal was done at the same time as
-    // adding rules.
+    let effectiveRuleCount = removeRuleIds.length;
+    const safeAddRules = toSafeDynamicRules(addRules);
     try {
-        await dnr.updateDynamicRules({ removeRuleIds });
-        await dnr.updateDynamicRules({ addRules: toSafeDynamicRules(addRules) });
+        // A single DNR update is atomic: if Chrome rejects any added rule or
+        // the quota is exhausted, the previously active rules remain intact.
+        await dnr.updateDynamicRules({
+            removeRuleIds,
+            addRules: safeAddRules,
+        });
         if ( removeRuleIds.length !== 0 ) {
             ubolLog(`updateUserRules() / Removed ${removeRuleIds.length} dynamic DNR rules`);
         }
         if ( addRules.length !== 0 ) {
             ubolLog(`updateUserRules() / Added ${addRules.length} DNR rules`);
         }
-        out.added = addRules.length;
+        out.added = safeAddRules.length;
         out.removed = removeRuleIds.length;
+        effectiveRuleCount = safeAddRules.length;
     } catch(reason) {
         ubolErr(`updateUserRules/${reason}`);
-        out.errors.push(`${reason}`);
+        out.fatalError = `${reason}`;
+        out.errors.push(out.fatalError);
     } finally {
-        const userRules = await getEffectiveUserRules();
-        if ( userRules.length === 0 ) {
-            await localRemove('userDnrRuleCount');
-        } else {
-            await localWrite('userDnrRuleCount', addRules.length);
+        try {
+            if ( effectiveRuleCount === 0 ) {
+                await localRemove('userDnrRuleCount');
+            } else {
+                await localWrite('userDnrRuleCount', effectiveRuleCount);
+            }
+        } catch ( reason ) {
+            // This counter is informational. A storage failure here must not
+            // make an already-atomic DNR update look as though it failed.
+            ubolErr(`updateUserRules/count/${reason}`);
         }
     }
     return out;

@@ -1,6 +1,6 @@
 {
   "extName": {
-    "message": "uBlock MV3 Community",
+    "message": "uBlock Plus+",
     "description": "extension name."
   },
   "extShortDesc": {
@@ -12,8 +12,8 @@
     "description": "Appears aside each filter list in the _3rd-party filters_ pane"
   },
   "dashboardName": {
-    "message": "uBO Lite — Панель керування",
-    "description": "English: uBO Lite — Dashboard"
+    "message": "uBlock Plus+ — Панель керування",
+    "description": "English: uBlock Plus+ — Dashboard"
   },
   "settingsPageName": {
     "message": "Налаштування",
@@ -104,7 +104,7 @@
     "description": "Placeholder text which describes the purpose of the textarea widget"
   },
   "customListImportUserScriptsInfo": {
-    "message": "Щоб застосувати косметичні фільтри або фільтри на основі скриптів з імпортованих списків, необхідно надати uBO Lite дозвіл на виконання користувацьких скриптів.",
+    "message": "Щоб застосувати косметичні фільтри або фільтри на основі скриптів з імпортованих списків, необхідно надати uBlock Plus+ дозвіл на виконання користувацьких скриптів.",
     "description": "A notice to inform user that the enforcement of some filters requires permission to execute 'user scripts'"
   },
   "customFiltersImportExportLabel": {
@@ -116,7 +116,7 @@
     "description": "Placeholder text which describes the purpose of the textarea widget"
   },
   "userScriptsInfo": {
-    "message": "Щоб застосувати косметичні фільтри або фільтри на основі скриптів із імпортованих списків, необхідно надати uBO Lite дозвіл на виконання користувацьких скриптів. Відкрийте сторінку розширень у браузері (<code>chrome://extensions</code> у Chrome або <code>about:addons</code> у Firefox), перейдіть до детальної інформації про <b>uBO Lite</b> та увімкніть опцію <b>«Дозволити користувацькі скрипти»</b> (також відомі як «неперевірені сторонні скрипти»).",
+    "message": "Щоб застосувати косметичні фільтри або фільтри на основі скриптів із імпортованих списків, необхідно надати uBlock Plus+ дозвіл на виконання користувацьких скриптів. Відкрийте сторінку розширень у браузері (<code>chrome://extensions</code> у Chrome або <code>about:addons</code> у Firefox), перейдіть до детальної інформації про <b>uBlock Plus+</b> та увімкніть опцію <b>«Дозволити користувацькі скрипти»</b> (також відомі як «неперевірені сторонні скрипти»).",
     "description": "A notice to inform user on how to enable 'user scripts' permission"
   },
   "aboutChangelog": {
@@ -188,7 +188,7 @@
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option3": {
-    "message": "Виявляє uBO Lite",
+    "message": "Виявляє uBlock Plus+",
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option4": {
@@ -196,7 +196,7 @@
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option5": {
-    "message": "Вади коли uBO Lite ввімкнено",
+    "message": "Вади коли uBlock Plus+ ввімкнено",
     "description": "An entry in the widget used to select the type of issue"
   },
   "supportS6Select1Option6": {
@@ -292,7 +292,7 @@
     "description": "Header for filter-creation section in the dashboard"
   },
   "sandboxEditorUserScriptsInfo": {
-    "message": "Щоб застосувати косметичні фільтри або фільтри на основі скриптів із пісочниці, необхідно надати uBO Lite дозвіл на виконання користувацьких скриптів.",
+    "message": "Щоб застосувати косметичні фільтри або фільтри на основі скриптів із пісочниці, необхідно надати uBlock Plus+ дозвіл на виконання користувацьких скриптів.",
     "description": "A notice to inform user that the enforcement of some filters requires permission to execute 'user scripts'"
   },
   "developerModeLabel": {
@@ -324,7 +324,7 @@
     "description": "Web page title for the strict-blocked page"
   },
   "strictblockSentence1": {
-    "message": "uBO Lite заблокував завантаження таких сторінок:",
+    "message": "uBlock Plus+ заблокував завантаження таких сторінок:",
     "description": "Sentence used in the strict-blocked page"
   },
   "strictblockReasonSentence1": {
