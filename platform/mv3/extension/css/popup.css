@@ -4,13 +4,19 @@
 }
 @keyframes busy { to { opacity: 90%; } }
 
+:root { overflow: hidden; }
 :root body,
 :root.mobile body {
     --popup-gap: 12px;
     background: var(--surface-0);
     box-sizing: border-box;
+    height: 600px;
     margin: 0;
+    max-height: 100vh;
+    max-height: 100svh;
     min-width: 360px;
+    overflow: hidden;
+    position: relative;
     width: 360px;
 }
 :root[data-density="compact"] body {
@@ -26,7 +32,16 @@
 button,
 select { font: inherit; }
 button { color: inherit; fill: currentColor; }
-main { display: flex; flex-direction: column; }
+main {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+}
+main > * { flex-shrink: 0; }
 body.busy main { pointer-events: none; }
 aside {
     background-color: var(--surface-1);
@@ -58,7 +73,18 @@ body.busy aside {
     padding: 9px var(--popup-gap);
 }
 .popupHeader img { height: 30px; width: 30px; }
-.popupHeader > div { display: flex; flex-direction: column; line-height: 1.2; }
+.popupHeader > div {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+    min-width: 0;
+}
+.popupHeader > div strong,
+.popupHeader > div span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 .popupHeader > div span { color: var(--ink-2); font-size: 11px; }
 .iconButton {
     background: transparent;
@@ -108,10 +134,16 @@ body.busy aside {
     font-size: 2em;
     height: 58px;
     padding: 14px;
-    transition: transform 120ms ease, opacity 120ms ease;
+    transition: box-shadow 120ms ease, opacity 120ms ease;
     width: 58px;
 }
-.sitePower:hover { transform: scale(1.05); }
+.sitePower:hover {
+    box-shadow: 0 6px 18px color-mix(
+        in srgb,
+        var(--accent-surface-1) 45%,
+        transparent
+    );
+}
 .sitePower:disabled { cursor: not-allowed; opacity: 0.55; transform: none; }
 .sitePower[aria-checked="false"] {
     background: var(--surface-3);
@@ -205,6 +237,7 @@ body.needReload #refresh { visibility: visible; }
     border-top: 1px solid var(--border-1);
     display: flex;
     justify-content: space-between;
+    margin-top: auto;
     min-height: 46px;
     padding-inline: 4px;
 }

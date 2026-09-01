@@ -207,12 +207,35 @@ assert(
     popupHtml.includes('filteringModeSlider') === false,
     'Popup must not regress to the retired four-level slider UI'
 );
+assert(
+    /<strong\b[^>]*data-i18n="extName"[^>]*>_<\/strong>/.test(popupHtml),
+    'Popup product title must use the replaceable i18n placeholder'
+);
 for ( const id of [ 'gotoZapper', 'gotoPicker', 'gotoUnpicker', 'gotoReport' ] ) {
     assert(
         popupHtml.includes(`<button id="${id}"`),
         `Popup tool ${id} must remain a keyboard-accessible button`
     );
 }
+
+const popupCss = await fs.readFile(
+    path.join(extensionRoot, 'css', 'popup.css'),
+    'utf8'
+);
+for ( const marker of [
+    'height: 600px;',
+    'overflow-y: auto;',
+    'scrollbar-gutter: stable;',
+] ) {
+    assert(
+        popupCss.includes(marker),
+        `Popup layout stability rule is missing: ${marker}`
+    );
+}
+assert(
+    popupCss.includes('transform: scale(') === false,
+    'Popup controls must not use scale transforms which can look like jitter'
+);
 
 const dashboardHtml = await fs.readFile(
     path.join(extensionRoot, 'dashboard.html'),

@@ -480,6 +480,27 @@ if ( popupMarkup.includes('id="sitePower"') === false ||
 if ( popupMarkup.includes('filteringModeSlider') ) {
     reportError('Popup contains the retired four-level slider UI');
 }
+if ( /<strong\b[^>]*data-i18n="extName"[^>]*>_<\/strong>/.test(
+    popupMarkup
+) === false ) {
+    reportError('Popup product title does not use the i18n placeholder');
+}
+const popupStyles = await fs.readFile(
+    path.join(extensionDir, 'css', 'popup.css'),
+    'utf8'
+).catch(( ) => '');
+for ( const marker of [
+    'height: 600px;',
+    'overflow-y: auto;',
+    'scrollbar-gutter: stable;',
+] ) {
+    if ( popupStyles.includes(marker) === false ) {
+        reportError(`Popup layout stability rule is missing: ${marker}`);
+    }
+}
+if ( popupStyles.includes('transform: scale(') ) {
+    reportError('Popup controls still use a jitter-prone scale transform');
+}
 const dashboardMarkup = await fs.readFile(
     path.join(extensionDir, 'dashboard.html'),
     'utf8'
