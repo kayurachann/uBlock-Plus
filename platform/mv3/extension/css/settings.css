@@ -104,6 +104,26 @@ h3[data-i18n="filteringMode0Name"]::first-letter {
 body[data-platform="safari"] [data-platform-exclude="safari"] {
     display: none;
     }
+body:not([data-platform="chromium"]) [data-platform-only="chromium"] {
+    display: none;
+    }
+
+#privacyHardening:not(.hasPermission) .privacyControls {
+    display: none;
+    }
+#privacyHardening.hasPermission .privacyPermissionPrompt {
+    display: none;
+    }
+#privacyHardening .privacyPermissionStatus {
+    color: var(--info3-ink);
+    margin-inline-start: var(--default-gap-small);
+    }
+#privacyHardening .privacyControls p {
+    margin-block: var(--default-gap-small);
+    }
+#privacyHardening .privacyControls legend:empty {
+    display: none;
+    }
 
 section[data-pane="settings"] p:has(button) {
     display: flex;

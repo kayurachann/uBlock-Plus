@@ -90,6 +90,119 @@ function renderDefaultMode() {
 
 /******************************************************************************/
 
+const privacyControlDefinitions = new Map([
+    [ 'privacyDisableHyperlinkAuditing', [
+        { path: [ 'websites', 'hyperlinkAuditingEnabled' ], value: false },
+    ] ],
+    [ 'privacyDisableNetworkPrediction', [
+        { path: [ 'network', 'networkPredictionEnabled' ], value: false },
+    ] ],
+    [ 'privacyProtectWebRTC', [
+        { path: [ 'network', 'webRTCIPHandlingPolicy' ], value: 'disable_non_proxied_udp' },
+    ] ],
+    [ 'privacyDisableAdApis', [
+        { path: [ 'websites', 'adMeasurementEnabled' ], value: false },
+        { path: [ 'websites', 'fledgeEnabled' ], value: false },
+        { path: [ 'websites', 'topicsEnabled' ], value: false },
+    ] ],
+]);
+
+function privacySettingFromPath(path) {
+    let setting = browser.privacy;
+    for ( const prop of path ) {
+        setting = setting?.[prop];
+    }
+    return setting;
+}
+
+function canControlPrivacySetting(details) {
+    return details?.levelOfControl === 'controllable_by_this_extension' ||
+        details?.levelOfControl === 'controlled_by_this_extension';
+}
+
+async function renderPrivacyControls() {
+    if ( browser.privacy instanceof Object === false ) { return; }
+    const section = qs$('#privacyHardening');
+    if ( section === null ) { return; }
+    const hasPermission = await browser.permissions.contains({
+        permissions: [ 'privacy' ],
+    });
+    dom.cl.toggle(section, 'hasPermission', hasPermission);
+    if ( hasPermission === false ) { return; }
+
+    for ( const [ id, definitions ] of privacyControlDefinitions ) {
+        const input = qs$(`#${id} input[type="checkbox"]`);
+        const legend = qs$(`#${id} + legend`);
+        const available = definitions
+            .map(definition => ({
+                definition,
+                setting: privacySettingFromPath(definition.path),
+            }))
+            .filter(entry => entry.setting instanceof Object);
+        const details = await Promise.all(available.map(entry =>
+            entry.setting.get({}).catch(( ) => undefined)
+        ));
+        const controllable = available.length !== 0 &&
+            details.every(canControlPrivacySetting);
+        input.disabled = controllable === false;
+        input.checked = available.length !== 0 && details.every((entry, i) =>
+            entry?.value === available[i].definition.value
+        );
+        dom.text(
+            legend,
+            controllable ? '' : i18n.getMessage('privacySettingNotControllable')
+        );
+    }
+}
+
+async function setPrivacyControl(id, state) {
+    const definitions = privacyControlDefinitions.get(id);
+    if ( definitions === undefined ) { return; }
+    const operations = [];
+    for ( const definition of definitions ) {
+        const setting = privacySettingFromPath(definition.path);
+        if ( setting instanceof Object === false ) { continue; }
+        operations.push(state
+            ? setting.set({ scope: 'regular', value: definition.value })
+            : setting.clear({ scope: 'regular' })
+        );
+    }
+    await Promise.allSettled(operations);
+    await renderPrivacyControls();
+}
+
+dom.on('#grantPrivacyPermission', 'click', async ( ) => {
+    const status = qs$('#privacyHardening .privacyPermissionStatus');
+    dom.text(status, '');
+    const granted = await browser.permissions.request({
+        permissions: [ 'privacy' ],
+    });
+    if ( granted === false ) {
+        dom.text(status, i18n.getMessage('privacyPermissionDenied'));
+    }
+    await renderPrivacyControls();
+});
+
+dom.on('#privacyHardening .privacyControls', 'change', 'input[type="checkbox"]', ev => {
+    const id = ev.target.closest('label')?.id;
+    if ( id === undefined ) { return; }
+    setPrivacyControl(id, ev.target.checked);
+});
+
+browser.permissions.onAdded.addListener(permissions => {
+    if ( permissions.permissions?.includes('privacy') ) {
+        renderPrivacyControls();
+    }
+});
+
+browser.permissions.onRemoved.addListener(permissions => {
+    if ( permissions.permissions?.includes('privacy') ) {
+        renderPrivacyControls();
+    }
+});
+
+/******************************************************************************/
+
 async function onFilteringModeChange(ev) {
     const input = ev.target;
     const newLevel = parseInt(input.value, 10);
@@ -342,6 +455,7 @@ sendMessage({
     try {
         renderAdminRules();
         renderWidgets();
+        renderPrivacyControls();
     } catch(reason) {
         console.error(reason);
     } finally {

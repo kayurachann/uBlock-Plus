@@ -99,79 +99,14 @@ clean:
 cleanassets:
 	rm -rf dist/build/mv3-data dist/build/uAssets
 
-# Usage: make publish-publish version=?
-publish-chromium:
-	node publish-extension/publish-chromium.js \
-		ghowner=gorhill \
-		ghrepo=uBlock \
-		ghtag=$(version) \
-		ghasset=chromium.zip \
-		storeid=cjpalhdlnbpafiamejdnhcphjbkeiagm \
-		crxupdatepath=dist/chromium/update.xml \
-		crxkeytoken=ubo_dev_key_path
-
-# Usage: make publish-edge version=?
-publish-edge:
-	node publish-extension/publish-edge.js \
-		ghowner=gorhill \
-		ghrepo=uBlock \
-		ghtag=$(version) \
-		ghasset=chromium.zip \
-		datebasedmajor=1 \
-		storeid=odfafepnkmbhccpbejgmiehpchacaeak \
-		productid=$(shell secret-tool lookup token ubo_edge_id) \
-		notes="See release notes at https://github.com/gorhill/uBlock/releases"
-
-# Usage: make publish-firefox version=?
-publish-firefox:
-	node publish-extension/publish-firefox.js \
-		ghowner=gorhill \
-		ghrepo=uBlock \
-		ghtag=$(version) \
-		ghasset=firefox \
-		storeid=uBlock0@raymondhill.net \
-		channel=listed
-
-# Usage: make publish-dev-chromium version=?
-publish-dev-chromium:
-	node publish-extension/publish-chromium.js \
-		ghowner=gorhill \
-		ghrepo=uBlock \
-		ghtag=$(version) \
-		ghasset=chromium.zip \
-		crxupdatepath=dist/chromium/update-dev.xml \
-		crxkeytoken=ubo_dev_key_path
-
-# Usage: make publish-dev-firefox version=?
-publish-dev-firefox:
-	node publish-extension/publish-firefox.js \
-		ghowner=gorhill \
-		ghrepo=uBlock \
-		ghtag=$(version) \
-		ghasset=firefox \
-		storeid=uBlock0@raymondhill.net \
-		channel=unlisted
-
-# Usage: make upload-firefox version=?
-upload-firefox:
-	node publish-extension/upload-firefox.js \
-		ghowner=gorhill \
-		ghrepo=uBlock \
-		ghtag=$(version) \
-		ghasset=firefox \
-		storeid=uBlock0@raymondhill.net \
-		channel=listed
-
-# Usage: make upload-dev-firefox version=?
-upload-dev-firefox:
-	node publish-extension/upload-firefox.js \
-		ghowner=gorhill \
-		ghrepo=uBlock \
-		ghtag=$(version) \
-		ghasset=firefox \
-		storeid=uBlock0@raymondhill.net \
-		channel=unlisted \
-		updatepath=./dist/firefox/updates.json
+# Official uBlock Origin store identities and signing credentials do not belong
+# to this community fork. Publishing must be configured explicitly in a
+# separate, fork-owned release workflow.
+publish-chromium publish-edge publish-firefox \
+publish-dev-chromium publish-dev-firefox \
+upload-firefox upload-dev-firefox:
+	@echo "Store publishing is intentionally disabled in uBlock MV3 Community."
+	@false
 
 # Not real targets, just convenient for auto-completion at shell prompt
 compare:

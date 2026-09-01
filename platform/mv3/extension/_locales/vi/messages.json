@@ -1,6 +1,6 @@
 {
   "extName": {
-    "message": "uBlock Origin Lite",
+    "message": "uBlock MV3 Community",
     "description": "extension name."
   },
   "extShortDesc": {
@@ -12,7 +12,7 @@
     "description": "Appears aside each filter list in the _3rd-party filters_ pane"
   },
   "dashboardName": {
-    "message": "uBO Lite — Bảng điều khiển",
+    "message": "uBlock MV3 Community — Bảng điều khiển",
     "description": "English: uBO Lite — Dashboard"
   },
   "settingsPageName": {
@@ -262,6 +262,42 @@
   "behaviorSectionLabel": {
     "message": "Hành vi",
     "description": "The header text for the 'Behavior' section"
+  },
+  "privacyHardeningSectionLabel": {
+    "message": "Tăng cường quyền riêng tư của Chrome (tùy chọn)",
+    "description": "Header for the optional Chrome privacy controls"
+  },
+  "privacyHardeningDescription": {
+    "message": "Các tùy chọn này chỉ thay đổi cài đặt riêng tư của Chrome sau khi bạn cấp quyền tùy chọn. Khi tắt một mục, quyền kiểm soát cài đặt đó sẽ được trả lại cho Chrome.",
+    "description": "Explains the optional privacy permission and reversible controls"
+  },
+  "privacyPermissionButton": {
+    "message": "Bật các tùy chọn riêng tư…",
+    "description": "Button which requests the optional privacy permission"
+  },
+  "privacyPermissionDenied": {
+    "message": "Bạn chưa cấp quyền riêng tư tùy chọn.",
+    "description": "Shown when the user declines the optional privacy permission"
+  },
+  "privacyDisableHyperlinkAuditing": {
+    "message": "Tắt ping kiểm tra liên kết",
+    "description": "Privacy setting label"
+  },
+  "privacyDisableNetworkPrediction": {
+    "message": "Tắt dự đoán mạng của Chrome",
+    "description": "Privacy setting label"
+  },
+  "privacyProtectWebRTC": {
+    "message": "Không cho WebRTC dùng UDP ngoài proxy",
+    "description": "Privacy setting label"
+  },
+  "privacyDisableAdApis": {
+    "message": "Tắt các API quảng cáo Privacy Sandbox của Chrome",
+    "description": "Privacy setting label"
+  },
+  "privacySettingNotControllable": {
+    "message": "Cài đặt này đang bị chính sách Chrome hoặc tiện ích khác kiểm soát.",
+    "description": "Shown when this extension cannot control a Chrome privacy setting"
   },
   "autoReloadLabel": {
     "message": "Tự động tải lại trang khi thay đổi chế độ bộ lọc",

@@ -1,31 +1,23 @@
-# Contributions
+# Contributing
 
-Please refer to the sections below to find the appropriate destination for your contributions. Thank you for your support!
+Thank you for helping improve uBlock MV3 Community.
 
----
+## Before opening an issue
 
-### Translations
+- Fork-specific code, build, UI and documentation problems belong in this repository.
+- A broken site caused by filter-list content should be reported to the maintainer of the matching list. uBlock-maintained list issues belong in the [uAssets tracker](https://github.com/uBlockOrigin/uAssets/issues).
+- Issues that reproduce in official uBlock Origin/uBO Lite without this fork's changes should be reported upstream after confirming the problem there.
 
-You can help translate uBO via [Crowdin](https://crowdin.com/project/ublock).
+Include the fork version/commit, Chrome version, enabled rulesets, filtering mode, exact reproduction steps and sanitized troubleshooting output. Never post private browsing data, credentials or tokens.
 
----
+## Pull requests
 
-### Reporting Issues
+1. Create a focused branch from `main`.
+2. Preserve GPL and third-party attribution.
+3. Keep executable code packaged with the extension; remote code, `eval`, and downloaded script execution are not accepted.
+4. Add or update tests and documentation for behavior changes.
+5. Run the MV3 build, validator and lint checks before requesting review.
 
-The issue tracker in this repository is deprecated. Use the links below to report your issues.
+Prefer small patches that remain easy to rebase onto [`gorhill/uBlock`](https://github.com/gorhill/uBlock). Do not reformat unrelated upstream files.
 
-#### Support Forum
-
-For support, questions, or assistance, please visit [/r/uBlockOrigin](https://www.reddit.com/r/uBlockOrigin/).
-
-#### Filter List Issues
-
-Report issues related to filter lists or broken website functionality in the [uAssets issue tracker](https://github.com/uBlockOrigin/uAssets/issues).
-
-#### uBlock Origin (uBO) Issues
-
-For issues specifically about uBO, please use the [uBO issue tracker](https://github.com/uBlockOrigin/uBlock-issues/issues).
-
-#### uBO Lite (uBOL) Issues
-
-For issues related to the Manifest Version 3 (MV3) variant, report them in the [uBOL issue tracker](https://github.com/uBlockOrigin/uBOL-home/issues).
+Translations inherited from upstream are maintained through [Crowdin](https://crowdin.com/project/ublock). Fork-specific English strings must always be added; Vietnamese translations are encouraged.

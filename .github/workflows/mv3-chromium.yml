@@ -1,0 +1,60 @@
+name: MV3 Chromium
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mv3-chromium-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Lint and build on Windows
+    runs-on: windows-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Clone repository and submodules
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          submodules: recursive
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Set up npm
+        run: npm install --global npm@11
+
+      - name: Install lint dependencies
+        run: npm ci
+
+      - name: Test MV3 source invariants
+        run: npm test
+
+      - name: Lint MV3 source
+        run: npm run lint
+
+      - name: Build MV3 Chromium package
+        shell: pwsh
+        run: ./tools/make-mv3.ps1 -Platform chromium -Full
+
+      - name: Validate MV3 Chromium artifact
+        run: node tools/validate-mv3.mjs dist/build/uBOLite.chromium
+
+      - name: Upload unpacked extension and zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: uBOLite-chromium-${{ github.sha }}
+          if-no-files-found: error
+          path: |
+            dist/build/uBOLite.chromium/
+            dist/build/uBOLite_*.chromium.zip

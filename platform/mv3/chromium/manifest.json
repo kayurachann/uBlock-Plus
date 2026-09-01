@@ -7,7 +7,7 @@
     },
     "default_popup": "popup.html"
   },
-  "author": "Raymond Hill",
+  "author": "Raymond Hill, uBlock Origin contributors, and uBlock MV3 Community contributors",
   "background": {
       "service_worker": "/js/background.js",
       "type": "module"
@@ -29,6 +29,7 @@
   "host_permissions": [
     "<all_urls>"
   ],
+  "homepage_url": "https://github.com/kayurachann/uBlock-MV3-Community",
   "incognito": "split",
   "icons": {
     "16": "img/icon_16.png",
@@ -50,7 +51,10 @@
     "unlimitedStorage",
     "userScripts"
   ],
-  "short_name": "uBO Lite",
+  "optional_permissions": [
+    "privacy"
+  ],
+  "short_name": "uBlock MV3",
   "storage": {
     "managed_schema": "managed_storage.json"
   },

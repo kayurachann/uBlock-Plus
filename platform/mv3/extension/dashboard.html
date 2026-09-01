@@ -101,6 +101,20 @@
         <p><label id="popupBlockMode" data-i18n="enablePopupBlockLabel"><span class="input checkbox"><input type="checkbox"><svg viewBox="0 0 24 24"><path d="M1.73,12.91 8.1,19.28 22.79,4.59"/></svg></span>_</label><legend data-i18n="enablePopupBlockLegend"></legend>
         <p id="developerMode"><label data-i18n="developerModeLabel"><span class="input checkbox"><input type="checkbox"><svg viewBox="0 0 24 24"><path d="M1.73,12.91 8.1,19.28 22.79,4.59"/></svg></span>_</label><legend data-i18n="developerModeLegend"></legend>
     </div>
+    <div id="privacyHardening" data-platform-only="chromium">
+        <h3 data-i18n="privacyHardeningSectionLabel"></h3>
+        <p data-i18n="privacyHardeningDescription"></p>
+        <p class="privacyPermissionPrompt">
+            <button id="grantPrivacyPermission" class="iconified dontshrink" type="button"><span class="fa-icon">lock</span><span data-i18n="privacyPermissionButton">_</span><span class="hover"></span></button>
+            <span class="privacyPermissionStatus" role="status"></span>
+        </p>
+        <div class="privacyControls">
+            <p><label id="privacyDisableHyperlinkAuditing" data-i18n="privacyDisableHyperlinkAuditing"><span class="input checkbox"><input type="checkbox"><svg viewBox="0 0 24 24"><path d="M1.73,12.91 8.1,19.28 22.79,4.59"/></svg></span>_</label><legend></legend></p>
+            <p><label id="privacyDisableNetworkPrediction" data-i18n="privacyDisableNetworkPrediction"><span class="input checkbox"><input type="checkbox"><svg viewBox="0 0 24 24"><path d="M1.73,12.91 8.1,19.28 22.79,4.59"/></svg></span>_</label><legend></legend></p>
+            <p><label id="privacyProtectWebRTC" data-i18n="privacyProtectWebRTC"><span class="input checkbox"><input type="checkbox"><svg viewBox="0 0 24 24"><path d="M1.73,12.91 8.1,19.28 22.79,4.59"/></svg></span>_</label><legend></legend></p>
+            <p><label id="privacyDisableAdApis" data-i18n="privacyDisableAdApis"><span class="input checkbox"><input type="checkbox"><svg viewBox="0 0 24 24"><path d="M1.73,12.91 8.1,19.28 22.79,4.59"/></svg></span>_</label><legend></legend></p>
+        </div>
+    </div>
     <div>
         <h3 data-i18n="settingsBackupRestoreLabel">_</h3>
         <p data-i18n="settingsBackupRestoreSummary">_</p>
@@ -171,13 +185,14 @@
         <div class="liul">
             <div class="li">Copyright (c) Raymond Hill 2014-present</div>
         </div>
-        <div class="li"><a href="https://github.com/uBlockOrigin/uBOL-home/wiki/Privacy-policy" data-i18n="aboutPrivacyPolicy"></a></div>
-        <div class="li"><a href="https://github.com/uBlockOrigin/uBOL-home/wiki" data-i18n="aboutDocumentation"></a></div>
-        <div class="li"><a href="https://github.com/uBlockOrigin/uBOL-home/releases" data-i18n="aboutChangelog"></a></div>
-        <div class="li"><a href="https://github.com/gorhill/uBlock" data-i18n="aboutCode"></a></div>
+        <div class="li"><a href="https://github.com/kayurachann/uBlock-MV3-Community/blob/main/docs/PRIVACY.md" data-i18n="aboutPrivacyPolicy"></a></div>
+        <div class="li"><a href="https://github.com/kayurachann/uBlock-MV3-Community#readme" data-i18n="aboutDocumentation"></a></div>
+        <div class="li"><a href="https://github.com/kayurachann/uBlock-MV3-Community/releases" data-i18n="aboutChangelog"></a></div>
+        <div class="li"><a href="https://github.com/kayurachann/uBlock-MV3-Community" data-i18n="aboutCode"></a></div>
         <div class="li"><span data-i18n="aboutContributors"></span></div>
         <div class="liul">
-            <div class="li"><a href="https://github.com/gorhill/uBlock/graphs/contributors" data-i18n="aboutSourceCode"></a></div>
+            <div class="li"><a href="https://github.com/kayurachann/uBlock-MV3-Community/graphs/contributors" data-i18n="aboutSourceCode"></a></div>
+            <div class="li"><a href="https://github.com/gorhill/uBlock/graphs/contributors">Upstream contributors</a></div>
             <div class="li"><a href="https://crowdin.com/project/ublock" data-i18n="aboutTranslations"></a></div>
             <div class="li"><a href="https://github.com/uBlockOrigin/uAssets/graphs/contributors" data-i18n="aboutFilterLists"></a></div>
         </div>

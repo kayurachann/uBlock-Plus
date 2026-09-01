@@ -1,34 +1,39 @@
-# How to build MV3 uBO Lite
+# Building uBlock MV3 Community
 
-Instructions for reviewers.
+This directory contains the MV3-specific extension, ruleset compiler and platform manifests inherited from the upstream uBO Lite implementation.
 
-The following assumes a linux environment.
+## Windows
 
-1. Open Bash console
-2. `git clone  https://github.com/gorhill/uBlock.git`
-3. `cd uBlock`
-4. `git submodule init`
-5. `git submodule update`
-6. `make mv3-[platform]`, where `[platform]` is either `chromium`, `edge`, `firefox`, or `safari`
-7. This will fully build uBO Lite, and during the process filter lists will be downloaded from their respective remote servers
+Requirements: PowerShell 5.1 or newer, Node.js 22 or newer, Git submodules and network access.
 
-Upon completion of the script, the resulting extension package will become present in:
+```powershell
+.\tools\make-mv3.ps1 -Platform chromium
+```
 
-- Chromium: `dist/build/uBOLite.chromium`
-- Edge: `dist/build/uBOLite.edge`
-- Firefox: `dist/build/uBOLite.firefox`
-- Safari: `dist/build/uBOLite.safari`
+Add `-Full` to create a zip or `-Version 1.0.0` to create a release-style package with that Chromium manifest version. The PowerShell build requires no GNU Make, Bash, `jq` or external `zip` executable.
 
-The folder `dist/build/mv3-data` will cache data fetched from remote servers, so as to avoid fetching repeatedly from remote servers with repeated build commands. Use `make cleanassets` to remove all locally cached filter lists if you want to build with latest versions of filter lists.
+## Linux/macOS
 
-The file `dist/build/uBOLite.[platform]/log.txt` will contain information about what happened during the build process.
+```bash
+git submodule update --init --recursive
+make mv3-chromium
+```
 
-The entry in the `Makefile` which implement the build process is `tools/make-mv3.sh [platform]`.[1] This Bash script copy various files from uBlock Origin branch and MV3-specific branch into a single folder which will be the final extension package.
+Upstream also supports `mv3-edge`, `mv3-firefox` and `mv3-safari`; this community fork's CI currently guarantees the Chromium target.
 
-Notably, `tools/make-mv3.sh [platform]` calls a Nodejs script which purpose is to convert the filter lists into various rulesets to be used in a declarative way. The Nodejs version required is 17.5.0 or above.
+## Outputs
 
-All the final rulesets are present in the `dist/build/uBOLite.[platform]/rulesets` in the final extension package.
+- Unpacked extension: `dist/build/uBOLite.chromium`
+- Full package: `dist/build/uBOLite_<version>.chromium.zip`
+- Conversion report: `dist/build/uBOLite.chromium/log.txt`
+- Downloaded list cache: `dist/build/mv3-data`
 
----
+Validate an assembled extension with:
 
-[1] https://github.com/gorhill/uBlock/blob/c4d324362fdb95ff8ef20f0b18f42f0eec955433/tools/make-mv3.sh<br>
+```bash
+node tools/validate-mv3.mjs dist/build/uBOLite.chromium
+```
+
+The build compiles supported uBO/ABP network filters into DNR rules and prepares declarative cosmetic/scriptlet resources. Filter lists are live external inputs, the cache contains a generated secret, and development versions can be date-generated; independent builds are therefore not expected to be byte-for-byte identical.
+
+This is an independent fork. See the repository root [README](../../README.md), [compatibility matrix](../../docs/FEATURE-MATRIX.md) and [attribution notice](../../NOTICE.md).
