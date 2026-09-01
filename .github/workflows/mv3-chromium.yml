@@ -45,9 +45,9 @@ jobs:
 
       - name: Build MV3 Chromium package
         shell: pwsh
-        run: >-
-          ./tools/make-mv3.ps1 -Platform chromium
-          -Version "1.0.${{ github.run_number }}.${{ github.run_attempt }}"
+        run: |
+          $version = (Get-Content -Raw package.json | ConvertFrom-Json).version
+          ./tools/make-mv3.ps1 -Platform chromium -Version $version
 
       - name: Validate MV3 Chromium artifact
         run: node tools/validate-mv3.mjs dist/build/uBOLite.chromium --release

@@ -193,6 +193,17 @@ for ( const [ relativePath, stagedDependency ] of [
     );
 }
 
+const releaseWorkflow = await fs.readFile(
+    path.join(root, '.github', 'workflows', 'mv3-chromium.yml'),
+    'utf8'
+);
+assert(
+    releaseWorkflow.includes('ConvertFrom-Json).version') &&
+        releaseWorkflow.includes('-Version $version') &&
+        releaseWorkflow.includes('github.run_number') === false,
+    'CI package version must come from package.json'
+);
+
 const background = await fs.readFile(
     path.join(extensionRoot, 'js', 'background.js'),
     'utf8'
