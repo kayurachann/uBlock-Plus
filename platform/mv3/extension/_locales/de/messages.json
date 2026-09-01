@@ -358,7 +358,7 @@
   "popupPolicyAllow": { "message": "Zulassen" },
   "popupPolicySmart": { "message": "Intelligent" },
   "popupPolicyStrict": { "message": "Streng" },
-  "popupPolicyDescription": { "message": "Gilt nur für diesen Hostnamen. „Zulassen“ und „Intelligent“ steuern Kontextprüfungen; passende Filterlistenregeln schließen Pop-ups weiterhin sofort (Fail-Closed). „Streng“ verlangt eine vertrauenswürdige Aktion und denselben, einen übergeordneten oder untergeordneten Hostnamen." },
+  "popupPolicyDescription": { "message": "Gilt nur für diesen exakten Host. Zulassen/Intelligent beeinflussen Kontextprüfungen; passende Filterlistenregeln schließen weiterhin sofort. Streng verlangt eine vertrauenswürdige Aktion und einen direkt verwandten Hostnamen." },
   "sandboxEditorLabel": {
     "message": "Testumgebung zum Erstellen von Filtern",
     "description": "Header for filter-creation section in the dashboard"

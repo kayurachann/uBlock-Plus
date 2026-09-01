@@ -45,17 +45,17 @@ const legitimateEnglishCognates = new Set([
     'fr:filterStoreGlobal',
     'fr:popupPolicyStrict',
 ]);
-const popupFailClosedMarkers = new Map([
-    [ 'en', /filter list[\s\S]*fail-closed/i ],
-    [ 'de', /Filterliste[\s\S]*Fail-Closed/i ],
-    [ 'es', /lista de filtros[\s\S]*fail-closed/i ],
-    [ 'fr', /liste de filtres[\s\S]*fail-closed/i ],
-    [ 'ja', /フィルターリスト[\s\S]*フェイルクローズ/ ],
-    [ 'ko', /필터 목록[\s\S]*페일 클로즈/ ],
-    [ 'ru', /списка фильтров[\s\S]*fail-closed/i ],
-    [ 'vi', /danh sách bộ lọc[\s\S]*fail-closed/i ],
-    [ 'zh_CN', /过滤器列表[\s\S]*fail-closed/i ],
-    [ 'zh_TW', /篩選器清單[\s\S]*fail-closed/i ],
+const popupCompiledRuleMarkers = new Map([
+    [ 'en', /filter-list rules still close immediately/i ],
+    [ 'de', /Filterlistenregeln schließen weiterhin sofort/i ],
+    [ 'es', /listas de filtros[\s\S]*cierran[\s\S]*de inmediato/i ],
+    [ 'fr', /listes de filtres[\s\S]*ferment[\s\S]*immédiatement/i ],
+    [ 'ja', /フィルターリスト[\s\S]*直ちに閉じ/ ],
+    [ 'ko', /필터 목록[\s\S]*즉시 닫/ ],
+    [ 'ru', /списка фильтров[\s\S]*закрывается сразу/i ],
+    [ 'vi', /danh sách bộ lọc[\s\S]*đóng ngay/i ],
+    [ 'zh_CN', /过滤器列表[\s\S]*立即关闭/ ],
+    [ 'zh_TW', /篩選器清單[\s\S]*立即關閉/ ],
 ]);
 
 async function readJSON(url) {
@@ -113,8 +113,8 @@ for ( const locale of priorityLocales ) {
     }
     assert.match(
         messages.popupPolicyDescription.message,
-        popupFailClosedMarkers.get(locale),
-        `${locale}: popup policy must disclose compiled fail-closed precedence`
+        popupCompiledRuleMarkers.get(locale),
+        `${locale}: popup policy must disclose compiled-rule precedence`
     );
 }
 

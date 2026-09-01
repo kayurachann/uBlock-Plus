@@ -20,4 +20,10 @@ Include the fork version/commit, Chrome version, enabled rulesets, filtering mod
 
 Prefer small patches that remain easy to rebase onto [`gorhill/uBlock`](https://github.com/gorhill/uBlock). Do not reformat unrelated upstream files.
 
-Translations inherited from upstream are maintained through [Crowdin](https://crowdin.com/project/ublock). Fork-specific English strings must always be added; Vietnamese translations are encouraged.
+## Translations
+
+Translations inherited from upstream are maintained through [Crowdin](https://crowdin.com/project/ublock). Fork-specific UI strings use English as the required source and currently maintain complete Power coverage for German, Spanish, French, Japanese, Korean, Russian, Vietnamese, Simplified Chinese and Traditional Chinese.
+
+The root `README.md` is the canonical English project README. Localized copies use `docs/README.<locale>.md`. When changing installation, security, privacy or MV3-limit wording, update every affected translation or open a clearly scoped translation follow-up; never remove a warning merely to shorten a translation. Preserve the 10-language selector and all relative image/document links.
+
+Run `node tools/test-power-locales.mjs` and `node tools/test-readme-locales.mjs` before submitting translation changes. Machine-assisted translations are welcome as a draft, but a fluent reviewer should verify technical meaning, product names and safety language.

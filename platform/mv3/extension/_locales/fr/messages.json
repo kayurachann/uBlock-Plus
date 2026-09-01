@@ -358,7 +358,7 @@
   "popupPolicyAllow": { "message": "Autoriser" },
   "popupPolicySmart": { "message": "Intelligent" },
   "popupPolicyStrict": { "message": "Strict" },
-  "popupPolicyDescription": { "message": "S’applique uniquement à ce nom d’hôte exact. Autoriser et Intelligent règlent les contrôles contextuels ; une règle correspondante de liste de filtres ferme toujours la fenêtre immédiatement (fail-closed). Strict exige une action fiable et le même nom d’hôte, un parent ou un enfant." },
+  "popupPolicyDescription": { "message": "S’applique uniquement à cet hôte précis. Autoriser/Intelligent agissent sur les contrôles contextuels ; les règles de listes de filtres correspondantes ferment toujours la fenêtre immédiatement. Strict exige une action fiable et un nom d’hôte directement lié." },
   "sandboxEditorLabel": {
     "message": "Bac à sable de création de filtres",
     "description": "Header for filter-creation section in the dashboard"

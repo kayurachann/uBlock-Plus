@@ -358,7 +358,7 @@
   "popupPolicyAllow": { "message": "許可" },
   "popupPolicySmart": { "message": "スマート" },
   "popupPolicyStrict": { "message": "厳格" },
-  "popupPolicyDescription": { "message": "この完全一致のホスト名だけに適用します。許可とスマートは状況判定を制御しますが、フィルターリストの一致ルールは常に直ちに閉じます（フェイルクローズ）。厳格では信頼できる操作に加え、同一、親、または子のホスト名が必要です。" },
+  "popupPolicyDescription": { "message": "このホスト名だけに適用します。許可/スマートは状況判定にのみ影響し、フィルターリストの一致ルールは引き続きポップアップを直ちに閉じます。厳格では、信頼できる操作と直接関連するホスト名が必要です。" },
   "sandboxEditorLabel": {
     "message": "フィルター作成サンドボックス",
     "description": "Header for filter-creation section in the dashboard"

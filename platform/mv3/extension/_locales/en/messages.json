@@ -556,7 +556,7 @@
   "popupPolicyAllow": { "message": "Allow" },
   "popupPolicySmart": { "message": "Smart" },
   "popupPolicyStrict": { "message": "Strict" },
-  "popupPolicyDescription": { "message": "Applies to this exact hostname. Allow and Smart affect contextual checks; matching filter list rules still close immediately (fail-closed). Strict requires a trusted action and the same, a parent, or a child hostname." },
+  "popupPolicyDescription": { "message": "Applies to this exact host. Allow/Smart affect contextual checks; matching filter-list rules still close immediately. Strict requires a trusted action and a directly related hostname." },
   "sandboxEditorLabel": {
     "message": "Filter-creation sandbox",
     "description": "Header for filter-creation section in the dashboard"

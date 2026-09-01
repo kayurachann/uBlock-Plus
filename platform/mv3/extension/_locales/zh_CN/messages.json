@@ -556,7 +556,7 @@
   "popupPolicyAllow": { "message": "允许" },
   "popupPolicySmart": { "message": "智能" },
   "popupPolicyStrict": { "message": "严格" },
-  "popupPolicyDescription": { "message": "仅应用于此精确主机名。允许和智能只影响上下文检查；匹配过滤器列表规则时仍会立即关闭窗口（fail-closed）。严格模式要求可信操作，且目标必须为相同、上级或下级主机名。" },
+  "popupPolicyDescription": { "message": "仅应用于此精确主机名。允许/智能仅影响上下文检查；匹配过滤器列表规则的窗口仍会立即关闭。严格模式要求可信操作和直接相关的主机名。" },
   "sandboxEditorLabel": {
     "message": "过滤器创建沙盒",
     "description": "Header for filter-creation section in the dashboard"

@@ -16,7 +16,9 @@
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-8b5cf6)](docs/ARCHITECTURE.md)
 [![GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-22c55e)](LICENSE.txt)
 
-[**Download v1.0.0 preview**](https://github.com/kayurachann/uBlock-Plus/releases/tag/v1.0.0) · [**Tiếng Việt**](docs/README.vi.md) · [Feature matrix](docs/FEATURE-MATRIX.md) · [Architecture](docs/ARCHITECTURE.md) · [Filter Store](docs/FILTER-STORE.md) · [Roadmap](docs/ROADMAP.md)
+[**English**](README.md) · [Deutsch](docs/README.de.md) · [Español](docs/README.es.md) · [Français](docs/README.fr.md) · [日本語](docs/README.ja.md) · [한국어](docs/README.ko.md) · [Русский](docs/README.ru.md) · [Tiếng Việt](docs/README.vi.md) · [简体中文](docs/README.zh_CN.md) · [繁體中文](docs/README.zh_TW.md)
+
+[**Download the latest preview**](https://github.com/kayurachann/uBlock-Plus/releases) · [Feature matrix](docs/FEATURE-MATRIX.md) · [Architecture](docs/ARCHITECTURE.md) · [Filter Store](docs/FILTER-STORE.md) · [Roadmap](docs/ROADMAP.md)
 
 </div>
 

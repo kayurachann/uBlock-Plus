@@ -551,12 +551,12 @@
     "message": "Khi được kích hoạt, các bộ lọc phù hợp sẽ tự động đóng các tab trình duyệt không mong muốn do các trang web tạo ra.",
     "description": "Short description for a checkbox in the options page"
   },
-  "popupPolicyLabel": { "message": "Chính sách cửa sổ bật lên cho hostname này" },
+  "popupPolicyLabel": { "message": "Chính sách cửa sổ bật lên cho tên máy chủ này" },
   "popupPolicyDefault": { "message": "Mặc định (Thông minh)" },
   "popupPolicyAllow": { "message": "Cho phép" },
   "popupPolicySmart": { "message": "Thông minh" },
   "popupPolicyStrict": { "message": "Nghiêm ngặt" },
-  "popupPolicyDescription": { "message": "Chỉ áp dụng cho đúng hostname này. Cho phép và Thông minh tác động tới kiểm tra ngữ cảnh; quy tắc khớp từ danh sách bộ lọc vẫn đóng cửa sổ ngay (fail-closed). Nghiêm ngặt yêu cầu thao tác đáng tin cậy và hostname trùng, cha hoặc con." },
+  "popupPolicyDescription": { "message": "Chỉ áp dụng cho đúng tên máy chủ này. Cho phép/Thông minh tác động đến kiểm tra ngữ cảnh; cửa sổ khớp quy tắc trong danh sách bộ lọc vẫn bị đóng ngay. Nghiêm ngặt yêu cầu thao tác đáng tin cậy và tên máy chủ liên quan trực tiếp." },
   "sandboxEditorLabel": {
     "message": "Hộp thử nghiệm tạo bộ lọc",
     "description": "Header for filter-creation section in the dashboard"

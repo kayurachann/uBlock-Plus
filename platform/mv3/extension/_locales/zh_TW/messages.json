@@ -556,7 +556,7 @@
   "popupPolicyAllow": { "message": "允許" },
   "popupPolicySmart": { "message": "智慧型" },
   "popupPolicyStrict": { "message": "嚴格" },
-  "popupPolicyDescription": { "message": "只套用至這個完全相符的主機名稱。允許和智慧型只影響情境檢查；符合篩選器清單規則時仍會立即關閉視窗（fail-closed）。嚴格模式要求受信任操作，且目標必須是相同、上層或下層主機名稱。" },
+  "popupPolicyDescription": { "message": "只套用至這個完全相符的主機名稱。允許/智慧型只影響情境檢查；符合篩選器清單規則的視窗仍會立即關閉。嚴格模式要求受信任操作和直接相關的主機名稱。" },
   "sandboxEditorLabel": {
     "message": "篩選規則建立沙盒",
     "description": "Header for filter-creation section in the dashboard"

@@ -11,12 +11,14 @@
 **Sideload-first · Local-first · Mã nguồn mở · Không khóa người dùng**
 
 [![MV3 Chromium CI](https://github.com/kayurachann/uBlock-Plus/actions/workflows/mv3-chromium.yml/badge.svg)](https://github.com/kayurachann/uBlock-Plus/actions/workflows/mv3-chromium.yml)
-[![Pre-release v1.0.0](https://img.shields.io/badge/pre--release-v1.0.0-f59e0b)](https://github.com/kayurachann/uBlock-Plus/releases/tag/v1.0.0)
-[![Chromium 130+](https://img.shields.io/badge/Chromium-130%2B-4285F4?logo=googlechrome&logoColor=white)](#cài-đặt-pre-release)
+[![Bản phát hành mới nhất](https://img.shields.io/github/v/release/kayurachann/uBlock-Plus?include_prereleases&label=pre--release&color=3b82f6)](https://github.com/kayurachann/uBlock-Plus/releases)
+[![Chromium 130+](https://img.shields.io/badge/Chromium-130%2B-4285F4?logo=googlechrome&logoColor=white)](#quick-start)
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-8b5cf6)](ARCHITECTURE.md)
 [![GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-22c55e)](../LICENSE.txt)
 
-[**Tải pre-release v1.0.0**](https://github.com/kayurachann/uBlock-Plus/releases/tag/v1.0.0) · [English](../README.md) · [Tính năng](FEATURE-MATRIX.md) · [Kiến trúc](ARCHITECTURE.md) · [Filter Store](FILTER-STORE.md) · [Roadmap](ROADMAP.md)
+[English](../README.md) · [Deutsch](README.de.md) · [Español](README.es.md) · [Français](README.fr.md) · [日本語](README.ja.md) · [한국어](README.ko.md) · [Русский](README.ru.md) · [**Tiếng Việt**](README.vi.md) · [简体中文](README.zh_CN.md) · [繁體中文](README.zh_TW.md)
+
+[**Tải bản preview mới nhất**](https://github.com/kayurachann/uBlock-Plus/releases) · [Tính năng](FEATURE-MATRIX.md) · [Kiến trúc](ARCHITECTURE.md) · [Filter Store](FILTER-STORE.md) · [Roadmap](ROADMAP.md)
 
 </div>
 
@@ -52,9 +54,9 @@ Khám phá catalog có sẵn hoặc thêm tối đa tám repository HTTPS tươn
 <tr>
 <td width="50%" valign="top">
 
-### 🎯 Tùy biến và mang theo
+### 🎯 Điều khiển riêng cho từng trang
 
-Dùng picker, zapper, custom/imported filters và matched-rule diagnostics. Cấu hình lõi, subscription và repository có thể xuất rồi khôi phục.
+Chọn chế độ lọc theo từng trang, xem chẩn đoán matched-rule và dùng picker, zapper hoặc unpicker khi cần tinh chỉnh một trang cụ thể.
 
 </td>
 <td width="50%" valign="top">
@@ -62,6 +64,22 @@ Dùng picker, zapper, custom/imported filters và matched-rule diagnostics. Cấ
 ### 🌱 Profile có ý thức về RAM
 
 Chọn `auto`, `balanced` hoặc `low-memory`. Low-memory được thiết kế để giảm áp lực bộ nhớ bằng compile tuần tự, cache có ngân sách và cleanup an toàn—không âm thầm tắt filter đã bật.
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+### 📦 Cấu hình thuộc về bạn
+
+Xuất và khôi phục thiết lập lõi, subscription, repository, popup policy và custom filter. Catalog tích hợp chỉ là điểm khởi đầu, không phải cơ chế khóa người dùng.
+
+</td>
+<td width="50%" valign="top">
+
+### 🔐 Riêng tư ngay từ thiết kế
+
+Chẩn đoán lọc và lưu trữ nằm cục bộ. Dự án không có analytics, SDK quảng cáo hay dịch vụ lịch sử duyệt web; quyền điều khiển riêng tư của Chrome là tùy chọn riêng và có thể thu hồi.
 
 </td>
 </tr>
@@ -99,11 +117,15 @@ Chọn Auto, Balanced hoặc Low-memory và xem số liệu cache/storage cục 
 </tr>
 </table>
 
-## Cài đặt pre-release
+<a id="quick-start"></a>
+
+## Bắt đầu nhanh
+
+### Cài một bản phát hành
 
 <img src="assets/readme/install-flow.svg" alt="Bốn bước sideload uBlock Plus+: tải và giải nén, kiểm tra SHA-256, Load unpacked và bật User Scripts khi cần" width="1200">
 
-1. Tải file `uBlock-Plus_1.0.0.chromium.zip` và file `.sha256` tương ứng từ [release v1.0.0](https://github.com/kayurachann/uBlock-Plus/releases/tag/v1.0.0).
+1. Tải file `uBlock-Plus_*.chromium.zip` và file `.sha256` tương ứng từ [GitHub Releases](https://github.com/kayurachann/uBlock-Plus/releases).
 2. Kiểm tra SHA-256, sau đó giải nén ZIP vào một thư mục cố định. Không xóa hoặc di chuyển thư mục này sau khi load.
 3. Mở `chrome://extensions` hoặc `edge://extensions`, bật **Developer mode**, chọn **Load unpacked**, rồi chọn thư mục chứa `manifest.json`.
 4. Cấp quyền chạy user script theo phiên bản trình duyệt:
@@ -128,7 +150,7 @@ Hai chuỗi hexadecimal phải giống nhau; chữ hoa hay chữ thường khôn
 > [!CAUTION]
 > Chỉ cài artifact từ [repository](https://github.com/kayurachann/uBlock-Plus) hoặc [trang Releases](https://github.com/kayurachann/uBlock-Plus/releases) chính thức của fork. Sideload trao cho bạn nhiều quyền lựa chọn hơn, đồng thời yêu cầu bạn tự xác minh nguồn và cập nhật bảo mật.
 
-## Build từ mã nguồn
+### Build từ mã nguồn
 
 Yêu cầu: Chrome/Chromium hoặc Edge 130+, Git với submodule, Node.js 22+ và kết nối mạng cho dữ liệu filter tại build-time.
 
@@ -161,6 +183,15 @@ tools/make-mv3.sh chromium "$VERSION"
 
 Load thư mục `dist/build/uBlockPlus.chromium`. Lệnh PowerShell có version và lệnh shell tùy chọn ở trên tạo ZIP/checksum trong `dist/build/`; riêng `make mv3-chromium` chỉ tạo thư mục unpacked.
 
+## Cách hệ thống hoạt động
+
+- Chrome DNR xử lý network filtering mà không cần đánh thức service worker cho mọi request.
+- Service worker theo sự kiện quản lý thiết lập, catalog, migration và cập nhật rule có khả năng khôi phục.
+- List import được compile cục bộ thành dữ liệu DNR và cosmetic; scriptlet phải có sẵn trong allowlist đóng gói.
+- Offscreen document chỉ tồn tại tạm thời trong lúc compile rồi tự đóng.
+
+[Đọc kiến trúc](ARCHITECTURE.md) · [Khám phá Power Runtime](POWER-RUNTIME.md) · [Xem threat model](THREAT-MODEL.md) · [Hiểu chính sách riêng tư](PRIVACY.md)
+
 ## Ranh giới an toàn
 
 | Phạm vi | Cam kết của dự án |
@@ -178,12 +209,67 @@ Lỗ hổng bảo mật cần được báo riêng qua [GitHub Security Advisori
 - DNR chịu quota static/dynamic/session/regex do Chromium đặt ra.
 - Service worker có thể bị dừng khi idle; dự án dùng state bền vững và giao dịch có rollback thay vì giả định background page chạy mãi.
 - Live logger, procedural filter, dynamic firewall và một số header/redirect semantics chỉ tương đương **một phần** MV2.
+- `$popup`/`$popunder` từ list import hiện được phân loại và báo cáo nhưng chưa nối vào matcher runtime; popup filter đóng gói vẫn được thực thi fail-closed.
 - Public MV3 API không cung cấp response-body rewrite tùy ý, DNS/CNAME visibility tương đương hoặc chặn chính xác theo kích thước response.
 - Tầng Enterprise hoặc Native Companion mới chỉ là hướng nghiên cứu tùy chọn; không tự cài, không phải cách bypass sandbox và không nằm trong lời hứa của pre-release này.
 
 Một phần cú pháp filter MV2 không thể chuyển đổi tương đương trên MV3; hãy đối chiếu [FEATURE-MATRIX.md](FEATURE-MATRIX.md) trước khi giả định tính năng đã được hỗ trợ. Báo cáo tương thích chi tiết đến từng filter vẫn là hạng mục roadmap.
 
-## Tài liệu và cộng đồng
+## Lộ trình
+
+<table>
+<tr>
+<th width="33%">Hiện tại</th>
+<th width="33%">Tiếp theo</th>
+<th width="33%">Về sau</th>
+</tr>
+<tr>
+<td valign="top">
+
+- Làm cứng Power Edition
+- Xác thực luồng Filter Store
+- Kiểm thử restart và rollback
+- Thiết lập baseline cho máy ít RAM
+
+</td>
+<td valign="top">
+
+- Dedupe và sharding rule an toàn
+- Chẩn đoán cục bộ chi tiết hơn
+- Hoàn thiện accessibility và i18n
+- Báo cáo regression hiệu năng công khai
+
+</td>
+<td valign="top">
+
+- Managed Enterprise adapter
+- Nghiên cứu native companion tùy chọn
+- Provenance và thu hồi catalog có chữ ký
+
+</td>
+</tr>
+</table>
+
+Roadmap không phải lời hứa về ngày phát hành. Một tính năng chỉ được coi là hoàn tất sau implementation, test, migration/rollback và review bảo mật, riêng tư, giấy phép lẫn hiệu năng. [Xem roadmap cộng đồng đầy đủ →](ROADMAP.md)
+
+## Phát triển và đóng góp
+
+```bash
+npm ci
+npm run lint
+npm test
+node tools/validate-mv3.mjs dist/build/uBlockPlus.chromium --release
+```
+
+- [Đề xuất tính năng hoặc báo lỗi](https://github.com/kayurachann/uBlock-Plus/issues/new/choose)
+- [Gửi một Filter Store entry](https://github.com/kayurachann/uBlock-Plus/issues/new?template=filter_store_submission.yml)
+- [Đọc hướng dẫn đóng góp](../CONTRIBUTING.md)
+- [Tìm hiểu quản trị cộng đồng](COMMUNITY-GOVERNANCE.md)
+- [Xem quyền sở hữu và ranh giới module](MODULE-PLAN.md)
+
+Repository giữ nguyên lịch sử Git upstream và cấu hình [`gorhill/uBlock`](https://github.com/gorhill/uBlock) làm remote `upstream` chỉ để fetch.
+
+### Tài liệu và cộng đồng
 
 | Tài liệu | Nội dung |
 | --- | --- |

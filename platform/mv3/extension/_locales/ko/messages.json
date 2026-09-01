@@ -358,7 +358,7 @@
   "popupPolicyAllow": { "message": "허용" },
   "popupPolicySmart": { "message": "스마트" },
   "popupPolicyStrict": { "message": "엄격" },
-  "popupPolicyDescription": { "message": "이 정확한 호스트 이름에만 적용됩니다. 허용과 스마트는 상황별 검사에만 영향을 주며, 필터 목록 규칙과 일치하면 여전히 즉시 닫힙니다(페일 클로즈). 엄격은 신뢰할 수 있는 동작과 동일·상위·하위 호스트 이름을 요구합니다." },
+  "popupPolicyDescription": { "message": "이 정확한 호스트 이름에만 적용됩니다. 허용/스마트는 상황별 검사에만 영향을 주며, 필터 목록 규칙과 일치하는 팝업은 계속 즉시 닫힙니다. 엄격은 신뢰할 수 있는 동작과 직접 관련된 호스트 이름을 요구합니다." },
   "sandboxEditorLabel": {
     "message": "필터 제작용 샌드박스",
     "description": "Header for filter-creation section in the dashboard"

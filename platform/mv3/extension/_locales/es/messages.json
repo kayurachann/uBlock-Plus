@@ -358,7 +358,7 @@
   "popupPolicyAllow": { "message": "Permitir" },
   "popupPolicySmart": { "message": "Inteligente" },
   "popupPolicyStrict": { "message": "Estricto" },
-  "popupPolicyDescription": { "message": "Solo se aplica a este host exacto. Permitir e Inteligente controlan las comprobaciones contextuales; una regla coincidente de la lista de filtros aún cierra la ventana de inmediato (fail-closed). Estricto exige una acción de confianza y el mismo host, uno superior o uno subordinado." },
+  "popupPolicyDescription": { "message": "Solo se aplica a este host exacto. Permitir/Inteligente afectan las comprobaciones contextuales; las reglas coincidentes de listas de filtros aún cierran la ventana de inmediato. Estricto exige una acción de confianza y un nombre de host directamente relacionado." },
   "sandboxEditorLabel": {
     "message": "Caja de arena de creación de filtro",
     "description": "Header for filter-creation section in the dashboard"
