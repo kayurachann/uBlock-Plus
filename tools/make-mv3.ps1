@@ -195,11 +195,12 @@ function Convert-WasmToJson {
 $projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $buildRoot = Join-Path $projectRoot 'dist/build'
 $outputDirectory = Join-Path $buildRoot "uBOLite.$Platform"
-$nodeCommand = Get-Command node -CommandType Application -ErrorAction SilentlyContinue
+$nodeCommand = @(Get-Command node -CommandType Application `
+    -ErrorAction SilentlyContinue)[0]
 if ( $null -eq $nodeCommand ) {
     throw 'Node.js is required to generate MV3 rulesets.'
 }
-$node = $nodeCommand.Source
+$node = [string] $nodeCommand.Source
 $temporaryDirectories = [Collections.Generic.List[string]]::new()
 
 if ( $Version -ne '' -and $Version -notmatch '^\d+(?:\.\d+){0,3}$' ) {
@@ -233,7 +234,9 @@ try {
 
     $uboRoot = $projectRoot
     if ( $UboVersion -ne '' ) {
-        $git = (Get-Command git -CommandType Application -ErrorAction Stop).Source
+        $gitCommand = @(Get-Command git -CommandType Application `
+            -ErrorAction Stop)[0]
+        $git = [string] $gitCommand.Source
         $uboRoot = New-BuildTempDirectory
         $temporaryDirectories.Add($uboRoot)
         Write-Host "*** uBOLite.mv3: Fetching uBO $UboVersion into $uboRoot"
