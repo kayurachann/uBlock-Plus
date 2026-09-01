@@ -200,7 +200,7 @@
 
 - [Use custom blank page for embedded iframe in dashboard](https://github.com/gorhill/uBlock/commit/8cd6212867)
 - [Use `color-scheme` `meta` tag, as suggested](https://github.com/gorhill/uBlock/commit/5c029b3532)
-- [Bring zapper look in line with uBO Lite's zapper](https://github.com/gorhill/uBlock/commit/3f59f94b60)
+- [Bring the zapper look in line with the upstream MV3 zapper](https://github.com/gorhill/uBlock/commit/3f59f94b60)
 - [Ignore `start_page` transition for popup-blocking purpose](https://github.com/gorhill/uBlock/commit/0243a141a7)
 - [Exclude `chrome:` as valid openers for popup candidates](https://github.com/gorhill/uBlock/commit/59f4aca010)
 - [Fetch diff patches from "reliable" servers only](https://github.com/gorhill/uBlock/commit/8b964a8c54)

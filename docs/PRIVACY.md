@@ -36,6 +36,6 @@ A future native companion would be installed separately and require explicit use
 
 ## Third parties
 
-This fork inherits filter-list source URLs and external documentation/support links from upstream uBlock Origin/uBO Lite. Those third parties have their own privacy policies. The project does not sell or share personal data.
+This fork inherits filter-list source URLs and external documentation/support links from upstream uBlock Origin projects. Those third parties have their own privacy policies. The project does not sell or share personal data.
 
 Questions or reports about this policy should be opened at [the uBlock Plus+ issue tracker](https://github.com/kayurachann/uBlock-Plus/issues). Unpatched vulnerabilities should use the repository's private Security Advisory form rather than a public issue.

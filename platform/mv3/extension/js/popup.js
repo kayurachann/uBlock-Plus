@@ -1,7 +1,9 @@
 /*******************************************************************************
 
-    uBlock Origin Lite - a comprehensive, MV3-compliant content blocker
+    uBlock Plus+ - an original-first MV3 fork
+    Based on uBlock Origin upstream sources
     Copyright (C) 2022-present Raymond Hill
+    Modifications Copyright (C) 2026-present uBlock Plus+ contributors
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -36,6 +38,9 @@ function renderAdminRules() {
     const { disabledFeatures: forbid = [] } = popupPanelData;
     if ( forbid.length === 0 ) { return; }
     dom.body.dataset.forbid = forbid.join(' ');
+    if ( forbid.includes('filteringMode') ) {
+        qs$('#sitePower').disabled = true;
+    }
 }
 
 /******************************************************************************/
@@ -47,6 +52,51 @@ function renderPopupPolicy() {
         ? details.mode
         : 'default';
     select.disabled = popupPanelData.popupBlockMode === false;
+}
+
+function setCapability(name, enabled, text) {
+    const node = qs$(`[data-capability="${name}"]`);
+    if ( node === null ) { return; }
+    node.dataset.state = enabled ? 'on' : 'off';
+    dom.text(qs$(node, 'strong'), text);
+}
+
+function renderPowerPanel() {
+    const level = Number.isSafeInteger(popupPanelData.level)
+        ? popupPanelData.level
+        : 0;
+    const enabled = level !== 0;
+    const power = qs$('#sitePower');
+    dom.attr(power, 'aria-checked', `${enabled}`);
+    dom.text(
+        '#protectionStatus',
+        i18n$(enabled ? 'popupProtectionOn' : 'popupProtectionOff')
+    );
+    dom.text('#protectionMode', i18n$(`filteringMode${level}Name`));
+    setCapability(
+        'network',
+        level >= 1,
+        i18n$(level >= 1 ? 'popupCapabilityActive' : 'popupCapabilityInactive')
+    );
+    setCapability(
+        'extended',
+        level >= 2,
+        i18n$(level >= 2 ? 'popupCapabilityActive' : 'popupCapabilityInactive')
+    );
+    setCapability(
+        'popup',
+        popupPanelData.popupBlockMode === true,
+        i18n$(popupPanelData.popupBlockMode === true
+            ? 'popupCapabilityActive'
+            : 'popupCapabilityInactive')
+    );
+    const rulesetCount = Number.isSafeInteger(popupPanelData.enabledRulesetCount)
+        ? popupPanelData.enabledRulesetCount
+        : 0;
+    setCapability('lists', rulesetCount !== 0, `${rulesetCount}`);
+    dom.text('#popupActivity', i18n$('popupRecentBlocks', [
+        `${popupPanelData.recentPopupBlocks || 0}`,
+    ]));
 }
 
 dom.on('#popupPolicySelect', 'change', async ev => {
@@ -67,29 +117,9 @@ dom.on('#popupPolicySelect', 'change', async ev => {
 
 /******************************************************************************/
 
-const BLOCKING_MODE_MAX = 3;
-
-async function setFilteringMode(level, commit = false) {
-    const modeSlider = qs$('.filteringModeSlider');
-    modeSlider.dataset.level = level;
-    if ( qs$('.filteringModeSlider.moving') === null ) {
-        dom.text(
-            '#filteringModeText > span:nth-of-type(1)',
-            i18n$(`filteringMode${level}Name`)
-        );
-    }
-    if ( commit !== true ) { return; }
-    dom.cl.add(dom.body, 'busy');
-    await commitFilteringMode();
-    dom.cl.remove(dom.body, 'busy');
-}
-
-async function commitFilteringMode() {
+async function commitFilteringMode(beforeLevel, afterLevel) {
     if ( tabURL.hostname === '' ) { return; }
     const targetHostname = tabURL.hostname;
-    const modeSlider = qs$('.filteringModeSlider');
-    const afterLevel = parseInt(modeSlider.dataset.level, 10);
-    const beforeLevel = parseInt(modeSlider.dataset.levelBefore, 10);
     if ( afterLevel > 1 ) {
         if ( beforeLevel <= 1 ) {
             sendMessage({
@@ -109,22 +139,16 @@ async function commitFilteringMode() {
         } catch {
         }
         if ( granted !== true ) {
-            setFilteringMode(beforeLevel);
             return;
         }
     }
-    dom.text(
-        '#filteringModeText > span:nth-of-type(1)',
-        i18n$(`filteringMode${afterLevel}Name`)
-    );
     const actualLevel = await sendMessage({
         what: 'setFilteringMode',
         hostname: targetHostname,
         level: afterLevel,
     });
-    if ( actualLevel !== afterLevel ) {
-        setFilteringMode(actualLevel);
-    }
+    popupPanelData.level = actualLevel;
+    renderPowerPanel();
     if ( actualLevel !== beforeLevel && popupPanelData.autoReload ) {
         const justReload = tabURL.href === currentTab.url;
         self.setTimeout(( ) => {
@@ -134,113 +158,29 @@ async function commitFilteringMode() {
                 browser.tabs.update(currentTab.id, { url: tabURL.href });
             }
         }, 437);
+    } else if ( actualLevel !== beforeLevel ) {
+        dom.cl.add(dom.body, 'needReload');
     }
 }
 
-{
-    let mx0 = 0;
-    let mx1 = 0;
-    let l0 = 0;
-    let lMax = 0;
-    let timer;
-
-    const move = ( ) => {
-        timer = undefined;
-        const l1 = Math.min(Math.max(l0 + mx1 - mx0, 0), lMax);
-        let level = Math.floor(l1 * BLOCKING_MODE_MAX / lMax);
-        if ( qs$('body[dir="rtl"]') !== null ) {
-            level = 3 - level;
-        }
-        const modeSlider = qs$('.filteringModeSlider');
-        if ( `${level}` === modeSlider.dataset.level ) { return; }
-        dom.text(
-            '#filteringModeText > span:nth-of-type(2)',
-            i18n$(`filteringMode${level}Name`)
-        );
-        setFilteringMode(level);
-    };
-
-    const moveAsync = ev => {
-        if ( timer !== undefined ) { return; }
-        mx1 = ev.pageX;
-        timer = self.requestAnimationFrame(move);
-    };
-
-    const stop = ev => {
-        if ( ev.button !== 0 ) { return; }
-        const modeSlider = qs$('.filteringModeSlider');
-        if ( dom.cl.has(modeSlider, 'moving') === false ) { return; }
-        dom.cl.remove(modeSlider, 'moving');
-        self.removeEventListener('mousemove', moveAsync, { capture: true });
-        self.removeEventListener('mouseup', stop, { capture: true });
-        dom.text('#filteringModeText > span:nth-of-type(2)', '');
-        commitFilteringMode();
-        ev.stopPropagation();
-        ev.preventDefault();
-        if ( timer !== undefined ) {
-            self.cancelAnimationFrame(timer);
-            timer = undefined;
-        }
-    };
-
-    const startSliding = ev => {
-        if ( ev.button !== 0 ) { return; }
-        const modeButton = qs$('.filteringModeButton');
-        if ( ev.currentTarget !== modeButton ) { return; }
-        const modeSlider = qs$('.filteringModeSlider');
-        if ( dom.cl.has(modeSlider, 'moving') ) { return; }
-        modeSlider.dataset.levelBefore = modeSlider.dataset.level;
-        mx0 = ev.pageX;
-        const buttonRect = modeButton.getBoundingClientRect();
-        l0 = buttonRect.left + buttonRect.width / 2;
-        const sliderRect = modeSlider.getBoundingClientRect();
-        lMax = sliderRect.width - buttonRect.width ;
-        dom.cl.add(modeSlider, 'moving');
-        self.addEventListener('mousemove', moveAsync, { capture: true });
-        self.addEventListener('mouseup', stop, { capture: true });
-        ev.stopPropagation();
-        ev.preventDefault();
-    };
-
-    dom.on('.filteringModeButton', 'mousedown', startSliding);
-}
-
-dom.on(
-    '.filteringModeSlider',
-    'click',
-    '.filteringModeSlider span[data-level]',
-    ev => {
-        const modeSlider = qs$('.filteringModeSlider');
-        modeSlider.dataset.levelBefore = modeSlider.dataset.level;
-        const span = ev.target;
-        const level = parseInt(span.dataset.level, 10);
-        setFilteringMode(level, true);
+dom.on('#sitePower', 'click', async ev => {
+    if ( ev.isTrusted !== true || tabURL.hostname === '' ) { return; }
+    const beforeLevel = popupPanelData.level;
+    const fallback = Math.max(popupPanelData.defaultFilteringMode || 1, 1);
+    const afterLevel = beforeLevel === 0 ? fallback : 0;
+    dom.cl.add(dom.body, 'busy');
+    try {
+        await commitFilteringMode(beforeLevel, afterLevel);
+    } finally {
+        dom.cl.remove(dom.body, 'busy');
     }
-);
+});
 
-if ( dom.cl.has(dom.html, 'mobile') === false ) {
-    dom.on('.filteringModeSlider',
-        'mouseenter',
-        '.filteringModeSlider span[data-level]',
-        ev => {
-            const span = ev.target;
-            const level = parseInt(span.dataset.level, 10);
-            dom.text('#filteringModeText > span:nth-of-type(2)',
-                i18n$(`filteringMode${level}Name`)
-            );
-        }
-    );
-
-    dom.on('.filteringModeSlider',
-        'mouseleave',
-        '.filteringModeSlider span[data-level]',
-        ( ) => {
-            dom.text('#filteringModeText > span:nth-of-type(2)', '');
-        }
-    );
-}
-
-/******************************************************************************/
+dom.on('#refresh', 'click', ev => {
+    if ( ev.isTrusted !== true || typeof currentTab.id !== 'number' ) { return; }
+    browser.tabs.reload(currentTab.id);
+    self.close();
+});
 
 dom.on('#gotoMatchedRules', 'click', ev => {
     if ( ev.isTrusted !== true ) { return; }
@@ -273,7 +213,7 @@ dom.on('#gotoReport', 'click', ev => {
 
 /******************************************************************************/
 
-dom.on('#gotoDashboard', 'click', ev => {
+dom.on('#gotoDashboard, #gotoDashboardFooter', 'click', ev => {
     if ( ev.isTrusted !== true ) { return; }
     if ( ev.button !== 0 ) { return; }
     runtime.openOptionsPage();
@@ -355,8 +295,8 @@ async function init() {
 
     renderAdminRules();
 
-    setFilteringMode(popupPanelData.level);
     renderPopupPolicy();
+    renderPowerPanel();
 
     dom.text('#hostname', punycode.toUnicode(tabURL.hostname));
 

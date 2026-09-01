@@ -1,7 +1,9 @@
 /*******************************************************************************
 
-    uBlock Origin Lite - a comprehensive, MV3-compliant content blocker
+    uBlock Plus+ - an original-first MV3 fork
+    Based on uBlock Origin upstream sources
     Copyright (C) 2014-present Raymond Hill
+    Modifications Copyright (C) 2026-present uBlock Plus+ contributors
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -19,18 +21,34 @@
     Home: https://github.com/gorhill/uBlock
 */
 
+import {
+    applyPowerUISettings,
+    getPowerUISettings,
+    listenForPowerUISettings,
+} from './power-ui.js';
 import { dom } from './dom.js';
 
 /******************************************************************************/
 
-{
-    const mql = self.matchMedia('(prefers-color-scheme: dark)');
-    const theme = mql instanceof Object && mql.matches === true
-        ? 'dark'
-        : 'light';
+const colorScheme = self.matchMedia('(prefers-color-scheme: dark)');
+let powerUISettings;
+
+function applyTheme(settings) {
+    powerUISettings = applyPowerUISettings(settings, dom.html);
+    const theme = powerUISettings.theme === 'auto'
+        ? colorScheme.matches ? 'dark' : 'light'
+        : powerUISettings.theme;
     dom.cl.toggle(dom.html, 'dark', theme === 'dark');
     dom.cl.toggle(dom.html, 'light', theme !== 'dark');
 }
+
+applyTheme(await getPowerUISettings());
+listenForPowerUISettings(applyTheme);
+colorScheme.addEventListener?.('change', ( ) => {
+    if ( powerUISettings.theme === 'auto' ) {
+        applyTheme(powerUISettings);
+    }
+});
 
 {
     const mql = self.matchMedia('(hover: hover)');

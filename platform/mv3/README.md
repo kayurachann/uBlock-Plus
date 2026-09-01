@@ -1,6 +1,6 @@
 # Building uBlock Plus+
 
-This directory contains the MV3-specific extension, ruleset compiler and platform manifests inherited from the upstream uBO Lite implementation.
+This directory contains the uBlock Plus+ MV3 extension, ruleset compiler and platform manifests, including inherited upstream MV3 components.
 
 ## Windows
 
@@ -36,4 +36,4 @@ node tools/validate-mv3.mjs dist/build/uBlockPlus.chromium
 
 The build compiles supported uBO/ABP network filters into DNR rules and prepares declarative cosmetic/scriptlet resources. Filter lists are live external inputs, the cache contains a generated secret, and development versions can be date-generated; independent builds are therefore not expected to be byte-for-byte identical.
 
-This is an independent fork. See the project [README](https://github.com/kayurachann/uBlock-Plus#readme), [compatibility matrix](https://github.com/kayurachann/uBlock-Plus/blob/main/docs/FEATURE-MATRIX.md) and packaged [attribution notice](NOTICE.md).
+This is an independent fork. See the project [README](https://github.com/kayurachann/uBlock-Plus#readme), [compatibility matrix](https://github.com/kayurachann/uBlock-Plus/blob/main/docs/FEATURE-MATRIX.md) and [attribution notice](https://github.com/kayurachann/uBlock-Plus/blob/main/NOTICE.md).

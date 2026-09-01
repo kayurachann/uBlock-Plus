@@ -85,18 +85,11 @@ label:has(input[type="checkbox"][disabled]) + legend {
     padding: 0.5em;
     width: 100%;
     }
-.filteringModeCard > div:nth-of-type(2) {
-    justify-content: center;
-    }
-.filteringModeCard > div:nth-of-type(3) {
+.filteringModeCard > .filteringModeDescription {
     border-top: 1px solid var(--surface-2);
     font-size: var(--font-size-smaller);
     white-space: pre-line;
     }
-.filteringModeSlider {
-    pointer-events: none;
-    }
-
 h3[data-i18n="filteringMode0Name"]::first-letter {
     text-transform: capitalize;
     }
@@ -610,9 +603,6 @@ section[data-pane="filters"] aside#sandboxEditor .cm-scroller {
 @media (max-width: 480px) {
     #defaultFilteringMode {
         grid: 1fr 1fr 1fr / auto-flow dense;
-    }
-    .filteringModeCard > div:nth-of-type(2) {
-        justify-content: flex-start;
     }
 }
 

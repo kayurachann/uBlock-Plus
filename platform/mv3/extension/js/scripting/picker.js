@@ -1,7 +1,9 @@
 /*******************************************************************************
 
-    uBlock Origin Lite - a comprehensive, MV3-compliant content blocker
+    uBlock Plus+ - an original-first MV3 fork
+    Based on uBlock Origin upstream sources
     Copyright (C) 2025-present Raymond Hill
+    Modifications Copyright (C) 2026-present uBlock Plus+ contributors
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -23,9 +25,9 @@
 
 /******************************************************************************/
 
-const ubolOverlay = self.ubolOverlay;
-if ( ubolOverlay === undefined ) { return; }
-if ( ubolOverlay.file === '/picker-ui.html' ) { return; }
+const uBlockPlusOverlay = self.uBlockPlusOverlay;
+if ( uBlockPlusOverlay === undefined ) { return; }
+if ( uBlockPlusOverlay.file === '/picker-ui.html' ) { return; }
 
 /******************************************************************************/
 
@@ -82,7 +84,7 @@ function candidatesAtPoint(x, y) {
     // We need at least one element.
     let elem = null;
     if ( typeof x === 'number' ) {
-        elem = ubolOverlay.elementFromPoint(x, y);
+        elem = uBlockPlusOverlay.elementFromPoint(x, y);
     } else if ( x instanceof HTMLElement ) {
         elem = x;
         x = undefined;
@@ -129,7 +131,7 @@ function candidatesAtPoint(x, y) {
         //   If the selector is still ambiguous at this point, further narrow
         // using `:nth-of-type`.
         const parentNode = elem.parentNode;
-        if ( ubolOverlay.qsa(parentNode, `:scope > ${selectorFromAddresses(partsDB, parts)}`).length > 1 ) {
+        if ( uBlockPlusOverlay.qsa(parentNode, `:scope > ${selectorFromAddresses(partsDB, parts)}`).length > 1 ) {
             let i = 1;
             while ( elem.previousSibling !== null ) {
                 elem = elem.previousSibling;
@@ -186,7 +188,7 @@ function candidatesAtPoint(x, y) {
         const addresses = JSON.parse(json);
         const selector = selectorFromAddresses(partsDB, addresses);
         if ( excludedSelectors.includes(selector) ) { continue; }
-        const elems = ubolOverlay.qsa(document, selector);
+        const elems = uBlockPlusOverlay.qsa(document, selector);
         if ( elems.length === 0 ) { continue; }
         const resultSet = [];
         for ( const elem of elems ) {
@@ -253,7 +255,7 @@ previewSelector.commit = async function(selector) {
             }
         }
         if ( previewSelector.css !== '' ) {
-            await ubolOverlay.sendMessage({ what: 'removeCSS', css: previewSelector.css });
+            await uBlockPlusOverlay.sendMessage({ what: 'removeCSS', css: previewSelector.css });
             previewSelector.css = '';
         }
     }
@@ -273,7 +275,7 @@ previewSelector.commit = async function(selector) {
         return;
     }
     previewSelector.css = `${selector}{display:none!important;}`;
-    await ubolOverlay.sendMessage({ what: 'insertCSS', css: previewSelector.css });
+    await uBlockPlusOverlay.sendMessage({ what: 'insertCSS', css: previewSelector.css });
 };
 
 previewSelector.promise = Promise.resolve();
@@ -292,9 +294,9 @@ function onMessage(msg) {
         previewProceduralFiltererAPI.reset();
         break;
     case 'startCustomFilters':
-        return ubolOverlay.sendMessage({ what: 'startCustomFilters' });
+        return uBlockPlusOverlay.sendMessage({ what: 'startCustomFilters' });
     case 'terminateCustomFilters':
-        return ubolOverlay.sendMessage({ what: 'terminateCustomFilters' });
+        return uBlockPlusOverlay.sendMessage({ what: 'terminateCustomFilters' });
     case 'candidatesAtPoint':
         return candidatesAtPoint(msg.mx, msg.my, msg.broad);
     case 'previewSelector':
@@ -306,7 +308,7 @@ function onMessage(msg) {
 
 /******************************************************************************/
 
-await ubolOverlay.install('/picker-ui.html', onMessage);
+await uBlockPlusOverlay.install('/picker-ui.html', onMessage);
 
 /******************************************************************************/
 

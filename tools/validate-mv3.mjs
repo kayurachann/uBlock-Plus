@@ -399,6 +399,10 @@ if ( Number.parseInt(manifest.minimum_chrome_version, 10) < 130 ) {
         'minimum_chrome_version must be 130+ for memory-safe storage cleanup'
     );
 }
+if ( manifest.name !== '__MSG_extName__' ||
+    manifest.short_name !== 'uBlock Plus+' ) {
+    reportError('manifest.json does not use the uBlock Plus+ product identity');
+}
 for ( const field of [ 'permissions', 'optional_permissions' ] ) {
     const values = manifest[field] || [];
     if ( new Set(values).size !== values.length ) {
@@ -464,6 +468,32 @@ if ( Array.isArray(ruleResources) === false || ruleResources.length === 0 ) {
 
 await validateFileReference(manifest.action?.default_popup, 'Action popup');
 await validateFileReference(manifest.options_page, 'Options page');
+
+const popupMarkup = await fs.readFile(
+    path.join(extensionDir, 'popup.html'),
+    'utf8'
+).catch(( ) => '');
+if ( popupMarkup.includes('id="sitePower"') === false ||
+    popupMarkup.includes('role="switch"') === false ) {
+    reportError('Popup does not expose the per-site power switch');
+}
+if ( popupMarkup.includes('filteringModeSlider') ) {
+    reportError('Popup contains the retired four-level slider UI');
+}
+const dashboardMarkup = await fs.readFile(
+    path.join(extensionDir, 'dashboard.html'),
+    'utf8'
+).catch(( ) => '');
+if ( dashboardMarkup.includes('data-pane="siteRules"') === false ||
+    dashboardMarkup.includes('data-pane="diagnostics"') === false ) {
+    reportError('Dashboard is missing Power Console panes');
+}
+if ( dashboardMarkup.includes('filteringModeSlider') ) {
+    reportError('Dashboard contains the retired four-level slider UI');
+}
+if ( dashboardMarkup.includes('cm6.bundle.ublock-plus.min.js') === false ) {
+    reportError('Dashboard does not use the fork-owned CodeMirror filename');
+}
 for ( const [ size, iconPath ] of Object.entries(manifest.icons || {}) ) {
     await validateFileReference(iconPath, `Icon ${size}`);
 }
@@ -481,6 +511,8 @@ if ( typeof manifest.default_locale === 'string' ) {
 await validateFileReference('LICENSE.txt', 'License');
 for ( const requiredPath of [
     'filter-store/catalog.json',
+    'css/power-settings.css',
+    'css/power-ui.css',
     'js/compiled-filters.js',
     'js/compiled-storage.js',
     'js/filter-store.js',
@@ -489,11 +521,26 @@ for ( const requiredPath of [
     'js/memory-manager.js',
     'js/popup-blocker.js',
     'js/popup-policy.js',
+    'js/power-settings.js',
+    'js/power-ui-core.js',
+    'js/power-ui.js',
     'js/runtime-capabilities-core.js',
     'js/runtime-capabilities.js',
     'js/scripting/popup-context.js',
+    'lib/codemirror/cm6.bundle.ublock-plus.min.js',
 ] ) {
     await validateFileReference(requiredPath, 'Required uBlock Plus+ component');
+}
+for ( const retiredPath of [
+    'css/filtering-mode.css',
+    'lib/codemirror/cm6.bundle.ubol.min.js',
+] ) {
+    const retiredStat = await fs.stat(
+        path.join(extensionDir, retiredPath)
+    ).catch(( ) => { });
+    if ( retiredStat !== undefined ) {
+        reportError(`Retired artifact is still packaged: ${retiredPath}`);
+    }
 }
 if ( releaseMode ) {
     await validateFileReference('NOTICE.md', 'Attribution notice');

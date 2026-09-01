@@ -13,7 +13,6 @@ unzip -q ~/Downloads/uBlock\ \(translations\).zip -d $SRC
 # https://www.assertnotmagic.com/2018/06/20/bash-brackets-quick-reference/
 
 DES=./src/_locales
-DESMV3=./platform/mv3/extension/_locales
 
 for dir in $SRC/*/; do
   srclang=$(basename $dir)
@@ -30,11 +29,8 @@ for dir in $SRC/*/; do
   fi
   # ubo
   mkdir -p "$DES/$deslang/" && cp "$SRC/$srclang/messages.json" "$DES/$deslang/"
-  # ubo lite
-  mkdir -p "$DESMV3/$deslang/" && cp "$SRC/$srclang/uBO-Lite/messages.json" "$DESMV3/$deslang/"
   # descriptions
   #cp "$SRC/$srclang/description.txt" "./dist/description/description-${deslang}.txt"
-  cp "$SRC/$srclang/uBO-Lite/webstore.txt" "./platform/mv3/description/webstore.$deslang.txt"
 done
 
 # Output files with possible misuse of `$`, as this can lead to severe
@@ -43,7 +39,6 @@ done
 # See https://issues.adblockplus.org/ticket/6666
 echo "*** uBlock: Instances of '\$':"
 grep -FR "$" $DES/ || true
-grep -FR "$" $DESMV3/ || true
 
 
 rm -r $SRC

@@ -3,7 +3,7 @@
     "default_icon": "/img/icon_64.png",
     "default_popup": "popup.html"
   },
-  "author": "Raymond Hill",
+  "author": "Raymond Hill, uBlock Origin contributors, and uBlock Plus+ contributors",
   "background": {
     "scripts": [ "/js/background.js" ],
     "type": "module",
@@ -52,7 +52,7 @@
     "storage",
     "unlimitedStorage"
   ],
-  "short_name": "uBO Lite",
+  "short_name": "uBlock Plus+",
   "version": "1.0",
   "web_accessible_resources": [
     {

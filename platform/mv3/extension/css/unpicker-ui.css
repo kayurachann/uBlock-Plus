@@ -1,9 +1,9 @@
-:root#ubol-unpicker {
-    --ubol-overlay-fill: rgba(64,255,64,0.10);
-    --ubol-overlay-border: #0F0;
+:root#ublock-plus-unpicker {
+    --ublock-plus-overlay-fill: rgba(64,255,64,0.10);
+    --ublock-plus-overlay-border: #0F0;
 }
 
-#ubol-unpicker svg#overlay {
+#ublock-plus-unpicker svg#overlay {
     cursor: not-allowed;
 }
 
@@ -16,49 +16,49 @@
     width: min(32rem, 100vw - 4px);
 }
 
-#ubol-unpicker aside > section:not(#windowbar) {
+#ublock-plus-unpicker aside > section:not(#windowbar) {
     margin: 1em 1em 0 1em;
 }
-#ubol-unpicker aside > section:not(#windowbar):last-of-type {
+#ublock-plus-unpicker aside > section:not(#windowbar):last-of-type {
     margin-bottom: 1em;
 }
-#ubol-unpicker aside > section [data-i18n="unpickerUsage"] {
+#ublock-plus-unpicker aside > section [data-i18n="unpickerUsage"] {
     color: var(--ink-2);
     font-size: small;
 }
 
-#ubol-unpicker #customFilters {
+#ublock-plus-unpicker #customFilters {
     font-family: monospace;
     overflow: auto;
 }
-#ubol-unpicker .customFilter {
+#ublock-plus-unpicker .customFilter {
     display: flex;
 }
-#ubol-unpicker .customFilter:nth-of-type(2n+1) {
+#ublock-plus-unpicker .customFilter:nth-of-type(2n+1) {
     background-color: var(--surface-2);
 }
-#ubol-unpicker .customFilter > span.selector {
+#ublock-plus-unpicker .customFilter > span.selector {
     flex-grow: 1;
     font-size: small;
     padding: 0.5em;
 }
-#ubol-unpicker .customFilter.on > span.selector {
+#ublock-plus-unpicker .customFilter.on > span.selector {
     background-color: var(--accent-surface-1);
     color: var(--accent-ink-1);
 }
-#ubol-unpicker .customFilter.removed > span.remove {
+#ublock-plus-unpicker .customFilter.removed > span.remove {
     display: none;
 }
-#ubol-unpicker .customFilter.removed > span.selector {
+#ublock-plus-unpicker .customFilter.removed > span.selector {
     color: red;
     pointer-events: none;
     text-decoration-line: line-through;
 }
-#ubol-unpicker .customFilter > span.fa-icon {
+#ublock-plus-unpicker .customFilter > span.fa-icon {
     flex-shrink: 0;
     font-size: 1.25em;
     padding: 0 0.5em;
 }
-#ubol-unpicker .customFilter:not(.removed) >  span.undo {
+#ublock-plus-unpicker .customFilter:not(.removed) >  span.undo {
     display: none;
 }

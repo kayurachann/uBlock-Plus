@@ -1,7 +1,7 @@
 :root {
-    --ubol-overlay-fill: rgba(255,255,255,0.2);
-    --ubol-overlay-border: #FFF;
-    --ubol-overlay-canvas: rgba(128,128,128,0.3);
+    --ublock-plus-overlay-fill: rgba(255,255,255,0.2);
+    --ublock-plus-overlay-border: #FFF;
+    --ublock-plus-overlay-canvas: rgba(128,128,128,0.3);
 }
 :root.dark aside {
     color-scheme: dark;
@@ -34,13 +34,13 @@ svg#overlay {
     width: 100%;
 }
 svg#overlay > path:first-child {
-    fill: var(--ubol-overlay-canvas);
+    fill: var(--ublock-plus-overlay-canvas);
     fill-rule: evenodd;
 }
 svg#overlay > path + path {
-    stroke: var(--ubol-overlay-border);
+    stroke: var(--ublock-plus-overlay-border);
     stroke-width: 1.5px;
-    fill: var(--ubol-overlay-fill);
+    fill: var(--ublock-plus-overlay-fill);
 }
 
 :root aside {

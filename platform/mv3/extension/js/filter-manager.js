@@ -1,7 +1,9 @@
 /*******************************************************************************
 
-    uBlock Origin Lite - a comprehensive, MV3-compliant content blocker
+    uBlock Plus+ - an original-first MV3 fork
+    Based on uBlock Origin upstream sources
     Copyright (C) 2022-present Raymond Hill
+    Modifications Copyright (C) 2026-present uBlock Plus+ contributors
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -34,7 +36,7 @@ import {
     subtractHostnameIters,
 } from './utils.js';
 
-import { ubolErr } from './debug.js';
+import { ublockPlusErr } from './debug.js';
 
 /******************************************************************************/
 
@@ -122,7 +124,7 @@ export function startCustomFilters(tabId, frameId) {
         target: { tabId, frameIds: [ frameId ] },
         injectImmediately: true,
     }).catch(reason => {
-        ubolErr(`startCustomFilters/${reason}`);
+        ublockPlusErr(`startCustomFilters/${reason}`);
     })
 }
 
@@ -132,7 +134,7 @@ export function terminateCustomFilters(tabId, frameId) {
         target: { tabId, frameIds: [ frameId ] },
         injectImmediately: true,
     }).catch(reason => {
-        ubolErr(`terminateCustomFilters/${reason}`);
+        ublockPlusErr(`terminateCustomFilters/${reason}`);
     })
 }
 
@@ -150,7 +152,7 @@ export async function injectCustomFilters(tabId, frameId, hostname) {
                 origin: 'USER',
                 target: { tabId, frameIds: [ frameId ] },
             }).catch(reason => {
-                ubolErr(`injectCustomFilters/insertCSS/${reason}`);
+                ublockPlusErr(`injectCustomFilters/insertCSS/${reason}`);
             })
         );
     }
@@ -165,7 +167,7 @@ export async function injectCustomFilters(tabId, frameId, hostname) {
                 target: { tabId, frameIds: [ frameId ] },
                 injectImmediately: true,
             }).catch(reason => {
-                ubolErr(`injectCustomFilters/executeScript/${reason}`);
+                ublockPlusErr(`injectCustomFilters/executeScript/${reason}`);
             })
         );
     }

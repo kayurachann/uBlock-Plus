@@ -551,12 +551,24 @@
     "message": "Если активно, то подходящие фильтры будут автоматически закрывать нежелательные вкладки браузера, создаваемые веб-сайтами.",
     "description": "Short description for a checkbox in the options page"
   },
-  "popupPolicyLabel": { "message": "Политика всплывающих окон для этого имени хоста" },
-  "popupPolicyDefault": { "message": "По умолчанию (умная)" },
-  "popupPolicyAllow": { "message": "Разрешить" },
-  "popupPolicySmart": { "message": "Умная" },
-  "popupPolicyStrict": { "message": "Строгая" },
-  "popupPolicyDescription": { "message": "Применяется только к этому точному имени хоста. «Разрешить»/«Умная» влияют на контекстные проверки; при совпадении с правилом списка фильтров окно всё равно закрывается сразу. Строгий режим требует доверенного действия и непосредственно связанного имени хоста." },
+  "popupPolicyLabel": {
+    "message": "Политика всплывающих окон для этого имени хоста"
+  },
+  "popupPolicyDefault": {
+    "message": "По умолчанию (умная)"
+  },
+  "popupPolicyAllow": {
+    "message": "Разрешить"
+  },
+  "popupPolicySmart": {
+    "message": "Умная"
+  },
+  "popupPolicyStrict": {
+    "message": "Строгая"
+  },
+  "popupPolicyDescription": {
+    "message": "Применяется только к этому точному имени хоста. «Разрешить»/«Умная» влияют на контекстные проверки; при совпадении с правилом списка фильтров окно всё равно закрывается сразу. Строгий режим требует доверенного действия и непосредственно связанного имени хоста."
+  },
   "sandboxEditorLabel": {
     "message": "Песочница для создания фильтров",
     "description": "Header for filter-creation section in the dashboard"
@@ -728,5 +740,356 @@
   "unpickerUsage": {
     "message": "Выберите фильтр ниже, чтобы подсветить соответствующие элементы на странице. Нажмите на корзину для удаления фильтра.",
     "description": "Summary description on how to use the tool to remove custom filters"
+  },
+  "myFiltersPageName": {
+    "message": "Мои фильтры"
+  },
+  "siteRulesPageName": {
+    "message": "Правила сайтов"
+  },
+  "diagnosticsPageName": {
+    "message": "Диагностика"
+  },
+  "advancedPageName": {
+    "message": "Расширенные"
+  },
+  "powerConsoleTitle": {
+    "message": "Панель Power"
+  },
+  "powerConsoleDescription": {
+    "message": "Управление в стиле оригинала: профили Plus+, оформление, правила сайтов, интеллектуальная блокировка всплывающих окон, производительность и диагностика."
+  },
+  "powerSettingsLoadFailed": {
+    "message": "Не удалось загрузить настройки Power."
+  },
+  "protectionProfilesTitle": {
+    "message": "Профили защиты"
+  },
+  "protectionProfilesDescription": {
+    "message": "Примените полный обратимый профиль или настройте каждый параметр ниже."
+  },
+  "protectionProfileBaseline": {
+    "message": "Базовый"
+  },
+  "protectionProfileBaselineDescription": {
+    "message": "Сетевая фильтрация без широкого доступа к сайтам; защита от всплывающих окон включена."
+  },
+  "protectionProfileBalanced": {
+    "message": "Сбалансированный"
+  },
+  "protectionProfileBalancedDescription": {
+    "message": "Расширенная фильтрация, строгая блокировка переходов и автоматический выбор памяти."
+  },
+  "protectionProfileMaximum": {
+    "message": "Максимальный"
+  },
+  "protectionProfileMaximumDescription": {
+    "message": "Полная расширенная фильтрация, строгая навигация и сбалансированный бюджет производительности."
+  },
+  "protectionProfileLowMemory": {
+    "message": "Мало памяти"
+  },
+  "protectionProfileLowMemoryDescription": {
+    "message": "Расширенная защита с последовательной компиляцией и меньшими кэшами для слабых устройств."
+  },
+  "protectionProfileApply": {
+    "message": "Применить профиль"
+  },
+  "protectionProfileApplying": {
+    "message": "Применение профиля защиты…"
+  },
+  "protectionProfileApplied": {
+    "message": "Профиль защиты применён."
+  },
+  "protectionProfileApplyFailed": {
+    "message": "Не удалось применить профиль защиты."
+  },
+  "protectionProfilePermissionDenied": {
+    "message": "Для этого профиля нужен широкий доступ к сайтам, но разрешение не выдано."
+  },
+  "protectionProfileActive": {
+    "message": "Активен: $1"
+  },
+  "protectionProfileCustomActive": {
+    "message": "Активны: пользовательские настройки"
+  },
+  "appearanceSettingsTitle": {
+    "message": "Оформление и интерфейс"
+  },
+  "appearanceSettingsDescription": {
+    "message": "Выберите тему, цвет акцента, плотность информации и вид панели."
+  },
+  "appearanceThemeLabel": {
+    "message": "Тема"
+  },
+  "appearanceThemeAuto": {
+    "message": "Как в системе"
+  },
+  "appearanceThemeLight": {
+    "message": "Светлая"
+  },
+  "appearanceThemeDark": {
+    "message": "Тёмная"
+  },
+  "appearanceAccentLabel": {
+    "message": "Акцент"
+  },
+  "appearanceAccentCrimson": {
+    "message": "Малиновый"
+  },
+  "appearanceAccentBlue": {
+    "message": "Синий"
+  },
+  "appearanceAccentEmerald": {
+    "message": "Изумрудный"
+  },
+  "appearanceAccentViolet": {
+    "message": "Фиолетовый"
+  },
+  "appearanceDensityLabel": {
+    "message": "Плотность"
+  },
+  "appearanceDensityComfortable": {
+    "message": "Удобная"
+  },
+  "appearanceDensityCompact": {
+    "message": "Компактная"
+  },
+  "appearancePopupLayoutLabel": {
+    "message": "Вид панели"
+  },
+  "appearancePopupPower": {
+    "message": "Power (все элементы)"
+  },
+  "appearancePopupCompact": {
+    "message": "Компактный"
+  },
+  "appearanceSettingsSaved": {
+    "message": "Настройки интерфейса сохранены."
+  },
+  "appearanceSettingsSaveFailed": {
+    "message": "Не удалось сохранить настройки интерфейса."
+  },
+  "siteRulesTitle": {
+    "message": "Управление по сайтам"
+  },
+  "siteRulesDescription": {
+    "message": "Управляйте доверенными сайтами, уровнями фильтрации и политикой всплывающих окон без правки внутреннего хранилища."
+  },
+  "popupPolicyManagerTitle": {
+    "message": "Правила всплывающих окон"
+  },
+  "popupPolicyManagerDescription": {
+    "message": "Задайте исключения для точных имён хостов. Скомпилированные правила списков фильтров сохраняют приоритет."
+  },
+  "popupPolicyHostnameLabel": {
+    "message": "Имя хоста"
+  },
+  "popupPolicyHostnamePlaceholder": {
+    "message": "example.com"
+  },
+  "popupPolicyModeLabel": {
+    "message": "Политика"
+  },
+  "popupPolicyActionsLabel": {
+    "message": "Действия"
+  },
+  "popupPolicyAdd": {
+    "message": "Добавить правило"
+  },
+  "popupPolicyRemove": {
+    "message": "Удалить"
+  },
+  "popupPolicyEmpty": {
+    "message": "Нет правил всплывающих окон для сайтов."
+  },
+  "popupPolicySaved": {
+    "message": "Политика сохранена."
+  },
+  "popupPolicyRemoved": {
+    "message": "Политика удалена."
+  },
+  "popupPolicySaveFailed": {
+    "message": "Не удалось сохранить политику."
+  },
+  "popupPolicyInvalidHostname": {
+    "message": "Введите допустимое имя хоста, например example.com."
+  },
+  "filteringSiteRulesTitle": {
+    "message": "Уровень фильтрации по сайтам"
+  },
+  "filteringSiteRulesDescription": {
+    "message": "Одно имя хоста на строку. «Без фильтрации» — список доверенных сайтов; имя может быть только в одном уровне."
+  },
+  "saveSiteRules": {
+    "message": "Сохранить правила сайтов"
+  },
+  "siteRulesSaved": {
+    "message": "Правила сайтов сохранены."
+  },
+  "siteRulesInvalid": {
+    "message": "В правилах есть недопустимое или повторяющееся имя хоста."
+  },
+  "siteRulesLoadFailed": {
+    "message": "Не удалось загрузить правила сайтов."
+  },
+  "diagnosticsTitle": {
+    "message": "Диагностика среды"
+  },
+  "diagnosticsDescription": {
+    "message": "Проверяйте фактический движок MV3, возможности браузера, квоты, бюджет памяти и последние решения по всплывающим окнам."
+  },
+  "diagnosticsRefresh": {
+    "message": "Обновить диагностику"
+  },
+  "diagnosticsLoadFailed": {
+    "message": "Не удалось загрузить диагностику среды."
+  },
+  "runtimeCapabilitiesTitle": {
+    "message": "Возможности среды"
+  },
+  "diagnosticsNetworkEngine": {
+    "message": "Сетевой движок"
+  },
+  "diagnosticsInstallType": {
+    "message": "Тип установки"
+  },
+  "diagnosticsPopupObservation": {
+    "message": "Умное наблюдение за окнами"
+  },
+  "diagnosticsUserScripts": {
+    "message": "Фильтры пользовательских скриптов"
+  },
+  "diagnosticsOffscreenCompiler": {
+    "message": "Фоновый компилятор"
+  },
+  "diagnosticsStaticRules": {
+    "message": "Доступные статические правила"
+  },
+  "diagnosticsDynamicRules": {
+    "message": "Лимит динамических правил"
+  },
+  "diagnosticsSessionRules": {
+    "message": "Лимит правил сеанса"
+  },
+  "diagnosticsRegexRules": {
+    "message": "Лимит regex-правил"
+  },
+  "diagnosticsAvailable": {
+    "message": "Доступно"
+  },
+  "diagnosticsUnavailable": {
+    "message": "Недоступно"
+  },
+  "performanceDetailsTitle": {
+    "message": "Действующий бюджет производительности"
+  },
+  "performanceSelectedProfile": {
+    "message": "Выбранный профиль"
+  },
+  "performanceEffectiveProfile": {
+    "message": "Действующий профиль"
+  },
+  "performanceDeviceMemory": {
+    "message": "Обнаруженная память устройства"
+  },
+  "performanceCompileConcurrency": {
+    "message": "Параллельность компиляции"
+  },
+  "performanceCacheEntries": {
+    "message": "Записи CSS-кэша"
+  },
+  "performanceCacheHighWatermark": {
+    "message": "Верхний порог CSS-кэша"
+  },
+  "performancePruneInterval": {
+    "message": "Интервал очистки кэша"
+  },
+  "performanceMinutes": {
+    "message": "$1 мин"
+  },
+  "performanceRetainMetadata": {
+    "message": "Сохранять метаданные скриптов"
+  },
+  "popupDiagnosticsTitle": {
+    "message": "Последние решения по окнам"
+  },
+  "popupDiagnosticsDescription": {
+    "message": "Ограниченный локальный журнал решений. URL, пути, запросы и учётные данные не сохраняются."
+  },
+  "popupDiagnosticsClear": {
+    "message": "Очистить историю"
+  },
+  "popupDiagnosticsCleared": {
+    "message": "История решений очищена."
+  },
+  "popupDiagnosticsClearFailed": {
+    "message": "Не удалось очистить историю решений."
+  },
+  "popupDiagnosticsEmpty": {
+    "message": "В этом сеансе решений по всплывающим окнам ещё нет."
+  },
+  "diagnosticTime": {
+    "message": "Время"
+  },
+  "diagnosticAction": {
+    "message": "Действие"
+  },
+  "diagnosticSource": {
+    "message": "Источник"
+  },
+  "diagnosticTarget": {
+    "message": "Цель"
+  },
+  "diagnosticReason": {
+    "message": "Причина"
+  },
+  "popupPowerEdition": {
+    "message": "Версия Power"
+  },
+  "popupPowerToggle": {
+    "message": "Переключить защиту этого сайта"
+  },
+  "popupReloadPage": {
+    "message": "Перезагрузить страницу"
+  },
+  "popupProtectionOn": {
+    "message": "Защита включена"
+  },
+  "popupProtectionOff": {
+    "message": "Защита выключена"
+  },
+  "popupCapabilitySummary": {
+    "message": "Сводка возможностей защиты"
+  },
+  "popupCapabilityNetwork": {
+    "message": "Сетевая фильтрация"
+  },
+  "popupCapabilityExtended": {
+    "message": "Расширенная фильтрация"
+  },
+  "popupCapabilityPopups": {
+    "message": "Умные окна"
+  },
+  "popupCapabilityLists": {
+    "message": "Включённые списки"
+  },
+  "popupCapabilityActive": {
+    "message": "Активно"
+  },
+  "popupCapabilityInactive": {
+    "message": "Неактивно"
+  },
+  "popupSiteControls": {
+    "message": "Управление сайтом"
+  },
+  "popupQuickTools": {
+    "message": "Быстрые инструменты"
+  },
+  "popupMatchedRules": {
+    "message": "Последние совпавшие правила"
+  },
+  "popupRecentBlocks": {
+    "message": "Недавних блокировок окон: $1"
   }
 }

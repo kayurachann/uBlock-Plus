@@ -551,12 +551,24 @@
     "message": "啟用後，符合的篩選規則將自動關閉網站所建立的不需要的瀏覽器分頁。",
     "description": "Short description for a checkbox in the options page"
   },
-  "popupPolicyLabel": { "message": "此主機名稱的彈出式視窗策略" },
-  "popupPolicyDefault": { "message": "預設（智慧型）" },
-  "popupPolicyAllow": { "message": "允許" },
-  "popupPolicySmart": { "message": "智慧型" },
-  "popupPolicyStrict": { "message": "嚴格" },
-  "popupPolicyDescription": { "message": "只套用至這個完全相符的主機名稱。允許/智慧型只影響情境檢查；符合篩選器清單規則的視窗仍會立即關閉。嚴格模式要求受信任操作和直接相關的主機名稱。" },
+  "popupPolicyLabel": {
+    "message": "此主機名稱的彈出式視窗策略"
+  },
+  "popupPolicyDefault": {
+    "message": "預設（智慧型）"
+  },
+  "popupPolicyAllow": {
+    "message": "允許"
+  },
+  "popupPolicySmart": {
+    "message": "智慧型"
+  },
+  "popupPolicyStrict": {
+    "message": "嚴格"
+  },
+  "popupPolicyDescription": {
+    "message": "只套用至這個完全相符的主機名稱。允許/智慧型只影響情境檢查；符合篩選器清單規則的視窗仍會立即關閉。嚴格模式要求受信任操作和直接相關的主機名稱。"
+  },
   "sandboxEditorLabel": {
     "message": "篩選規則建立沙盒",
     "description": "Header for filter-creation section in the dashboard"
@@ -728,5 +740,356 @@
   "unpickerUsage": {
     "message": "選取下方的過濾器，以突顯網頁中符合條件的元素。按一下回收桶可移除過濾器。",
     "description": "Summary description on how to use the tool to remove custom filters"
+  },
+  "myFiltersPageName": {
+    "message": "我的篩選器"
+  },
+  "siteRulesPageName": {
+    "message": "網站規則"
+  },
+  "diagnosticsPageName": {
+    "message": "診斷"
+  },
+  "advancedPageName": {
+    "message": "進階"
+  },
+  "powerConsoleTitle": {
+    "message": "Power 控制台"
+  },
+  "powerConsoleDescription": {
+    "message": "採用原版風格控制，並提供 Plus+ 設定檔、外觀、網站規則、智慧彈出視窗防護、效能及執行階段診斷。"
+  },
+  "powerSettingsLoadFailed": {
+    "message": "無法載入 Power 設定。"
+  },
+  "protectionProfilesTitle": {
+    "message": "防護設定檔"
+  },
+  "protectionProfilesDescription": {
+    "message": "套用一組完整且可還原的設定，或繼續逐項調整下方選項。"
+  },
+  "protectionProfileBaseline": {
+    "message": "基礎"
+  },
+  "protectionProfileBaselineDescription": {
+    "message": "不需廣泛網站存取權的網路篩選；彈出視窗防護保持啟用。"
+  },
+  "protectionProfileBalanced": {
+    "message": "平衡"
+  },
+  "protectionProfileBalancedDescription": {
+    "message": "進階篩選、嚴格導覽封鎖及自動記憶體選擇。"
+  },
+  "protectionProfileMaximum": {
+    "message": "最高"
+  },
+  "protectionProfileMaximumDescription": {
+    "message": "完整延伸篩選、嚴格導覽及平衡效能預算。"
+  },
+  "protectionProfileLowMemory": {
+    "message": "低記憶體"
+  },
+  "protectionProfileLowMemoryDescription": {
+    "message": "為低階裝置提供循序編譯及較小快取的進階防護。"
+  },
+  "protectionProfileApply": {
+    "message": "套用設定檔"
+  },
+  "protectionProfileApplying": {
+    "message": "正在套用防護設定檔…"
+  },
+  "protectionProfileApplied": {
+    "message": "已套用防護設定檔。"
+  },
+  "protectionProfileApplyFailed": {
+    "message": "無法套用防護設定檔。"
+  },
+  "protectionProfilePermissionDenied": {
+    "message": "此設定檔需要廣泛網站存取權，但尚未取得權限。"
+  },
+  "protectionProfileActive": {
+    "message": "目前：$1"
+  },
+  "protectionProfileCustomActive": {
+    "message": "目前：自訂設定"
+  },
+  "appearanceSettingsTitle": {
+    "message": "外觀與介面"
+  },
+  "appearanceSettingsDescription": {
+    "message": "選擇主題、強調色、資訊密度及彈出面板配置。"
+  },
+  "appearanceThemeLabel": {
+    "message": "主題"
+  },
+  "appearanceThemeAuto": {
+    "message": "跟隨系統"
+  },
+  "appearanceThemeLight": {
+    "message": "淺色"
+  },
+  "appearanceThemeDark": {
+    "message": "深色"
+  },
+  "appearanceAccentLabel": {
+    "message": "強調色"
+  },
+  "appearanceAccentCrimson": {
+    "message": "緋紅"
+  },
+  "appearanceAccentBlue": {
+    "message": "藍色"
+  },
+  "appearanceAccentEmerald": {
+    "message": "翠綠"
+  },
+  "appearanceAccentViolet": {
+    "message": "紫色"
+  },
+  "appearanceDensityLabel": {
+    "message": "密度"
+  },
+  "appearanceDensityComfortable": {
+    "message": "舒適"
+  },
+  "appearanceDensityCompact": {
+    "message": "精簡"
+  },
+  "appearancePopupLayoutLabel": {
+    "message": "彈出面板配置"
+  },
+  "appearancePopupPower": {
+    "message": "Power（完整控制）"
+  },
+  "appearancePopupCompact": {
+    "message": "精簡"
+  },
+  "appearanceSettingsSaved": {
+    "message": "介面設定已儲存。"
+  },
+  "appearanceSettingsSaveFailed": {
+    "message": "無法儲存介面設定。"
+  },
+  "siteRulesTitle": {
+    "message": "依網站控制"
+  },
+  "siteRulesDescription": {
+    "message": "不必編輯內部儲存空間，即可管理信任網站、篩選層級及智慧彈出視窗政策。"
+  },
+  "popupPolicyManagerTitle": {
+    "message": "彈出視窗政策規則"
+  },
+  "popupPolicyManagerDescription": {
+    "message": "為智慧彈出視窗引擎設定精確主機例外。已編譯的篩選器清單規則仍具有優先權。"
+  },
+  "popupPolicyHostnameLabel": {
+    "message": "主機名稱"
+  },
+  "popupPolicyHostnamePlaceholder": {
+    "message": "example.com"
+  },
+  "popupPolicyModeLabel": {
+    "message": "政策"
+  },
+  "popupPolicyActionsLabel": {
+    "message": "動作"
+  },
+  "popupPolicyAdd": {
+    "message": "新增規則"
+  },
+  "popupPolicyRemove": {
+    "message": "移除"
+  },
+  "popupPolicyEmpty": {
+    "message": "沒有依網站設定的彈出視窗政策。"
+  },
+  "popupPolicySaved": {
+    "message": "彈出視窗政策已儲存。"
+  },
+  "popupPolicyRemoved": {
+    "message": "彈出視窗政策已移除。"
+  },
+  "popupPolicySaveFailed": {
+    "message": "無法儲存彈出視窗政策。"
+  },
+  "popupPolicyInvalidHostname": {
+    "message": "請輸入有效的主機名稱，例如 example.com。"
+  },
+  "filteringSiteRulesTitle": {
+    "message": "依網站設定篩選層級"
+  },
+  "filteringSiteRulesDescription": {
+    "message": "每行一個主機名稱。「不篩選」即信任網站清單；同一主機名稱只能出現在一個層級。"
+  },
+  "saveSiteRules": {
+    "message": "儲存網站規則"
+  },
+  "siteRulesSaved": {
+    "message": "網站規則已儲存。"
+  },
+  "siteRulesInvalid": {
+    "message": "網站規則包含無效或重複的主機名稱。"
+  },
+  "siteRulesLoadFailed": {
+    "message": "無法載入網站規則。"
+  },
+  "diagnosticsTitle": {
+    "message": "執行階段診斷"
+  },
+  "diagnosticsDescription": {
+    "message": "檢查實際 MV3 引擎、瀏覽器能力、配額上限、記憶體預算及最近的彈出視窗判定。"
+  },
+  "diagnosticsRefresh": {
+    "message": "重新整理診斷"
+  },
+  "diagnosticsLoadFailed": {
+    "message": "無法載入執行階段診斷。"
+  },
+  "runtimeCapabilitiesTitle": {
+    "message": "執行階段能力"
+  },
+  "diagnosticsNetworkEngine": {
+    "message": "網路引擎"
+  },
+  "diagnosticsInstallType": {
+    "message": "安裝類型"
+  },
+  "diagnosticsPopupObservation": {
+    "message": "智慧彈出視窗觀察"
+  },
+  "diagnosticsUserScripts": {
+    "message": "使用者指令碼篩選器"
+  },
+  "diagnosticsOffscreenCompiler": {
+    "message": "離屏編譯器"
+  },
+  "diagnosticsStaticRules": {
+    "message": "可用靜態規則"
+  },
+  "diagnosticsDynamicRules": {
+    "message": "動態規則上限"
+  },
+  "diagnosticsSessionRules": {
+    "message": "工作階段規則上限"
+  },
+  "diagnosticsRegexRules": {
+    "message": "正規表示式規則上限"
+  },
+  "diagnosticsAvailable": {
+    "message": "可用"
+  },
+  "diagnosticsUnavailable": {
+    "message": "不可用"
+  },
+  "performanceDetailsTitle": {
+    "message": "目前效能預算"
+  },
+  "performanceSelectedProfile": {
+    "message": "所選設定檔"
+  },
+  "performanceEffectiveProfile": {
+    "message": "實際設定檔"
+  },
+  "performanceDeviceMemory": {
+    "message": "偵測到的裝置記憶體"
+  },
+  "performanceCompileConcurrency": {
+    "message": "匯入編譯並行數"
+  },
+  "performanceCacheEntries": {
+    "message": "CSS 快取項目"
+  },
+  "performanceCacheHighWatermark": {
+    "message": "CSS 快取高水位"
+  },
+  "performancePruneInterval": {
+    "message": "快取清理間隔"
+  },
+  "performanceMinutes": {
+    "message": "$1 分鐘"
+  },
+  "performanceRetainMetadata": {
+    "message": "保留指令碼中繼資料"
+  },
+  "popupDiagnosticsTitle": {
+    "message": "最近的彈出視窗判定"
+  },
+  "popupDiagnosticsDescription": {
+    "message": "僅限本機且有上限的判定記錄，不會保留 URL、路徑、查詢或認證資料。"
+  },
+  "popupDiagnosticsClear": {
+    "message": "清除歷程"
+  },
+  "popupDiagnosticsCleared": {
+    "message": "彈出視窗判定歷程已清除。"
+  },
+  "popupDiagnosticsClearFailed": {
+    "message": "無法清除彈出視窗判定歷程。"
+  },
+  "popupDiagnosticsEmpty": {
+    "message": "本次瀏覽器工作階段尚無彈出視窗判定。"
+  },
+  "diagnosticTime": {
+    "message": "時間"
+  },
+  "diagnosticAction": {
+    "message": "動作"
+  },
+  "diagnosticSource": {
+    "message": "來源"
+  },
+  "diagnosticTarget": {
+    "message": "目標"
+  },
+  "diagnosticReason": {
+    "message": "原因"
+  },
+  "popupPowerEdition": {
+    "message": "Power 版"
+  },
+  "popupPowerToggle": {
+    "message": "切換此網站的防護"
+  },
+  "popupReloadPage": {
+    "message": "重新載入此頁面"
+  },
+  "popupProtectionOn": {
+    "message": "防護已開啟"
+  },
+  "popupProtectionOff": {
+    "message": "防護已關閉"
+  },
+  "popupCapabilitySummary": {
+    "message": "防護能力摘要"
+  },
+  "popupCapabilityNetwork": {
+    "message": "網路篩選"
+  },
+  "popupCapabilityExtended": {
+    "message": "延伸篩選"
+  },
+  "popupCapabilityPopups": {
+    "message": "智慧彈出視窗"
+  },
+  "popupCapabilityLists": {
+    "message": "已啟用清單"
+  },
+  "popupCapabilityActive": {
+    "message": "運作中"
+  },
+  "popupCapabilityInactive": {
+    "message": "未運作"
+  },
+  "popupSiteControls": {
+    "message": "網站控制"
+  },
+  "popupQuickTools": {
+    "message": "快速工具"
+  },
+  "popupMatchedRules": {
+    "message": "最近符合的規則"
+  },
+  "popupRecentBlocks": {
+    "message": "最近封鎖 $1 個彈出視窗"
   }
 }

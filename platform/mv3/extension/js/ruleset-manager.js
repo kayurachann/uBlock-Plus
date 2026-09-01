@@ -1,7 +1,9 @@
 /*******************************************************************************
 
-    uBlock Origin Lite - a comprehensive, MV3-compliant content blocker
+    uBlock Plus+ - an original-first MV3 fork
+    Based on uBlock Origin upstream sources
     Copyright (C) 2022-present Raymond Hill
+    Modifications Copyright (C) 2026-present uBlock Plus+ contributors
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -43,7 +45,7 @@ import {
     rulesetConfig,
     saveRulesetConfig,
 } from './config.js';
-import { ubolErr, ubolLog } from './debug.js';
+import { ublockPlusErr, ublockPlusLog } from './debug.js';
 
 import { dnr } from './ext-compat.js';
 import { fetchJSON } from './fetch.js';
@@ -64,7 +66,7 @@ let pendingDNRMutation = Promise.resolve();
 function enqueueDNRMutation(task) {
     const result = pendingDNRMutation.then(task);
     pendingDNRMutation = result.catch(reason => {
-        ubolErr(`DNR transaction queue/${reason}`);
+        ublockPlusErr(`DNR transaction queue/${reason}`);
     });
     return result;
 }
@@ -83,7 +85,7 @@ async function refreshSessionRules(response = {}) {
             appendDNRResponseError(response, result.error);
         }
     } catch ( reason ) {
-        ubolErr(`updateSessionRules/${reason}`);
+        ublockPlusErr(`updateSessionRules/${reason}`);
         appendDNRResponseError(response, reason);
     }
     return response;
@@ -156,7 +158,7 @@ async function pruneInvalidRegexRules(realm, rulesIn, rejected = []) {
     const isValid = await Promise.all(toCheck);
 
     if ( rejected.length !== 0 ) {
-        ubolLog(`${realm} realm: rejected regexes:\n`,
+        ublockPlusLog(`${realm} realm: rejected regexes:\n`,
             rejected.map(e => `${e.regex} → ${e.reason}`).join('\n')
         );
     }
@@ -210,7 +212,7 @@ async function updateRegexRules(currentRules, addRules, removeRuleIds) {
     const validRules = await pruneInvalidRegexRules('regexes', allRules);
     if ( validRules.length === 0 ) { return; }
 
-    ubolLog(`Add ${validRules.length} DNR regex rules`);
+    ublockPlusLog(`Add ${validRules.length} DNR regex rules`);
     addRules.push(...validRules);
 }
 
@@ -284,7 +286,7 @@ async function updateDynamicAndSessionRulesNow() {
         return refreshSessionRules(response);
     }
     if ( dynamicRegexCountAfter !== 0 ) {
-        ubolLog(`Using ${dynamicRegexCountAfter}/${maxRegexCount} dynamic regex-based DNR rules`);
+        ublockPlusLog(`Using ${dynamicRegexCountAfter}/${maxRegexCount} dynamic regex-based DNR rules`);
     }
 
     let displacedSessionRegexRules = [];
@@ -308,13 +310,13 @@ async function updateDynamicAndSessionRulesNow() {
             removeRuleIds,
         });
         if ( removeRuleIds.length !== 0 ) {
-            ubolLog(`Remove ${removeRuleIds.length} dynamic DNR rules`);
+            ublockPlusLog(`Remove ${removeRuleIds.length} dynamic DNR rules`);
         }
         if ( safeAddRules.length !== 0 ) {
-            ubolLog(`Add ${safeAddRules.length} dynamic DNR rules`);
+            ublockPlusLog(`Add ${safeAddRules.length} dynamic DNR rules`);
         }
     } catch(reason) {
-        ubolErr(`updateDynamicAndSessionRules/${reason}`);
+        ublockPlusErr(`updateDynamicAndSessionRules/${reason}`);
         response.error = `${reason}`;
         if ( sessionRegexRemoved ) {
             try {
@@ -339,7 +341,7 @@ export function updateDynamicAndSessionRules() {
         try {
             return await updateDynamicAndSessionRulesNow();
         } catch ( reason ) {
-            ubolErr(`updateDynamicAndSessionRules/${reason}`);
+            ublockPlusErr(`updateDynamicAndSessionRules/${reason}`);
             return refreshSessionRules({ error: `${reason}` });
         }
     });
@@ -400,7 +402,7 @@ async function updateStrictBlockRules(currentRules, addRules, removeRuleIds) {
 
     const validRules = await pruneInvalidRegexRules('strictblock', allRules);
     if ( validRules.length === 0 ) { return; }
-    ubolLog(`Add ${validRules.length} DNR strictblock rules`);
+    ublockPlusLog(`Add ${validRules.length} DNR strictblock rules`);
     for ( const rule of validRules ) {
         rule.priority = STRICTBLOCK_PRIORITY;
         addRules.push(rule);
@@ -416,7 +418,7 @@ async function updateStrictBlockRules(currentRules, addRules, removeRuleIds) {
         },
         priority: STRICTBLOCK_PRIORITY,
     });
-    ubolLog(`Add 1 DNR session rule with ${allExcluded.length} for excluded strict-block domains`);
+    ublockPlusLog(`Add 1 DNR session rule with ${allExcluded.length} for excluded strict-block domains`);
 }
 
 async function excludeFromStrictBlock(hostname, permanent) {
@@ -475,22 +477,22 @@ async function updateSessionRulesNow() {
     const addRules = addRulesUnfiltered.filter(a => a.id !== 0);
     const rejectedRuleCount = addRulesUnfiltered.length - addRules.length;
     if ( rejectedRuleCount !== 0 ) {
-        ubolLog(`Too many regex-based filters, ${rejectedRuleCount} session rules dropped`);
+        ublockPlusLog(`Too many regex-based filters, ${rejectedRuleCount} session rules dropped`);
     }
     if ( sessionRegexCount !== 0 ) {
-        ubolLog(`Using ${dynamicRegexCount + sessionRegexCount}/${maxRegexCount} shared dynamic/session regex-based DNR rules`);
+        ublockPlusLog(`Using ${dynamicRegexCount + sessionRegexCount}/${maxRegexCount} shared dynamic/session regex-based DNR rules`);
     }
     const response = { droppedRegexRules: rejectedRuleCount };
     try {
         await dnr.updateSessionRules({ addRules, removeRuleIds });
         if ( removeRuleIds.length !== 0 ) {
-            ubolLog(`Remove ${removeRuleIds.length} session DNR rules`);
+            ublockPlusLog(`Remove ${removeRuleIds.length} session DNR rules`);
         }
         if ( addRules.length !== 0 ) {
-            ubolLog(`Add ${addRules.length} session DNR rules`);
+            ublockPlusLog(`Add ${addRules.length} session DNR rules`);
         }
     } catch(reason) {
-        ubolErr(`updateSessionRules/${reason}`);
+        ublockPlusErr(`updateSessionRules/${reason}`);
         response.error = `${reason}`;
     }
     return response;
@@ -501,7 +503,7 @@ function updateSessionRules() {
         try {
             return await updateSessionRulesNow();
         } catch ( reason ) {
-            ubolErr(`updateSessionRules/${reason}`);
+            ublockPlusErr(`updateSessionRules/${reason}`);
             return { error: `${reason}` };
         }
     });
@@ -529,7 +531,7 @@ async function filteringModesToDNRNow(modes) {
         TRUSTED_DIRECTIVE_PRIORITY
     ).then(modified => {
         if ( modified === false ) { return; }
-        ubolLog(`${allowEverywhere ? 'Enabled' : 'Disabled'} DNR filtering for ${noneCount} sites`);
+        ublockPlusLog(`${allowEverywhere ? 'Enabled' : 'Disabled'} DNR filtering for ${noneCount} sites`);
     });
 }
 
@@ -641,7 +643,7 @@ export async function patchDefaultRulesets() {
     toAdd.forEach(id => enabledRulesets.add(id));
     toRemove.forEach(id => enabledRulesets.delete(id));
     const patchedRulesets = Array.from(enabledRulesets);
-    ubolLog(`Patched rulesets: ${rulesetConfig.enabledRulesets} => ${patchedRulesets}`);
+    ublockPlusLog(`Patched rulesets: ${rulesetConfig.enabledRulesets} => ${patchedRulesets}`);
     rulesetConfig.enabledRulesets = patchedRulesets;
 }
 
@@ -699,7 +701,7 @@ async function updateEnabledRulesets(toEnable, toDisable, out) {
     }).then(( ) => {
         return true;
     }).catch(reason => {
-        ubolErr(`updateEnabledRulesets/${reason}`);
+        ublockPlusErr(`updateEnabledRulesets/${reason}`);
         out.error = `${reason}`;
         return false;
     });
@@ -762,10 +764,10 @@ async function enableRulesets(ids) {
     const disableRulesetIds = Array.from(disableRulesetSet);
 
     if ( enableRulesetIds.length !== 0 ) {
-        ubolLog(`Enable rulesets: ${enableRulesetIds}`);
+        ublockPlusLog(`Enable rulesets: ${enableRulesetIds}`);
     }
     if ( disableRulesetIds.length !== 0 ) {
-        ubolLog(`Disable ruleset: ${disableRulesetIds}`);
+        ublockPlusLog(`Disable ruleset: ${disableRulesetIds}`);
     }
 
     response.stockUpdated = await updateEnabledRulesets(
@@ -790,14 +792,14 @@ async function enableRulesets(ids) {
     }
 
     await getEnabledRulesets().then(enabledRulesets => {
-        ubolLog(`Enabled rulesets: ${enabledRulesets}`);
+        ublockPlusLog(`Enabled rulesets: ${enabledRulesets}`);
         response.enabledRulesets = enabledRulesets;
         return dnr.getAvailableStaticRuleCount();
     }).then(count => {
-        ubolLog(`Available static rule count: ${count}`);
+        ublockPlusLog(`Available static rule count: ${count}`);
         response.staticRuleCount = count;
     }).catch(reason => {
-        ubolErr(`getEnabledRulesets/${reason}`);
+        ublockPlusErr(`getEnabledRulesets/${reason}`);
     });
 
     return response;
@@ -963,10 +965,10 @@ async function updateUserRulesNow(generation) {
             addRules: safeAddRules,
         });
         if ( removeRuleIds.length !== 0 ) {
-            ubolLog(`updateUserRules() / Removed ${removeRuleIds.length} dynamic DNR rules`);
+            ublockPlusLog(`updateUserRules() / Removed ${removeRuleIds.length} dynamic DNR rules`);
         }
         if ( addRules.length !== 0 ) {
-            ubolLog(`updateUserRules() / Added ${addRules.length} DNR rules`);
+            ublockPlusLog(`updateUserRules() / Added ${addRules.length} DNR rules`);
         }
         out.added = safeAddRules.length;
         out.removed = removeRuleIds.length;
@@ -994,7 +996,7 @@ async function updateUserRulesNow(generation) {
             }
         }
     } catch(reason) {
-        ubolErr(`updateUserRules/${reason}`);
+        ublockPlusErr(`updateUserRules/${reason}`);
         out.fatalError = `${reason}`;
         out.errors.push(out.fatalError);
         if ( sessionRegexRemoved && out.added === 0 ) {
@@ -1020,7 +1022,7 @@ async function updateUserRulesNow(generation) {
         } catch ( reason ) {
             // This counter is informational. A storage failure here must not
             // make an already-atomic DNR update look as though it failed.
-            ubolErr(`updateUserRules/count/${reason}`);
+            ublockPlusErr(`updateUserRules/count/${reason}`);
         }
     }
     return out;

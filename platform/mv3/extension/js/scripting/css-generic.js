@@ -1,7 +1,9 @@
 /*******************************************************************************
 
-    uBlock Origin Lite - a comprehensive, MV3-compliant content blocker
+    uBlock Plus+ - an original-first MV3 fork
+    Based on uBlock Origin upstream sources
     Copyright (C) 2014-present Raymond Hill
+    Modifications Copyright (C) 2026-present uBlock Plus+ contributors
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -23,7 +25,7 @@
 
 // Important!
 // Isolate from global scope
-(function uBOL_cssGeneric() {
+(function uBlockPlus_cssGeneric() {
 
 const genericSelectorMaps = self.genericSelectorMaps ?? [];
 self.genericSelectorMaps = undefined;
@@ -104,7 +106,7 @@ const hashFromStr = (type, s) => {
 // http://www.w3.org/TR/2014/REC-html5-20141028/infrastructure.html#space-separated-tokens
 // http://jsperf.com/enumerate-classes/6
 
-const uBOL_idFromNode = node => {
+const uBlockPlus_idFromNode = node => {
     const raw = node.id;
     if ( typeof raw !== 'string' || raw.length === 0 ) { return; }
     const hash = hashFromStr(0x23 /* '#' */, raw.trim());
@@ -115,7 +117,7 @@ const uBOL_idFromNode = node => {
 
 // https://github.com/uBlockOrigin/uBlock-issues/discussions/2076
 //   Performance: avoid using Element.classList
-const uBOL_classesFromNode = node => {
+const uBlockPlus_classesFromNode = node => {
     const s = node.getAttribute('class');
     if ( typeof s !== 'string' ) { return; }
     const len = s.length;
@@ -156,7 +158,7 @@ const exceptPendingSelectors = ( ) => {
 
 /******************************************************************************/
 
-const uBOL_processNodes = ( ) => {
+const uBlockPlus_processNodes = ( ) => {
     const t0 = Date.now();
     const nodes = [];
     const deadline = t0 + maxSurveyTimeSlice;
@@ -164,8 +166,8 @@ const uBOL_processNodes = ( ) => {
         pendingNodes.next(nodes);
         if ( nodes.length === 0 ) { break; }
         for ( const node of nodes ) {
-            uBOL_idFromNode(node);
-            uBOL_classesFromNode(node);
+            uBlockPlus_idFromNode(node);
+            uBlockPlus_classesFromNode(node);
         }
         nodes.length = 0;
         if ( performance.now() >= deadline ) { break; }
@@ -194,7 +196,7 @@ const uBOL_processNodes = ( ) => {
 
 /******************************************************************************/
 
-const uBOL_processChanges = mutations => {
+const uBlockPlus_processChanges = mutations => {
     for ( const mutation of mutations ) {
         if ( mutation.type === 'childList' ) {
             for ( const added of mutation.addedNodes ) {
@@ -203,9 +205,9 @@ const uBOL_processChanges = mutations => {
                 pendingNodes.add(added);
             }
         } else if ( mutation.attributeName === 'class' ) {
-            uBOL_classesFromNode(mutation.target);
+            uBlockPlus_classesFromNode(mutation.target);
         } else {
-            uBOL_idFromNode(mutation.target);
+            uBlockPlus_idFromNode(mutation.target);
         }
     }
     if ( pendingNodes.hasNodes() === false ) {
@@ -215,7 +217,7 @@ const uBOL_processChanges = mutations => {
     if ( processTimer !== undefined ) { return; }
     processTimer = self.setTimeout(( ) => {
         processTimer = undefined;
-        uBOL_processNodes();
+        uBlockPlus_processNodes();
     }, 64);
 };
 
@@ -275,9 +277,9 @@ genericDetails.length = 0;
 // Start applying generic cosmetic filters
 
 pendingNodes.add(document.documentElement);
-uBOL_processNodes();
+uBlockPlus_processNodes();
 
-let domMutationObserver = new MutationObserver(uBOL_processChanges);
+let domMutationObserver = new MutationObserver(uBlockPlus_processChanges);
 domMutationObserver.observe(document, {
     attributeFilter: [ 'class', 'id' ],
     attributes: true,

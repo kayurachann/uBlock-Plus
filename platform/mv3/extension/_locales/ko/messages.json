@@ -107,62 +107,174 @@
     "message": "가져온 목록의 요소 숨김 및 스크립트 주입 필터를 적용하려면 uBlock Plus+에 사용자 스크립트 실행 권한을 허용해야 합니다.",
     "description": "A notice to inform user that the enforcement of some filters requires permission to execute 'user scripts'"
   },
-  "memoryProfileSectionLabel": { "message": "메모리 프로필" },
-  "memoryProfileSelectLabel": { "message": "메모리 프로필" },
-  "memoryProfileDescription": { "message": "컴파일 동시 실행 수와 캐시 용량을 제어합니다. 저메모리 모드는 활성화된 필터를 끄지 않고 최대 메모리 사용량을 줄이도록 설계되었습니다." },
-  "memoryProfileAuto": { "message": "자동" },
-  "memoryProfileBalanced": { "message": "균형" },
-  "memoryProfileLow": { "message": "저메모리" },
-  "memoryProfileEffective": { "message": "적용 중인 프로필: $1" },
-  "memoryProfileStorageMetrics": { "message": "로컬 캐시/저장소 사용량(실시간 RAM 사용량이 아님): 로컬 $1, 세션 $2." },
-  "memoryProfileUnavailable": { "message": "사용 불가" },
-  "memoryProfileRefresh": { "message": "측정값 새로 고침" },
-  "memoryProfileCleanup": { "message": "미사용 캐시 정리" },
-  "memoryProfileCleanupDone": { "message": "정리 완료; 미사용 캐시 항목 $1개를 제거했습니다." },
-  "memoryProfileCleanupUnavailable": { "message": "이 Chrome 버전은 전체 저장소 사용량을 확인할 수 있지만 미사용 캐시 키를 나열할 수 없습니다(정리 기능에는 Chrome 130 이상 필요)." },
-  "memoryProfileError": { "message": "메모리 프로필을 업데이트할 수 없습니다." },
-  "filterStoreTitle": { "message": "필터 스토어(Power 에디션)" },
-  "filterStoreCategoryLabel": { "message": "필터 스토어 카테고리" },
-  "filterStoreLanguageLabel": { "message": "필터 스토어 언어" },
-  "filterStoreProfileLabel": { "message": "필터 스토어 리소스 프로필" },
-  "filterStoreDescription": { "message": "검증된 필터 데이터와 커뮤니티 제공 필터 데이터를 찾아보세요. 카탈로그는 실행 가능한 확장 코드를 제공하지 않으며, 가져온 목록은 uBlock Plus+가 분석하여 MV3 규칙으로 컴파일합니다." },
-  "filterStoreSearchPlaceholder": { "message": "필터 목록 검색" },
-  "filterStoreAllCategories": { "message": "모든 카테고리" },
-  "filterStoreAllLanguages": { "message": "모든 언어" },
-  "filterStoreAllProfiles": { "message": "모든 프로필" },
-  "filterStoreGlobal": { "message": "전체 언어" },
-  "filterStoreStaticSlots": { "message": "정적 슬롯" },
-  "filterStoreDynamicRules": { "message": "동적 규칙" },
-  "filterStoreRegexRules": { "message": "정규식 규칙" },
-  "filterStoreUnknownCosts": { "message": "가져온 목록 $1개의 비용을 알 수 없음" },
-  "filterStoreStaticCost": { "message": "정적 슬롯 $1개, 패키지 규칙 $2개" },
-  "filterStoreDynamicCost": { "message": "동적 규칙 최대 $1개 / 정규식 규칙 $2개" },
-  "filterStoreVerified": { "message": "검증됨" },
-  "filterStoreCommunity": { "message": "커뮤니티" },
-  "filterStoreHomepage": { "message": "홈페이지" },
-  "filterStoreEnable": { "message": "활성화" },
-  "filterStoreDisable": { "message": "비활성화" },
-  "filterStoreNoResults": { "message": "일치하는 필터 목록이 없습니다." },
-  "filterStoreResultsLimited": { "message": "$2개 결과 중 처음 $1개를 표시합니다. 나머지를 보려면 검색 조건을 좁히세요." },
-  "filterStoreBundles": { "message": "번들" },
-  "filterStoreBundleEnabled": { "message": "번들 활성화됨" },
-  "filterStoreEnableBundle": { "message": "번들 활성화" },
-  "filterStoreRepositories": { "message": "사용자 지정 저장소" },
-  "filterStoreRepositoryWarning": { "message": "직접 관리하거나 신뢰하는 HTTPS JSON 카탈로그만 추가하세요. 사용자 지정 저장소가 더 높은 신뢰 등급을 주장하더라도 항상 커뮤니티로 표시됩니다." },
-  "filterStoreRepositoryPlaceholder": { "message": "catalog.json의 HTTPS URL" },
-  "filterStoreAddRepository": { "message": "저장소 추가" },
-  "filterStoreRemoveRepository": { "message": "제거" },
-  "filterStoreRepositoryFailed": { "message": "저장소를 불러올 수 없음: $1" },
-  "filterStoreQuotaExceeded": { "message": "이 선택은 MV3 규칙 세트 할당량을 초과합니다." },
-  "filterStoreCommunityConfirm": { "message": "이 커뮤니티 저장소는 uBlock Plus+에서 검증하지 않았습니다. 필터 데이터를 가져오시겠습니까?" },
-  "filterStoreVerifying": { "message": "$1 확인 중…" },
-  "filterStoreDisabledStatus": { "message": "$1 비활성화됨." },
-  "filterStoreEnabledStatus": { "message": "$1 활성화됨." },
-  "filterStoreActivationWarnings": { "message": "Chrome 비호환 정규식 필터 $1개를 건너뛰고 활성화됨." },
-  "filterStoreBundleStatus": { "message": "번들 활성화: $1." },
-  "filterStoreInvalidRepository": { "message": "유효한 HTTPS 카탈로그 URL을 입력하세요." },
-  "filterStoreRepositoryAdded": { "message": "저장소가 추가되었습니다." },
-  "filterStoreRepositoryRemoved": { "message": "저장소가 제거되었습니다. 활성화된 목록은 가져온 목록에서 계속 사용할 수 있습니다." },
+  "memoryProfileSectionLabel": {
+    "message": "메모리 프로필"
+  },
+  "memoryProfileSelectLabel": {
+    "message": "메모리 프로필"
+  },
+  "memoryProfileDescription": {
+    "message": "컴파일 동시 실행 수와 캐시 용량을 제어합니다. 저메모리 모드는 활성화된 필터를 끄지 않고 최대 메모리 사용량을 줄이도록 설계되었습니다."
+  },
+  "memoryProfileAuto": {
+    "message": "자동"
+  },
+  "memoryProfileBalanced": {
+    "message": "균형"
+  },
+  "memoryProfileLow": {
+    "message": "저메모리"
+  },
+  "memoryProfileEffective": {
+    "message": "적용 중인 프로필: $1"
+  },
+  "memoryProfileStorageMetrics": {
+    "message": "로컬 캐시/저장소 사용량(실시간 RAM 사용량이 아님): 로컬 $1, 세션 $2."
+  },
+  "memoryProfileUnavailable": {
+    "message": "사용 불가"
+  },
+  "memoryProfileRefresh": {
+    "message": "측정값 새로 고침"
+  },
+  "memoryProfileCleanup": {
+    "message": "미사용 캐시 정리"
+  },
+  "memoryProfileCleanupDone": {
+    "message": "정리 완료; 미사용 캐시 항목 $1개를 제거했습니다."
+  },
+  "memoryProfileCleanupUnavailable": {
+    "message": "이 Chrome 버전은 전체 저장소 사용량을 확인할 수 있지만 미사용 캐시 키를 나열할 수 없습니다(정리 기능에는 Chrome 130 이상 필요)."
+  },
+  "memoryProfileError": {
+    "message": "메모리 프로필을 업데이트할 수 없습니다."
+  },
+  "filterStoreTitle": {
+    "message": "필터 스토어(Power 에디션)"
+  },
+  "filterStoreCategoryLabel": {
+    "message": "필터 스토어 카테고리"
+  },
+  "filterStoreLanguageLabel": {
+    "message": "필터 스토어 언어"
+  },
+  "filterStoreProfileLabel": {
+    "message": "필터 스토어 리소스 프로필"
+  },
+  "filterStoreDescription": {
+    "message": "검증된 필터 데이터와 커뮤니티 제공 필터 데이터를 찾아보세요. 카탈로그는 실행 가능한 확장 코드를 제공하지 않으며, 가져온 목록은 uBlock Plus+가 분석하여 MV3 규칙으로 컴파일합니다."
+  },
+  "filterStoreSearchPlaceholder": {
+    "message": "필터 목록 검색"
+  },
+  "filterStoreAllCategories": {
+    "message": "모든 카테고리"
+  },
+  "filterStoreAllLanguages": {
+    "message": "모든 언어"
+  },
+  "filterStoreAllProfiles": {
+    "message": "모든 프로필"
+  },
+  "filterStoreGlobal": {
+    "message": "전체 언어"
+  },
+  "filterStoreStaticSlots": {
+    "message": "정적 슬롯"
+  },
+  "filterStoreDynamicRules": {
+    "message": "동적 규칙"
+  },
+  "filterStoreRegexRules": {
+    "message": "정규식 규칙"
+  },
+  "filterStoreUnknownCosts": {
+    "message": "가져온 목록 $1개의 비용을 알 수 없음"
+  },
+  "filterStoreStaticCost": {
+    "message": "정적 슬롯 $1개, 패키지 규칙 $2개"
+  },
+  "filterStoreDynamicCost": {
+    "message": "동적 규칙 최대 $1개 / 정규식 규칙 $2개"
+  },
+  "filterStoreVerified": {
+    "message": "검증됨"
+  },
+  "filterStoreCommunity": {
+    "message": "커뮤니티"
+  },
+  "filterStoreHomepage": {
+    "message": "홈페이지"
+  },
+  "filterStoreEnable": {
+    "message": "활성화"
+  },
+  "filterStoreDisable": {
+    "message": "비활성화"
+  },
+  "filterStoreNoResults": {
+    "message": "일치하는 필터 목록이 없습니다."
+  },
+  "filterStoreResultsLimited": {
+    "message": "$2개 결과 중 처음 $1개를 표시합니다. 나머지를 보려면 검색 조건을 좁히세요."
+  },
+  "filterStoreBundles": {
+    "message": "번들"
+  },
+  "filterStoreBundleEnabled": {
+    "message": "번들 활성화됨"
+  },
+  "filterStoreEnableBundle": {
+    "message": "번들 활성화"
+  },
+  "filterStoreRepositories": {
+    "message": "사용자 지정 저장소"
+  },
+  "filterStoreRepositoryWarning": {
+    "message": "직접 관리하거나 신뢰하는 HTTPS JSON 카탈로그만 추가하세요. 사용자 지정 저장소가 더 높은 신뢰 등급을 주장하더라도 항상 커뮤니티로 표시됩니다."
+  },
+  "filterStoreRepositoryPlaceholder": {
+    "message": "catalog.json의 HTTPS URL"
+  },
+  "filterStoreAddRepository": {
+    "message": "저장소 추가"
+  },
+  "filterStoreRemoveRepository": {
+    "message": "제거"
+  },
+  "filterStoreRepositoryFailed": {
+    "message": "저장소를 불러올 수 없음: $1"
+  },
+  "filterStoreQuotaExceeded": {
+    "message": "이 선택은 MV3 규칙 세트 할당량을 초과합니다."
+  },
+  "filterStoreCommunityConfirm": {
+    "message": "이 커뮤니티 저장소는 uBlock Plus+에서 검증하지 않았습니다. 필터 데이터를 가져오시겠습니까?"
+  },
+  "filterStoreVerifying": {
+    "message": "$1 확인 중…"
+  },
+  "filterStoreDisabledStatus": {
+    "message": "$1 비활성화됨."
+  },
+  "filterStoreEnabledStatus": {
+    "message": "$1 활성화됨."
+  },
+  "filterStoreActivationWarnings": {
+    "message": "Chrome 비호환 정규식 필터 $1개를 건너뛰고 활성화됨."
+  },
+  "filterStoreBundleStatus": {
+    "message": "번들 활성화: $1."
+  },
+  "filterStoreInvalidRepository": {
+    "message": "유효한 HTTPS 카탈로그 URL을 입력하세요."
+  },
+  "filterStoreRepositoryAdded": {
+    "message": "저장소가 추가되었습니다."
+  },
+  "filterStoreRepositoryRemoved": {
+    "message": "저장소가 제거되었습니다. 활성화된 목록은 가져온 목록에서 계속 사용할 수 있습니다."
+  },
   "customFiltersImportExportLabel": {
     "message": "가져오기 / 내보내기",
     "description": "Text label heading the import/export area of custom filters"
@@ -319,16 +431,36 @@
     "message": "동작",
     "description": "The header text for the 'Behavior' section"
   },
-  "privacyHardeningSectionLabel": { "message": "선택적 브라우저 개인정보 보호 강화" },
-  "privacyHardeningDescription": { "message": "이 제어 기능은 선택적 권한을 허용한 후에만 Chrome 개인정보 보호 설정을 변경합니다. 제어를 끄면 해당 설정의 제어권이 Chrome으로 돌아갑니다." },
-  "privacyPermissionButton": { "message": "개인정보 보호 제어 활성화…" },
-  "privacyPermissionDenied": { "message": "선택적 개인정보 보호 권한이 허용되지 않았습니다." },
-  "privacySettingUpdateFailed": { "message": "Chrome에서 하나 이상의 개인정보 보호 설정을 업데이트할 수 없습니다." },
-  "privacyDisableHyperlinkAuditing": { "message": "하이퍼링크 감사 ping 비활성화" },
-  "privacyDisableNetworkPrediction": { "message": "Chrome 네트워크 예측 비활성화" },
-  "privacyProtectWebRTC": { "message": "WebRTC가 프록시되지 않은 UDP를 사용하지 못하도록 차단" },
-  "privacyDisableAdApis": { "message": "Chrome Privacy Sandbox 광고 API 비활성화" },
-  "privacySettingNotControllable": { "message": "이 설정은 Chrome 정책 또는 다른 확장 프로그램에서 제어합니다." },
+  "privacyHardeningSectionLabel": {
+    "message": "선택적 브라우저 개인정보 보호 강화"
+  },
+  "privacyHardeningDescription": {
+    "message": "이 제어 기능은 선택적 권한을 허용한 후에만 Chrome 개인정보 보호 설정을 변경합니다. 제어를 끄면 해당 설정의 제어권이 Chrome으로 돌아갑니다."
+  },
+  "privacyPermissionButton": {
+    "message": "개인정보 보호 제어 활성화…"
+  },
+  "privacyPermissionDenied": {
+    "message": "선택적 개인정보 보호 권한이 허용되지 않았습니다."
+  },
+  "privacySettingUpdateFailed": {
+    "message": "Chrome에서 하나 이상의 개인정보 보호 설정을 업데이트할 수 없습니다."
+  },
+  "privacyDisableHyperlinkAuditing": {
+    "message": "하이퍼링크 감사 ping 비활성화"
+  },
+  "privacyDisableNetworkPrediction": {
+    "message": "Chrome 네트워크 예측 비활성화"
+  },
+  "privacyProtectWebRTC": {
+    "message": "WebRTC가 프록시되지 않은 UDP를 사용하지 못하도록 차단"
+  },
+  "privacyDisableAdApis": {
+    "message": "Chrome Privacy Sandbox 광고 API 비활성화"
+  },
+  "privacySettingNotControllable": {
+    "message": "이 설정은 Chrome 정책 또는 다른 확장 프로그램에서 제어합니다."
+  },
   "autoReloadLabel": {
     "message": "필터링 모드 변경 시 페이지 자동 새로고침",
     "description": "Label for a checkbox in the options page"
@@ -353,12 +485,24 @@
     "message": "활성화되면, 일치하는 필터가 웹사이트에서 열린 원치 않는 브라우저 탭을 자동으로 닫습니다.",
     "description": "Short description for a checkbox in the options page"
   },
-  "popupPolicyLabel": { "message": "이 호스트 이름의 팝업 정책" },
-  "popupPolicyDefault": { "message": "기본값(스마트)" },
-  "popupPolicyAllow": { "message": "허용" },
-  "popupPolicySmart": { "message": "스마트" },
-  "popupPolicyStrict": { "message": "엄격" },
-  "popupPolicyDescription": { "message": "이 정확한 호스트 이름에만 적용됩니다. 허용/스마트는 상황별 검사에만 영향을 주며, 필터 목록 규칙과 일치하는 팝업은 계속 즉시 닫힙니다. 엄격은 신뢰할 수 있는 동작과 직접 관련된 호스트 이름을 요구합니다." },
+  "popupPolicyLabel": {
+    "message": "이 호스트 이름의 팝업 정책"
+  },
+  "popupPolicyDefault": {
+    "message": "기본값(스마트)"
+  },
+  "popupPolicyAllow": {
+    "message": "허용"
+  },
+  "popupPolicySmart": {
+    "message": "스마트"
+  },
+  "popupPolicyStrict": {
+    "message": "엄격"
+  },
+  "popupPolicyDescription": {
+    "message": "이 정확한 호스트 이름에만 적용됩니다. 허용/스마트는 상황별 검사에만 영향을 주며, 필터 목록 규칙과 일치하는 팝업은 계속 즉시 닫힙니다. 엄격은 신뢰할 수 있는 동작과 직접 관련된 호스트 이름을 요구합니다."
+  },
   "sandboxEditorLabel": {
     "message": "필터 제작용 샌드박스",
     "description": "Header for filter-creation section in the dashboard"
@@ -530,5 +674,356 @@
   "unpickerUsage": {
     "message": "아래의 필터를 선택하면 웹페이지의 일치하는 요소가 강조 표시됩니다. 필터를 삭제하려면 휴지통을 클릭합니다.",
     "description": "Summary description on how to use the tool to remove custom filters"
+  },
+  "myFiltersPageName": {
+    "message": "내 필터"
+  },
+  "siteRulesPageName": {
+    "message": "사이트별 규칙"
+  },
+  "diagnosticsPageName": {
+    "message": "진단"
+  },
+  "advancedPageName": {
+    "message": "고급 설정"
+  },
+  "powerConsoleTitle": {
+    "message": "Power 콘솔"
+  },
+  "powerConsoleDescription": {
+    "message": "원본 스타일의 제어 화면에서 Plus+ 프로필, 외관, 사이트별 규칙, 지능형 팝업 판단, 성능 및 런타임 진단을 관리합니다."
+  },
+  "powerSettingsLoadFailed": {
+    "message": "Power 설정을 불러올 수 없습니다."
+  },
+  "protectionProfilesTitle": {
+    "message": "보호 프로필"
+  },
+  "protectionProfilesDescription": {
+    "message": "완전하고 되돌릴 수 있는 기본 구성을 적용하거나 아래의 각 항목을 계속 세부 조정할 수 있습니다."
+  },
+  "protectionProfileBaseline": {
+    "message": "기본"
+  },
+  "protectionProfileBaselineDescription": {
+    "message": "광범위한 사이트 접근 권한 없이 네트워크를 필터링하며 팝업 보호는 계속 활성화됩니다."
+  },
+  "protectionProfileBalanced": {
+    "message": "균형"
+  },
+  "protectionProfileBalancedDescription": {
+    "message": "고급 필터링, 엄격한 탐색 차단 및 자동 메모리 선택을 사용합니다."
+  },
+  "protectionProfileMaximum": {
+    "message": "최대"
+  },
+  "protectionProfileMaximumDescription": {
+    "message": "전체 확장 필터링, 엄격한 탐색 및 균형형 성능 예산을 사용합니다."
+  },
+  "protectionProfileLowMemory": {
+    "message": "저메모리"
+  },
+  "protectionProfileLowMemoryDescription": {
+    "message": "성능이 낮은 기기를 위해 순차 컴파일과 더 작은 캐시로 고급 보호를 제공합니다."
+  },
+  "protectionProfileApply": {
+    "message": "프로필 적용"
+  },
+  "protectionProfileApplying": {
+    "message": "보호 프로필 적용 중…"
+  },
+  "protectionProfileApplied": {
+    "message": "보호 프로필을 적용했습니다."
+  },
+  "protectionProfileApplyFailed": {
+    "message": "보호 프로필을 적용할 수 없습니다."
+  },
+  "protectionProfilePermissionDenied": {
+    "message": "이 프로필에는 광범위한 사이트 접근 권한이 필요하지만 권한이 부여되지 않았습니다."
+  },
+  "protectionProfileActive": {
+    "message": "활성: $1"
+  },
+  "protectionProfileCustomActive": {
+    "message": "활성: 사용자 지정 설정"
+  },
+  "appearanceSettingsTitle": {
+    "message": "외관 및 인터페이스"
+  },
+  "appearanceSettingsDescription": {
+    "message": "테마, 강조색, 정보 밀도 및 팝업 레이아웃을 선택합니다."
+  },
+  "appearanceThemeLabel": {
+    "message": "테마"
+  },
+  "appearanceThemeAuto": {
+    "message": "시스템 설정 따르기"
+  },
+  "appearanceThemeLight": {
+    "message": "밝게"
+  },
+  "appearanceThemeDark": {
+    "message": "어둡게"
+  },
+  "appearanceAccentLabel": {
+    "message": "강조색"
+  },
+  "appearanceAccentCrimson": {
+    "message": "진홍색"
+  },
+  "appearanceAccentBlue": {
+    "message": "파란색"
+  },
+  "appearanceAccentEmerald": {
+    "message": "에메랄드색"
+  },
+  "appearanceAccentViolet": {
+    "message": "보라색"
+  },
+  "appearanceDensityLabel": {
+    "message": "밀도"
+  },
+  "appearanceDensityComfortable": {
+    "message": "여유롭게"
+  },
+  "appearanceDensityCompact": {
+    "message": "간결하게"
+  },
+  "appearancePopupLayoutLabel": {
+    "message": "팝업 레이아웃"
+  },
+  "appearancePopupPower": {
+    "message": "Power(전체 제어)"
+  },
+  "appearancePopupCompact": {
+    "message": "간결하게"
+  },
+  "appearanceSettingsSaved": {
+    "message": "인터페이스 설정을 저장했습니다."
+  },
+  "appearanceSettingsSaveFailed": {
+    "message": "인터페이스 설정을 저장할 수 없습니다."
+  },
+  "siteRulesTitle": {
+    "message": "사이트별 제어"
+  },
+  "siteRulesDescription": {
+    "message": "내부 저장소를 직접 편집하지 않고 신뢰할 사이트, 필터링 수준 및 지능형 팝업 정책을 관리합니다."
+  },
+  "popupPolicyManagerTitle": {
+    "message": "팝업 정책 규칙"
+  },
+  "popupPolicyManagerDescription": {
+    "message": "스마트 팝업 엔진에 정확한 호스트 예외를 설정합니다. 컴파일된 필터 목록 규칙이 우선합니다."
+  },
+  "popupPolicyHostnameLabel": {
+    "message": "호스트 이름"
+  },
+  "popupPolicyHostnamePlaceholder": {
+    "message": "example.com"
+  },
+  "popupPolicyModeLabel": {
+    "message": "정책"
+  },
+  "popupPolicyActionsLabel": {
+    "message": "작업"
+  },
+  "popupPolicyAdd": {
+    "message": "규칙 추가"
+  },
+  "popupPolicyRemove": {
+    "message": "제거"
+  },
+  "popupPolicyEmpty": {
+    "message": "사이트별 팝업 정책 규칙이 없습니다."
+  },
+  "popupPolicySaved": {
+    "message": "팝업 정책을 저장했습니다."
+  },
+  "popupPolicyRemoved": {
+    "message": "팝업 정책을 제거했습니다."
+  },
+  "popupPolicySaveFailed": {
+    "message": "팝업 정책을 저장할 수 없습니다."
+  },
+  "popupPolicyInvalidHostname": {
+    "message": "example.com과 같은 올바른 호스트 이름을 입력하세요."
+  },
+  "filteringSiteRulesTitle": {
+    "message": "사이트별 필터링 수준"
+  },
+  "filteringSiteRulesDescription": {
+    "message": "한 줄에 호스트 이름 하나를 입력합니다. ‘필터링 안 함’은 신뢰할 사이트 목록이며, 하나의 호스트 이름은 한 수준에만 포함될 수 있습니다."
+  },
+  "saveSiteRules": {
+    "message": "사이트별 규칙 저장"
+  },
+  "siteRulesSaved": {
+    "message": "사이트별 규칙을 저장했습니다."
+  },
+  "siteRulesInvalid": {
+    "message": "사이트별 규칙에 잘못되었거나 중복된 호스트 이름이 있습니다."
+  },
+  "siteRulesLoadFailed": {
+    "message": "사이트별 규칙을 불러올 수 없습니다."
+  },
+  "diagnosticsTitle": {
+    "message": "런타임 진단"
+  },
+  "diagnosticsDescription": {
+    "message": "실제 MV3 엔진, 브라우저 기능, 할당량 한도, 메모리 예산 및 최근 팝업 판단을 확인합니다."
+  },
+  "diagnosticsRefresh": {
+    "message": "진단 새로고침"
+  },
+  "diagnosticsLoadFailed": {
+    "message": "런타임 진단을 불러올 수 없습니다."
+  },
+  "runtimeCapabilitiesTitle": {
+    "message": "런타임 기능"
+  },
+  "diagnosticsNetworkEngine": {
+    "message": "네트워크 엔진"
+  },
+  "diagnosticsInstallType": {
+    "message": "설치 유형"
+  },
+  "diagnosticsPopupObservation": {
+    "message": "지능형 팝업 관찰"
+  },
+  "diagnosticsUserScripts": {
+    "message": "사용자 스크립트 필터"
+  },
+  "diagnosticsOffscreenCompiler": {
+    "message": "오프스크린 컴파일러"
+  },
+  "diagnosticsStaticRules": {
+    "message": "사용 가능한 정적 규칙"
+  },
+  "diagnosticsDynamicRules": {
+    "message": "동적 규칙 한도"
+  },
+  "diagnosticsSessionRules": {
+    "message": "세션 규칙 한도"
+  },
+  "diagnosticsRegexRules": {
+    "message": "정규식 규칙 한도"
+  },
+  "diagnosticsAvailable": {
+    "message": "사용 가능"
+  },
+  "diagnosticsUnavailable": {
+    "message": "사용 불가"
+  },
+  "performanceDetailsTitle": {
+    "message": "유효 성능 예산"
+  },
+  "performanceSelectedProfile": {
+    "message": "선택한 프로필"
+  },
+  "performanceEffectiveProfile": {
+    "message": "유효 프로필"
+  },
+  "performanceDeviceMemory": {
+    "message": "감지된 기기 메모리"
+  },
+  "performanceCompileConcurrency": {
+    "message": "가져오기 컴파일 동시 실행 수"
+  },
+  "performanceCacheEntries": {
+    "message": "CSS 캐시 항목 수"
+  },
+  "performanceCacheHighWatermark": {
+    "message": "CSS 캐시 상한선"
+  },
+  "performancePruneInterval": {
+    "message": "캐시 정리 간격"
+  },
+  "performanceMinutes": {
+    "message": "$1분"
+  },
+  "performanceRetainMetadata": {
+    "message": "스크립트 메타데이터 유지"
+  },
+  "popupDiagnosticsTitle": {
+    "message": "최근 팝업 결정"
+  },
+  "popupDiagnosticsDescription": {
+    "message": "제한된 로컬 전용 결정 기록입니다. URL, 경로, 쿼리 및 자격 증명은 보관하지 않습니다."
+  },
+  "popupDiagnosticsClear": {
+    "message": "기록 지우기"
+  },
+  "popupDiagnosticsCleared": {
+    "message": "팝업 결정 기록을 지웠습니다."
+  },
+  "popupDiagnosticsClearFailed": {
+    "message": "팝업 결정 기록을 지울 수 없습니다."
+  },
+  "popupDiagnosticsEmpty": {
+    "message": "이 브라우저 세션에는 기록된 팝업 결정이 없습니다."
+  },
+  "diagnosticTime": {
+    "message": "시간"
+  },
+  "diagnosticAction": {
+    "message": "동작"
+  },
+  "diagnosticSource": {
+    "message": "출처"
+  },
+  "diagnosticTarget": {
+    "message": "대상"
+  },
+  "diagnosticReason": {
+    "message": "이유"
+  },
+  "popupPowerEdition": {
+    "message": "Power 에디션"
+  },
+  "popupPowerToggle": {
+    "message": "이 사이트의 보호 전환"
+  },
+  "popupReloadPage": {
+    "message": "이 페이지 새로고침"
+  },
+  "popupProtectionOn": {
+    "message": "보호 켜짐"
+  },
+  "popupProtectionOff": {
+    "message": "보호 꺼짐"
+  },
+  "popupCapabilitySummary": {
+    "message": "보호 기능 요약"
+  },
+  "popupCapabilityNetwork": {
+    "message": "네트워크 필터링"
+  },
+  "popupCapabilityExtended": {
+    "message": "확장 필터링"
+  },
+  "popupCapabilityPopups": {
+    "message": "스마트 팝업"
+  },
+  "popupCapabilityLists": {
+    "message": "활성 목록"
+  },
+  "popupCapabilityActive": {
+    "message": "활성"
+  },
+  "popupCapabilityInactive": {
+    "message": "비활성"
+  },
+  "popupSiteControls": {
+    "message": "사이트 제어"
+  },
+  "popupQuickTools": {
+    "message": "빠른 도구"
+  },
+  "popupMatchedRules": {
+    "message": "최근 일치 규칙"
+  },
+  "popupRecentBlocks": {
+    "message": "최근 팝업 차단 $1건"
   }
 }

@@ -1,7 +1,9 @@
 /*******************************************************************************
 
-    uBlock Origin Lite - a comprehensive, MV3-compliant content blocker
+    uBlock Plus+ - an original-first MV3 fork
+    Based on uBlock Origin upstream sources
     Copyright (C) 2026-present Raymond Hill
+    Modifications Copyright (C) 2026-present uBlock Plus+ contributors
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -36,7 +38,7 @@ import {
     removeJob,
 } from './alarms.js';
 import { isVerifiedSourceKey } from './verified-source-handoff.js';
-import { ubolLog } from './debug.js';
+import { ublockPlusLog } from './debug.js';
 
 /******************************************************************************/
 
@@ -410,7 +412,7 @@ async function cleanupCommittedImportedListUpdatesNow(updates) {
             // stale envelope from being staged again after a restart. Cache
             // cleanup is therefore safe to retry and must not roll activation
             // back after the metadata write already succeeded.
-            ubolLog(`Unable to clear committed list metadata: ${reason}`);
+            ublockPlusLog(`Unable to clear committed list metadata: ${reason}`);
         }
     }
     return removed;
@@ -493,6 +495,6 @@ export async function updateImportedLists() {
         `rulesets.imported.compiled.${listid}`,
         pendingImportedMetadataKey(listid),
     ]));
-    ubolLog(`Will update imported filter lists: ${toUpdate.join()}`);
+    ublockPlusLog(`Will update imported filter lists: ${toUpdate.join()}`);
     return toUpdate.length;
 }

@@ -22,6 +22,12 @@ const valid = normalizeBackupObject({
         'example.com': 'strict',
         'trusted.example': 'allow',
     },
+    powerUISettings: {
+        theme: 'dark',
+        accent: 'violet',
+        density: 'compact',
+        popupLayout: 'power',
+    },
     filterStoreRepositories: [ 'https://catalog.example/store.json' ],
     rulesets: [ '+easylist', '-annoyances-cookies' ],
     importedLists: [ {
@@ -45,6 +51,7 @@ const valid = normalizeBackupObject({
 });
 assert.equal(valid.memoryProfile, 'low-memory');
 assert.equal(valid.popupPolicies['example.com'], 'strict');
+assert.equal(valid.powerUISettings.theme, 'dark');
 assert.notEqual(valid.customFilters[0], undefined);
 
 for ( const invalid of [
@@ -54,6 +61,7 @@ for ( const invalid of [
     { popupPolicies: [] },
     { popupPolicies: { 'not a hostname': 'strict' } },
     { popupPolicies: { 'example.com': 'aggressive' } },
+    { powerUISettings: { theme: 'midnight' } },
     { filterStoreRepositories: 'https://catalog.example/store.json' },
     { rulesets: [ 'easylist' ] },
     { importedLists: {} },

@@ -1,7 +1,9 @@
 /*******************************************************************************
 
-    uBlock Origin Lite - a comprehensive, MV3-compliant content blocker
+    uBlock Plus+ - an original-first MV3 fork
+    Based on uBlock Origin upstream sources
     Copyright (C) 2022-present Raymond Hill
+    Modifications Copyright (C) 2026-present uBlock Plus+ contributors
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -19,7 +21,7 @@
     Home: https://github.com/gorhill/uBlock
 */
 
-import { ubolErr } from './debug.js';
+import { ublockPlusErr } from './debug.js';
 
 /******************************************************************************/
 
@@ -27,6 +29,6 @@ export function fetchJSON(path) {
     return fetch(`${path}.json`).then(response =>
         response.json()
     ).catch(reason => {
-        ubolErr(`fetchJSON/${reason}`);
+        ublockPlusErr(`fetchJSON/${reason}`);
     });
 }

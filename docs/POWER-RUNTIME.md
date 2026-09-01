@@ -1,6 +1,6 @@
 # Power Runtime và giới hạn trình duyệt
 
-uBlock Plus+ không dùng từ “Power” để che giấu một engine Lite. Mục tiêu của dự án là giữ toàn bộ trải nghiệm uBlock Origin có thể biểu diễn an toàn trên Chromium MV3, rồi bổ sung capability mạnh hơn khi **chính trình duyệt** xác nhận extension đủ điều kiện.
+uBlock Plus+ không dùng từ “Power” để che giấu một engine tối giản. Mục tiêu của dự án là giữ toàn bộ trải nghiệm uBlock Origin có thể biểu diễn an toàn trên Chromium MV3, rồi bổ sung capability mạnh hơn khi **chính trình duyệt** xác nhận extension đủ điều kiện.
 
 ## Bốn tầng runtime riêng biệt
 

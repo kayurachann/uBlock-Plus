@@ -1,7 +1,9 @@
 /*******************************************************************************
 
-    uBlock Origin Lite - a comprehensive, MV3-compliant content blocker
+    uBlock Plus+ - an original-first MV3 fork
+    Based on uBlock Origin upstream sources
     Copyright (C) 2014-present Raymond Hill
+    Modifications Copyright (C) 2026-present uBlock Plus+ contributors
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -511,7 +513,7 @@ dom.on('section[data-pane="settings"] button:has([data-i18n="resetToDefaultButto
 /******************************************************************************/
 
 function listen() {
-    const bc = new self.BroadcastChannel('uBOL');
+    const bc = new self.BroadcastChannel('uBlockPlus');
     bc.onmessage = listen.onmessage;
 }
 

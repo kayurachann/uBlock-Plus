@@ -1,7 +1,9 @@
 /*******************************************************************************
 
-    uBlock Origin Lite - a comprehensive, MV3-compliant content blocker
+    uBlock Plus+ - an original-first MV3 fork
+    Based on uBlock Origin upstream sources
     Copyright (C) 2025-present Raymond Hill
+    Modifications Copyright (C) 2026-present uBlock Plus+ contributors
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -19,16 +21,16 @@
     Home: https://github.com/gorhill/uBlock
 */
 
-(function uBOLOverlay() {
+(function uBlockPlusOverlay() {
 
 /******************************************************************************/
 
-if ( self.ubolOverlay ) {
-    self.ubolOverlay.stop();
-    self.ubolOverlay = undefined;
+if ( self.uBlockPlusOverlay ) {
+    self.uBlockPlusOverlay.stop();
+    self.uBlockPlusOverlay = undefined;
 }
 
-self.ubolOverlay = {
+self.uBlockPlusOverlay = {
     file: '',
     webext: typeof browser === 'object' ? browser : chrome,
     url: new URL(document.baseURI),
@@ -103,19 +105,19 @@ self.ubolOverlay = {
             this.port = null;
         }
         this.onmessage = null;
-        self.ubolOverlay = undefined;
+        self.uBlockPlusOverlay = undefined;
     },
 
     onViewportChanged() {
-        self.ubolOverlay.highlightUpdate();
+        self.uBlockPlusOverlay.highlightUpdate();
     },
 
     onKeyPressed(ev) {
         if ( ev.key !== 'Escape' && ev.which !== 27 ) { return; }
         ev.stopPropagation();
         ev.preventDefault();
-        if ( self.ubolOverlay.onmessage ) {
-            self.ubolOverlay.onmessage({ what: 'quitTool' });
+        if ( self.uBlockPlusOverlay.onmessage ) {
+            self.uBlockPlusOverlay.onmessage({ what: 'quitTool' });
         }
     },
 
@@ -298,7 +300,7 @@ self.ubolOverlay = {
     },
 
     highlightElementAtPoint(x, y) {
-        const elem = self.ubolOverlay.elementFromPoint(x, y);
+        const elem = self.uBlockPlusOverlay.elementFromPoint(x, y);
         this.highlightElements([ elem ]);
     },
 
@@ -319,16 +321,16 @@ self.ubolOverlay = {
                 const channel = new MessageChannel();
                 const port = channel.port1;
                 port.onmessage = ev => {
-                    self.ubolOverlay &&
-                        self.ubolOverlay.onMessage(ev.data || {})
+                    self.uBlockPlusOverlay &&
+                        self.uBlockPlusOverlay.onMessage(ev.data || {})
                 };
                 port.onmessageerror = ( ) => {
-                    self.ubolOverlay &&
-                        self.ubolOverlay.onMessage({ what: 'quitTool' })
+                    self.uBlockPlusOverlay &&
+                        self.uBlockPlusOverlay.onMessage({ what: 'quitTool' })
                 };
                 const realURL = new URL(dynamicURL);
                 realURL.hostname =
-                    self.ubolOverlay.webext.i18n.getMessage('@@extension_id');
+                    self.uBlockPlusOverlay.webext.i18n.getMessage('@@extension_id');
                 frame.contentWindow.postMessage(
                     {
                         what: 'startOverlay',
@@ -340,9 +342,9 @@ self.ubolOverlay = {
                     [ channel.port2 ]
                 );
                 frame.contentWindow.focus();
-                self.ubolOverlay.onmessage = onmessage;
-                self.ubolOverlay.port = port;
-                self.ubolOverlay.frame = frame;
+                self.uBlockPlusOverlay.onmessage = onmessage;
+                self.uBlockPlusOverlay.port = port;
+                self.uBlockPlusOverlay.frame = frame;
                 resolve(true);
             };
             if ( dynamicURL.protocol !== 'safari-web-extension:' ) {

@@ -1,7 +1,9 @@
 /*******************************************************************************
 
-    uBlock Origin Lite - a comprehensive, MV3-compliant content blocker
+    uBlock Plus+ - an original-first MV3 fork
+    Based on uBlock Origin upstream sources
     Copyright (C) 2025-present Raymond Hill
+    Modifications Copyright (C) 2026-present uBlock Plus+ contributors
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -23,9 +25,9 @@
 
 /******************************************************************************/
 
-const ubolOverlay = self.ubolOverlay;
-if ( ubolOverlay === undefined ) { return; }
-if ( ubolOverlay.file === '/zapper-ui.html' ) { return; }
+const uBlockPlusOverlay = self.uBlockPlusOverlay;
+if ( uBlockPlusOverlay === undefined ) { return; }
+if ( uBlockPlusOverlay.file === '/zapper-ui.html' ) { return; }
 
 /******************************************************************************/
 
@@ -37,16 +39,16 @@ if ( ubolOverlay.file === '/zapper-ui.html' ) { return; }
 
 function zapElementAtPoint(mx, my, options) {
     if ( options.highlight ) {
-        const elem = ubolOverlay.elementFromPoint(mx, my);
+        const elem = uBlockPlusOverlay.elementFromPoint(mx, my);
         if ( elem ) {
-            ubolOverlay.highlightElements([ elem ]);
+            uBlockPlusOverlay.highlightElements([ elem ]);
         }
         return;
     }
 
-    let elemToRemove = ubolOverlay.highlightedElements?.[0] ?? null;
+    let elemToRemove = uBlockPlusOverlay.highlightedElements?.[0] ?? null;
     if ( elemToRemove === null && mx !== undefined ) {
-        elemToRemove = ubolOverlay.elementFromPoint(mx, my);
+        elemToRemove = uBlockPlusOverlay.elementFromPoint(mx, my);
     }
 
     if ( elemToRemove instanceof Element === false ) { return; }
@@ -83,7 +85,7 @@ function zapElementAtPoint(mx, my, options) {
         }
     }
     elemToRemove.remove();
-    ubolOverlay.highlightElementAtPoint(mx, my);
+    uBlockPlusOverlay.highlightElementAtPoint(mx, my);
 }
 
 /******************************************************************************/
@@ -128,7 +130,7 @@ function onMessage(msg) {
 
 /******************************************************************************/
 
-await ubolOverlay.install('/zapper-ui.html', onMessage);
+await uBlockPlusOverlay.install('/zapper-ui.html', onMessage);
 
 /******************************************************************************/
 

@@ -4,11 +4,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="light dark" />
+<meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="css/default.css">
 <link rel="stylesheet" href="css/common.css">
 <link rel="stylesheet" href="css/fa-icons.css">
-<link rel="stylesheet" href="css/filtering-mode.css">
+<link rel="stylesheet" href="css/power-ui.css">
 <link rel="stylesheet" href="css/popup.css">
 <title data-i18n="extName"></title>
 </head>
@@ -16,57 +16,60 @@
 <body class="loading busy">
 
 <main>
-    <div id="hostname"><span></span>&shy;<span></span></div>
-    <!-- -------- -->
-    <div class="filteringModeSlider">
-        <div class="filteringModeButton"><div></div></div>
-        <span data-level="0" aria-label="filteringMode0Name"></span>
-        <span data-level="1" aria-label="filteringMode1Name"></span>
-        <span data-level="2" aria-label="filteringMode2Name"></span>
-        <span data-level="3" aria-label="filteringMode3Name"></span>
-    </div>
-    <!-- -------- -->
-    <div id="filteringModeText"><label data-i18n="popupFilteringModeLabel">_</label><br><span>_</span><span></span></div>
-    <!-- -------- -->
-    <div id="popupPolicy" class="popupPolicy needHTTP">
-        <label for="popupPolicySelect" data-i18n="popupPolicyLabel">_</label>
-        <select id="popupPolicySelect" aria-label="popupPolicyLabel">
-            <option value="default" data-i18n="popupPolicyDefault">_</option>
-            <option value="allow" data-i18n="popupPolicyAllow">_</option>
-            <option value="block" data-i18n="popupPolicySmart">_</option>
-            <option value="strict" data-i18n="popupPolicyStrict">_</option>
-        </select>
-        <p data-i18n="popupPolicyDescription">_</p>
-    </div>
-    <!-- -------- -->
-    <div class="toolMenu localTools needHTTP">
-        <label data-i18n="popupLocalToolsLabel"></label>
-        <span id="gotoZapper" class="tool enabled" tabindex="0">
-            <span class="fa-icon">bolt</span>
-            <span data-i18n="zapperTipEnter">_</span>
-        </span>
-        <span id="gotoPicker" class="tool enabled" tabindex="0">
-            <span class="fa-icon">eye-slash</span>
-            <span data-i18n="pickerTipEnter">_</span>
-        </span>
-        <span id="gotoUnpicker" class="tool" tabindex="0">
-            <span class="fa-icon">eye-open</span>
-            <span data-i18n="unpickerTipEnter">_</span>
-        </span>
-        <span id="gotoReport" class="tool enabled" tabindex="0">
-            <span class="fa-icon">comment-alt</span>
-            <span data-i18n="popupTipReport">_</span>
-        </span>
-    </div>
-    <!-- -------- -->
-    <div class="toolRibbon globalTools">
-        <span id="gotoMatchedRules" class="fa-icon tool" tabindex="0" title="Show matched rules">list-alt<span class="caption">Show matched rules</span></span>
-        <span id="gotoDashboard" class="fa-icon tool enabled" tabindex="0" data-i18n-title="popupTipDashboard">cogs<span class="caption" data-i18n="popupTipDashboard"></span></span>
-    </div>
+    <header class="popupHeader">
+        <img src="img/icon_64.png" alt="">
+        <div><strong data-i18n="extName">uBlock Plus+</strong><span data-i18n="popupPowerEdition">_</span></div>
+        <button id="gotoDashboard" class="iconButton fa-icon" type="button" data-i18n-title="popupTipDashboard">cogs</button>
+    </header>
+
+    <section class="protectionCard">
+        <div id="hostname"><span></span>&shy;<span></span></div>
+        <div class="protectionControl">
+            <button id="sitePower" class="sitePower fa-icon" type="button" role="switch" aria-checked="true" aria-label="popupPowerToggle" data-i18n-title="popupPowerToggle">power-off</button>
+            <div class="protectionCopy"><strong id="protectionStatus">_</strong><span id="protectionMode">_</span></div>
+            <button id="refresh" class="iconButton fa-icon" type="button" data-i18n-title="popupReloadPage">refresh</button>
+        </div>
+    </section>
+
+    <section class="capabilityGrid powerDetails" aria-label="popupCapabilitySummary">
+        <div data-capability="network"><span data-i18n="popupCapabilityNetwork">_</span><strong>_</strong></div>
+        <div data-capability="extended"><span data-i18n="popupCapabilityExtended">_</span><strong>_</strong></div>
+        <div data-capability="popup"><span data-i18n="popupCapabilityPopups">_</span><strong>_</strong></div>
+        <div data-capability="lists"><span data-i18n="popupCapabilityLists">_</span><strong>_</strong></div>
+    </section>
+
+    <details id="siteControls" class="powerDetails" open>
+        <summary data-i18n="popupSiteControls">_</summary>
+        <div id="popupPolicy" class="popupPolicy needHTTP">
+            <label for="popupPolicySelect" data-i18n="popupPolicyLabel">_</label>
+            <select id="popupPolicySelect" aria-label="popupPolicyLabel">
+                <option value="default" data-i18n="popupPolicyDefault">_</option>
+                <option value="allow" data-i18n="popupPolicyAllow">_</option>
+                <option value="block" data-i18n="popupPolicySmart">_</option>
+                <option value="strict" data-i18n="popupPolicyStrict">_</option>
+            </select>
+            <p data-i18n="popupPolicyDescription">_</p>
+        </div>
+    </details>
+
+    <section class="quickTools needHTTP">
+        <h2 data-i18n="popupQuickTools">_</h2>
+        <div class="quickToolGrid">
+            <button id="gotoZapper" class="tool enabled" type="button"><span class="fa-icon">bolt</span><span data-i18n="zapperTipEnter">_</span></button>
+            <button id="gotoPicker" class="tool enabled" type="button"><span class="fa-icon">eye-slash</span><span data-i18n="pickerTipEnter">_</span></button>
+            <button id="gotoUnpicker" class="tool" type="button"><span class="fa-icon">eye-open</span><span data-i18n="unpickerTipEnter">_</span></button>
+            <button id="gotoReport" class="tool enabled" type="button"><span class="fa-icon">comment-alt</span><span data-i18n="popupTipReport">_</span></button>
+        </div>
+    </section>
+
+    <footer class="toolRibbon globalTools">
+        <button id="gotoMatchedRules" class="tool fa-icon" type="button" data-i18n-title="popupMatchedRules">list-alt<span class="caption" data-i18n="popupMatchedRules"></span></button>
+        <span id="popupActivity" class="popupActivity powerDetails"></span>
+        <button id="gotoDashboardFooter" class="tool enabled fa-icon" type="button" data-i18n-title="popupTipDashboard">sliders<span class="caption" data-i18n="popupTipDashboard"></span></button>
+    </footer>
 </main>
-<aside>
-    <span class="fa-icon">spinner</span>
-</aside>
+
+<aside><span class="fa-icon">spinner</span></aside>
 
 <script src="js/theme.js" type="module"></script>
 <script src="js/fa-icons.js" type="module"></script>
@@ -74,5 +77,4 @@
 <script src="js/popup.js" type="module"></script>
 
 </body>
-
 </html>

@@ -1,0 +1,39 @@
+/* uBlock Plus+ shared Power UI preferences. */
+
+:root[data-density="compact"] {
+    --font-size: 13px;
+    --font-size-larger: 14px;
+    --font-size-smaller: 12px;
+}
+:root[data-accent="crimson"] {
+    --primary-30: 160 24 54;
+    --primary-40: 197 0 66;
+    --primary-50: 226 40 80;
+    --primary-60: 255 79 94;
+    --primary-70: 255 106 117;
+    --primary-80: 255 154 162;
+    --primary-90: 255 224 228;
+    --primary-95: 255 241 243;
+}
+
+:root[data-accent="emerald"] {
+    --primary-30: 0 94 94;
+    --primary-40: 0 135 135;
+    --primary-50: 21 165 149;
+    --primary-60: 42 195 162;
+    --primary-70: 84 220 183;
+    --primary-80: 136 235 209;
+    --primary-90: 204 247 232;
+    --primary-95: 235 252 246;
+}
+
+:root[data-accent="violet"] {
+    --primary-30: 89 42 203;
+    --primary-40: 117 66 229;
+    --primary-50: 144 89 255;
+    --primary-60: 171 113 255;
+    --primary-70: 198 137 255;
+    --primary-80: 217 191 255;
+    --primary-90: 231 223 255;
+    --primary-95: 245 241 255;
+}

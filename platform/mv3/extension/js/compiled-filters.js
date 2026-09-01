@@ -1,7 +1,9 @@
 /*******************************************************************************
 
-    uBlock Origin Lite - a comprehensive, MV3-compliant content blocker
+    uBlock Plus+ - an original-first MV3 fork
+    Based on uBlock Origin upstream sources
     Copyright (C) 2026-present Raymond Hill
+    Modifications Copyright (C) 2026-present uBlock Plus+ contributors
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -67,7 +69,7 @@ import { dnr } from './ext-compat.js';
 import { getEnabledImportedLists } from './imported-lists.js';
 import { getFilteringModeDetails } from './mode-manager.js';
 import { getMemoryProfileConfig } from './memory-manager.js';
-import { ubolLog } from './debug.js';
+import { ublockPlusLog } from './debug.js';
 
 /******************************************************************************/
 
@@ -141,7 +143,7 @@ async function parseRawFilters() {
             break;
         case 'compileFilters:getUserList':
             getUserList().then(text => {
-                if ( text ) { ubolLog(`Compiling user filters`); }
+                if ( text ) { ublockPlusLog(`Compiling user filters`); }
                 callback(text);
             });
             return true;
@@ -150,7 +152,7 @@ async function parseRawFilters() {
             break;
         case 'compileFilters:getEnabledImportedLists':
             getEnabledImportedLists().then(result => {
-                if ( result?.length ) { ubolLog(`Compiling ${result.length} imported lists`); }
+                if ( result?.length ) { ublockPlusLog(`Compiling ${result.length} imported lists`); }
                 setHardTimeout(result);
                 callback(result);
             });
@@ -290,11 +292,11 @@ async function register(generation) {
             if ( previousScripts.length !== 0 ) {
                 await browser.userScripts.unregister();
                 unregistered = true;
-                ubolLog(`Unregistered userscript ${previousScripts.map(a => a.id).join()}`);
+                ublockPlusLog(`Unregistered userscript ${previousScripts.map(a => a.id).join()}`);
             }
             if ( toAdd.length !== 0 ) {
                 await browser.userScripts.register(toAdd);
-                ubolLog(`Registered userscript ${toAdd.map(v => v.id)}`);
+                ublockPlusLog(`Registered userscript ${toAdd.map(v => v.id)}`);
             }
         } catch ( reason ) {
             if ( unregistered && previousScripts.length !== 0 ) {
@@ -329,7 +331,7 @@ async function restore(previousRegistration) {
     if ( previousScripts.length !== 0 ) {
         await browser.userScripts.register(previousScripts);
     }
-    ubolLog(`Restored ${previousScripts.length} previous userscript(s)`);
+    ublockPlusLog(`Restored ${previousScripts.length} previous userscript(s)`);
     return true;
 }
 

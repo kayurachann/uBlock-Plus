@@ -1,7 +1,9 @@
 /*******************************************************************************
 
-    uBlock Origin Lite - a comprehensive, MV3-compliant content blocker
+    uBlock Plus+ - an original-first MV3 fork
+    Based on uBlock Origin upstream sources
     Copyright (C) 2022-present Raymond Hill
+    Modifications Copyright (C) 2026-present uBlock Plus+ contributors
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -25,6 +27,7 @@ import {
     sendMessage,
 } from './ext.js';
 
+import { POWER_UI_STORAGE_KEY } from './power-ui-core.js';
 import { getImportedLists } from './imported-lists.js';
 import { normalizeBackupObject } from './backup-schema.js';
 
@@ -40,12 +43,14 @@ export async function backupToObject(currentConfig) {
         memoryProfile,
         filterStoreRepositories,
         popupPolicies,
+        powerUISettings,
     ] = await Promise.all([
         sendMessage({ what: 'getDefaultConfig' }),
         sendMessage({ what: 'getSandboxFilters' }).then(a => a?.trim() ?? ''),
         sendMessage({ what: 'getMemoryProfile' }),
         localRead('filterStore.repositories'),
         sendMessage({ what: 'getPopupPolicies' }),
+        localRead(POWER_UI_STORAGE_KEY),
     ]);
     if ( currentConfig.autoReload !== defaultConfig.autoReload ) {
         out.autoReload = currentConfig.autoReload;
@@ -70,6 +75,9 @@ export async function backupToObject(currentConfig) {
     }
     if ( Object.keys(popupPolicies?.policies || {}).length !== 0 ) {
         out.popupPolicies = { ...popupPolicies.policies };
+    }
+    if ( powerUISettings instanceof Object ) {
+        out.powerUISettings = { ...powerUISettings };
     }
     const { enabledRulesets } = currentConfig;
     const customRulesets = [];
@@ -149,6 +157,15 @@ export async function restoreFromObject(targetConfig) {
         what: 'replacePopupPolicies',
         policies: targetConfig.popupPolicies ?? {},
     });
+
+    if ( targetConfig.powerUISettings ) {
+        await localWrite(
+            POWER_UI_STORAGE_KEY,
+            targetConfig.powerUISettings
+        );
+    } else {
+        await localRemove(POWER_UI_STORAGE_KEY);
+    }
 
     const memoryProfile = [ 'auto', 'balanced', 'low-memory' ]
         .includes(targetConfig.memoryProfile)

@@ -27,7 +27,7 @@
 uBlock Plus+は、Chromium MV3向けに独立して開発されているGPLライセンスのコンテンツブロッカーです。実績のある上流のフィルタリング／コンパイラ基盤に、コミュニティのFilter Store、移行可能な設定、明示的な上級者向け制御、メモリを意識した動作を組み合わせています。プロジェクト運営のテレメトリサービスやリモート実行コードは使用しません。
 
 > [!IMPORTANT]
-> **リリース状況:** v1.0.0は手動サイドロード向けのプレリリースで、自動更新されません。uBlock Plus+はuBlock OriginまたはuBO Liteの公式リリースではなく、Raymond Hill氏の推奨を受けたものでもありません。Chrome MV3では、元のMV2拡張機能で利用できたブロッキング機能のすべてが公開されているわけではありません。サイドロードによりChrome Web Storeの配布ポリシーは回避できますが、DNRの上限、Service Workerのライフサイクル規則、ブラウザのセキュリティ境界がなくなるわけでは**ありません**。[正直な互換性一覧](FEATURE-MATRIX.md)を参照してください。
+> **リリース状況:** v1.0.0は手動サイドロード向けのプレリリースで、自動更新されません。uBlock Plus+は独立したフォークであり、uBlock Originの公式リリースではなく、Raymond Hill氏の推奨を受けたものでもありません。Chrome MV3では、元のMV2拡張機能で利用できたブロッキング機能のすべてが公開されているわけではありません。サイドロードによりChrome Web Storeの配布ポリシーは回避できますが、DNRの上限、Service Workerのライフサイクル規則、ブラウザのセキュリティ境界がなくなるわけでは**ありません**。[正直な互換性一覧](FEATURE-MATRIX.md)を参照してください。
 
 ## 選択権を中心にした設計
 
@@ -277,7 +277,7 @@ node tools/validate-mv3.mjs dist/build/uBlockPlus.chromium --release
 
 ## クレジットとライセンス
 
-uBlock Plus+は[uBlock Origin](https://github.com/gorhill/uBlock)およびそのMV3／uBO Lite実装を基にした派生作品です。著作権、ソースヘッダー、作者履歴、第三者への帰属表示は保持されています。[NOTICE.md](../NOTICE.md)を参照してください。
+uBlock Plus+は[uBlock Origin](https://github.com/gorhill/uBlock)および上流から継承したMV3コンポーネントを基にした派生作品です。著作権、ソースヘッダー、作者履歴、第三者への帰属表示は保持されています。[NOTICE.md](../NOTICE.md)を参照してください。
 
 [GNU General Public License v3.0以降](../LICENSE.txt)の下で公開されています。
 

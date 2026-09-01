@@ -1,7 +1,9 @@
 /*******************************************************************************
 
-    uBlock Origin Lite - a comprehensive, MV3-compliant content blocker
+    uBlock Plus+ - an original-first MV3 fork
+    Based on uBlock Origin upstream sources
     Copyright (C) 2014-present Raymond Hill
+    Modifications Copyright (C) 2026-present uBlock Plus+ contributors
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -360,7 +362,7 @@ export class ReadWriteDNREditor extends DNREditor {
     }
 
     exportToFile(text) {
-        return super.exportToFile(text, 'my-ubol-dnr-rules.json');
+        return super.exportToFile(text, 'my-ublock-plus-dnr-rules.json');
     }
 
     importFromPaste(editor, transaction) {

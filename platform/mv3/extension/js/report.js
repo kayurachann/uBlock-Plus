@@ -68,7 +68,7 @@ function reportSpecificFilterType() {
 
 async function reportSpecificFilterIssue() {
     const githubURL = new URL(
-        'https://github.com/uBlockOrigin/uAssets/issues/new?template=specific_report_from_ubol.yml'
+        'https://github.com/kayurachann/uBlock-Plus/issues/new'
     );
     const issueType = reportSpecificFilterType();
     let title = `${reportedPage.hostname}: ${issueType}`;
@@ -76,19 +76,17 @@ async function reportSpecificFilterIssue() {
         title = `[nsfw] ${title}`;
     }
     githubURL.searchParams.set('title', title);
-    githubURL.searchParams.set(
-        'url_address_of_the_web_page',
-        '`' + qs$('select[name="url"]').value + '`'
-    );
-    githubURL.searchParams.set('category', issueType);
-
     const configBody = [
+        `Page: \`${qs$('select[name="url"]').value}\``,
+        `Category: ${issueType}`,
+        '',
         '<details>\n\n```yaml',
         qs$('[data-i18n="supportS5H"] + pre').textContent,
         '```\n</details>',
         '',
     ].join('\n');
-    githubURL.searchParams.set('configuration', configBody);
+    githubURL.searchParams.set('body', configBody);
+    githubURL.searchParams.set('labels', 'filter-issue');
     sendMessage({ what: 'gotoURL', url: githubURL.href });
 }
 

@@ -107,62 +107,174 @@
     "message": "インポートしたリストの整形・スクリプトレットフィルターを適用するには、uBlock Plus+ にユーザースクリプトの実行を許可する必要があります。",
     "description": "A notice to inform user that the enforcement of some filters requires permission to execute 'user scripts'"
   },
-  "memoryProfileSectionLabel": { "message": "メモリープロファイル" },
-  "memoryProfileSelectLabel": { "message": "メモリープロファイル" },
-  "memoryProfileDescription": { "message": "コンパイルの並列数とキャッシュ容量を制御します。低メモリーモードは、有効なフィルターを無効にせず、ピークメモリー使用量を削減します。" },
-  "memoryProfileAuto": { "message": "自動" },
-  "memoryProfileBalanced": { "message": "バランス" },
-  "memoryProfileLow": { "message": "低メモリー" },
-  "memoryProfileEffective": { "message": "適用中のプロファイル: $1" },
-  "memoryProfileStorageMetrics": { "message": "ローカルキャッシュ/ストレージ使用量（現在の RAM 使用量ではありません）: ローカル $1、セッション $2。" },
-  "memoryProfileUnavailable": { "message": "利用不可" },
-  "memoryProfileRefresh": { "message": "使用量を更新" },
-  "memoryProfileCleanup": { "message": "不要なキャッシュを削除" },
-  "memoryProfileCleanupDone": { "message": "クリーンアップ完了: 不要なキャッシュ項目を $1 件削除しました。" },
-  "memoryProfileCleanupUnavailable": { "message": "この Chrome バージョンではストレージの合計量を取得できますが、不要なキャッシュキーを列挙できません（クリーンアップには Chrome 130 以降が必要です）。" },
-  "memoryProfileError": { "message": "メモリープロファイルを更新できませんでした。" },
-  "filterStoreTitle": { "message": "フィルターストア（Power エディション）" },
-  "filterStoreCategoryLabel": { "message": "フィルターストアのカテゴリー" },
-  "filterStoreLanguageLabel": { "message": "フィルターストアの言語" },
-  "filterStoreProfileLabel": { "message": "フィルターストアのリソースプロファイル" },
-  "filterStoreDescription": { "message": "検証済みおよびコミュニティ提供のフィルターデータを参照できます。カタログが実行可能な拡張機能コードを提供することはありません。インポートしたリストは uBlock Plus+ が解析し、MV3 ルールにコンパイルします。" },
-  "filterStoreSearchPlaceholder": { "message": "フィルターリストを検索" },
-  "filterStoreAllCategories": { "message": "すべてのカテゴリー" },
-  "filterStoreAllLanguages": { "message": "すべての言語" },
-  "filterStoreAllProfiles": { "message": "すべてのプロファイル" },
-  "filterStoreGlobal": { "message": "全言語" },
-  "filterStoreStaticSlots": { "message": "静的スロット" },
-  "filterStoreDynamicRules": { "message": "動的ルール" },
-  "filterStoreRegexRules": { "message": "正規表現ルール" },
-  "filterStoreUnknownCosts": { "message": "$1 件のインポート済みリストはコスト不明" },
-  "filterStoreStaticCost": { "message": "静的スロット $1、同梱ルール $2" },
-  "filterStoreDynamicCost": { "message": "動的ルール最大 $1 / 正規表現ルール $2" },
-  "filterStoreVerified": { "message": "検証済み" },
-  "filterStoreCommunity": { "message": "コミュニティ" },
-  "filterStoreHomepage": { "message": "ホームページ" },
-  "filterStoreEnable": { "message": "有効化" },
-  "filterStoreDisable": { "message": "無効化" },
-  "filterStoreNoResults": { "message": "一致するフィルターリストはありません。" },
-  "filterStoreResultsLimited": { "message": "$2 件中、最初の $1 件を表示しています。残りを表示するには検索条件を絞り込んでください。" },
-  "filterStoreBundles": { "message": "バンドル" },
-  "filterStoreBundleEnabled": { "message": "バンドルは有効です" },
-  "filterStoreEnableBundle": { "message": "バンドルを有効化" },
-  "filterStoreRepositories": { "message": "カスタムリポジトリ" },
-  "filterStoreRepositoryWarning": { "message": "自身が管理または信頼している HTTPS JSON カタログのみ追加してください。カスタムリポジトリは、より高い信頼レベルを主張していても常に「コミュニティ」と表示されます。" },
-  "filterStoreRepositoryPlaceholder": { "message": "catalog.json の HTTPS URL" },
-  "filterStoreAddRepository": { "message": "リポジトリを追加" },
-  "filterStoreRemoveRepository": { "message": "削除" },
-  "filterStoreRepositoryFailed": { "message": "リポジトリを読み込めませんでした: $1" },
-  "filterStoreQuotaExceeded": { "message": "この選択は MV3 ルールセットの上限を超えます。" },
-  "filterStoreCommunityConfirm": { "message": "このコミュニティリポジトリは uBlock Plus+ によって検証されていません。フィルターデータをインポートしますか？" },
-  "filterStoreVerifying": { "message": "$1 を検証中…" },
-  "filterStoreDisabledStatus": { "message": "$1 を無効化しました。" },
-  "filterStoreEnabledStatus": { "message": "$1 を有効化しました。" },
-  "filterStoreActivationWarnings": { "message": "Chrome 非対応の正規表現フィルター $1 件をスキップして有効化しました。" },
-  "filterStoreBundleStatus": { "message": "バンドルを有効化しました: $1。" },
-  "filterStoreInvalidRepository": { "message": "有効な HTTPS カタログ URL を入力してください。" },
-  "filterStoreRepositoryAdded": { "message": "リポジトリを追加しました。" },
-  "filterStoreRepositoryRemoved": { "message": "リポジトリを削除しました。有効化済みのリストは「インポート済みリスト」で引き続き利用できます。" },
+  "memoryProfileSectionLabel": {
+    "message": "メモリープロファイル"
+  },
+  "memoryProfileSelectLabel": {
+    "message": "メモリープロファイル"
+  },
+  "memoryProfileDescription": {
+    "message": "コンパイルの並列数とキャッシュ容量を制御します。低メモリーモードは、有効なフィルターを無効にせず、ピークメモリー使用量を削減します。"
+  },
+  "memoryProfileAuto": {
+    "message": "自動"
+  },
+  "memoryProfileBalanced": {
+    "message": "バランス"
+  },
+  "memoryProfileLow": {
+    "message": "低メモリー"
+  },
+  "memoryProfileEffective": {
+    "message": "適用中のプロファイル: $1"
+  },
+  "memoryProfileStorageMetrics": {
+    "message": "ローカルキャッシュ/ストレージ使用量（現在の RAM 使用量ではありません）: ローカル $1、セッション $2。"
+  },
+  "memoryProfileUnavailable": {
+    "message": "利用不可"
+  },
+  "memoryProfileRefresh": {
+    "message": "使用量を更新"
+  },
+  "memoryProfileCleanup": {
+    "message": "不要なキャッシュを削除"
+  },
+  "memoryProfileCleanupDone": {
+    "message": "クリーンアップ完了: 不要なキャッシュ項目を $1 件削除しました。"
+  },
+  "memoryProfileCleanupUnavailable": {
+    "message": "この Chrome バージョンではストレージの合計量を取得できますが、不要なキャッシュキーを列挙できません（クリーンアップには Chrome 130 以降が必要です）。"
+  },
+  "memoryProfileError": {
+    "message": "メモリープロファイルを更新できませんでした。"
+  },
+  "filterStoreTitle": {
+    "message": "フィルターストア（Power エディション）"
+  },
+  "filterStoreCategoryLabel": {
+    "message": "フィルターストアのカテゴリー"
+  },
+  "filterStoreLanguageLabel": {
+    "message": "フィルターストアの言語"
+  },
+  "filterStoreProfileLabel": {
+    "message": "フィルターストアのリソースプロファイル"
+  },
+  "filterStoreDescription": {
+    "message": "検証済みおよびコミュニティ提供のフィルターデータを参照できます。カタログが実行可能な拡張機能コードを提供することはありません。インポートしたリストは uBlock Plus+ が解析し、MV3 ルールにコンパイルします。"
+  },
+  "filterStoreSearchPlaceholder": {
+    "message": "フィルターリストを検索"
+  },
+  "filterStoreAllCategories": {
+    "message": "すべてのカテゴリー"
+  },
+  "filterStoreAllLanguages": {
+    "message": "すべての言語"
+  },
+  "filterStoreAllProfiles": {
+    "message": "すべてのプロファイル"
+  },
+  "filterStoreGlobal": {
+    "message": "全言語"
+  },
+  "filterStoreStaticSlots": {
+    "message": "静的スロット"
+  },
+  "filterStoreDynamicRules": {
+    "message": "動的ルール"
+  },
+  "filterStoreRegexRules": {
+    "message": "正規表現ルール"
+  },
+  "filterStoreUnknownCosts": {
+    "message": "$1 件のインポート済みリストはコスト不明"
+  },
+  "filterStoreStaticCost": {
+    "message": "静的スロット $1、同梱ルール $2"
+  },
+  "filterStoreDynamicCost": {
+    "message": "動的ルール最大 $1 / 正規表現ルール $2"
+  },
+  "filterStoreVerified": {
+    "message": "検証済み"
+  },
+  "filterStoreCommunity": {
+    "message": "コミュニティ"
+  },
+  "filterStoreHomepage": {
+    "message": "ホームページ"
+  },
+  "filterStoreEnable": {
+    "message": "有効化"
+  },
+  "filterStoreDisable": {
+    "message": "無効化"
+  },
+  "filterStoreNoResults": {
+    "message": "一致するフィルターリストはありません。"
+  },
+  "filterStoreResultsLimited": {
+    "message": "$2 件中、最初の $1 件を表示しています。残りを表示するには検索条件を絞り込んでください。"
+  },
+  "filterStoreBundles": {
+    "message": "バンドル"
+  },
+  "filterStoreBundleEnabled": {
+    "message": "バンドルは有効です"
+  },
+  "filterStoreEnableBundle": {
+    "message": "バンドルを有効化"
+  },
+  "filterStoreRepositories": {
+    "message": "カスタムリポジトリ"
+  },
+  "filterStoreRepositoryWarning": {
+    "message": "自身が管理または信頼している HTTPS JSON カタログのみ追加してください。カスタムリポジトリは、より高い信頼レベルを主張していても常に「コミュニティ」と表示されます。"
+  },
+  "filterStoreRepositoryPlaceholder": {
+    "message": "catalog.json の HTTPS URL"
+  },
+  "filterStoreAddRepository": {
+    "message": "リポジトリを追加"
+  },
+  "filterStoreRemoveRepository": {
+    "message": "削除"
+  },
+  "filterStoreRepositoryFailed": {
+    "message": "リポジトリを読み込めませんでした: $1"
+  },
+  "filterStoreQuotaExceeded": {
+    "message": "この選択は MV3 ルールセットの上限を超えます。"
+  },
+  "filterStoreCommunityConfirm": {
+    "message": "このコミュニティリポジトリは uBlock Plus+ によって検証されていません。フィルターデータをインポートしますか？"
+  },
+  "filterStoreVerifying": {
+    "message": "$1 を検証中…"
+  },
+  "filterStoreDisabledStatus": {
+    "message": "$1 を無効化しました。"
+  },
+  "filterStoreEnabledStatus": {
+    "message": "$1 を有効化しました。"
+  },
+  "filterStoreActivationWarnings": {
+    "message": "Chrome 非対応の正規表現フィルター $1 件をスキップして有効化しました。"
+  },
+  "filterStoreBundleStatus": {
+    "message": "バンドルを有効化しました: $1。"
+  },
+  "filterStoreInvalidRepository": {
+    "message": "有効な HTTPS カタログ URL を入力してください。"
+  },
+  "filterStoreRepositoryAdded": {
+    "message": "リポジトリを追加しました。"
+  },
+  "filterStoreRepositoryRemoved": {
+    "message": "リポジトリを削除しました。有効化済みのリストは「インポート済みリスト」で引き続き利用できます。"
+  },
   "customFiltersImportExportLabel": {
     "message": "インポート又はエクスポート",
     "description": "Text label heading the import/export area of custom filters"
@@ -319,16 +431,36 @@
     "message": "動作",
     "description": "The header text for the 'Behavior' section"
   },
-  "privacyHardeningSectionLabel": { "message": "ブラウザーのプライバシー保護（任意）" },
-  "privacyHardeningDescription": { "message": "これらのコントロールは、任意の権限を付与した後にのみ Chrome のプライバシー設定を変更します。コントロールをオフにすると、その設定の制御を Chrome に戻します。" },
-  "privacyPermissionButton": { "message": "プライバシーコントロールを有効化…" },
-  "privacyPermissionDenied": { "message": "任意のプライバシー権限が付与されませんでした。" },
-  "privacySettingUpdateFailed": { "message": "Chrome は一部のプライバシー設定を更新できませんでした。" },
-  "privacyDisableHyperlinkAuditing": { "message": "ハイパーリンク監査 ping を無効化" },
-  "privacyDisableNetworkPrediction": { "message": "Chrome のネットワーク予測を無効化" },
-  "privacyProtectWebRTC": { "message": "WebRTC がプロキシを介さない UDP を使用しないようにする" },
-  "privacyDisableAdApis": { "message": "Chrome Privacy Sandbox の広告 API を無効化" },
-  "privacySettingNotControllable": { "message": "この設定は Chrome ポリシーまたは別の拡張機能によって制御されています。" },
+  "privacyHardeningSectionLabel": {
+    "message": "ブラウザーのプライバシー保護（任意）"
+  },
+  "privacyHardeningDescription": {
+    "message": "これらのコントロールは、任意の権限を付与した後にのみ Chrome のプライバシー設定を変更します。コントロールをオフにすると、その設定の制御を Chrome に戻します。"
+  },
+  "privacyPermissionButton": {
+    "message": "プライバシーコントロールを有効化…"
+  },
+  "privacyPermissionDenied": {
+    "message": "任意のプライバシー権限が付与されませんでした。"
+  },
+  "privacySettingUpdateFailed": {
+    "message": "Chrome は一部のプライバシー設定を更新できませんでした。"
+  },
+  "privacyDisableHyperlinkAuditing": {
+    "message": "ハイパーリンク監査 ping を無効化"
+  },
+  "privacyDisableNetworkPrediction": {
+    "message": "Chrome のネットワーク予測を無効化"
+  },
+  "privacyProtectWebRTC": {
+    "message": "WebRTC がプロキシを介さない UDP を使用しないようにする"
+  },
+  "privacyDisableAdApis": {
+    "message": "Chrome Privacy Sandbox の広告 API を無効化"
+  },
+  "privacySettingNotControllable": {
+    "message": "この設定は Chrome ポリシーまたは別の拡張機能によって制御されています。"
+  },
   "autoReloadLabel": {
     "message": "フィルタリングモード変更時にページを自動再読み込みする",
     "description": "Label for a checkbox in the options page"
@@ -353,12 +485,24 @@
     "message": "有効にすると、一致するフィルターはウェブサイトによって作成された不要なブラウザータブを自動的に閉じます。",
     "description": "Short description for a checkbox in the options page"
   },
-  "popupPolicyLabel": { "message": "このホスト名のポップアップポリシー" },
-  "popupPolicyDefault": { "message": "既定（スマート）" },
-  "popupPolicyAllow": { "message": "許可" },
-  "popupPolicySmart": { "message": "スマート" },
-  "popupPolicyStrict": { "message": "厳格" },
-  "popupPolicyDescription": { "message": "このホスト名だけに適用します。許可/スマートは状況判定にのみ影響し、フィルターリストの一致ルールは引き続きポップアップを直ちに閉じます。厳格では、信頼できる操作と直接関連するホスト名が必要です。" },
+  "popupPolicyLabel": {
+    "message": "このホスト名のポップアップポリシー"
+  },
+  "popupPolicyDefault": {
+    "message": "既定（スマート）"
+  },
+  "popupPolicyAllow": {
+    "message": "許可"
+  },
+  "popupPolicySmart": {
+    "message": "スマート"
+  },
+  "popupPolicyStrict": {
+    "message": "厳格"
+  },
+  "popupPolicyDescription": {
+    "message": "このホスト名だけに適用します。許可/スマートは状況判定にのみ影響し、フィルターリストの一致ルールは引き続きポップアップを直ちに閉じます。厳格では、信頼できる操作と直接関連するホスト名が必要です。"
+  },
   "sandboxEditorLabel": {
     "message": "フィルター作成サンドボックス",
     "description": "Header for filter-creation section in the dashboard"
@@ -530,5 +674,356 @@
   "unpickerUsage": {
     "message": "下のフィルターを選択すると、ウェブページ内の一致する要素がハイライトされます。フィルタを削除するには、ゴミ箱をクリックしてください。",
     "description": "Summary description on how to use the tool to remove custom filters"
+  },
+  "myFiltersPageName": {
+    "message": "マイフィルター"
+  },
+  "siteRulesPageName": {
+    "message": "サイト別ルール"
+  },
+  "diagnosticsPageName": {
+    "message": "診断"
+  },
+  "advancedPageName": {
+    "message": "詳細設定"
+  },
+  "powerConsoleTitle": {
+    "message": "Power コンソール"
+  },
+  "powerConsoleDescription": {
+    "message": "従来版スタイルの操作画面で、Plus+ プロファイル、外観、サイト別ルール、インテリジェントなポップアップ判定、パフォーマンス、実行時診断を管理します。"
+  },
+  "powerSettingsLoadFailed": {
+    "message": "Power 設定を読み込めませんでした。"
+  },
+  "protectionProfilesTitle": {
+    "message": "保護プロファイル"
+  },
+  "protectionProfilesDescription": {
+    "message": "完全で元に戻せる基本設定を適用するか、以下の各項目を個別に調整できます。"
+  },
+  "protectionProfileBaseline": {
+    "message": "基本"
+  },
+  "protectionProfileBaselineDescription": {
+    "message": "広範なサイトアクセスを使わずにネットワークをフィルタリングします。ポップアップ保護は有効のままです。"
+  },
+  "protectionProfileBalanced": {
+    "message": "バランス"
+  },
+  "protectionProfileBalancedDescription": {
+    "message": "高度なフィルタリング、厳格なナビゲーションブロック、メモリ設定の自動選択を使用します。"
+  },
+  "protectionProfileMaximum": {
+    "message": "最大"
+  },
+  "protectionProfileMaximumDescription": {
+    "message": "完全な拡張フィルタリング、厳格なナビゲーション、バランス型のパフォーマンス予算を使用します。"
+  },
+  "protectionProfileLowMemory": {
+    "message": "省メモリ"
+  },
+  "protectionProfileLowMemoryDescription": {
+    "message": "低性能デバイス向けに、逐次コンパイルと小さなキャッシュで高度な保護を提供します。"
+  },
+  "protectionProfileApply": {
+    "message": "プロファイルを適用"
+  },
+  "protectionProfileApplying": {
+    "message": "保護プロファイルを適用しています…"
+  },
+  "protectionProfileApplied": {
+    "message": "保護プロファイルを適用しました。"
+  },
+  "protectionProfileApplyFailed": {
+    "message": "保護プロファイルを適用できませんでした。"
+  },
+  "protectionProfilePermissionDenied": {
+    "message": "このプロファイルには広範なサイトアクセスが必要ですが、許可されませんでした。"
+  },
+  "protectionProfileActive": {
+    "message": "有効：$1"
+  },
+  "protectionProfileCustomActive": {
+    "message": "有効：カスタム設定"
+  },
+  "appearanceSettingsTitle": {
+    "message": "外観とインターフェース"
+  },
+  "appearanceSettingsDescription": {
+    "message": "テーマ、アクセントカラー、情報密度、ポップアップのレイアウトを選択します。"
+  },
+  "appearanceThemeLabel": {
+    "message": "テーマ"
+  },
+  "appearanceThemeAuto": {
+    "message": "システム設定に従う"
+  },
+  "appearanceThemeLight": {
+    "message": "ライト"
+  },
+  "appearanceThemeDark": {
+    "message": "ダーク"
+  },
+  "appearanceAccentLabel": {
+    "message": "アクセントカラー"
+  },
+  "appearanceAccentCrimson": {
+    "message": "深紅"
+  },
+  "appearanceAccentBlue": {
+    "message": "青"
+  },
+  "appearanceAccentEmerald": {
+    "message": "エメラルド"
+  },
+  "appearanceAccentViolet": {
+    "message": "紫"
+  },
+  "appearanceDensityLabel": {
+    "message": "密度"
+  },
+  "appearanceDensityComfortable": {
+    "message": "ゆったり"
+  },
+  "appearanceDensityCompact": {
+    "message": "コンパクト"
+  },
+  "appearancePopupLayoutLabel": {
+    "message": "ポップアップのレイアウト"
+  },
+  "appearancePopupPower": {
+    "message": "Power（すべての操作）"
+  },
+  "appearancePopupCompact": {
+    "message": "コンパクト"
+  },
+  "appearanceSettingsSaved": {
+    "message": "インターフェース設定を保存しました。"
+  },
+  "appearanceSettingsSaveFailed": {
+    "message": "インターフェース設定を保存できませんでした。"
+  },
+  "siteRulesTitle": {
+    "message": "サイト別コントロール"
+  },
+  "siteRulesDescription": {
+    "message": "内部ストレージを編集せずに、信頼済みサイト、フィルタリングレベル、インテリジェントなポップアップポリシーを管理します。"
+  },
+  "popupPolicyManagerTitle": {
+    "message": "ポップアップポリシー規則"
+  },
+  "popupPolicyManagerDescription": {
+    "message": "スマートポップアップエンジンに完全一致ホストの例外を設定します。コンパイル済みフィルターリスト規則が優先されます。"
+  },
+  "popupPolicyHostnameLabel": {
+    "message": "ホスト名"
+  },
+  "popupPolicyHostnamePlaceholder": {
+    "message": "example.com"
+  },
+  "popupPolicyModeLabel": {
+    "message": "ポリシー"
+  },
+  "popupPolicyActionsLabel": {
+    "message": "操作"
+  },
+  "popupPolicyAdd": {
+    "message": "規則を追加"
+  },
+  "popupPolicyRemove": {
+    "message": "削除"
+  },
+  "popupPolicyEmpty": {
+    "message": "サイト別ポップアップ規則はありません。"
+  },
+  "popupPolicySaved": {
+    "message": "ポップアップポリシーを保存しました。"
+  },
+  "popupPolicyRemoved": {
+    "message": "ポップアップポリシーを削除しました。"
+  },
+  "popupPolicySaveFailed": {
+    "message": "ポップアップポリシーを保存できませんでした。"
+  },
+  "popupPolicyInvalidHostname": {
+    "message": "example.com のような有効なホスト名を入力してください。"
+  },
+  "filteringSiteRulesTitle": {
+    "message": "サイト別のフィルタリングレベル"
+  },
+  "filteringSiteRulesDescription": {
+    "message": "1 行に 1 つのホスト名を入力します。「フィルタリングなし」は信頼済みサイトの一覧です。1 つのホスト名を複数のレベルに指定することはできません。"
+  },
+  "saveSiteRules": {
+    "message": "サイト別ルールを保存"
+  },
+  "siteRulesSaved": {
+    "message": "サイト別ルールを保存しました。"
+  },
+  "siteRulesInvalid": {
+    "message": "サイト別ルールに無効または重複したホスト名があります。"
+  },
+  "siteRulesLoadFailed": {
+    "message": "サイト別ルールを読み込めませんでした。"
+  },
+  "diagnosticsTitle": {
+    "message": "実行時診断"
+  },
+  "diagnosticsDescription": {
+    "message": "実際の MV3 エンジン、ブラウザー機能、クォータ上限、メモリ予算、最近のポップアップ判定を確認します。"
+  },
+  "diagnosticsRefresh": {
+    "message": "診断を更新"
+  },
+  "diagnosticsLoadFailed": {
+    "message": "実行時診断を読み込めませんでした。"
+  },
+  "runtimeCapabilitiesTitle": {
+    "message": "実行時機能"
+  },
+  "diagnosticsNetworkEngine": {
+    "message": "ネットワークエンジン"
+  },
+  "diagnosticsInstallType": {
+    "message": "インストールの種類"
+  },
+  "diagnosticsPopupObservation": {
+    "message": "インテリジェントなポップアップ監視"
+  },
+  "diagnosticsUserScripts": {
+    "message": "ユーザースクリプトフィルター"
+  },
+  "diagnosticsOffscreenCompiler": {
+    "message": "オフスクリーンコンパイラー"
+  },
+  "diagnosticsStaticRules": {
+    "message": "利用可能な静的ルール"
+  },
+  "diagnosticsDynamicRules": {
+    "message": "動的ルールの上限"
+  },
+  "diagnosticsSessionRules": {
+    "message": "セッションルールの上限"
+  },
+  "diagnosticsRegexRules": {
+    "message": "正規表現ルールの上限"
+  },
+  "diagnosticsAvailable": {
+    "message": "利用可能"
+  },
+  "diagnosticsUnavailable": {
+    "message": "利用不可"
+  },
+  "performanceDetailsTitle": {
+    "message": "有効なパフォーマンス予算"
+  },
+  "performanceSelectedProfile": {
+    "message": "選択したプロファイル"
+  },
+  "performanceEffectiveProfile": {
+    "message": "有効なプロファイル"
+  },
+  "performanceDeviceMemory": {
+    "message": "検出されたデバイスメモリ"
+  },
+  "performanceCompileConcurrency": {
+    "message": "インポート時の同時コンパイル数"
+  },
+  "performanceCacheEntries": {
+    "message": "CSS キャッシュのエントリ数"
+  },
+  "performanceCacheHighWatermark": {
+    "message": "CSS キャッシュの上限値"
+  },
+  "performancePruneInterval": {
+    "message": "キャッシュ整理の間隔"
+  },
+  "performanceMinutes": {
+    "message": "$1 分"
+  },
+  "performanceRetainMetadata": {
+    "message": "スクリプトメタデータを保持"
+  },
+  "popupDiagnosticsTitle": {
+    "message": "最近のポップアップ判定"
+  },
+  "popupDiagnosticsDescription": {
+    "message": "上限付きのローカル専用判定ログです。URL、パス、クエリ、認証情報は保持しません。"
+  },
+  "popupDiagnosticsClear": {
+    "message": "履歴を消去"
+  },
+  "popupDiagnosticsCleared": {
+    "message": "判定履歴を消去しました。"
+  },
+  "popupDiagnosticsClearFailed": {
+    "message": "判定履歴を消去できませんでした。"
+  },
+  "popupDiagnosticsEmpty": {
+    "message": "このブラウザーセッションには判定履歴がありません。"
+  },
+  "diagnosticTime": {
+    "message": "時刻"
+  },
+  "diagnosticAction": {
+    "message": "操作"
+  },
+  "diagnosticSource": {
+    "message": "発生元"
+  },
+  "diagnosticTarget": {
+    "message": "対象"
+  },
+  "diagnosticReason": {
+    "message": "理由"
+  },
+  "popupPowerEdition": {
+    "message": "Power エディション"
+  },
+  "popupPowerToggle": {
+    "message": "このサイトの保護を切り替え"
+  },
+  "popupReloadPage": {
+    "message": "このページを再読み込み"
+  },
+  "popupProtectionOn": {
+    "message": "保護はオンです"
+  },
+  "popupProtectionOff": {
+    "message": "保護はオフです"
+  },
+  "popupCapabilitySummary": {
+    "message": "保護機能の概要"
+  },
+  "popupCapabilityNetwork": {
+    "message": "ネットワークフィルタリング"
+  },
+  "popupCapabilityExtended": {
+    "message": "拡張フィルタリング"
+  },
+  "popupCapabilityPopups": {
+    "message": "スマートポップアップ"
+  },
+  "popupCapabilityLists": {
+    "message": "有効なリスト"
+  },
+  "popupCapabilityActive": {
+    "message": "有効"
+  },
+  "popupCapabilityInactive": {
+    "message": "無効"
+  },
+  "popupSiteControls": {
+    "message": "サイト制御"
+  },
+  "popupQuickTools": {
+    "message": "クイックツール"
+  },
+  "popupMatchedRules": {
+    "message": "最近一致した規則"
+  },
+  "popupRecentBlocks": {
+    "message": "最近のポップアップブロック: $1 件"
   }
 }

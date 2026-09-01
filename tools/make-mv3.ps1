@@ -144,7 +144,7 @@ function Copy-MatchingFiles {
 
 function New-BuildTempDirectory {
     $path = Join-Path ([IO.Path]::GetTempPath()) (
-        'ubol-mv3-{0}' -f [Guid]::NewGuid().ToString('N')
+        'ublock-plus-mv3-{0}' -f [Guid]::NewGuid().ToString('N')
     )
     New-Directory $path
     return $path
@@ -387,7 +387,7 @@ try {
         (Join-Path $outputDirectory 'lib/codemirror')
     Copy-RequiredFile (
         Join-Path $codeMirrorRoot 'codemirror-ubol/dist/cm6.bundle.ubol.min.js'
-    ) (Join-Path $outputDirectory 'lib/codemirror/cm6.bundle.ubol.min.js')
+    ) (Join-Path $outputDirectory 'lib/codemirror/cm6.bundle.ublock-plus.min.js')
     Copy-RequiredFile (Join-Path $codeMirrorRoot 'codemirror.LICENSE') `
         (Join-Path $outputDirectory 'lib/codemirror/codemirror.LICENSE')
     Copy-RequiredFile (Join-Path $codeMirrorRoot 'codemirror-ubol/LICENSE') `

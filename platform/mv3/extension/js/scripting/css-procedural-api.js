@@ -1,7 +1,9 @@
 /*******************************************************************************
 
-    uBlock Origin Lite - a comprehensive, MV3-compliant content blocker
+    uBlock Plus+ - an original-first MV3 fork
+    Based on uBlock Origin upstream sources
     Copyright (C) 2014-present Raymond Hill
+    Modifications Copyright (C) 2026-present uBlock Plus+ contributors
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -21,7 +23,7 @@
 
 // Important!
 // Isolate from global scope
-(function uBOL_cssProceduralAPI() {
+(function uBlockPlus_cssProceduralAPI() {
 
 if ( self.ProceduralFiltererAPI !== undefined ) {
     if ( self.ProceduralFiltererAPI instanceof Promise === false ) { return; }
@@ -188,7 +190,7 @@ class PSelectorMatchesMediaTask extends PSelectorTask {
     }
     handler() {
         if ( this.filterer instanceof Object === false ) { return; }
-        this.filterer.uBOL_DOMChanged();
+        this.filterer.uBlockPlus_DOMChanged();
     }
 }
 
@@ -205,7 +207,7 @@ class PSelectorMatchesPathTask extends PSelectorTask {
         PSelectorMatchesPathTask.#listener = true;
         if ( Boolean(self.navigation) === false ) { return; }
         self.navigation.addEventListener('navigate', ( ) => {
-            this.filterer.uBOL_DOMChanged();
+            this.filterer.uBlockPlus_DOMChanged();
         });
     }
     transpose(node, output) {
@@ -447,7 +449,7 @@ class PSelectorWatchAttrs extends PSelectorTask {
         if ( this.observed.has(node) ) { return; }
         if ( this.observer === null ) {
             this.observer = new MutationObserver(( ) => {
-                this.filterer.uBOL_DOMChanged();
+                this.filterer.uBlockPlus_DOMChanged();
             });
         }
         this.observer.observe(node, this.observerOptions);
@@ -647,7 +649,7 @@ class ProceduralFilterer {
         return pselector;
     }
 
-    uBOL_commit() {
+    uBlockPlus_commit() {
         if ( this.timer !== undefined ) {
             self.cancelAnimationFrame(this.timer);
             this.timer = undefined;
@@ -673,7 +675,7 @@ class ProceduralFilterer {
             const t1 = Date.now();
             pselector.budget += t0 - t1;
             if ( pselector.budget < -500 ) {
-                console.info('uBOL: disabling %s', pselector.raw);
+                console.info('uBlock Plus+: disabling %s', pselector.raw);
                 pselector.budget = -0x7FFFFFFF;
             }
             t0 = t1;
@@ -753,11 +755,11 @@ class ProceduralFilterer {
         }
     }
 
-    uBOL_DOMChanged() {
+    uBlockPlus_DOMChanged() {
         if ( this.timer !== undefined ) { return; }
         this.timer = self.requestAnimationFrame(( ) => {
             this.timer = undefined;
-            this.uBOL_commit();
+            this.uBlockPlus_commit();
         });
     }
 }
@@ -843,7 +845,7 @@ self.ProceduralFiltererAPI = class {
             this.domObserver.observe(document, { childList: true, subtree: true });
         }
         this.proceduralFilterer.addSelectors(selectors);
-        this.proceduralFilterer.uBOL_commit();
+        this.proceduralFilterer.uBlockPlus_commit();
     }
 
     qsa(selector) {
@@ -860,11 +862,11 @@ self.ProceduralFiltererAPI = class {
         for ( const mutation of mutations ) {
             for ( const added of mutation.addedNodes ) {
                 if ( added.nodeType !== 1 ) { continue; }
-                return this.proceduralFilterer.uBOL_DOMChanged();
+                return this.proceduralFilterer.uBlockPlus_DOMChanged();
             }
             for ( const removed of mutation.removedNodes ) {
                 if ( removed.nodeType !== 1 ) { continue; }
-                return this.proceduralFilterer.uBOL_DOMChanged();
+                return this.proceduralFilterer.uBlockPlus_DOMChanged();
             }
         }
     }

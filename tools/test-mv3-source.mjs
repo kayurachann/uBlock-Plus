@@ -19,6 +19,8 @@ const root = path.resolve(import.meta.dirname, '..');
 const mv3Root = path.join(root, 'platform', 'mv3');
 const extensionRoot = path.join(mv3Root, 'extension');
 const expectedProductName = 'uBlock Plus+';
+const legacyProductPattern =
+    /u(?:bo|block origin)[\s-]*lite|uBlock MV3 Community/i;
 
 function assert(condition, message) {
     if ( condition ) { return; }
@@ -103,7 +105,7 @@ for ( const entry of localeEntries ) {
         `Locale ${entry.name} has inconsistent extName branding`
     );
     assert(
-        /uBO Lite|uBlock MV3 Community/.test(JSON.stringify(messages)) === false,
+        legacyProductPattern.test(JSON.stringify(messages)) === false,
         `Locale ${entry.name} contains legacy product branding`
     );
 }
@@ -146,8 +148,120 @@ for ( const entry of htmlEntries ) {
         `${entry.name} contains a remotely hosted script`
     );
     assert(
-        /uBO Lite|uBlock MV3 Community/.test(text) === false,
+        legacyProductPattern.test(text) === false,
         `${entry.name} contains legacy product branding`
+    );
+}
+
+const productFacingDocs = [
+    'README.md',
+    'CONTRIBUTING.md',
+    'docs/POWER-RUNTIME.md',
+    'docs/PRIVACY.md',
+    'platform/mv3/README.md',
+];
+const docsEntries = await fs.readdir(path.join(root, 'docs'));
+for ( const entry of docsEntries ) {
+    if ( /^README\.[^.]+\.md$/.test(entry) ) {
+        productFacingDocs.push(`docs/${entry}`);
+    }
+}
+for ( const relativePath of productFacingDocs ) {
+    const text = await fs.readFile(path.join(root, relativePath), 'utf8');
+    assert(
+        legacyProductPattern.test(text) === false,
+        `${relativePath} contains retired product branding`
+    );
+}
+
+let storeDescriptions = [];
+try {
+    storeDescriptions = await fs.readdir(path.join(mv3Root, 'description'));
+} catch ( reason ) {
+    if ( reason?.code !== 'ENOENT' ) { throw reason; }
+}
+assert(
+    storeDescriptions.length === 0,
+    'Sideload-only source must not ship retired store description files'
+);
+
+const rulesetCatalog = await fs.readFile(
+    path.join(mv3Root, 'rulesets.json'),
+    'utf8'
+);
+assert(
+    rulesetCatalog.includes('ubol-tests') === false,
+    'Production rulesets must not expose the retired test catalog'
+);
+
+const popupHtml = await fs.readFile(
+    path.join(extensionRoot, 'popup.html'),
+    'utf8'
+);
+assert(
+    popupHtml.includes('id="sitePower"') &&
+        popupHtml.includes('role="switch"'),
+    'Popup must expose an original-style per-site power switch'
+);
+assert(
+    popupHtml.includes('filteringModeSlider') === false,
+    'Popup must not regress to the retired four-level slider UI'
+);
+for ( const id of [ 'gotoZapper', 'gotoPicker', 'gotoUnpicker', 'gotoReport' ] ) {
+    assert(
+        popupHtml.includes(`<button id="${id}"`),
+        `Popup tool ${id} must remain a keyboard-accessible button`
+    );
+}
+
+const dashboardHtml = await fs.readFile(
+    path.join(extensionRoot, 'dashboard.html'),
+    'utf8'
+);
+for ( const marker of [
+    'data-pane="siteRules"',
+    'data-pane="diagnostics"',
+    'id="protectionProfiles"',
+] ) {
+    assert(
+        dashboardHtml.includes(marker),
+        `Dashboard is missing original-first control ${marker}`
+    );
+}
+assert(
+    dashboardHtml.includes('filteringModeSlider') === false,
+    'Dashboard must not regress to the retired four-level slider UI'
+);
+assert(
+    dashboardHtml.includes('cm6.bundle.ublock-plus.min.js'),
+    'Dashboard must use the fork-owned CodeMirror output filename'
+);
+
+for ( const platform of [ 'chromium', 'firefox', 'safari' ] ) {
+    const platformManifest = await readJson(
+        path.join(mv3Root, platform, 'manifest.json')
+    );
+    assert(
+        legacyProductPattern.test(JSON.stringify(platformManifest)) === false,
+        `${platform} manifest contains legacy product branding`
+    );
+    assert(
+        JSON.stringify(platformManifest).includes('raymondhill.net') === false,
+        `${platform} manifest must not claim an upstream-owned identity`
+    );
+}
+
+for ( const relativePath of [
+    'js/debug.js',
+    'js/filter-manager-ui.js',
+    'js/rw-dnr-editor.js',
+] ) {
+    const text = await fs.readFile(path.join(extensionRoot, relativePath), 'utf8');
+    assert(
+        legacyProductPattern.test(text) === false &&
+            text.includes('[uBOL]') === false &&
+            text.includes('my-ubol-') === false,
+        `${relativePath} contains a legacy user-facing identifier`
     );
 }
 
@@ -170,6 +284,10 @@ for ( const relativePath of [
     'platform/mv3/extension/js/popup-blocker.js',
     'platform/mv3/extension/js/popup-frame-context.js',
     'platform/mv3/extension/js/popup-policy.js',
+    'platform/mv3/extension/js/popup.js',
+    'platform/mv3/extension/js/power-settings.js',
+    'platform/mv3/extension/js/power-ui-core.js',
+    'platform/mv3/extension/js/power-ui.js',
     'platform/mv3/extension/js/compiled-popup-matcher.js',
     'platform/mv3/extension/js/scripting/popup-context.js',
     'platform/mv3/extension/js/offscreen-lifecycle.js',
@@ -206,6 +324,23 @@ for ( const [ relativePath, stagedDependency ] of [
         `${relativePath} must stage ${stagedDependency} for make-rulesets`
     );
 }
+
+const unixBuildScript = await fs.readFile(
+    path.join(root, 'tools', 'make-mv3.sh'),
+    'utf8'
+);
+assert(
+    /\bUBOL_[A-Z_]+/.test(unixBuildScript) === false,
+    'Unix build variables must use fork-owned names'
+);
+const windowsBuildScript = await fs.readFile(
+    path.join(root, 'tools', 'make-mv3.ps1'),
+    'utf8'
+);
+assert(
+    windowsBuildScript.includes('ubol-mv3-') === false,
+    'Windows build temp paths must use fork-owned names'
+);
 
 const releaseWorkflow = await fs.readFile(
     path.join(root, '.github', 'workflows', 'mv3-chromium.yml'),
@@ -244,7 +379,7 @@ assert(
 );
 assert(
     background.includes('return processDueJobs(onMessage);') &&
-        background.includes('ubolErr(`processDueJobs/${reason}`)'),
+        background.includes('ublockPlusErr(`processDueJobs/${reason}`)'),
     'Deferred-job failures must not become unhandled rejections'
 );
 assert(

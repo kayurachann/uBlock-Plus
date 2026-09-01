@@ -11,6 +11,7 @@
     Home: https://github.com/kayurachann/uBlock-Plus
 */
 
+import { normalizePowerUISettings } from './power-ui-core.js';
 import { validatePopupPolicies } from './popup-policy.js';
 
 const MAX_TEXT_CHARS = 20 * 1024 * 1024;
@@ -212,6 +213,12 @@ export function normalizeBackupObject(value) {
     }
     if ( value.popupPolicies !== undefined ) {
         out.popupPolicies = validatePopupPolicies(value.popupPolicies);
+    }
+    if ( value.powerUISettings !== undefined ) {
+        out.powerUISettings = normalizePowerUISettings(
+            value.powerUISettings,
+            { strict: true }
+        );
     }
     if ( value.filterStoreRepositories !== undefined ) {
         const repositories = stringArray(

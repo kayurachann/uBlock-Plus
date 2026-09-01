@@ -15,7 +15,7 @@ import path from 'node:path';
 import process from 'node:process';
 
 const productName = process.argv[2] || 'uBlock Plus+';
-const previousProductNames = [ 'uBO Lite', 'uBlock Plus+' ];
+const legacyProductPattern = /u(?:bo|block origin)\s*lite/gi;
 const localesDir = process.argv[3] ||
     path.join('platform', 'mv3', 'extension', '_locales');
 const extNamePattern = /("extName"\s*:\s*\{\s*"message"\s*:\s*)"(?:[^"\\]|\\.)*"/;
@@ -33,9 +33,9 @@ for ( const entry of entries ) {
     }
     const replacement = `${match[1]}${JSON.stringify(productName)}`;
     let updated = text.replace(extNamePattern, replacement);
-    for ( const previousProductName of previousProductNames ) {
-        updated = updated.replaceAll(previousProductName, productName);
-    }
+    updated = updated
+        .replace(legacyProductPattern, productName)
+        .replaceAll('uBlock Plus+', productName);
     if ( updated === text ) { continue; }
     await fs.writeFile(filePath, updated);
     modifiedCount += 1;

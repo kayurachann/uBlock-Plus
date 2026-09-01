@@ -1,7 +1,9 @@
 /*******************************************************************************
 
-    uBlock Origin Lite - a comprehensive, MV3-compliant content blocker
+    uBlock Plus+ - an original-first MV3 fork
+    Based on uBlock Origin upstream sources
     Copyright (C) 2026-present Raymond Hill
+    Modifications Copyright (C) 2026-present uBlock Plus+ contributors
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -24,7 +26,7 @@ import {
     localRead, localRemove, localWrite,
 } from './ext.js';
 
-import { ubolLog } from './debug.js';
+import { ublockPlusLog } from './debug.js';
 
 /******************************************************************************/
 
@@ -55,7 +57,7 @@ function setupJobsAlarm(jobs) {
     }
     // No less than 5 minutes in the future
     const when = Math.max(jobs[0].time, Date.now() + JOB_RETRY_DELAY);
-    ubolLog(`Created alarm for ${(new Date(when)).toString()}`);
+    ublockPlusLog(`Created alarm for ${(new Date(when)).toString()}`);
     return browser.alarms.create('deferredJobs', { when });
 }
 

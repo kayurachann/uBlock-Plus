@@ -1,7 +1,9 @@
 /*******************************************************************************
 
-    uBlock Origin Lite - a comprehensive, MV3-compliant content blocker
+    uBlock Plus+ - an original-first MV3 fork
+    Based on uBlock Origin upstream sources
     Copyright (C) 2025-present Raymond Hill
+    Modifications Copyright (C) 2026-present uBlock Plus+ contributors
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -23,21 +25,21 @@
 
 /******************************************************************************/
 
-const ubolOverlay = self.ubolOverlay;
-if ( ubolOverlay === undefined ) { return; }
-if ( ubolOverlay.file === '/unpicker-ui.html' ) { return; }
+const uBlockPlusOverlay = self.uBlockPlusOverlay;
+if ( uBlockPlusOverlay === undefined ) { return; }
+if ( uBlockPlusOverlay.file === '/unpicker-ui.html' ) { return; }
 
 /******************************************************************************/
 
 function onMessage(msg) {
     switch ( msg.what ) {
     case 'startCustomFilters':
-        return ubolOverlay.sendMessage({ what: 'startCustomFilters' });
+        return uBlockPlusOverlay.sendMessage({ what: 'startCustomFilters' });
     case 'terminateCustomFilters':
-        return ubolOverlay.sendMessage({ what: 'terminateCustomFilters' });
+        return uBlockPlusOverlay.sendMessage({ what: 'terminateCustomFilters' });
     case 'removeCustomFilters':
-        return ubolOverlay.sendMessage({ what: 'removeCustomFilters',
-            hostname: ubolOverlay.url.hostname,
+        return uBlockPlusOverlay.sendMessage({ what: 'removeCustomFilters',
+            hostname: uBlockPlusOverlay.url.hostname,
             selectors: [ msg.selector ],
         });
     default:
@@ -47,7 +49,7 @@ function onMessage(msg) {
 
 /******************************************************************************/
 
-await ubolOverlay.install('/unpicker-ui.html', onMessage);
+await uBlockPlusOverlay.install('/unpicker-ui.html', onMessage);
 
 /******************************************************************************/
 

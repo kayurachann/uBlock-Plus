@@ -1,7 +1,9 @@
 /*******************************************************************************
 
-    uBlock Origin Lite - a comprehensive, MV3-compliant content blocker
+    uBlock Plus+ - an original-first MV3 fork
+    Based on uBlock Origin upstream sources
     Copyright (C) 2022-present Raymond Hill
+    Modifications Copyright (C) 2026-present uBlock Plus+ contributors
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -37,7 +39,7 @@ import { getMemoryProfileConfig } from './memory-manager.js';
 import { registerCustomFilters } from './filter-manager.js';
 import { registerPreventPopup } from './prevent-popup.js';
 import { registerToolbarIconToggler } from './action.js';
-import { ubolLog } from './debug.js';
+import { ublockPlusLog } from './debug.js';
 
 /******************************************************************************/
 
@@ -336,12 +338,12 @@ async function replaceRegisteredContentScripts(toAdd) {
         if ( previousScripts.length !== 0 ) {
             await browser.scripting.unregisterContentScripts();
             replacementStarted = true;
-            ubolLog(`Unregistered all content (css/js)`);
+            ublockPlusLog(`Unregistered all content (css/js)`);
         }
         if ( toAdd.length !== 0 ) {
             replacementStarted = true;
             await browser.scripting.registerContentScripts(toAdd);
-            ubolLog(`Registered ${toAdd.map(v => v.id)} content (css/js)`);
+            ublockPlusLog(`Registered ${toAdd.map(v => v.id)} content (css/js)`);
         }
     } catch ( reason ) {
         if ( replacementStarted ) {

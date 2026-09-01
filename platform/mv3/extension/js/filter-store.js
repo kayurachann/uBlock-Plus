@@ -906,7 +906,7 @@ function listen() {
         if ( button === null ) { return; }
         withWorkingState(( ) => removeRepository(button.dataset.repositoryURL));
     });
-    const broadcast = new self.BroadcastChannel('uBOL');
+    const broadcast = new self.BroadcastChannel('uBlockPlus');
     broadcast.onmessage = ev => {
         if ( Array.isArray(ev.data?.enabledRulesets) === false ) { return; }
         refreshEnabled().then(( ) => {

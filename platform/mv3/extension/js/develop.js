@@ -1,7 +1,9 @@
 /*******************************************************************************
 
-    uBlock Origin Lite - a comprehensive, MV3-compliant content blocker
+    uBlock Plus+ - an original-first MV3 fork
+    Based on uBlock Origin upstream sources
     Copyright (C) 2014-present Raymond Hill
+    Modifications Copyright (C) 2026-present uBlock Plus+ contributors
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -563,15 +565,15 @@ class Editor {
         },
         token: (stream, state) => {
             if ( stream.sol() ) {
-                if ( stream.match(/^---\s*$/) ) { return 'ubol-boundary'; }
-                if ( stream.match(/^# ---\s*$/) ) { return 'ubol-boundary ubol-comment'; }
-                if ( stream.match(/\.\.\.\s*$/) ) { return 'ubol-boundary'; }
+                if ( stream.match(/^---\s*$/) ) { return 'ublock-plus-boundary'; }
+                if ( stream.match(/^# ---\s*$/) ) { return 'ublock-plus-boundary ublock-plus-comment'; }
+                if ( stream.match(/\.\.\.\s*$/) ) { return 'ublock-plus-boundary'; }
             }
             const c = stream.peek();
             if ( c === '#' ) {
                 if ( (stream.pos === 0 || /\s/.test(stream.string.charAt(stream.pos - 1))) ) {
                     stream.skipToEnd();
-                    return 'ubol-comment';
+                    return 'ublock-plus-comment';
                 }
             }
             if ( stream.eatSpace() ) { return null; }
@@ -579,17 +581,17 @@ class Editor {
             state.scope = 0;
             if ( scope === 0 && stream.match(/^[^:]+(?=:)/) ) {
                 state.scope = 1;
-                return 'ubol-keyword';
+                return 'ublock-plus-keyword';
             }
             if ( scope === 1 && stream.match(/^:(?: |$)/) ) {
-                return 'ubol-punctuation';
+                return 'ublock-plus-punctuation';
             }
             if ( stream.match(/^- /) ) {
-                return 'ubol-punctuation';
+                return 'ublock-plus-punctuation';
             }
             if ( this.editor.streamParserKeywords ) {
                 if ( stream.match(this.editor.streamParserKeywords) ) {
-                    return 'ubol-literal';
+                    return 'ublock-plus-literal';
                 }
             }
             if ( stream.match(/^\S+/) ) {
@@ -602,11 +604,11 @@ class Editor {
             commentTokens: { line: '#' },
         },
         tokenTable: [
-            'ubol-boundary',
-            'ubol-keyword',
-            'ubol-comment',
-            'ubol-punctuation',
-            'ubol-literal',
+            'ublock-plus-boundary',
+            'ublock-plus-keyword',
+            'ublock-plus-comment',
+            'ublock-plus-punctuation',
+            'ublock-plus-literal',
         ],
     };
 }

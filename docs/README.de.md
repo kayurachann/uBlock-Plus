@@ -27,7 +27,7 @@
 uBlock Plus+ ist ein unabhängiger, GPL-lizenzierter Inhaltsblocker für Chromium MV3. Er verbindet eine bewährte Filter- und Compiler-Grundlage des Upstreamprojekts mit einem Community Filter Store, portabler Konfiguration, ausdrücklichen Bedienelementen für erfahrene Nutzer und speicherbewusstem Betrieb – ohne Telemetriedienst des Projekts und ohne extern geladenen ausführbaren Code.
 
 > [!IMPORTANT]
-> **Veröffentlichungsstatus:** v1.0.0 ist eine Vorabversion zum manuellen Sideloading und wird nicht automatisch aktualisiert. uBlock Plus+ ist keine offizielle Veröffentlichung von uBlock Origin oder uBO Lite und wird nicht von Raymond Hill unterstützt. Chrome MV3 stellt nicht alle Blockierungsmechanismen der ursprünglichen MV2-Erweiterung bereit. Sideloading umgeht die Vertriebsrichtlinien des Chrome Web Store, hebt aber **weder** DNR-Kontingente noch Lebenszyklusregeln für Service Worker oder Sicherheitsgrenzen des Browsers auf. Siehe die [ehrliche Kompatibilitätsmatrix](FEATURE-MATRIX.md).
+> **Veröffentlichungsstatus:** v1.0.0 ist eine Vorabversion zum manuellen Sideloading und wird nicht automatisch aktualisiert. uBlock Plus+ ist ein unabhängiger Fork, keine offizielle Veröffentlichung von uBlock Origin, und wird nicht von Raymond Hill unterstützt. Chrome MV3 stellt nicht alle Blockierungsmechanismen der ursprünglichen MV2-Erweiterung bereit. Sideloading umgeht die Vertriebsrichtlinien des Chrome Web Store, hebt aber **weder** DNR-Kontingente noch Lebenszyklusregeln für Service Worker oder Sicherheitsgrenzen des Browsers auf. Siehe die [ehrliche Kompatibilitätsmatrix](FEATURE-MATRIX.md).
 
 ## Auf Ihre Entscheidungen ausgelegt
 
@@ -277,7 +277,7 @@ Das Repository bewahrt die Git-Historie des Upstreamprojekts und hält [`gorhill
 
 ## Danksagung und Lizenz
 
-uBlock Plus+ ist ein abgeleitetes Werk auf Grundlage von [uBlock Origin](https://github.com/gorhill/uBlock) und dessen MV3-/uBO-Lite-Implementierung. Urheberrechtsvermerke, Quelltext-Header, Autorenhistorie und Drittanbieterhinweise bleiben erhalten. Siehe [NOTICE.md](../NOTICE.md).
+uBlock Plus+ ist ein abgeleitetes Werk auf Grundlage von [uBlock Origin](https://github.com/gorhill/uBlock) und geerbten MV3-Komponenten des Upstream-Projekts. Urheberrechtsvermerke, Quelltext-Header, Autorenhistorie und Drittanbieterhinweise bleiben erhalten. Siehe [NOTICE.md](../NOTICE.md).
 
 Veröffentlicht unter der [GNU General Public License Version 3.0 oder neuer](../LICENSE.txt).
 

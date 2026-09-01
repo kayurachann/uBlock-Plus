@@ -38,12 +38,30 @@ const priorityLocales = [
     'zh_CN',
     'zh_TW',
 ];
-const powerKeyPattern = /^(?:filterStore|memoryProfile|enablePopupBlock|popupPolicy|privacy)/;
+const powerKeyPattern = new RegExp(
+    '^(?:filterStore|memoryProfile|enablePopupBlock|popupPolicy|privacy|' +
+    'myFiltersPageName$|siteRules|advancedPageName$|powerConsole|' +
+    'powerSettings|protectionProfile|appearance|filteringSiteRules|' +
+    'saveSiteRules$|diagnostic|runtimeCapabilities|performance|' +
+    'popup(?:PowerEdition|PowerToggle|Protection|Capability|' +
+    'SiteControls|FilteringModeLabel|ReloadPage|QuickTools|' +
+    'MatchedRules|RecentBlocks|Diagnostics))'
+);
 const legitimateEnglishCognates = new Set([
+    'de:popupPolicyHostnameLabel',
     'de:filterStoreCommunity',
     'es:filterStoreGlobal',
     'fr:filterStoreGlobal',
+    'fr:popupPolicyActionsLabel',
     'fr:popupPolicyStrict',
+    'es:performanceMinutes',
+    'fr:protectionProfileMaximum',
+    'fr:appearanceAccentViolet',
+    'fr:performanceMinutes',
+    'fr:diagnosticAction',
+    ...priorityLocales
+        .filter(locale => locale !== 'en')
+        .map(locale => `${locale}:popupPolicyHostnamePlaceholder`),
 ]);
 const popupCompiledRuleMarkers = new Map([
     [ 'en', /filter-list rules still close immediately/i ],
@@ -78,7 +96,7 @@ const english = localeMessages.get('en');
 const englishKeys = Object.keys(english).sort();
 const powerKeys = englishKeys.filter(key => powerKeyPattern.test(key));
 
-assert(powerKeys.length >= 74, 'Expected the complete Power feature locale surface');
+assert(powerKeys.length >= 190, 'Expected the complete Power UI locale surface');
 
 for ( const locale of priorityLocales ) {
     const messages = localeMessages.get(locale);

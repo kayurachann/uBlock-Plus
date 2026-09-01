@@ -8,14 +8,14 @@
     },
     "default_popup": "popup.html"
   },
-  "author": "Raymond Hill",
+  "author": "Raymond Hill, uBlock Origin contributors, and uBlock Plus+ contributors",
   "background": {
     "scripts": [ "/js/background.js" ],
     "type": "module"
   },
   "browser_specific_settings": {
     "gecko": {
-      "id": "uBOLiteRedux@raymondhill.net",
+      "id": "ublock-plus@kayurachann.github.io",
       "strict_min_version": "128.0",
       "data_collection_permissions": {
         "required": [ "none" ]
@@ -46,7 +46,7 @@
     "128": "img/icon_128.png"
   },
   "manifest_version": 3,
-  "name": "uBO Lite",
+  "name": "__MSG_extName__",
   "options_ui": {
       "open_in_tab": true,
       "page": "dashboard.html"
@@ -65,7 +65,7 @@
     "storage",
     "unlimitedStorage"
   ],
-  "short_name": "uBO Lite",
+  "short_name": "uBlock Plus+",
   "version": "1.0",
   "web_accessible_resources": [
     {

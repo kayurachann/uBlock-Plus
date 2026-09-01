@@ -33,7 +33,7 @@ section[data-pane="develop"] > div > * {
     height: 100%;
     }
 
-.cm-container .cm-editor .cm-line:has(.ubol-boundary) {
+.cm-container .cm-editor .cm-line:has(.ublock-plus-boundary) {
     background-image: url('line-hor-dashed.png'), url('line-hor-dashed.png');
     background-position: left 3px, left calc(100% - 3px);
     background-repeat: repeat-x;
@@ -44,22 +44,22 @@ section[data-pane="develop"] > div > * {
 :root.dark .cm-container .cm-editor {
     color: var(--ink-2);
     }
-.cm-container .cm-editor .cm-line .ubol-comment {
+.cm-container .cm-editor .cm-line .ublock-plus-comment {
     color: #ba5300;
     }
-:root.dark .cm-container .cm-editor .cm-line .ubol-comment {
+:root.dark .cm-container .cm-editor .cm-line .ublock-plus-comment {
     color: #fa7000;
     }
-.cm-container .cm-editor .cm-line .ubol-keyword {
+.cm-container .cm-editor .cm-line .ublock-plus-keyword {
     color: #ae42be;
     }
-:root.dark .cm-container .cm-editor .cm-line .ubol-keyword {
+:root.dark .cm-container .cm-editor .cm-line .ublock-plus-keyword {
     color: #ea59ff;
     }
-.cm-container .cm-editor .cm-line .ubol-literal {
+.cm-container .cm-editor .cm-line .ublock-plus-literal {
     color: #168156;
     }
-:root.dark .cm-container .cm-editor .cm-line .ubol-literal {
+:root.dark .cm-container .cm-editor .cm-line .ublock-plus-literal {
     color: #1dae74;
     }
 .cm-container .cm-editor .cm-line.badline {

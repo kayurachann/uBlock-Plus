@@ -551,12 +551,24 @@
     "message": "Khi được kích hoạt, các bộ lọc phù hợp sẽ tự động đóng các tab trình duyệt không mong muốn do các trang web tạo ra.",
     "description": "Short description for a checkbox in the options page"
   },
-  "popupPolicyLabel": { "message": "Chính sách cửa sổ bật lên cho tên máy chủ này" },
-  "popupPolicyDefault": { "message": "Mặc định (Thông minh)" },
-  "popupPolicyAllow": { "message": "Cho phép" },
-  "popupPolicySmart": { "message": "Thông minh" },
-  "popupPolicyStrict": { "message": "Nghiêm ngặt" },
-  "popupPolicyDescription": { "message": "Chỉ áp dụng cho đúng tên máy chủ này. Cho phép/Thông minh tác động đến kiểm tra ngữ cảnh; cửa sổ khớp quy tắc trong danh sách bộ lọc vẫn bị đóng ngay. Nghiêm ngặt yêu cầu thao tác đáng tin cậy và tên máy chủ liên quan trực tiếp." },
+  "popupPolicyLabel": {
+    "message": "Chính sách cửa sổ bật lên cho tên máy chủ này"
+  },
+  "popupPolicyDefault": {
+    "message": "Mặc định (Thông minh)"
+  },
+  "popupPolicyAllow": {
+    "message": "Cho phép"
+  },
+  "popupPolicySmart": {
+    "message": "Thông minh"
+  },
+  "popupPolicyStrict": {
+    "message": "Nghiêm ngặt"
+  },
+  "popupPolicyDescription": {
+    "message": "Chỉ áp dụng cho đúng tên máy chủ này. Cho phép/Thông minh tác động đến kiểm tra ngữ cảnh; cửa sổ khớp quy tắc trong danh sách bộ lọc vẫn bị đóng ngay. Nghiêm ngặt yêu cầu thao tác đáng tin cậy và tên máy chủ liên quan trực tiếp."
+  },
   "sandboxEditorLabel": {
     "message": "Hộp thử nghiệm tạo bộ lọc",
     "description": "Header for filter-creation section in the dashboard"
@@ -728,5 +740,356 @@
   "unpickerUsage": {
     "message": "Chọn một bộ lọc bên dưới để đánh dấu các phần tử phù hợp trong trang web. Nhấp vào thùng rác để xóa bộ lọc.",
     "description": "Summary description on how to use the tool to remove custom filters"
+  },
+  "myFiltersPageName": {
+    "message": "Bộ lọc của tôi"
+  },
+  "siteRulesPageName": {
+    "message": "Quy tắc theo trang"
+  },
+  "diagnosticsPageName": {
+    "message": "Chẩn đoán"
+  },
+  "advancedPageName": {
+    "message": "Nâng cao"
+  },
+  "powerConsoleTitle": {
+    "message": "Bảng điều khiển Power"
+  },
+  "powerConsoleDescription": {
+    "message": "Điều khiển theo phong cách bản gốc với hồ sơ Plus+, giao diện, quy tắc theo trang, chống popup thông minh, hiệu năng và chẩn đoán runtime."
+  },
+  "powerSettingsLoadFailed": {
+    "message": "Không thể tải cài đặt Power."
+  },
+  "protectionProfilesTitle": {
+    "message": "Hồ sơ bảo vệ"
+  },
+  "protectionProfilesDescription": {
+    "message": "Áp dụng nhanh một cấu hình hoàn chỉnh có thể hoàn tác, hoặc tiếp tục tinh chỉnh từng tuỳ chọn bên dưới."
+  },
+  "protectionProfileBaseline": {
+    "message": "Cơ bản"
+  },
+  "protectionProfileBaselineDescription": {
+    "message": "Lọc mạng không cần quyền truy cập rộng; chống popup vẫn được bật."
+  },
+  "protectionProfileBalanced": {
+    "message": "Cân bằng"
+  },
+  "protectionProfileBalancedDescription": {
+    "message": "Lọc nâng cao, chặn điều hướng nghiêm ngặt và tự động chọn bộ nhớ."
+  },
+  "protectionProfileMaximum": {
+    "message": "Tối đa"
+  },
+  "protectionProfileMaximumDescription": {
+    "message": "Lọc mở rộng đầy đủ, điều hướng nghiêm ngặt và ngân sách hiệu năng cân bằng."
+  },
+  "protectionProfileLowMemory": {
+    "message": "RAM thấp"
+  },
+  "protectionProfileLowMemoryDescription": {
+    "message": "Bảo vệ nâng cao với biên dịch tuần tự và bộ đệm nhỏ hơn cho máy yếu."
+  },
+  "protectionProfileApply": {
+    "message": "Áp dụng hồ sơ"
+  },
+  "protectionProfileApplying": {
+    "message": "Đang áp dụng hồ sơ bảo vệ…"
+  },
+  "protectionProfileApplied": {
+    "message": "Đã áp dụng hồ sơ bảo vệ."
+  },
+  "protectionProfileApplyFailed": {
+    "message": "Không thể áp dụng hồ sơ bảo vệ."
+  },
+  "protectionProfilePermissionDenied": {
+    "message": "Hồ sơ này cần quyền truy cập rộng vào trang web nhưng quyền chưa được cấp."
+  },
+  "protectionProfileActive": {
+    "message": "Đang dùng: $1"
+  },
+  "protectionProfileCustomActive": {
+    "message": "Đang dùng: Cấu hình tuỳ chỉnh"
+  },
+  "appearanceSettingsTitle": {
+    "message": "Giao diện và cách hiển thị"
+  },
+  "appearanceSettingsDescription": {
+    "message": "Chọn chủ đề, màu nhấn, mật độ thông tin và bố cục popup."
+  },
+  "appearanceThemeLabel": {
+    "message": "Chủ đề"
+  },
+  "appearanceThemeAuto": {
+    "message": "Theo hệ thống"
+  },
+  "appearanceThemeLight": {
+    "message": "Sáng"
+  },
+  "appearanceThemeDark": {
+    "message": "Tối"
+  },
+  "appearanceAccentLabel": {
+    "message": "Màu nhấn"
+  },
+  "appearanceAccentCrimson": {
+    "message": "Đỏ thẫm"
+  },
+  "appearanceAccentBlue": {
+    "message": "Xanh dương"
+  },
+  "appearanceAccentEmerald": {
+    "message": "Xanh ngọc"
+  },
+  "appearanceAccentViolet": {
+    "message": "Tím"
+  },
+  "appearanceDensityLabel": {
+    "message": "Mật độ"
+  },
+  "appearanceDensityComfortable": {
+    "message": "Thoải mái"
+  },
+  "appearanceDensityCompact": {
+    "message": "Gọn"
+  },
+  "appearancePopupLayoutLabel": {
+    "message": "Bố cục popup"
+  },
+  "appearancePopupPower": {
+    "message": "Power (đầy đủ điều khiển)"
+  },
+  "appearancePopupCompact": {
+    "message": "Gọn"
+  },
+  "appearanceSettingsSaved": {
+    "message": "Đã lưu cài đặt giao diện."
+  },
+  "appearanceSettingsSaveFailed": {
+    "message": "Không thể lưu cài đặt giao diện."
+  },
+  "siteRulesTitle": {
+    "message": "Điều khiển theo từng trang"
+  },
+  "siteRulesDescription": {
+    "message": "Quản lý trang tin cậy, mức lọc và chính sách popup thông minh mà không cần sửa bộ nhớ nội bộ."
+  },
+  "popupPolicyManagerTitle": {
+    "message": "Quy tắc chính sách popup"
+  },
+  "popupPolicyManagerDescription": {
+    "message": "Đặt ngoại lệ chính xác theo máy chủ cho engine popup thông minh. Quy tắc đã biên dịch từ danh sách bộ lọc vẫn được ưu tiên."
+  },
+  "popupPolicyHostnameLabel": {
+    "message": "Tên máy chủ"
+  },
+  "popupPolicyHostnamePlaceholder": {
+    "message": "example.com"
+  },
+  "popupPolicyModeLabel": {
+    "message": "Chính sách"
+  },
+  "popupPolicyActionsLabel": {
+    "message": "Hành động"
+  },
+  "popupPolicyAdd": {
+    "message": "Thêm quy tắc"
+  },
+  "popupPolicyRemove": {
+    "message": "Xoá"
+  },
+  "popupPolicyEmpty": {
+    "message": "Chưa có quy tắc popup theo trang."
+  },
+  "popupPolicySaved": {
+    "message": "Đã lưu chính sách popup."
+  },
+  "popupPolicyRemoved": {
+    "message": "Đã xoá chính sách popup."
+  },
+  "popupPolicySaveFailed": {
+    "message": "Không thể lưu chính sách popup."
+  },
+  "popupPolicyInvalidHostname": {
+    "message": "Nhập tên máy chủ hợp lệ như example.com."
+  },
+  "filteringSiteRulesTitle": {
+    "message": "Mức lọc theo trang"
+  },
+  "filteringSiteRulesDescription": {
+    "message": "Mỗi dòng một tên máy chủ. “Không lọc” là danh sách trang tin cậy; mỗi tên chỉ được nằm ở một mức."
+  },
+  "saveSiteRules": {
+    "message": "Lưu quy tắc theo trang"
+  },
+  "siteRulesSaved": {
+    "message": "Đã lưu quy tắc theo trang."
+  },
+  "siteRulesInvalid": {
+    "message": "Quy tắc có tên máy chủ không hợp lệ hoặc bị trùng."
+  },
+  "siteRulesLoadFailed": {
+    "message": "Không thể tải quy tắc theo trang."
+  },
+  "diagnosticsTitle": {
+    "message": "Chẩn đoán runtime"
+  },
+  "diagnosticsDescription": {
+    "message": "Kiểm tra engine MV3 thực tế, năng lực trình duyệt, trần quota, ngân sách bộ nhớ và quyết định popup gần đây."
+  },
+  "diagnosticsRefresh": {
+    "message": "Làm mới chẩn đoán"
+  },
+  "diagnosticsLoadFailed": {
+    "message": "Không thể tải chẩn đoán runtime."
+  },
+  "runtimeCapabilitiesTitle": {
+    "message": "Năng lực runtime"
+  },
+  "diagnosticsNetworkEngine": {
+    "message": "Engine mạng"
+  },
+  "diagnosticsInstallType": {
+    "message": "Kiểu cài đặt"
+  },
+  "diagnosticsPopupObservation": {
+    "message": "Theo dõi popup thông minh"
+  },
+  "diagnosticsUserScripts": {
+    "message": "Bộ lọc user-script"
+  },
+  "diagnosticsOffscreenCompiler": {
+    "message": "Trình biên dịch offscreen"
+  },
+  "diagnosticsStaticRules": {
+    "message": "Quy tắc tĩnh còn dùng được"
+  },
+  "diagnosticsDynamicRules": {
+    "message": "Trần quy tắc động"
+  },
+  "diagnosticsSessionRules": {
+    "message": "Trần quy tắc phiên"
+  },
+  "diagnosticsRegexRules": {
+    "message": "Trần quy tắc regex"
+  },
+  "diagnosticsAvailable": {
+    "message": "Khả dụng"
+  },
+  "diagnosticsUnavailable": {
+    "message": "Không khả dụng"
+  },
+  "performanceDetailsTitle": {
+    "message": "Ngân sách hiệu năng đang dùng"
+  },
+  "performanceSelectedProfile": {
+    "message": "Hồ sơ đã chọn"
+  },
+  "performanceEffectiveProfile": {
+    "message": "Hồ sơ thực tế"
+  },
+  "performanceDeviceMemory": {
+    "message": "Bộ nhớ thiết bị phát hiện được"
+  },
+  "performanceCompileConcurrency": {
+    "message": "Số tác vụ biên dịch danh sách"
+  },
+  "performanceCacheEntries": {
+    "message": "Số mục bộ đệm CSS"
+  },
+  "performanceCacheHighWatermark": {
+    "message": "Ngưỡng cao bộ đệm CSS"
+  },
+  "performancePruneInterval": {
+    "message": "Chu kỳ dọn bộ đệm"
+  },
+  "performanceMinutes": {
+    "message": "$1 phút"
+  },
+  "performanceRetainMetadata": {
+    "message": "Giữ metadata scripting"
+  },
+  "popupDiagnosticsTitle": {
+    "message": "Quyết định popup gần đây"
+  },
+  "popupDiagnosticsDescription": {
+    "message": "Nhật ký quyết định có giới hạn và chỉ lưu cục bộ. Không lưu URL, đường dẫn, truy vấn hay thông tin đăng nhập."
+  },
+  "popupDiagnosticsClear": {
+    "message": "Xoá lịch sử"
+  },
+  "popupDiagnosticsCleared": {
+    "message": "Đã xoá lịch sử quyết định popup."
+  },
+  "popupDiagnosticsClearFailed": {
+    "message": "Không thể xoá lịch sử quyết định popup."
+  },
+  "popupDiagnosticsEmpty": {
+    "message": "Chưa ghi nhận quyết định popup nào trong phiên trình duyệt này."
+  },
+  "diagnosticTime": {
+    "message": "Thời gian"
+  },
+  "diagnosticAction": {
+    "message": "Hành động"
+  },
+  "diagnosticSource": {
+    "message": "Nguồn"
+  },
+  "diagnosticTarget": {
+    "message": "Đích"
+  },
+  "diagnosticReason": {
+    "message": "Lý do"
+  },
+  "popupPowerEdition": {
+    "message": "Phiên bản Power"
+  },
+  "popupPowerToggle": {
+    "message": "Bật hoặc tắt bảo vệ cho trang này"
+  },
+  "popupReloadPage": {
+    "message": "Tải lại trang này"
+  },
+  "popupProtectionOn": {
+    "message": "Đang bảo vệ"
+  },
+  "popupProtectionOff": {
+    "message": "Đã tắt bảo vệ"
+  },
+  "popupCapabilitySummary": {
+    "message": "Tóm tắt năng lực bảo vệ"
+  },
+  "popupCapabilityNetwork": {
+    "message": "Lọc mạng"
+  },
+  "popupCapabilityExtended": {
+    "message": "Lọc mở rộng"
+  },
+  "popupCapabilityPopups": {
+    "message": "Popup thông minh"
+  },
+  "popupCapabilityLists": {
+    "message": "Danh sách đang bật"
+  },
+  "popupCapabilityActive": {
+    "message": "Đang hoạt động"
+  },
+  "popupCapabilityInactive": {
+    "message": "Không hoạt động"
+  },
+  "popupSiteControls": {
+    "message": "Điều khiển trang"
+  },
+  "popupQuickTools": {
+    "message": "Công cụ nhanh"
+  },
+  "popupMatchedRules": {
+    "message": "Quy tắc khớp gần đây"
+  },
+  "popupRecentBlocks": {
+    "message": "$1 popup bị chặn gần đây"
   }
 }

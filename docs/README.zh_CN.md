@@ -27,7 +27,7 @@
 uBlock Plus+ 是一款面向 Chromium MV3、采用 GPL 许可证的独立内容拦截器。它将经过验证的上游过滤与编译基础，与社区 Filter Store、可移植配置、明确的高级用户控制以及注重内存的运行方式结合起来，同时不使用项目遥测服务，也不加载远程可执行代码。
 
 > [!IMPORTANT]
-> **发布状态：** v1.0.0 是供手动侧载的预发布版本，不会自动更新。uBlock Plus+ 不是 uBlock Origin 或 uBO Lite 的官方版本，也未得到 Raymond Hill 的认可。Chrome MV3 并未提供原 MV2 扩展可用的全部拦截原语。侧载可以避开 Chrome 应用商店的分发政策，但**不会**消除 DNR 配额、Service Worker 生命周期规则或浏览器安全边界。请参阅[如实说明的兼容性矩阵](FEATURE-MATRIX.md)。
+> **发布状态：** v1.0.0 是供手动侧载的预发布版本，不会自动更新。uBlock Plus+ 是独立分支，不是 uBlock Origin 的官方版本，也未得到 Raymond Hill 的认可。Chrome MV3 并未提供原 MV2 扩展可用的全部拦截原语。侧载可以避开 Chrome 应用商店的分发政策，但**不会**消除 DNR 配额、Service Worker 生命周期规则或浏览器安全边界。请参阅[如实说明的兼容性矩阵](FEATURE-MATRIX.md)。
 
 ## 围绕你的选择而设计
 
@@ -277,7 +277,7 @@ node tools/validate-mv3.mjs dist/build/uBlockPlus.chromium --release
 
 ## 致谢与许可证
 
-uBlock Plus+ 是基于 [uBlock Origin](https://github.com/gorhill/uBlock) 及其 MV3/uBO Lite 实现的衍生作品。项目保留版权、源文件头、作者历史和第三方署名。请参阅 [NOTICE.md](../NOTICE.md)。
+uBlock Plus+ 是基于 [uBlock Origin](https://github.com/gorhill/uBlock) 及从上游继承的 MV3 组件所创作的衍生作品。项目保留版权、源文件头、作者历史和第三方署名。请参阅 [NOTICE.md](../NOTICE.md)。
 
 本项目依据 [GNU 通用公共许可证 v3.0 或更高版本](../LICENSE.txt)发布。
 

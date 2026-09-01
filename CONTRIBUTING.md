@@ -6,7 +6,7 @@ Thank you for helping improve uBlock Plus+.
 
 - Fork-specific code, build, UI and documentation problems belong in this repository.
 - A broken site caused by filter-list content should be reported to the maintainer of the matching list. uBlock-maintained list issues belong in the [uAssets tracker](https://github.com/uBlockOrigin/uAssets/issues).
-- Issues that reproduce in official uBlock Origin/uBO Lite without this fork's changes should be reported upstream after confirming the problem there.
+- Issues that reproduce in an official upstream uBlock Origin build without this fork's changes should be reported upstream after confirming the problem there.
 
 Include the fork version/commit, Chrome version, enabled rulesets, filtering mode, exact reproduction steps and sanitized troubleshooting output. Never post private browsing data, credentials or tokens.
 

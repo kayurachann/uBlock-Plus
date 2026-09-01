@@ -1,7 +1,9 @@
 /*******************************************************************************
 
-    uBlock Origin Lite - a comprehensive, MV3-compliant content blocker
+    uBlock Plus+ - an original-first MV3 fork
+    Based on uBlock Origin upstream sources
     Copyright (C) 2019-present Raymond Hill
+    Modifications Copyright (C) 2026-present uBlock Plus+ contributors
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -19,11 +21,11 @@
     Home: https://github.com/gorhill/uBlock
 */
 
-(async function uBOL_cssUser() {
+(async function uBlockPlus_cssUser() {
 
 /******************************************************************************/
 
-async function uBOL_cssUserActivate() {
+async function uBlockPlus_cssUserActivate() {
     if ( self.customFilters ) { return; }
 
     const docURL = new URL(document.baseURI);
@@ -62,20 +64,20 @@ async function uBOL_cssUserActivate() {
     }
 }
 
-async function uBOL_cssUserStart() {
+async function uBlockPlus_cssUserStart() {
     if ( self.cssUserPendingOp === undefined ) {
         self.cssUserPendingOp = Promise.resolve();
     }
-    self.cssUserPendingOp = self.cssUserPendingOp.then(uBOL_cssUserActivate);
+    self.cssUserPendingOp = self.cssUserPendingOp.then(uBlockPlus_cssUserActivate);
     await self.cssUserPendingOp;
     if ( Boolean(self.customFilters) === false ) { return; }
-    self.removeEventListener('pagereveal', uBOL_cssUserStart);
+    self.removeEventListener('pagereveal', uBlockPlus_cssUserStart);
 }
 
-await uBOL_cssUserStart();
+await uBlockPlus_cssUserStart();
 
 if ( self.customFilters ) { return; }
-self.addEventListener('pagereveal', uBOL_cssUserStart);
+self.addEventListener('pagereveal', uBlockPlus_cssUserStart);
 
 /******************************************************************************/
 

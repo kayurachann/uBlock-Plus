@@ -1,0 +1,230 @@
+/* uBlock Plus+ dashboard surfaces beyond the inherited MV3 settings UI. */
+
+body > * {
+    width: min(960px, 100%);
+}
+
+#operationStatus {
+    background: var(--surface-0);
+    border: 1px solid transparent;
+    border-radius: 4px;
+    box-sizing: border-box;
+    inset-block-start: 3.65em;
+    inset-inline-end: var(--default-gap-small);
+    max-width: min(34em, calc(100vw - 2em));
+    opacity: 0;
+    padding: var(--default-gap-small);
+    pointer-events: none;
+    position: fixed;
+    transform: translateY(-0.5em);
+    transition: opacity 160ms ease, transform 160ms ease;
+    z-index: 200;
+}
+#operationStatus:not(:empty) {
+    border-color: var(--border-1);
+    box-shadow: 0 4px 18px rgb(0 0 0 / 18%);
+    opacity: 1;
+    transform: translateY(0);
+}
+#operationStatus[data-level="error"] {
+    border-color: var(--info3-ink);
+    color: var(--info3-ink);
+}
+
+.powerHero,
+.paneIntro {
+    align-items: center;
+    background: linear-gradient(120deg,
+        color-mix(in srgb, var(--accent-surface-1) 14%, var(--surface-0)),
+        var(--surface-1));
+    border: 1px solid color-mix(in srgb, var(--accent-surface-1) 35%, var(--border-1));
+    border-radius: 12px;
+    display: flex;
+    gap: var(--default-gap-large);
+    margin-block: var(--default-gap-large);
+    padding: var(--default-gap-large);
+}
+.powerHero h2,
+.powerHero p,
+.paneIntro h2,
+.paneIntro p {
+    margin-block: 0 var(--default-gap-small);
+}
+.powerHeroIcon {
+    color: var(--accent-surface-1);
+    fill: var(--accent-surface-1);
+    flex: 0 0 auto;
+    font-size: 2.5em;
+}
+
+.powerProfileGrid {
+    display: grid;
+    gap: var(--default-gap-small);
+    grid-template-columns: repeat(auto-fit, minmax(13em, 1fr));
+}
+.powerProfileCard {
+    background: var(--surface-1);
+    border: 1px solid var(--border-1);
+    border-radius: 8px;
+    cursor: pointer;
+    display: grid;
+    gap: var(--default-gap-xsmall);
+    grid-template-columns: auto 1fr;
+    padding: var(--default-gap-small);
+}
+.powerProfileCard:has(input:checked) {
+    border-color: var(--accent-surface-1);
+    box-shadow: inset 3px 0 var(--accent-surface-1);
+}
+.powerProfileCard > span:last-child {
+    color: var(--ink-2);
+    font-size: var(--font-size-smaller);
+    grid-column: 2;
+}
+.powerProfileName {
+    font-weight: 600;
+}
+.powerProfileActions {
+    align-items: center;
+    display: flex;
+    gap: var(--default-gap-small);
+}
+.powerProfileState {
+    color: var(--ink-2);
+}
+
+.appearanceGrid,
+.siteRuleGrid,
+.diagnosticGrid {
+    display: grid;
+    gap: var(--default-gap-small);
+}
+.appearanceGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.siteRuleGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.diagnosticGrid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 17em), 1fr));
+}
+.appearanceGrid label,
+.siteRuleGrid label {
+    display: flex;
+    flex-direction: column;
+    gap: var(--default-gap-xsmall);
+}
+.appearanceGrid select {
+    width: 100%;
+}
+
+.powerPanel {
+    background: var(--surface-1);
+    border: 1px solid var(--border-1);
+    border-radius: 8px;
+    margin-block: var(--default-gap-large);
+    padding: var(--default-gap-large);
+}
+.powerPanel > h3:first-child,
+.powerPanel > .panelHeading:first-child h3 {
+    margin-block-start: 0;
+}
+.panelHeading {
+    align-items: start;
+    display: flex;
+    gap: var(--default-gap-large);
+    justify-content: space-between;
+}
+.panelHeading p {
+    color: var(--ink-2);
+}
+
+#popupPolicyForm {
+    display: grid;
+    gap: var(--default-gap-small);
+    grid-template-columns: minmax(12em, 2fr) minmax(9em, 1fr) auto;
+    margin-block: var(--default-gap-large);
+}
+.siteRuleGrid textarea {
+    box-sizing: border-box;
+    font-family: monospace;
+    min-height: 9em;
+    resize: vertical;
+    width: 100%;
+}
+
+.tableScroller {
+    overflow-x: auto;
+}
+.powerTable {
+    border-collapse: collapse;
+    min-width: 40em;
+    width: 100%;
+}
+.powerTable th,
+.powerTable td {
+    border-bottom: 1px solid var(--border-1);
+    padding: var(--default-gap-small);
+    text-align: start;
+    vertical-align: middle;
+}
+.powerTable th {
+    color: var(--ink-2);
+    font-size: var(--font-size-smaller);
+    font-weight: 600;
+}
+.powerTable td[data-action="blocked"],
+.powerTable td[data-action="block-failed"] {
+    color: var(--info3-ink);
+    font-weight: 600;
+}
+
+#runtimeCapabilities,
+#performanceDetails {
+    display: grid;
+    gap: var(--default-gap-small);
+    grid-template-columns: minmax(10em, 1fr) minmax(8em, 1fr);
+}
+#runtimeCapabilities dt,
+#performanceDetails dt {
+    color: var(--ink-2);
+}
+#runtimeCapabilities dd,
+#performanceDetails dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+body[data-forbid~="dashboard"] #dashboard-nav [data-pane="siteRules"],
+body[data-forbid~="dashboard"] section[data-pane="siteRules"],
+body[data-forbid~="dashboard"] #dashboard-nav [data-pane="diagnostics"],
+body[data-forbid~="dashboard"] section[data-pane="diagnostics"] {
+    display: none;
+}
+
+@media (max-width: 800px) {
+    .appearanceGrid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 620px) {
+    .appearanceGrid,
+    .siteRuleGrid {
+        grid-template-columns: 1fr;
+    }
+    #popupPolicyForm {
+        grid-template-columns: 1fr;
+    }
+    .powerHero,
+    .paneIntro {
+        align-items: flex-start;
+    }
+    .paneIntro {
+        flex-direction: column;
+        gap: var(--default-gap-small);
+    }
+    .powerHeroIcon {
+        font-size: 1.8em;
+    }
+}

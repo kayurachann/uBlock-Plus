@@ -11,8 +11,9 @@
 <link rel="stylesheet" href="css/dashboard.css">
 
 <link rel="stylesheet" href="css/dashboard-common.css">
-<link rel="stylesheet" href="css/filtering-mode.css">
 <link rel="stylesheet" href="css/settings.css">
+<link rel="stylesheet" href="css/power-ui.css">
+<link rel="stylesheet" href="css/power-settings.css">
 <link rel="stylesheet" href="css/filter-editor.css">
 <link rel="stylesheet" href="css/develop.css">
 
@@ -27,8 +28,10 @@
         <span class="logo"><img data-i18n-title="extName" src="img/ublock.svg" alt="uBlock Plus+"></span><!--
      --><button class="tabButton" type="button" data-pane="settings" data-i18n="settingsPageName" tabindex="0"></button><!--
      --><button class="tabButton" type="button" data-pane="rulesets" data-i18n="aboutFilterLists" tabindex="0"></button><!--
-     --><button class="tabButton" type="button" data-pane="filters" data-i18n="customFiltersPageName"tabindex="0"></button><!--
-     --><button class="tabButton" type="button" data-pane="develop" data-i18n="developPageName"tabindex="0"></button><!--
+     --><button class="tabButton" type="button" data-pane="filters" data-i18n="myFiltersPageName" tabindex="0"></button><!--
+     --><button class="tabButton" type="button" data-pane="siteRules" data-i18n="siteRulesPageName" tabindex="0"></button><!--
+     --><button class="tabButton" type="button" data-pane="diagnostics" data-i18n="diagnosticsPageName" tabindex="0"></button><!--
+     --><button class="tabButton" type="button" data-pane="develop" data-i18n="advancedPageName" tabindex="0"></button><!--
      --><button class="tabButton" type="button" data-pane="about" data-i18n="aboutPageName" tabindex="0"></button>
     </nav>
     <!-- -------- -->
@@ -39,8 +42,80 @@
     </div>
 </header>
 
+<div id="operationStatus" role="status" aria-live="polite"></div>
+
 <!-- -------- -->
 <section data-pane="settings">
+    <div class="powerHero">
+        <span class="powerHeroIcon fa-icon">sliders</span>
+        <div>
+            <h2 data-i18n="powerConsoleTitle">_</h2>
+            <p data-i18n="powerConsoleDescription">_</p>
+        </div>
+    </div>
+    <div id="protectionProfiles">
+        <h3 data-i18n="protectionProfilesTitle">_</h3>
+        <p data-i18n="protectionProfilesDescription">_</p>
+        <div class="powerProfileGrid" role="radiogroup" aria-label="protectionProfilesTitle">
+            <label class="powerProfileCard">
+                <input type="radio" name="powerProfile" value="baseline">
+                <span class="powerProfileName" data-i18n="protectionProfileBaseline">_</span>
+                <span data-i18n="protectionProfileBaselineDescription">_</span>
+            </label>
+            <label class="powerProfileCard">
+                <input type="radio" name="powerProfile" value="balanced">
+                <span class="powerProfileName" data-i18n="protectionProfileBalanced">_</span>
+                <span data-i18n="protectionProfileBalancedDescription">_</span>
+            </label>
+            <label class="powerProfileCard">
+                <input type="radio" name="powerProfile" value="maximum">
+                <span class="powerProfileName" data-i18n="protectionProfileMaximum">_</span>
+                <span data-i18n="protectionProfileMaximumDescription">_</span>
+            </label>
+            <label class="powerProfileCard">
+                <input type="radio" name="powerProfile" value="lowMemory">
+                <span class="powerProfileName" data-i18n="protectionProfileLowMemory">_</span>
+                <span data-i18n="protectionProfileLowMemoryDescription">_</span>
+            </label>
+        </div>
+        <p class="powerProfileActions">
+            <button id="applyProtectionProfile" class="preferred" type="button" data-i18n="protectionProfileApply">_</button>
+            <span class="powerProfileState"></span>
+        </p>
+    </div>
+    <div id="appearanceSettings">
+        <h3 data-i18n="appearanceSettingsTitle">_</h3>
+        <p data-i18n="appearanceSettingsDescription">_</p>
+        <div class="appearanceGrid">
+            <label><span data-i18n="appearanceThemeLabel">_</span>
+                <select data-power-ui="theme">
+                    <option value="auto" data-i18n="appearanceThemeAuto">_</option>
+                    <option value="light" data-i18n="appearanceThemeLight">_</option>
+                    <option value="dark" data-i18n="appearanceThemeDark">_</option>
+                </select>
+            </label>
+            <label><span data-i18n="appearanceAccentLabel">_</span>
+                <select data-power-ui="accent">
+                    <option value="crimson" data-i18n="appearanceAccentCrimson">_</option>
+                    <option value="blue" data-i18n="appearanceAccentBlue">_</option>
+                    <option value="emerald" data-i18n="appearanceAccentEmerald">_</option>
+                    <option value="violet" data-i18n="appearanceAccentViolet">_</option>
+                </select>
+            </label>
+            <label><span data-i18n="appearanceDensityLabel">_</span>
+                <select data-power-ui="density">
+                    <option value="comfortable" data-i18n="appearanceDensityComfortable">_</option>
+                    <option value="compact" data-i18n="appearanceDensityCompact">_</option>
+                </select>
+            </label>
+            <label><span data-i18n="appearancePopupLayoutLabel">_</span>
+                <select data-power-ui="popupLayout">
+                    <option value="power" data-i18n="appearancePopupPower">_</option>
+                    <option value="compact" data-i18n="appearancePopupCompact">_</option>
+                </select>
+            </label>
+        </div>
+    </div>
     <div>
         <h3 data-i18n="defaultFilteringModeSectionLabel"></h3>
         <p data-i18n="defaultFilteringModeDescription"></p>
@@ -49,46 +124,19 @@
                 <div>
                     <span><span class="input radio"><input type="radio" name="filteringMode" value="1"><svg viewBox="0 0 24 24"><path d="M 12 0 A 12 12 0 0 0 0 12 A 12 12 0 0 0 12 24 A 12 12 0 0 0 24 12 A 12 12 0 0 0 12 0 z M 12 2.5 A 9.5 9.5 0 0 1 21.5 12 A 9.5 9.5 0 0 1 12 21.5 A 9.5 9.5 0 0 1 2.5 12 A 9.5 9.5 0 0 1 12 2.5 z"/><circle cx="12" cy="12" r="7"/></svg></span><span data-i18n="filteringMode1Name">_</span></span>
                 </div>
-                <div>
-                    <div class="filteringModeSlider" data-level="1">
-                        <div class="filteringModeButton"><div></div></div>
-                        <span data-level="0"></span>
-                        <span data-level="1"></span>
-                        <span data-level="2"></span>
-                        <span data-level="3"></span>
-                    </div>
-                </div>
-                <div data-i18n="basicFilteringModeDescription"></div>
+                <div class="filteringModeDescription" data-i18n="basicFilteringModeDescription"></div>
             </label>
             <label class="filteringModeCard">
                 <div>
                     <span><span class="input radio"><input type="radio" name="filteringMode" value="2"><svg viewBox="0 0 24 24"><path d="M 12 0 A 12 12 0 0 0 0 12 A 12 12 0 0 0 12 24 A 12 12 0 0 0 24 12 A 12 12 0 0 0 12 0 z M 12 2.5 A 9.5 9.5 0 0 1 21.5 12 A 9.5 9.5 0 0 1 12 21.5 A 9.5 9.5 0 0 1 2.5 12 A 9.5 9.5 0 0 1 12 2.5 z"/><circle cx="12" cy="12" r="7"/></svg></span><span data-i18n="filteringMode2Name">_</span></span>
                 </div>
-                <div>
-                    <div class="filteringModeSlider" data-level="2">
-                        <div class="filteringModeButton"><div></div></div>
-                        <span data-level="0"></span>
-                        <span data-level="1"></span>
-                        <span data-level="2"></span>
-                        <span data-level="3"></span>
-                    </div>
-                </div>
-                <div data-i18n="optimalFilteringModeDescription"></div>
+                <div class="filteringModeDescription" data-i18n="optimalFilteringModeDescription"></div>
             </label>
             <label class="filteringModeCard">
                 <div>
                     <span><span class="input radio"><input type="radio" name="filteringMode" value="3"><svg viewBox="0 0 24 24"><path d="M 12 0 A 12 12 0 0 0 0 12 A 12 12 0 0 0 12 24 A 12 12 0 0 0 24 12 A 12 12 0 0 0 12 0 z M 12 2.5 A 9.5 9.5 0 0 1 21.5 12 A 9.5 9.5 0 0 1 12 21.5 A 9.5 9.5 0 0 1 2.5 12 A 9.5 9.5 0 0 1 12 2.5 z"/><circle cx="12" cy="12" r="7"/></svg></span><span data-i18n="filteringMode3Name">_</span></span>
                 </div>
-                <div>
-                    <div class="filteringModeSlider" data-level="3">
-                        <div class="filteringModeButton"><div></div></div>
-                        <span data-level="0"></span>
-                        <span data-level="1"></span>
-                        <span data-level="2"></span>
-                        <span data-level="3"></span>
-                    </div>
-                </div>
-                <div data-i18n="completeFilteringModeDescription"></div>
+                <div class="filteringModeDescription" data-i18n="completeFilteringModeDescription"></div>
             </label>
         </div>
     </div>
@@ -203,6 +251,77 @@
         <p class="userScriptsInfo"><span data-i18n="sandboxEditorUserScriptsInfo"></span> <span data-i18n="userScriptsInfo"></span></p>
         <div class="cm-container"></div>
     </aside>
+</section>
+
+<!-- -------- -->
+<section data-pane="siteRules">
+    <div class="paneIntro">
+        <h2 data-i18n="siteRulesTitle">_</h2>
+        <p data-i18n="siteRulesDescription">_</p>
+    </div>
+    <div id="popupPolicyManager" class="powerPanel">
+        <h3 data-i18n="popupPolicyManagerTitle">_</h3>
+        <p data-i18n="popupPolicyManagerDescription">_</p>
+        <form id="popupPolicyForm">
+            <input id="popupPolicyHostname" type="text" inputmode="url" spellcheck="false" placeholder="popupPolicyHostnamePlaceholder" aria-label="popupPolicyHostnameLabel">
+            <select id="popupPolicyMode" aria-label="popupPolicyModeLabel">
+                <option value="allow" data-i18n="popupPolicyAllow">_</option>
+                <option value="block" data-i18n="popupPolicySmart">_</option>
+                <option value="strict" data-i18n="popupPolicyStrict">_</option>
+            </select>
+            <button type="submit" data-i18n="popupPolicyAdd">_</button>
+        </form>
+        <div class="tableScroller">
+            <table class="powerTable">
+                <thead><tr><th data-i18n="popupPolicyHostnameLabel">_</th><th data-i18n="popupPolicyModeLabel">_</th><th data-i18n="popupPolicyActionsLabel">_</th></tr></thead>
+                <tbody id="popupPolicyRows"></tbody>
+            </table>
+        </div>
+        <p id="popupPolicyEmpty" data-i18n="popupPolicyEmpty">_</p>
+    </div>
+    <div id="filteringSiteRules" class="powerPanel">
+        <h3 data-i18n="filteringSiteRulesTitle">_</h3>
+        <p data-i18n="filteringSiteRulesDescription">_</p>
+        <div class="siteRuleGrid">
+            <label><span data-i18n="filteringMode0Name">_</span><textarea data-mode="none" spellcheck="false"></textarea></label>
+            <label><span data-i18n="filteringMode1Name">_</span><textarea data-mode="basic" spellcheck="false"></textarea></label>
+            <label><span data-i18n="filteringMode2Name">_</span><textarea data-mode="optimal" spellcheck="false"></textarea></label>
+            <label><span data-i18n="filteringMode3Name">_</span><textarea data-mode="complete" spellcheck="false"></textarea></label>
+        </div>
+        <p><button id="saveFilteringSiteRules" class="preferred" type="button" data-i18n="saveSiteRules">_</button></p>
+    </div>
+</section>
+
+<!-- -------- -->
+<section data-pane="diagnostics">
+    <div class="paneIntro">
+        <h2 data-i18n="diagnosticsTitle">_</h2>
+        <p data-i18n="diagnosticsDescription">_</p>
+        <button id="refreshDiagnostics" type="button" data-i18n="diagnosticsRefresh">_</button>
+    </div>
+    <div class="diagnosticGrid">
+        <div class="powerPanel">
+            <h3 data-i18n="runtimeCapabilitiesTitle">_</h3>
+            <dl id="runtimeCapabilities"></dl>
+        </div>
+        <div class="powerPanel">
+            <h3 data-i18n="performanceDetailsTitle">_</h3>
+            <dl id="performanceDetails"></dl>
+        </div>
+    </div>
+    <div class="powerPanel">
+        <div class="panelHeading">
+            <div><h3 data-i18n="popupDiagnosticsTitle">_</h3><p data-i18n="popupDiagnosticsDescription">_</p></div>
+            <button id="clearPopupDiagnostics" type="button" data-i18n="popupDiagnosticsClear">_</button>
+        </div>
+        <div class="tableScroller">
+            <table class="powerTable">
+                <thead><tr><th data-i18n="diagnosticTime">_</th><th data-i18n="diagnosticAction">_</th><th data-i18n="diagnosticSource">_</th><th data-i18n="diagnosticTarget">_</th><th data-i18n="diagnosticReason">_</th></tr></thead>
+                <tbody id="popupDiagnosticRows"></tbody>
+            </table>
+        </div>
+        <p id="popupDiagnosticsEmpty" data-i18n="popupDiagnosticsEmpty">_</p>
+    </div>
 </section>
 
 <!-- -------- -->
@@ -335,12 +454,13 @@
     </div>
 </template>
 
-<script src="lib/codemirror/cm6.bundle.ubol.min.js"></script>
+<script src="lib/codemirror/cm6.bundle.ublock-plus.min.js"></script>
 <script src="js/theme.js" type="module"></script>
 <script src="js/fa-icons.js" type="module"></script>
 <script src="js/i18n.js" type="module"></script>
 <script src="js/dashboard.js" type="module"></script>
 <script src="js/settings.js" type="module"></script>
+<script src="js/power-settings.js" type="module"></script>
 <script src="js/filter-manager-ui.js" type="module"></script>
 <script src="js/develop.js" type="module"></script>
 

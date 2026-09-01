@@ -1,7 +1,9 @@
 /*******************************************************************************
 
-    uBlock Origin Lite - a comprehensive, MV3-compliant content blocker
+    uBlock Plus+ - an original-first MV3 fork
+    Based on uBlock Origin upstream sources
     Copyright (C) 2022-present Raymond Hill
+    Modifications Copyright (C) 2026-present uBlock Plus+ contributors
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -46,7 +48,7 @@ import { broadcastMessage } from './utils.js';
 import { dnr } from './ext-compat.js';
 import { registerContentScripts } from './scripting-manager.js';
 import { setPopupBlockMode } from './prevent-popup.js';
-import { ubolLog } from './debug.js';
+import { ublockPlusLog } from './debug.js';
 
 /******************************************************************************/
 
@@ -123,7 +125,7 @@ const adminSettings = {
     },
     async process() {
         if ( this.keys.has('rulesets') ) {
-            ubolLog('admin setting "rulesets" changed');
+            ublockPlusLog('admin setting "rulesets" changed');
             await enableRulesets(rulesetConfig.enabledRulesets);
             await registerContentScripts();
             const results = await Promise.all([
@@ -134,31 +136,31 @@ const adminSettings = {
             broadcastMessage({ adminRulesets, enabledRulesets });
         }
         if ( this.keys.has('defaultFiltering') ) {
-            ubolLog('admin setting "defaultFiltering" changed');
+            ublockPlusLog('admin setting "defaultFiltering" changed');
             await readFilteringModeDetails(true);
             await registerContentScripts();
             const defaultFilteringMode = await getDefaultFilteringMode();
             broadcastMessage({ defaultFilteringMode });
         }
         if ( this.keys.has('noFiltering') ) {
-            ubolLog('admin setting "noFiltering" changed');
+            ublockPlusLog('admin setting "noFiltering" changed');
             const filteringModeDetails = await readFilteringModeDetails(true);
             await registerContentScripts();
             broadcastMessage({ filteringModeDetails });
         }
         if ( this.keys.has('popupBlockMode') ) {
-            ubolLog('admin setting "popupBlockMode" changed');
+            ublockPlusLog('admin setting "popupBlockMode" changed');
             const popupBlockMode = this.keys.get('popupBlockMode');
             applyAdminConfig({ popupBlockMode }, true);
             await registerContentScripts();
         }
         if ( this.keys.has('showBlockedCount') ) {
-            ubolLog('admin setting "showBlockedCount" changed');
+            ublockPlusLog('admin setting "showBlockedCount" changed');
             const showBlockedCount = this.keys.get('showBlockedCount');
             applyAdminConfig({ showBlockedCount }, true);
         }
         if ( this.keys.has('strictBlockMode') ) {
-            ubolLog('admin setting "strictBlockMode" changed');
+            ublockPlusLog('admin setting "strictBlockMode" changed');
             const strictBlockMode = this.keys.get('strictBlockMode');
             applyAdminConfig({ strictBlockMode }, true);
         }

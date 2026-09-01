@@ -27,7 +27,7 @@
 uBlock Plus+ là bộ chặn nội dung GPL dành cho Chromium MV3, phát triển độc lập từ nền tảng parser/compiler đã được chứng minh của upstream. Dự án bổ sung Filter Store cộng đồng, repository HTTPS tùy chỉnh, cấu hình có thể sao lưu và các profile vận hành có ý thức về bộ nhớ—không có dịch vụ telemetry của dự án hay mã thực thi tải từ xa.
 
 > [!IMPORTANT]
-> Đây không phải bản phát hành chính thức của uBlock Origin/uBO Lite và không được Raymond Hill bảo trợ. Chrome MV3 không cung cấp toàn bộ primitive chặn của uBlock Origin MV2. Sideload tránh chính sách phân phối của Chrome Web Store, nhưng **không** xóa quota DNR, lifecycle service worker hoặc sandbox của trình duyệt. Xem [bảng tương thích trung thực](FEATURE-MATRIX.md).
+> Đây là một fork độc lập, không phải bản phát hành chính thức của uBlock Origin và không được Raymond Hill bảo trợ. Chrome MV3 không cung cấp toàn bộ primitive chặn của uBlock Origin MV2. Sideload tránh chính sách phân phối của Chrome Web Store, nhưng **không** xóa quota DNR, lifecycle service worker hoặc sandbox của trình duyệt. Xem [bảng tương thích trung thực](FEATURE-MATRIX.md).
 
 > [!WARNING]
 > **v1.0.0 là pre-release để thử nghiệm công khai.** Bản sideload không tự cập nhật qua Store; bạn cần theo dõi trang [Releases](https://github.com/kayurachann/uBlock-Plus/releases), đọc release note và cập nhật thư mục extension thủ công.
@@ -290,7 +290,7 @@ Repository giữ nguyên lịch sử Git upstream và cấu hình [`gorhill/uBlo
 
 ## Ghi công và giấy phép
 
-uBlock Plus+ là tác phẩm phái sinh từ [uBlock Origin](https://github.com/gorhill/uBlock) và phần triển khai MV3/uBO Lite. Lịch sử Git, copyright, source header, tác giả và attribution của upstream được giữ lại. Xem [NOTICE.md](../NOTICE.md).
+uBlock Plus+ là tác phẩm phái sinh từ [uBlock Origin](https://github.com/gorhill/uBlock) và các thành phần MV3 kế thừa từ upstream. Lịch sử Git, copyright, source header, tác giả và attribution của upstream được giữ lại. Xem [NOTICE.md](../NOTICE.md).
 
 Phát hành theo [GNU General Public License v3.0 hoặc mới hơn](../LICENSE.txt).
 

@@ -107,62 +107,174 @@
     "message": "Um kosmetische Filter oder Scriptlet-Filter aus importierten Listen anzuwenden, benötigt uBlock Plus+ die Berechtigung zum Ausführen von Nutzerscripts.",
     "description": "A notice to inform user that the enforcement of some filters requires permission to execute 'user scripts'"
   },
-  "memoryProfileSectionLabel": { "message": "Speicherprofil" },
-  "memoryProfileSelectLabel": { "message": "Speicherprofil" },
-  "memoryProfileDescription": { "message": "Steuert die Parallelität der Kompilierung und die Cache-Budgets. Der Modus für wenig Arbeitsspeicher senkt den Spitzenverbrauch, ohne aktivierte Filter zu deaktivieren." },
-  "memoryProfileAuto": { "message": "Automatisch" },
-  "memoryProfileBalanced": { "message": "Ausgewogen" },
-  "memoryProfileLow": { "message": "Wenig Arbeitsspeicher" },
-  "memoryProfileEffective": { "message": "Wirksames Profil: $1" },
-  "memoryProfileStorageMetrics": { "message": "Lokaler Cache-/Speicherbedarf (kein aktueller RAM-Verbrauch): $1 lokal, $2 Sitzung." },
-  "memoryProfileUnavailable": { "message": "nicht verfügbar" },
-  "memoryProfileRefresh": { "message": "Messwerte aktualisieren" },
-  "memoryProfileCleanup": { "message": "Verwaiste Caches bereinigen" },
-  "memoryProfileCleanupDone": { "message": "Bereinigung abgeschlossen; $1 verwaiste Cache-Einträge entfernt." },
-  "memoryProfileCleanupUnavailable": { "message": "Diese Chrome-Version kann den Gesamtspeicher melden, aber keine verwaisten Cache-Schlüssel auflisten (für die Bereinigung ist Chrome 130 oder neuer erforderlich)." },
-  "memoryProfileError": { "message": "Das Speicherprofil konnte nicht aktualisiert werden." },
-  "filterStoreTitle": { "message": "Filter-Store (Power Edition)" },
-  "filterStoreCategoryLabel": { "message": "Kategorie im Filter-Store" },
-  "filterStoreLanguageLabel": { "message": "Sprache im Filter-Store" },
-  "filterStoreProfileLabel": { "message": "Ressourcenprofil im Filter-Store" },
-  "filterStoreDescription": { "message": "Durchsuchen Sie verifizierte und von der Community bereitgestellte Filterdaten. Kataloge liefern niemals ausführbaren Erweiterungscode; importierte Listen werden von uBlock Plus+ analysiert und in MV3-Regeln kompiliert." },
-  "filterStoreSearchPlaceholder": { "message": "Filterlisten durchsuchen" },
-  "filterStoreAllCategories": { "message": "Alle Kategorien" },
-  "filterStoreAllLanguages": { "message": "Alle Sprachen" },
-  "filterStoreAllProfiles": { "message": "Alle Profile" },
-  "filterStoreGlobal": { "message": "Weltweit" },
-  "filterStoreStaticSlots": { "message": "statische Slots" },
-  "filterStoreDynamicRules": { "message": "dynamische Regeln" },
-  "filterStoreRegexRules": { "message": "Regex-Regeln" },
-  "filterStoreUnknownCosts": { "message": "Bei $1 importierten Listen sind die Kosten unbekannt" },
-  "filterStoreStaticCost": { "message": "$1 statische Slots, $2 integrierte Regeln" },
-  "filterStoreDynamicCost": { "message": "Bis zu $1 dynamische / $2 Regex-Regeln" },
-  "filterStoreVerified": { "message": "Verifiziert" },
-  "filterStoreCommunity": { "message": "Community" },
-  "filterStoreHomepage": { "message": "Startseite" },
-  "filterStoreEnable": { "message": "Aktivieren" },
-  "filterStoreDisable": { "message": "Deaktivieren" },
-  "filterStoreNoResults": { "message": "Keine passenden Filterlisten." },
-  "filterStoreResultsLimited": { "message": "Die ersten $1 von $2 Ergebnissen werden angezeigt. Verfeinern Sie die Suche, um die übrigen zu sehen." },
-  "filterStoreBundles": { "message": "Pakete" },
-  "filterStoreBundleEnabled": { "message": "Paket aktiviert" },
-  "filterStoreEnableBundle": { "message": "Paket aktivieren" },
-  "filterStoreRepositories": { "message": "Benutzerdefinierte Repositorys" },
-  "filterStoreRepositoryWarning": { "message": "Fügen Sie nur HTTPS-JSON-Kataloge hinzu, die Sie kontrollieren oder denen Sie vertrauen. Benutzerdefinierte Repositorys werden immer als Community angezeigt, selbst wenn sie eine höhere Vertrauensstufe beanspruchen." },
-  "filterStoreRepositoryPlaceholder": { "message": "HTTPS-URL der catalog.json" },
-  "filterStoreAddRepository": { "message": "Repository hinzufügen" },
-  "filterStoreRemoveRepository": { "message": "Entfernen" },
-  "filterStoreRepositoryFailed": { "message": "Repository konnte nicht geladen werden: $1" },
-  "filterStoreQuotaExceeded": { "message": "Diese Auswahl würde ein MV3-Regelkontingent überschreiten." },
-  "filterStoreCommunityConfirm": { "message": "Dieses Community-Repository wurde nicht von uBlock Plus+ verifiziert. Seine Filterdaten importieren?" },
-  "filterStoreVerifying": { "message": "$1 wird verifiziert…" },
-  "filterStoreDisabledStatus": { "message": "$1 wurde deaktiviert." },
-  "filterStoreEnabledStatus": { "message": "$1 wurde aktiviert." },
-  "filterStoreActivationWarnings": { "message": "Aktiviert; $1 mit Chrome inkompatible Regex-Filter wurden übersprungen." },
-  "filterStoreBundleStatus": { "message": "Paket aktiviert: $1." },
-  "filterStoreInvalidRepository": { "message": "Geben Sie eine gültige HTTPS-Katalog-URL ein." },
-  "filterStoreRepositoryAdded": { "message": "Repository hinzugefügt." },
-  "filterStoreRepositoryRemoved": { "message": "Repository entfernt. Seine aktivierten Listen bleiben unter „Importierte Listen“ verfügbar." },
+  "memoryProfileSectionLabel": {
+    "message": "Speicherprofil"
+  },
+  "memoryProfileSelectLabel": {
+    "message": "Speicherprofil"
+  },
+  "memoryProfileDescription": {
+    "message": "Steuert die Parallelität der Kompilierung und die Cache-Budgets. Der Modus für wenig Arbeitsspeicher senkt den Spitzenverbrauch, ohne aktivierte Filter zu deaktivieren."
+  },
+  "memoryProfileAuto": {
+    "message": "Automatisch"
+  },
+  "memoryProfileBalanced": {
+    "message": "Ausgewogen"
+  },
+  "memoryProfileLow": {
+    "message": "Wenig Arbeitsspeicher"
+  },
+  "memoryProfileEffective": {
+    "message": "Wirksames Profil: $1"
+  },
+  "memoryProfileStorageMetrics": {
+    "message": "Lokaler Cache-/Speicherbedarf (kein aktueller RAM-Verbrauch): $1 lokal, $2 Sitzung."
+  },
+  "memoryProfileUnavailable": {
+    "message": "nicht verfügbar"
+  },
+  "memoryProfileRefresh": {
+    "message": "Messwerte aktualisieren"
+  },
+  "memoryProfileCleanup": {
+    "message": "Verwaiste Caches bereinigen"
+  },
+  "memoryProfileCleanupDone": {
+    "message": "Bereinigung abgeschlossen; $1 verwaiste Cache-Einträge entfernt."
+  },
+  "memoryProfileCleanupUnavailable": {
+    "message": "Diese Chrome-Version kann den Gesamtspeicher melden, aber keine verwaisten Cache-Schlüssel auflisten (für die Bereinigung ist Chrome 130 oder neuer erforderlich)."
+  },
+  "memoryProfileError": {
+    "message": "Das Speicherprofil konnte nicht aktualisiert werden."
+  },
+  "filterStoreTitle": {
+    "message": "Filter-Store (Power Edition)"
+  },
+  "filterStoreCategoryLabel": {
+    "message": "Kategorie im Filter-Store"
+  },
+  "filterStoreLanguageLabel": {
+    "message": "Sprache im Filter-Store"
+  },
+  "filterStoreProfileLabel": {
+    "message": "Ressourcenprofil im Filter-Store"
+  },
+  "filterStoreDescription": {
+    "message": "Durchsuchen Sie verifizierte und von der Community bereitgestellte Filterdaten. Kataloge liefern niemals ausführbaren Erweiterungscode; importierte Listen werden von uBlock Plus+ analysiert und in MV3-Regeln kompiliert."
+  },
+  "filterStoreSearchPlaceholder": {
+    "message": "Filterlisten durchsuchen"
+  },
+  "filterStoreAllCategories": {
+    "message": "Alle Kategorien"
+  },
+  "filterStoreAllLanguages": {
+    "message": "Alle Sprachen"
+  },
+  "filterStoreAllProfiles": {
+    "message": "Alle Profile"
+  },
+  "filterStoreGlobal": {
+    "message": "Weltweit"
+  },
+  "filterStoreStaticSlots": {
+    "message": "statische Slots"
+  },
+  "filterStoreDynamicRules": {
+    "message": "dynamische Regeln"
+  },
+  "filterStoreRegexRules": {
+    "message": "Regex-Regeln"
+  },
+  "filterStoreUnknownCosts": {
+    "message": "Bei $1 importierten Listen sind die Kosten unbekannt"
+  },
+  "filterStoreStaticCost": {
+    "message": "$1 statische Slots, $2 integrierte Regeln"
+  },
+  "filterStoreDynamicCost": {
+    "message": "Bis zu $1 dynamische / $2 Regex-Regeln"
+  },
+  "filterStoreVerified": {
+    "message": "Verifiziert"
+  },
+  "filterStoreCommunity": {
+    "message": "Community"
+  },
+  "filterStoreHomepage": {
+    "message": "Startseite"
+  },
+  "filterStoreEnable": {
+    "message": "Aktivieren"
+  },
+  "filterStoreDisable": {
+    "message": "Deaktivieren"
+  },
+  "filterStoreNoResults": {
+    "message": "Keine passenden Filterlisten."
+  },
+  "filterStoreResultsLimited": {
+    "message": "Die ersten $1 von $2 Ergebnissen werden angezeigt. Verfeinern Sie die Suche, um die übrigen zu sehen."
+  },
+  "filterStoreBundles": {
+    "message": "Pakete"
+  },
+  "filterStoreBundleEnabled": {
+    "message": "Paket aktiviert"
+  },
+  "filterStoreEnableBundle": {
+    "message": "Paket aktivieren"
+  },
+  "filterStoreRepositories": {
+    "message": "Benutzerdefinierte Repositorys"
+  },
+  "filterStoreRepositoryWarning": {
+    "message": "Fügen Sie nur HTTPS-JSON-Kataloge hinzu, die Sie kontrollieren oder denen Sie vertrauen. Benutzerdefinierte Repositorys werden immer als Community angezeigt, selbst wenn sie eine höhere Vertrauensstufe beanspruchen."
+  },
+  "filterStoreRepositoryPlaceholder": {
+    "message": "HTTPS-URL der catalog.json"
+  },
+  "filterStoreAddRepository": {
+    "message": "Repository hinzufügen"
+  },
+  "filterStoreRemoveRepository": {
+    "message": "Entfernen"
+  },
+  "filterStoreRepositoryFailed": {
+    "message": "Repository konnte nicht geladen werden: $1"
+  },
+  "filterStoreQuotaExceeded": {
+    "message": "Diese Auswahl würde ein MV3-Regelkontingent überschreiten."
+  },
+  "filterStoreCommunityConfirm": {
+    "message": "Dieses Community-Repository wurde nicht von uBlock Plus+ verifiziert. Seine Filterdaten importieren?"
+  },
+  "filterStoreVerifying": {
+    "message": "$1 wird verifiziert…"
+  },
+  "filterStoreDisabledStatus": {
+    "message": "$1 wurde deaktiviert."
+  },
+  "filterStoreEnabledStatus": {
+    "message": "$1 wurde aktiviert."
+  },
+  "filterStoreActivationWarnings": {
+    "message": "Aktiviert; $1 mit Chrome inkompatible Regex-Filter wurden übersprungen."
+  },
+  "filterStoreBundleStatus": {
+    "message": "Paket aktiviert: $1."
+  },
+  "filterStoreInvalidRepository": {
+    "message": "Geben Sie eine gültige HTTPS-Katalog-URL ein."
+  },
+  "filterStoreRepositoryAdded": {
+    "message": "Repository hinzugefügt."
+  },
+  "filterStoreRepositoryRemoved": {
+    "message": "Repository entfernt. Seine aktivierten Listen bleiben unter „Importierte Listen“ verfügbar."
+  },
   "customFiltersImportExportLabel": {
     "message": "Importieren und exportieren",
     "description": "Text label heading the import/export area of custom filters"
@@ -319,16 +431,36 @@
     "message": "Verhalten",
     "description": "The header text for the 'Behavior' section"
   },
-  "privacyHardeningSectionLabel": { "message": "Optionale Härtung des Browser-Datenschutzes" },
-  "privacyHardeningDescription": { "message": "Diese Steuerelemente ändern die Datenschutzeinstellungen von Chrome erst, nachdem Sie die optionale Berechtigung erteilt haben. Beim Ausschalten wird die jeweilige Einstellung wieder Chrome überlassen." },
-  "privacyPermissionButton": { "message": "Datenschutz-Steuerelemente aktivieren…" },
-  "privacyPermissionDenied": { "message": "Die optionale Datenschutzberechtigung wurde nicht erteilt." },
-  "privacySettingUpdateFailed": { "message": "Chrome konnte eine oder mehrere Datenschutzeinstellungen nicht aktualisieren." },
-  "privacyDisableHyperlinkAuditing": { "message": "Hyperlink-Audit-Pings deaktivieren" },
-  "privacyDisableNetworkPrediction": { "message": "Chrome-Netzwerkvorhersage deaktivieren" },
-  "privacyProtectWebRTC": { "message": "WebRTC an der Nutzung von UDP ohne Proxy hindern" },
-  "privacyDisableAdApis": { "message": "Werbe-APIs der Chrome Privacy Sandbox deaktivieren" },
-  "privacySettingNotControllable": { "message": "Diese Einstellung wird durch eine Chrome-Richtlinie oder eine andere Erweiterung gesteuert." },
+  "privacyHardeningSectionLabel": {
+    "message": "Optionale Härtung des Browser-Datenschutzes"
+  },
+  "privacyHardeningDescription": {
+    "message": "Diese Steuerelemente ändern die Datenschutzeinstellungen von Chrome erst, nachdem Sie die optionale Berechtigung erteilt haben. Beim Ausschalten wird die jeweilige Einstellung wieder Chrome überlassen."
+  },
+  "privacyPermissionButton": {
+    "message": "Datenschutz-Steuerelemente aktivieren…"
+  },
+  "privacyPermissionDenied": {
+    "message": "Die optionale Datenschutzberechtigung wurde nicht erteilt."
+  },
+  "privacySettingUpdateFailed": {
+    "message": "Chrome konnte eine oder mehrere Datenschutzeinstellungen nicht aktualisieren."
+  },
+  "privacyDisableHyperlinkAuditing": {
+    "message": "Hyperlink-Audit-Pings deaktivieren"
+  },
+  "privacyDisableNetworkPrediction": {
+    "message": "Chrome-Netzwerkvorhersage deaktivieren"
+  },
+  "privacyProtectWebRTC": {
+    "message": "WebRTC an der Nutzung von UDP ohne Proxy hindern"
+  },
+  "privacyDisableAdApis": {
+    "message": "Werbe-APIs der Chrome Privacy Sandbox deaktivieren"
+  },
+  "privacySettingNotControllable": {
+    "message": "Diese Einstellung wird durch eine Chrome-Richtlinie oder eine andere Erweiterung gesteuert."
+  },
   "autoReloadLabel": {
     "message": "Seite beim Ändern des Filtermodus automatisch neu laden",
     "description": "Label for a checkbox in the options page"
@@ -353,12 +485,24 @@
     "message": "Dadurch werden unerwünschte Browser-Tabs, die durch Websites geöffnet wurden, mithilfe von Filtern geschlossen.",
     "description": "Short description for a checkbox in the options page"
   },
-  "popupPolicyLabel": { "message": "Popup-Regel für diesen Hostnamen" },
-  "popupPolicyDefault": { "message": "Standard (Intelligent)" },
-  "popupPolicyAllow": { "message": "Zulassen" },
-  "popupPolicySmart": { "message": "Intelligent" },
-  "popupPolicyStrict": { "message": "Streng" },
-  "popupPolicyDescription": { "message": "Gilt nur für diesen exakten Host. Zulassen/Intelligent beeinflussen Kontextprüfungen; passende Filterlistenregeln schließen weiterhin sofort. Streng verlangt eine vertrauenswürdige Aktion und einen direkt verwandten Hostnamen." },
+  "popupPolicyLabel": {
+    "message": "Popup-Regel für diesen Hostnamen"
+  },
+  "popupPolicyDefault": {
+    "message": "Standard (Intelligent)"
+  },
+  "popupPolicyAllow": {
+    "message": "Zulassen"
+  },
+  "popupPolicySmart": {
+    "message": "Intelligent"
+  },
+  "popupPolicyStrict": {
+    "message": "Streng"
+  },
+  "popupPolicyDescription": {
+    "message": "Gilt nur für diesen exakten Host. Zulassen/Intelligent beeinflussen Kontextprüfungen; passende Filterlistenregeln schließen weiterhin sofort. Streng verlangt eine vertrauenswürdige Aktion und einen direkt verwandten Hostnamen."
+  },
   "sandboxEditorLabel": {
     "message": "Testumgebung zum Erstellen von Filtern",
     "description": "Header for filter-creation section in the dashboard"
@@ -530,5 +674,356 @@
   "unpickerUsage": {
     "message": "Das Auswählen eines unten stehenden Filters hebt übereinstimmende Elemente auf der Webseite hervor. Auf den Mülleimer klicken, um einen Filter zu entfernen.",
     "description": "Summary description on how to use the tool to remove custom filters"
+  },
+  "myFiltersPageName": {
+    "message": "Meine Filter"
+  },
+  "siteRulesPageName": {
+    "message": "Website-Regeln"
+  },
+  "diagnosticsPageName": {
+    "message": "Diagnose"
+  },
+  "advancedPageName": {
+    "message": "Erweitert"
+  },
+  "powerConsoleTitle": {
+    "message": "Power-Konsole"
+  },
+  "powerConsoleDescription": {
+    "message": "Steuerung im Originalstil mit Plus+-Profilen, Darstellung, Website-Regeln, intelligenter Popup-Erkennung, Leistung und Laufzeitdiagnose."
+  },
+  "powerSettingsLoadFailed": {
+    "message": "Die Power-Einstellungen konnten nicht geladen werden."
+  },
+  "protectionProfilesTitle": {
+    "message": "Schutzprofile"
+  },
+  "protectionProfilesDescription": {
+    "message": "Wenden Sie eine vollständige, umkehrbare Basiskonfiguration an oder passen Sie unten weiterhin jede Einstellung einzeln an."
+  },
+  "protectionProfileBaseline": {
+    "message": "Basis"
+  },
+  "protectionProfileBaselineDescription": {
+    "message": "Netzwerkfilterung ohne umfassenden Website-Zugriff; der Popup-Schutz bleibt aktiviert."
+  },
+  "protectionProfileBalanced": {
+    "message": "Ausgewogen"
+  },
+  "protectionProfileBalancedDescription": {
+    "message": "Erweiterte Filterung, strikte Navigationssperre und automatische Speicherauswahl."
+  },
+  "protectionProfileMaximum": {
+    "message": "Maximal"
+  },
+  "protectionProfileMaximumDescription": {
+    "message": "Vollständige erweiterte Filterung, strikte Navigation und das ausgewogene Leistungsbudget."
+  },
+  "protectionProfileLowMemory": {
+    "message": "Speichersparend"
+  },
+  "protectionProfileLowMemoryDescription": {
+    "message": "Erweiterter Schutz mit sequenzieller Kompilierung und kleineren Caches für leistungsschwache Geräte."
+  },
+  "protectionProfileApply": {
+    "message": "Profil anwenden"
+  },
+  "protectionProfileApplying": {
+    "message": "Schutzprofil wird angewendet…"
+  },
+  "protectionProfileApplied": {
+    "message": "Schutzprofil wurde angewendet."
+  },
+  "protectionProfileApplyFailed": {
+    "message": "Das Schutzprofil konnte nicht angewendet werden."
+  },
+  "protectionProfilePermissionDenied": {
+    "message": "Für dieses Profil ist umfassender Website-Zugriff erforderlich; er wurde nicht gewährt."
+  },
+  "protectionProfileActive": {
+    "message": "Aktiv: $1"
+  },
+  "protectionProfileCustomActive": {
+    "message": "Aktiv: Benutzerdefinierte Einstellungen"
+  },
+  "appearanceSettingsTitle": {
+    "message": "Darstellung und Oberfläche"
+  },
+  "appearanceSettingsDescription": {
+    "message": "Wählen Sie ein festes Design, eine Akzentfarbe, die Informationsdichte und das Popup-Layout."
+  },
+  "appearanceThemeLabel": {
+    "message": "Design"
+  },
+  "appearanceThemeAuto": {
+    "message": "Systemeinstellung verwenden"
+  },
+  "appearanceThemeLight": {
+    "message": "Hell"
+  },
+  "appearanceThemeDark": {
+    "message": "Dunkel"
+  },
+  "appearanceAccentLabel": {
+    "message": "Akzentfarbe"
+  },
+  "appearanceAccentCrimson": {
+    "message": "Karminrot"
+  },
+  "appearanceAccentBlue": {
+    "message": "Blau"
+  },
+  "appearanceAccentEmerald": {
+    "message": "Smaragdgrün"
+  },
+  "appearanceAccentViolet": {
+    "message": "Violett"
+  },
+  "appearanceDensityLabel": {
+    "message": "Dichte"
+  },
+  "appearanceDensityComfortable": {
+    "message": "Komfortabel"
+  },
+  "appearanceDensityCompact": {
+    "message": "Kompakt"
+  },
+  "appearancePopupLayoutLabel": {
+    "message": "Popup-Layout"
+  },
+  "appearancePopupPower": {
+    "message": "Power (vollständige Steuerelemente)"
+  },
+  "appearancePopupCompact": {
+    "message": "Kompakt"
+  },
+  "appearanceSettingsSaved": {
+    "message": "Oberflächeneinstellungen wurden gespeichert."
+  },
+  "appearanceSettingsSaveFailed": {
+    "message": "Die Oberflächeneinstellungen konnten nicht gespeichert werden."
+  },
+  "siteRulesTitle": {
+    "message": "Steuerung pro Website"
+  },
+  "siteRulesDescription": {
+    "message": "Verwalten Sie vertrauenswürdige Websites, Filterstufen und intelligente Popup-Regeln, ohne den internen Speicher zu bearbeiten."
+  },
+  "popupPolicyManagerTitle": {
+    "message": "Popup-Regeln"
+  },
+  "popupPolicyManagerDescription": {
+    "message": "Ausnahmen für exakte Hostnamen der intelligenten Popup-Engine. Kompilierte Filterlistenregeln behalten Vorrang."
+  },
+  "popupPolicyHostnameLabel": {
+    "message": "Hostname"
+  },
+  "popupPolicyHostnamePlaceholder": {
+    "message": "example.com"
+  },
+  "popupPolicyModeLabel": {
+    "message": "Richtlinie"
+  },
+  "popupPolicyActionsLabel": {
+    "message": "Aktionen"
+  },
+  "popupPolicyAdd": {
+    "message": "Regel hinzufügen"
+  },
+  "popupPolicyRemove": {
+    "message": "Entfernen"
+  },
+  "popupPolicyEmpty": {
+    "message": "Keine websitespezifischen Popup-Regeln."
+  },
+  "popupPolicySaved": {
+    "message": "Popup-Regel gespeichert."
+  },
+  "popupPolicyRemoved": {
+    "message": "Popup-Regel entfernt."
+  },
+  "popupPolicySaveFailed": {
+    "message": "Popup-Regel konnte nicht gespeichert werden."
+  },
+  "popupPolicyInvalidHostname": {
+    "message": "Gültigen Hostnamen wie example.com eingeben."
+  },
+  "filteringSiteRulesTitle": {
+    "message": "Filterstufe nach Website"
+  },
+  "filteringSiteRulesDescription": {
+    "message": "Ein Hostname pro Zeile. „Keine Filterung“ ist die Liste vertrauenswürdiger Websites; ein Hostname darf nur in einer Stufe vorkommen."
+  },
+  "saveSiteRules": {
+    "message": "Website-Regeln speichern"
+  },
+  "siteRulesSaved": {
+    "message": "Website-Regeln wurden gespeichert."
+  },
+  "siteRulesInvalid": {
+    "message": "Die Website-Regeln enthalten einen ungültigen oder doppelten Hostnamen."
+  },
+  "siteRulesLoadFailed": {
+    "message": "Die Website-Regeln konnten nicht geladen werden."
+  },
+  "diagnosticsTitle": {
+    "message": "Laufzeitdiagnose"
+  },
+  "diagnosticsDescription": {
+    "message": "Prüfen Sie die tatsächlich verwendete MV3-Engine, Browserfunktionen, Quota-Grenzen, das Speicherbudget und die letzten Popup-Entscheidungen."
+  },
+  "diagnosticsRefresh": {
+    "message": "Diagnose aktualisieren"
+  },
+  "diagnosticsLoadFailed": {
+    "message": "Die Laufzeitdiagnose konnte nicht geladen werden."
+  },
+  "runtimeCapabilitiesTitle": {
+    "message": "Laufzeitfunktionen"
+  },
+  "diagnosticsNetworkEngine": {
+    "message": "Netzwerk-Engine"
+  },
+  "diagnosticsInstallType": {
+    "message": "Installationstyp"
+  },
+  "diagnosticsPopupObservation": {
+    "message": "Intelligente Popup-Überwachung"
+  },
+  "diagnosticsUserScripts": {
+    "message": "Userscript-Filter"
+  },
+  "diagnosticsOffscreenCompiler": {
+    "message": "Offscreen-Compiler"
+  },
+  "diagnosticsStaticRules": {
+    "message": "Verfügbare statische Regeln"
+  },
+  "diagnosticsDynamicRules": {
+    "message": "Obergrenze dynamischer Regeln"
+  },
+  "diagnosticsSessionRules": {
+    "message": "Obergrenze der Sitzungsregeln"
+  },
+  "diagnosticsRegexRules": {
+    "message": "Obergrenze der Regex-Regeln"
+  },
+  "diagnosticsAvailable": {
+    "message": "Verfügbar"
+  },
+  "diagnosticsUnavailable": {
+    "message": "Nicht verfügbar"
+  },
+  "performanceDetailsTitle": {
+    "message": "Wirksames Leistungsbudget"
+  },
+  "performanceSelectedProfile": {
+    "message": "Ausgewähltes Profil"
+  },
+  "performanceEffectiveProfile": {
+    "message": "Wirksames Profil"
+  },
+  "performanceDeviceMemory": {
+    "message": "Erkannter Gerätespeicher"
+  },
+  "performanceCompileConcurrency": {
+    "message": "Parallelität der Import-Kompilierung"
+  },
+  "performanceCacheEntries": {
+    "message": "Einträge im CSS-Cache"
+  },
+  "performanceCacheHighWatermark": {
+    "message": "Höchststand des CSS-Caches"
+  },
+  "performancePruneInterval": {
+    "message": "Intervall für Cache-Bereinigung"
+  },
+  "performanceMinutes": {
+    "message": "$1 Min."
+  },
+  "performanceRetainMetadata": {
+    "message": "Skript-Metadaten beibehalten"
+  },
+  "popupDiagnosticsTitle": {
+    "message": "Letzte Popup-Entscheidungen"
+  },
+  "popupDiagnosticsDescription": {
+    "message": "Begrenztes, nur lokal gespeichertes Entscheidungsprotokoll. URLs, Pfade, Abfragen und Zugangsdaten werden nicht gespeichert."
+  },
+  "popupDiagnosticsClear": {
+    "message": "Verlauf löschen"
+  },
+  "popupDiagnosticsCleared": {
+    "message": "Popup-Verlauf gelöscht."
+  },
+  "popupDiagnosticsClearFailed": {
+    "message": "Popup-Verlauf konnte nicht gelöscht werden."
+  },
+  "popupDiagnosticsEmpty": {
+    "message": "In dieser Browsersitzung wurden keine Popup-Entscheidungen aufgezeichnet."
+  },
+  "diagnosticTime": {
+    "message": "Zeit"
+  },
+  "diagnosticAction": {
+    "message": "Aktion"
+  },
+  "diagnosticSource": {
+    "message": "Quelle"
+  },
+  "diagnosticTarget": {
+    "message": "Ziel"
+  },
+  "diagnosticReason": {
+    "message": "Grund"
+  },
+  "popupPowerEdition": {
+    "message": "Power-Ausgabe"
+  },
+  "popupPowerToggle": {
+    "message": "Schutz für diese Website umschalten"
+  },
+  "popupReloadPage": {
+    "message": "Diese Seite neu laden"
+  },
+  "popupProtectionOn": {
+    "message": "Schutz ist aktiv"
+  },
+  "popupProtectionOff": {
+    "message": "Schutz ist aus"
+  },
+  "popupCapabilitySummary": {
+    "message": "Übersicht der Schutzfunktionen"
+  },
+  "popupCapabilityNetwork": {
+    "message": "Netzwerkfilterung"
+  },
+  "popupCapabilityExtended": {
+    "message": "Erweiterte Filterung"
+  },
+  "popupCapabilityPopups": {
+    "message": "Intelligente Popups"
+  },
+  "popupCapabilityLists": {
+    "message": "Aktive Listen"
+  },
+  "popupCapabilityActive": {
+    "message": "Aktiv"
+  },
+  "popupCapabilityInactive": {
+    "message": "Inaktiv"
+  },
+  "popupSiteControls": {
+    "message": "Website-Steuerung"
+  },
+  "popupQuickTools": {
+    "message": "Schnellwerkzeuge"
+  },
+  "popupMatchedRules": {
+    "message": "Zuletzt passende Regeln"
+  },
+  "popupRecentBlocks": {
+    "message": "$1 kürzlich blockierte Popups"
   }
 }

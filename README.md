@@ -27,7 +27,7 @@
 uBlock Plus+ is an independent, GPL-licensed content blocker for Chromium MV3. It combines a proven upstream filtering/compiler foundation with a community Filter Store, portable configuration, explicit power-user controls and memory-conscious operation—without a project telemetry service or remote executable code.
 
 > [!IMPORTANT]
-> **Release status:** v1.0.0 is a pre-release for manual sideloading and does not auto-update. uBlock Plus+ is not an official uBlock Origin or uBO Lite release and is not endorsed by Raymond Hill. Chrome MV3 does not expose every blocking primitive available to the original MV2 extension. Sideloading avoids Chrome Web Store distribution policy, but it does **not** remove DNR quotas, service-worker lifecycle rules or browser security boundaries. See the [honest compatibility matrix](docs/FEATURE-MATRIX.md).
+> **Release status:** v1.0.0 is a pre-release for manual sideloading and does not auto-update. uBlock Plus+ is an independent fork, not an official uBlock Origin release, and is not endorsed by Raymond Hill. Chrome MV3 does not expose every blocking primitive available to the original MV2 extension. Sideloading avoids Chrome Web Store distribution policy, but it does **not** remove DNR quotas, service-worker lifecycle rules or browser security boundaries. See the [honest compatibility matrix](docs/FEATURE-MATRIX.md).
 
 ## Built around your choices
 
@@ -275,7 +275,7 @@ The repository preserves upstream Git history and keeps [`gorhill/uBlock`](https
 
 ## Credits and license
 
-uBlock Plus+ is a derivative work based on [uBlock Origin](https://github.com/gorhill/uBlock) and its MV3/uBO Lite implementation. Copyright, source headers, author history and third-party attributions are preserved. See [NOTICE.md](NOTICE.md).
+uBlock Plus+ is a derivative work based on [uBlock Origin](https://github.com/gorhill/uBlock) and inherited upstream MV3 components. Copyright, source headers, author history and third-party attributions are preserved. See [NOTICE.md](NOTICE.md).
 
 Released under the [GNU General Public License v3.0 or later](LICENSE.txt).
 

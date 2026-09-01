@@ -1,7 +1,9 @@
 /*******************************************************************************
 
-    uBlock Origin Lite - a comprehensive, MV3-compliant content blocker
+    uBlock Plus+ - an original-first MV3 fork
+    Based on uBlock Origin upstream sources
     Copyright (C) 2022-present Raymond Hill
+    Modifications Copyright (C) 2026-present uBlock Plus+ contributors
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -127,8 +129,8 @@ import {
     getMatchedRules,
     isSideloaded,
     toggleDeveloperMode,
-    ubolErr,
-    ubolLog,
+    ublockPlusErr,
+    ublockPlusLog,
 } from './debug.js';
 
 import {
@@ -168,7 +170,7 @@ import { toggleToolbarIcon } from './action.js';
 
 /******************************************************************************/
 
-const UBOL_ORIGIN = runtime.getURL('').replace(/\/$/, '').toLowerCase();
+const UBLOCK_PLUS_ORIGIN = runtime.getURL('').replace(/\/$/, '').toLowerCase();
 const canShowBlockedCount = typeof dnr.setExtensionActionOptions === 'function';
 const COMPILED_FILTERS_DIRTY_KEY = 'compiledFilters.dirtySources';
 const COMPILED_FILTERS_RETRY_JOB = 'retryCompiledFilters';
@@ -207,7 +209,7 @@ async function getStockPopupSnapshot() {
             sources.push({ id, observer });
         }
         if ( declaredFilterCount > MAX_ACTIVE_STOCK_POPUP_FILTERS ) {
-            ubolErr(
+            ublockPlusErr(
                 `Stock popup observer suppressed: ` +
                 `${declaredFilterCount}/${MAX_ACTIVE_STOCK_POPUP_FILTERS} ` +
                 `active filters`
@@ -230,11 +232,11 @@ async function getStockPopupSnapshot() {
                 }
                 return corpus.filters;
             } catch ( reason ) {
-                ubolErr(`Stock popup corpus ${source.id}/${reason}`);
+                ublockPlusErr(`Stock popup corpus ${source.id}/${reason}`);
             }
         }));
         if ( corpora.some(filters => Array.isArray(filters) === false) ) {
-            ubolErr('Stock popup observer suppressed: incomplete corpus set');
+            ublockPlusErr('Stock popup observer suppressed: incomplete corpus set');
             return { key, filters: [], suppressed: true };
         }
         return {
@@ -242,7 +244,7 @@ async function getStockPopupSnapshot() {
             filters: corpora.flat(),
         };
     })().catch(reason => {
-        ubolErr(`Stock popup observer unavailable/${reason}`);
+        ublockPlusErr(`Stock popup observer unavailable/${reason}`);
         return { key, filters: [], suppressed: true };
     });
     stockPopupSnapshotCache = { key, promise };
@@ -306,7 +308,7 @@ const popupBlocker = createPopupBlocker({
     sessionWrite,
     supportsNavigationTargetContext: supportsPopupNavigationTarget,
     isEnabled: ( ) => rulesetConfig.popupBlockMode === true,
-    log: message => ubolLog(message),
+    log: message => ublockPlusLog(message),
 });
 
 function enqueueFilteringMutation(task) {
@@ -478,7 +480,7 @@ async function activateCompiledFilterRulesNow(options = {}) {
     if ( options.retainPreviousGeneration !== true &&
         previousGeneration !== generation ) {
         removeCompiledGeneration(previousGeneration)
-            .catch(reason => ubolErr(`removeCompiledGeneration/${reason}`));
+            .catch(reason => ublockPlusErr(`removeCompiledGeneration/${reason}`));
     }
     return {
         ...result,
@@ -495,7 +497,7 @@ async function recordCompiledFilterWarnings(warnings) {
             recordedAt: Date.now(),
             messages: warnings.slice(0, 50),
         }).catch(reason => {
-            ubolErr(`compiledFilterWarnings/${reason}`);
+            ublockPlusErr(`compiledFilterWarnings/${reason}`);
         });
     } else {
         await localRemove(COMPILED_FILTER_WARNINGS_KEY).catch(( ) => { });
@@ -553,7 +555,7 @@ async function mutateCompiledFilterSources(flags, mutation) {
         return result;
     } catch ( reason ) {
         await scheduleCompiledFilterRetry().catch(retryReason => {
-            ubolErr(`scheduleCompiledFilterRetry/${retryReason}`);
+            ublockPlusErr(`scheduleCompiledFilterRetry/${retryReason}`);
         });
         throw reason;
     }
@@ -563,9 +565,9 @@ async function retryDirtyCompiledFilterSourcesNow() {
     try {
         return await flushDirtyCompiledFilterSourcesNow();
     } catch ( reason ) {
-        ubolErr(`retryDirtyCompiledFilterSources/${reason}`);
+        ublockPlusErr(`retryDirtyCompiledFilterSources/${reason}`);
         await scheduleCompiledFilterRetry().catch(retryReason => {
-            ubolErr(`scheduleCompiledFilterRetry/${retryReason}`);
+            ublockPlusErr(`scheduleCompiledFilterRetry/${retryReason}`);
         });
         return false;
     }
@@ -704,7 +706,7 @@ async function applyRulesetsNow(rulesets, options = {}) {
         transactionCommitted = true;
         if ( activationResult ) {
             await localRemove(PENDING_COMPILED_ACTIVATION_KEY).catch(reason => {
-                ubolErr(`finalizeCompiledActivation/${reason}`);
+                ublockPlusErr(`finalizeCompiledActivation/${reason}`);
             });
         }
     } catch ( reason ) {
@@ -727,7 +729,7 @@ async function applyRulesetsNow(rulesets, options = {}) {
         cleanupCommittedImportedListUpdates(
             activationResult.importedListUpdates || []
         ).catch(reason => {
-            ubolErr(`cleanupImportedListMetadata/${reason}`);
+            ublockPlusErr(`cleanupImportedListMetadata/${reason}`);
         });
         recordCompiledFilterWarnings(activationResult.errors || []);
     }
@@ -735,7 +737,7 @@ async function applyRulesetsNow(rulesets, options = {}) {
     if ( activationResult &&
         activationResult.previousGeneration !== activationResult.generation ) {
         removeCompiledGeneration(activationResult.previousGeneration)
-            .catch(reason => ubolErr(`removeCompiledGeneration/${reason}`));
+            .catch(reason => ublockPlusErr(`removeCompiledGeneration/${reason}`));
     }
     broadcastMessage({ enabledRulesets: rulesetConfig.enabledRulesets });
     return {
@@ -970,7 +972,7 @@ async function onMessage(request, sender) {
             origin: 'USER',
             target: { tabId, frameIds: [ frameId ] },
         }).catch(reason => {
-            ubolErr(`insertCSS/${reason}`);
+            ublockPlusErr(`insertCSS/${reason}`);
         });
 
     case 'removeCSS':
@@ -982,7 +984,7 @@ async function onMessage(request, sender) {
             origin: 'USER',
             target: { tabId, frameIds: [ frameId ] },
         }).catch(reason => {
-            ubolErr(`removeCSS/${reason}`);
+            ublockPlusErr(`removeCSS/${reason}`);
         });
 
     case 'injectCSSProceduralAPI':
@@ -991,7 +993,7 @@ async function onMessage(request, sender) {
             target: { tabId, frameIds: [ frameId ] },
             injectImmediately: true,
         }).catch(reason => {
-            ubolErr(`executeScript/${reason}`);
+            ublockPlusErr(`executeScript/${reason}`);
         });
 
     default:
@@ -1040,7 +1042,7 @@ async function onMessage(request, sender) {
     // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/runtime/MessageSender
     //   Firefox API does not set `sender.origin`
     const isTrustedOrigin = sender?.origin === undefined ||
-        sender.origin.toLowerCase() === UBOL_ORIGIN;
+        sender.origin.toLowerCase() === UBLOCK_PLUS_ORIGIN;
     if ( isTrustedOrigin === false ) { return; }
 
     switch ( request.what ) {
@@ -1215,7 +1217,12 @@ async function onMessage(request, sender) {
             adminReadEx('disabledFeatures'),
             hasCustomFilters(request.hostname),
             popupBlocker.getPolicies(request.hostname),
+            popupBlocker.getDiagnostics(),
+            getDefaultFilteringMode(),
         ]);
+        const recentPopupBlocks = results[5].filter(entry =>
+            entry.action === 'blocked' || entry.action === 'block-failed'
+        ).length;
         return {
             hasOmnipotence: results[0],
             level: results[1],
@@ -1226,6 +1233,9 @@ async function onMessage(request, sender) {
             hasCustomFilters: results[3],
             popupPolicy: results[4].effective,
             popupBlockMode: rulesetConfig.popupBlockMode,
+            recentPopupBlocks,
+            defaultFilteringMode: results[6],
+            enabledRulesetCount: rulesetConfig.enabledRulesets.length,
         };
     }
 
@@ -1486,7 +1496,7 @@ async function startSession() {
     // The default rulesets may have changed, find out new ruleset to enable,
     // obsolete ruleset to remove.
     if ( isNewVersion ) {
-        ubolLog(`Version change: ${rulesetConfig.version} => ${currentVersion}`);
+        ublockPlusLog(`Version change: ${rulesetConfig.version} => ${currentVersion}`);
         rulesetConfig.version = currentVersion;
         await patchDefaultRulesets();
         saveRulesetConfig();
@@ -1508,7 +1518,7 @@ async function startSession() {
     // "[Dynamic] rules persist across sessions and extension updates"
     // "[Session] rules do not persist across browser sessions"
     if ( rulesetEnableError ) {
-        ubolErr(`startSession/ruleset enable/${rulesetEnableError}`);
+        ublockPlusErr(`startSession/ruleset enable/${rulesetEnableError}`);
     }
     // enableRulesets() already rebuilt both dynamic and session namespaces
     // when its stock selection changed. Avoid a second serialized rewrite.
@@ -1517,7 +1527,7 @@ async function startSession() {
             ? await updateDynamicAndSessionRules()
             : await updateSessionRules();
         if ( dnrRefreshResult?.error ) {
-            ubolErr(`startSession/DNR refresh/${dnrRefreshResult.error}`);
+            ublockPlusErr(`startSession/DNR refresh/${dnrRefreshResult.error}`);
         }
     }
 
@@ -1565,7 +1575,7 @@ async function startSession() {
         });
     }
 
-    // Switch to basic filtering if uBOL doesn't have broad permissions at
+    // Switch to basic filtering if uBlock Plus+ doesn't have broad permissions at
     // install time.
     if ( process.firstRun ) {
         const enableOptimal = await hasBroadHostPermissions();
@@ -1640,7 +1650,7 @@ const isFullyInitialized = start().then(( ) => {
     localRemove('goodStart');
     return false;
 }).catch(reason => {
-    ubolErr(reason);
+    ublockPlusErr(reason);
     if ( process.wakeupRun ) { return; }
     return localRead('goodStart').then(goodStart => {
         if ( goodStart === false ) {
@@ -1658,7 +1668,7 @@ runtime.onMessage.addListener((request, sender, callback) => {
     if ( typeof request?.what !== 'string' ) { return; }
     if ( request.what.includes(':') ) { return; }
     onMessage(request, sender).then(callback, reason => {
-        ubolErr(`onMessage/${request.what}/${reason}`);
+        ublockPlusErr(`onMessage/${request.what}/${reason}`);
         callback({ __ublockPlusError: reason?.message || `${reason}` });
     });
     return true;
@@ -1666,12 +1676,12 @@ runtime.onMessage.addListener((request, sender, callback) => {
 
 if ( supportsUserScripts() && runtime.onUserScriptMessage ) {
     browser.userScripts.configureWorld({ messaging: true }).catch(reason => {
-        ubolErr(`configureUserScriptWorld/${reason}`);
+        ublockPlusErr(`configureUserScriptWorld/${reason}`);
     });
     runtime.onUserScriptMessage.addListener((request, sender, callback) => {
         if ( typeof request?.what !== 'string' ) { return; }
         onMessage(request, sender).then(callback, reason => {
-            ubolErr(`onUserScriptMessage/${request.what}/${reason}`);
+            ublockPlusErr(`onUserScriptMessage/${request.what}/${reason}`);
             callback({ __ublockPlusError: reason?.message || `${reason}` });
         });
         return true;
@@ -1682,7 +1692,7 @@ browser.permissions.onRemoved.addListener((...args) => {
     isFullyInitialized.then(( ) => {
         return onPermissionsChanged('removed', ...args);
     }).catch(reason => {
-        ubolErr(`permissionsRemoved/${reason}`);
+        ublockPlusErr(`permissionsRemoved/${reason}`);
     });
 });
 
@@ -1690,7 +1700,7 @@ browser.permissions.onAdded.addListener((...args) => {
     isFullyInitialized.then(( ) => {
         return onPermissionsChanged('added', ...args);
     }).catch(reason => {
-        ubolErr(`permissionsAdded/${reason}`);
+        ublockPlusErr(`permissionsAdded/${reason}`);
     });
 });
 
@@ -1698,7 +1708,7 @@ browser.commands.onCommand.addListener((...args) => {
     isFullyInitialized.then(( ) => {
         return onCommand(...args);
     }).catch(reason => {
-        ubolErr(`onCommand/${reason}`);
+        ublockPlusErr(`onCommand/${reason}`);
     });
 });
 
@@ -1707,12 +1717,12 @@ browser.tabs.onCreated.addListener(tab => {
     // Capture transient provenance immediately, but do not evaluate until the
     // global ruleset configuration and recovery journals are hydrated.
     const openerTabPromise = browser.tabs.get(tab.openerTabId).catch(reason => {
-        ubolErr(`popupOpenerSnapshot/${reason}`);
+        ublockPlusErr(`popupOpenerSnapshot/${reason}`);
     });
     isFullyInitialized.then(( ) => {
         return popupBlocker.onTabCreated(tab, openerTabPromise);
     }).catch(reason => {
-        ubolErr(`popupTabCreated/${reason}`);
+        ublockPlusErr(`popupTabCreated/${reason}`);
     });
 });
 
@@ -1720,13 +1730,13 @@ browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     isFullyInitialized.then(( ) => {
         return popupBlocker.onTabUpdated(tabId, changeInfo, tab);
     }).catch(reason => {
-        ubolErr(`popupTabUpdated/${reason}`);
+        ublockPlusErr(`popupTabUpdated/${reason}`);
     });
 });
 
 browser.tabs.onRemoved.addListener(tabId => {
     popupBlocker.onTabRemoved(tabId).catch(reason => {
-        ubolErr(`popupTabRemoved/${reason}`);
+        ublockPlusErr(`popupTabRemoved/${reason}`);
     });
 });
 
@@ -1736,7 +1746,7 @@ if ( supportsPopupNavigationTarget ) {
             details.sourceTabId,
             details.sourceFrameId
         ).catch(reason => {
-            ubolErr(`popupSourceSnapshot/${reason}`);
+            ublockPlusErr(`popupSourceSnapshot/${reason}`);
         });
         isFullyInitialized.then(( ) => {
             return popupBlocker.onNavigationTarget(
@@ -1744,7 +1754,7 @@ if ( supportsPopupNavigationTarget ) {
                 sourceContextPromise
             );
         }).catch(reason => {
-            ubolErr(`popupNavigationTarget/${reason}`);
+            ublockPlusErr(`popupNavigationTarget/${reason}`);
         });
     });
 }
@@ -1760,6 +1770,6 @@ browser.alarms.onAlarm.addListener(alarm => {
     }).catch(reason => {
         // Failed jobs remain durably leased for retry; consume the rejection
         // here so the service worker does not report an unhandled promise.
-        ubolErr(`processDueJobs/${reason}`);
+        ublockPlusErr(`processDueJobs/${reason}`);
     });
 });

@@ -551,12 +551,24 @@
     "message": "开启后，匹配的过滤器将自动关闭网站创建的不需要的浏览器标签页。",
     "description": "Short description for a checkbox in the options page"
   },
-  "popupPolicyLabel": { "message": "此主机名的弹出窗口策略" },
-  "popupPolicyDefault": { "message": "默认（智能）" },
-  "popupPolicyAllow": { "message": "允许" },
-  "popupPolicySmart": { "message": "智能" },
-  "popupPolicyStrict": { "message": "严格" },
-  "popupPolicyDescription": { "message": "仅应用于此精确主机名。允许/智能仅影响上下文检查；匹配过滤器列表规则的窗口仍会立即关闭。严格模式要求可信操作和直接相关的主机名。" },
+  "popupPolicyLabel": {
+    "message": "此主机名的弹出窗口策略"
+  },
+  "popupPolicyDefault": {
+    "message": "默认（智能）"
+  },
+  "popupPolicyAllow": {
+    "message": "允许"
+  },
+  "popupPolicySmart": {
+    "message": "智能"
+  },
+  "popupPolicyStrict": {
+    "message": "严格"
+  },
+  "popupPolicyDescription": {
+    "message": "仅应用于此精确主机名。允许/智能仅影响上下文检查；匹配过滤器列表规则的窗口仍会立即关闭。严格模式要求可信操作和直接相关的主机名。"
+  },
   "sandboxEditorLabel": {
     "message": "过滤器创建沙盒",
     "description": "Header for filter-creation section in the dashboard"
@@ -728,5 +740,356 @@
   "unpickerUsage": {
     "message": "选择下面的过滤器以突出显示网页中匹配的元素。点击垃圾桶可移除过滤器。",
     "description": "Summary description on how to use the tool to remove custom filters"
+  },
+  "myFiltersPageName": {
+    "message": "我的过滤器"
+  },
+  "siteRulesPageName": {
+    "message": "网站规则"
+  },
+  "diagnosticsPageName": {
+    "message": "诊断"
+  },
+  "advancedPageName": {
+    "message": "高级"
+  },
+  "powerConsoleTitle": {
+    "message": "Power 控制台"
+  },
+  "powerConsoleDescription": {
+    "message": "采用原版风格的控制方式，并提供 Plus+ 配置、外观、网站规则、智能弹窗防护、性能和运行时诊断。"
+  },
+  "powerSettingsLoadFailed": {
+    "message": "无法加载 Power 设置。"
+  },
+  "protectionProfilesTitle": {
+    "message": "防护配置"
+  },
+  "protectionProfilesDescription": {
+    "message": "应用一套完整且可恢复的配置，或继续逐项调整下方设置。"
+  },
+  "protectionProfileBaseline": {
+    "message": "基础"
+  },
+  "protectionProfileBaselineDescription": {
+    "message": "无需广泛网站访问权限的网络过滤；弹窗防护保持启用。"
+  },
+  "protectionProfileBalanced": {
+    "message": "均衡"
+  },
+  "protectionProfileBalancedDescription": {
+    "message": "高级过滤、严格导航拦截和自动内存选择。"
+  },
+  "protectionProfileMaximum": {
+    "message": "最高"
+  },
+  "protectionProfileMaximumDescription": {
+    "message": "完整扩展过滤、严格导航和均衡性能预算。"
+  },
+  "protectionProfileLowMemory": {
+    "message": "低内存"
+  },
+  "protectionProfileLowMemoryDescription": {
+    "message": "为低配置设备提供串行编译和更小缓存的高级防护。"
+  },
+  "protectionProfileApply": {
+    "message": "应用配置"
+  },
+  "protectionProfileApplying": {
+    "message": "正在应用防护配置…"
+  },
+  "protectionProfileApplied": {
+    "message": "已应用防护配置。"
+  },
+  "protectionProfileApplyFailed": {
+    "message": "无法应用防护配置。"
+  },
+  "protectionProfilePermissionDenied": {
+    "message": "此配置需要广泛的网站访问权限，但权限未获授予。"
+  },
+  "protectionProfileActive": {
+    "message": "当前：$1"
+  },
+  "protectionProfileCustomActive": {
+    "message": "当前：自定义设置"
+  },
+  "appearanceSettingsTitle": {
+    "message": "外观与界面"
+  },
+  "appearanceSettingsDescription": {
+    "message": "选择主题、强调色、信息密度和弹出面板布局。"
+  },
+  "appearanceThemeLabel": {
+    "message": "主题"
+  },
+  "appearanceThemeAuto": {
+    "message": "跟随系统"
+  },
+  "appearanceThemeLight": {
+    "message": "浅色"
+  },
+  "appearanceThemeDark": {
+    "message": "深色"
+  },
+  "appearanceAccentLabel": {
+    "message": "强调色"
+  },
+  "appearanceAccentCrimson": {
+    "message": "绯红"
+  },
+  "appearanceAccentBlue": {
+    "message": "蓝色"
+  },
+  "appearanceAccentEmerald": {
+    "message": "翠绿"
+  },
+  "appearanceAccentViolet": {
+    "message": "紫色"
+  },
+  "appearanceDensityLabel": {
+    "message": "密度"
+  },
+  "appearanceDensityComfortable": {
+    "message": "舒适"
+  },
+  "appearanceDensityCompact": {
+    "message": "紧凑"
+  },
+  "appearancePopupLayoutLabel": {
+    "message": "弹出面板布局"
+  },
+  "appearancePopupPower": {
+    "message": "Power（完整控制）"
+  },
+  "appearancePopupCompact": {
+    "message": "紧凑"
+  },
+  "appearanceSettingsSaved": {
+    "message": "界面设置已保存。"
+  },
+  "appearanceSettingsSaveFailed": {
+    "message": "无法保存界面设置。"
+  },
+  "siteRulesTitle": {
+    "message": "按网站控制"
+  },
+  "siteRulesDescription": {
+    "message": "无需编辑内部存储即可管理可信网站、过滤级别和智能弹窗策略。"
+  },
+  "popupPolicyManagerTitle": {
+    "message": "弹窗策略规则"
+  },
+  "popupPolicyManagerDescription": {
+    "message": "为智能弹窗引擎设置精确主机例外。已编译的过滤器列表规则仍具有优先权。"
+  },
+  "popupPolicyHostnameLabel": {
+    "message": "主机名"
+  },
+  "popupPolicyHostnamePlaceholder": {
+    "message": "example.com"
+  },
+  "popupPolicyModeLabel": {
+    "message": "策略"
+  },
+  "popupPolicyActionsLabel": {
+    "message": "操作"
+  },
+  "popupPolicyAdd": {
+    "message": "添加规则"
+  },
+  "popupPolicyRemove": {
+    "message": "移除"
+  },
+  "popupPolicyEmpty": {
+    "message": "没有按网站设置的弹窗策略。"
+  },
+  "popupPolicySaved": {
+    "message": "弹窗策略已保存。"
+  },
+  "popupPolicyRemoved": {
+    "message": "弹窗策略已移除。"
+  },
+  "popupPolicySaveFailed": {
+    "message": "无法保存弹窗策略。"
+  },
+  "popupPolicyInvalidHostname": {
+    "message": "请输入有效主机名，例如 example.com。"
+  },
+  "filteringSiteRulesTitle": {
+    "message": "按网站设置过滤级别"
+  },
+  "filteringSiteRulesDescription": {
+    "message": "每行一个主机名。“不过滤”即可信网站列表；同一主机名只能出现在一个级别。"
+  },
+  "saveSiteRules": {
+    "message": "保存网站规则"
+  },
+  "siteRulesSaved": {
+    "message": "网站规则已保存。"
+  },
+  "siteRulesInvalid": {
+    "message": "网站规则包含无效或重复的主机名。"
+  },
+  "siteRulesLoadFailed": {
+    "message": "无法加载网站规则。"
+  },
+  "diagnosticsTitle": {
+    "message": "运行时诊断"
+  },
+  "diagnosticsDescription": {
+    "message": "检查实际 MV3 引擎、浏览器能力、配额上限、内存预算及最近的弹窗判定。"
+  },
+  "diagnosticsRefresh": {
+    "message": "刷新诊断"
+  },
+  "diagnosticsLoadFailed": {
+    "message": "无法加载运行时诊断。"
+  },
+  "runtimeCapabilitiesTitle": {
+    "message": "运行时能力"
+  },
+  "diagnosticsNetworkEngine": {
+    "message": "网络引擎"
+  },
+  "diagnosticsInstallType": {
+    "message": "安装类型"
+  },
+  "diagnosticsPopupObservation": {
+    "message": "智能弹窗观察"
+  },
+  "diagnosticsUserScripts": {
+    "message": "用户脚本过滤器"
+  },
+  "diagnosticsOffscreenCompiler": {
+    "message": "离屏编译器"
+  },
+  "diagnosticsStaticRules": {
+    "message": "可用静态规则"
+  },
+  "diagnosticsDynamicRules": {
+    "message": "动态规则上限"
+  },
+  "diagnosticsSessionRules": {
+    "message": "会话规则上限"
+  },
+  "diagnosticsRegexRules": {
+    "message": "正则规则上限"
+  },
+  "diagnosticsAvailable": {
+    "message": "可用"
+  },
+  "diagnosticsUnavailable": {
+    "message": "不可用"
+  },
+  "performanceDetailsTitle": {
+    "message": "当前性能预算"
+  },
+  "performanceSelectedProfile": {
+    "message": "所选配置"
+  },
+  "performanceEffectiveProfile": {
+    "message": "实际配置"
+  },
+  "performanceDeviceMemory": {
+    "message": "检测到的设备内存"
+  },
+  "performanceCompileConcurrency": {
+    "message": "导入编译并发数"
+  },
+  "performanceCacheEntries": {
+    "message": "CSS 缓存条目"
+  },
+  "performanceCacheHighWatermark": {
+    "message": "CSS 缓存高水位"
+  },
+  "performancePruneInterval": {
+    "message": "缓存清理间隔"
+  },
+  "performanceMinutes": {
+    "message": "$1 分钟"
+  },
+  "performanceRetainMetadata": {
+    "message": "保留脚本元数据"
+  },
+  "popupDiagnosticsTitle": {
+    "message": "最近的弹窗判定"
+  },
+  "popupDiagnosticsDescription": {
+    "message": "仅限本地且有上限的判定日志，不会保留 URL、路径、查询或凭据。"
+  },
+  "popupDiagnosticsClear": {
+    "message": "清除历史"
+  },
+  "popupDiagnosticsCleared": {
+    "message": "弹窗判定历史已清除。"
+  },
+  "popupDiagnosticsClearFailed": {
+    "message": "无法清除弹窗判定历史。"
+  },
+  "popupDiagnosticsEmpty": {
+    "message": "本次浏览器会话尚无弹窗判定。"
+  },
+  "diagnosticTime": {
+    "message": "时间"
+  },
+  "diagnosticAction": {
+    "message": "操作"
+  },
+  "diagnosticSource": {
+    "message": "来源"
+  },
+  "diagnosticTarget": {
+    "message": "目标"
+  },
+  "diagnosticReason": {
+    "message": "原因"
+  },
+  "popupPowerEdition": {
+    "message": "Power 版"
+  },
+  "popupPowerToggle": {
+    "message": "切换此网站的防护"
+  },
+  "popupReloadPage": {
+    "message": "重新加载此页面"
+  },
+  "popupProtectionOn": {
+    "message": "防护已开启"
+  },
+  "popupProtectionOff": {
+    "message": "防护已关闭"
+  },
+  "popupCapabilitySummary": {
+    "message": "防护能力摘要"
+  },
+  "popupCapabilityNetwork": {
+    "message": "网络过滤"
+  },
+  "popupCapabilityExtended": {
+    "message": "扩展过滤"
+  },
+  "popupCapabilityPopups": {
+    "message": "智能弹窗"
+  },
+  "popupCapabilityLists": {
+    "message": "已启用列表"
+  },
+  "popupCapabilityActive": {
+    "message": "运行中"
+  },
+  "popupCapabilityInactive": {
+    "message": "未运行"
+  },
+  "popupSiteControls": {
+    "message": "网站控制"
+  },
+  "popupQuickTools": {
+    "message": "快捷工具"
+  },
+  "popupMatchedRules": {
+    "message": "最近匹配的规则"
+  },
+  "popupRecentBlocks": {
+    "message": "最近拦截 $1 个弹窗"
   }
 }

@@ -27,7 +27,7 @@
 uBlock Plus+는 Chromium MV3용으로 독립 개발되는 GPL 라이선스 콘텐츠 차단기입니다. 검증된 업스트림 필터링/컴파일러 기반에 커뮤니티 Filter Store, 이동 가능한 설정, 명시적인 고급 사용자 제어, 메모리를 고려한 동작을 결합합니다. 프로젝트가 운영하는 텔레메트리 서비스나 원격 실행 코드는 사용하지 않습니다.
 
 > [!IMPORTANT]
-> **릴리스 상태:** v1.0.0은 수동 사이드로드용 사전 릴리스이며 자동으로 업데이트되지 않습니다. uBlock Plus+는 uBlock Origin 또는 uBO Lite의 공식 릴리스가 아니며 Raymond Hill의 보증을 받지 않았습니다. Chrome MV3는 기존 MV2 확장 프로그램에서 사용할 수 있던 모든 차단 기능을 제공하지 않습니다. 사이드로드는 Chrome 웹 스토어의 배포 정책을 피할 수 있지만 DNR 할당량, 서비스 워커 수명 주기 규칙 또는 브라우저 보안 경계를 없애지는 **않습니다**. [솔직한 호환성 표](FEATURE-MATRIX.md)를 확인하세요.
+> **릴리스 상태:** v1.0.0은 수동 사이드로드용 사전 릴리스이며 자동으로 업데이트되지 않습니다. uBlock Plus+는 독립 포크로서 uBlock Origin의 공식 릴리스가 아니며 Raymond Hill의 보증을 받지 않았습니다. Chrome MV3는 기존 MV2 확장 프로그램에서 사용할 수 있던 모든 차단 기능을 제공하지 않습니다. 사이드로드는 Chrome 웹 스토어의 배포 정책을 피할 수 있지만 DNR 할당량, 서비스 워커 수명 주기 규칙 또는 브라우저 보안 경계를 없애지는 **않습니다**. [솔직한 호환성 표](FEATURE-MATRIX.md)를 확인하세요.
 
 ## 사용자의 선택을 중심으로
 
@@ -277,7 +277,7 @@ node tools/validate-mv3.mjs dist/build/uBlockPlus.chromium --release
 
 ## 크레딧 및 라이선스
 
-uBlock Plus+는 [uBlock Origin](https://github.com/gorhill/uBlock)과 그 MV3/uBO Lite 구현을 기반으로 한 파생 저작물입니다. 저작권, 소스 헤더, 작성자 기록, 제3자 저작자 표시는 보존됩니다. [NOTICE.md](../NOTICE.md)를 참고하세요.
+uBlock Plus+는 [uBlock Origin](https://github.com/gorhill/uBlock)과 업스트림에서 상속한 MV3 구성 요소를 기반으로 한 파생 저작물입니다. 저작권, 소스 헤더, 작성자 기록, 제3자 저작자 표시는 보존됩니다. [NOTICE.md](../NOTICE.md)를 참고하세요.
 
 [GNU General Public License v3.0 이상](../LICENSE.txt)에 따라 배포됩니다.
 

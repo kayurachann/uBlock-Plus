@@ -184,16 +184,6 @@
     "homeURL": "https://github.com/uBlockOrigin/uAssets"
   },
   {
-    "id": "ubol-tests",
-    "name": "uBO Lite Test Filters",
-    "enabled": false,
-    "trusted": true,
-    "urls": [
-      "https://ublockorigin.github.io/uBOL-home/tests/test-filters.txt"
-    ],
-    "homeURL": "https://ublockorigin.github.io/uBOL-home/tests/test-filters.html"
-  },
-  {
     "id": "alb-0",
     "group": "regions",
     "lang": "sq",
