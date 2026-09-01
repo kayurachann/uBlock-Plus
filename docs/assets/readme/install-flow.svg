@@ -1,0 +1,114 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="460" viewBox="0 0 1200 460" role="img" aria-labelledby="title desc">
+  <title id="title">Install uBlock Plus+ in four sideloading steps</title>
+  <desc id="desc">Download and extract the release, verify its SHA-256 checksum, enable Developer mode and choose Load unpacked, then enable Allow User Scripts if the browser shows that option.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#071426"/>
+      <stop offset="0.58" stop-color="#0b1d33"/>
+      <stop offset="1" stop-color="#092833"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#22d3ee"/>
+      <stop offset="1" stop-color="#34d399"/>
+    </linearGradient>
+    <pattern id="grid" width="28" height="28" patternUnits="userSpaceOnUse">
+      <path d="M 28 0 L 0 0 0 28" fill="none" stroke="#8ca3bd" stroke-opacity="0.05" stroke-width="1"/>
+    </pattern>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
+      <path d="M1 1l7 4-7 4z" fill="#67e8f9"/>
+    </marker>
+    <style>
+      .text { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .heading { fill: #f8fafc; font-size: 28px; font-weight: 750; letter-spacing: -.35px; }
+      .subheading { fill: #b9c8da; font-size: 15px; font-weight: 450; }
+      .step-title { fill: #f8fafc; font-size: 18px; font-weight: 700; }
+      .step-copy { fill: #b9c8da; font-size: 13px; font-weight: 450; }
+      .step-number { fill: #061827; font-size: 14px; font-weight: 850; text-anchor: middle; dominant-baseline: central; }
+      .note { fill: #d1fae5; font-size: 12px; font-weight: 650; }
+      .eyebrow { fill: #67e8f9; font-size: 12px; font-weight: 700; letter-spacing: 1.4px; }
+    </style>
+  </defs>
+
+  <rect width="1200" height="460" rx="28" fill="url(#background)"/>
+  <rect width="1200" height="460" rx="28" fill="url(#grid)"/>
+  <circle cx="1120" cy="40" r="125" fill="#22d3ee" opacity="0.055"/>
+  <circle cx="45" cy="430" r="135" fill="#34d399" opacity="0.045"/>
+
+  <g class="text">
+    <text x="56" y="58" class="eyebrow">SIDELOAD IN FOUR STEPS</text>
+    <text x="56" y="96" class="heading">Install uBlock Plus+ on Chromium</text>
+    <text x="56" y="125" class="subheading">Keep the extracted folder in a permanent location after loading it.</text>
+
+    <!-- Progress rail -->
+    <path d="M254 272H293" fill="none" stroke="url(#accent)" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+    <path d="M547 272H586" fill="none" stroke="url(#accent)" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+    <path d="M840 272H879" fill="none" stroke="url(#accent)" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+
+    <!-- Step 1 -->
+    <g>
+      <rect x="56" y="168" width="198" height="208" rx="20" fill="#0e223a" stroke="#2d5875" stroke-width="1.5"/>
+      <circle cx="86" cy="198" r="16" fill="#67e8f9"/>
+      <text x="86" y="198" class="step-number">1</text>
+      <path d="M139 211v-28m-11 18 11 11 11-11m-28 20h34" fill="none" stroke="#67e8f9" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="80" y="258" class="step-title">Download &amp; extract</text>
+      <text x="80" y="284" class="step-copy">Get the release ZIP</text>
+      <text x="80" y="304" class="step-copy">from GitHub, then extract</text>
+      <text x="80" y="324" class="step-copy">it to a permanent folder.</text>
+      <rect x="80" y="341" width="98" height="24" rx="12" fill="#10394a"/>
+      <text x="129" y="357" text-anchor="middle" class="note" fill="#cffafe">Release ZIP</text>
+    </g>
+
+    <!-- Step 2 -->
+    <g>
+      <rect x="349" y="168" width="198" height="208" rx="20" fill="#0e223a" stroke="#2d5875" stroke-width="1.5"/>
+      <circle cx="379" cy="198" r="16" fill="#67e8f9"/>
+      <text x="379" y="198" class="step-number">2</text>
+      <path d="M414 186h42v36h-42z" fill="none" stroke="#67e8f9" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="M422 195h25m-25 8h25m-25 8h15" stroke="#67e8f9" stroke-width="2" stroke-linecap="round"/>
+      <path d="M445 218l5 5 10-12" fill="none" stroke="#6ee7b7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="373" y="258" class="step-title">Verify SHA-256</text>
+      <text x="373" y="284" class="step-copy">Compare the archive hash</text>
+      <text x="373" y="304" class="step-copy">with the published checksum</text>
+      <text x="373" y="324" class="step-copy">before installing.</text>
+      <rect x="373" y="341" width="116" height="24" rx="12" fill="#123c37"/>
+      <text x="431" y="357" text-anchor="middle" class="note">Integrity check</text>
+    </g>
+
+    <!-- Step 3 -->
+    <g>
+      <rect x="642" y="168" width="198" height="208" rx="20" fill="#0e2733" stroke="#327a67" stroke-width="1.5"/>
+      <circle cx="672" cy="198" r="16" fill="#6ee7b7"/>
+      <text x="672" y="198" class="step-number">3</text>
+      <rect x="708" y="184" width="46" height="36" rx="5" fill="none" stroke="#6ee7b7" stroke-width="2.5"/>
+      <circle cx="716" cy="192" r="2" fill="#fb7185"/>
+      <circle cx="723" cy="192" r="2" fill="#facc15"/>
+      <path d="M716 205h30" stroke="#6ee7b7" stroke-width="2" stroke-linecap="round"/>
+      <path d="M731 211v-12m-5 5 5-5 5 5" fill="none" stroke="#6ee7b7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="666" y="258" class="step-title">Load unpacked</text>
+      <text x="666" y="284" class="step-copy">Open the extensions page,</text>
+      <text x="666" y="304" class="step-copy">enable Developer mode, then</text>
+      <text x="666" y="324" class="step-copy">select the extracted folder.</text>
+      <rect x="666" y="341" width="139" height="24" rx="12" fill="#123c37"/>
+      <text x="735.5" y="357" text-anchor="middle" class="note">Developer mode</text>
+    </g>
+
+    <!-- Step 4 -->
+    <g>
+      <rect x="935" y="168" width="209" height="208" rx="20" fill="#0e2733" stroke="url(#accent)" stroke-width="2"/>
+      <circle cx="965" cy="198" r="16" fill="#6ee7b7"/>
+      <text x="965" y="198" class="step-number">4</text>
+      <rect x="1004" y="188" width="49" height="25" rx="12.5" fill="#123c37" stroke="#6ee7b7" stroke-width="2"/>
+      <circle cx="1040" cy="200.5" r="8" fill="#a7f3d0"/>
+      <text x="959" y="258" class="step-title">Allow User Scripts</text>
+      <text x="959" y="284" class="step-copy">In extension details, enable</text>
+      <text x="959" y="304" class="step-copy">the toggle if your browser</text>
+      <text x="959" y="324" class="step-copy">shows this option.</text>
+      <rect x="959" y="341" width="101" height="24" rx="12" fill="#123c37"/>
+      <text x="1009.5" y="357" text-anchor="middle" class="note">If shown</text>
+    </g>
+
+    <rect x="56" y="404" width="1088" height="1" fill="url(#accent)" opacity="0.45"/>
+    <text x="56" y="431" class="subheading">Chrome: chrome://extensions  ·  Edge: edge://extensions</text>
+    <text x="1144" y="431" text-anchor="end" class="note">No Store account required</text>
+  </g>
+</svg>

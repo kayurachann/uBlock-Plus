@@ -1,0 +1,147 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="640" viewBox="0 0 1200 640" role="img" aria-labelledby="title desc">
+  <title id="title">uBlock Plus+ filtering architecture</title>
+  <desc id="desc">A flow diagram from user controls through the built-in Filter Store or custom HTTPS repositories, a digest-bound verified source handoff and compiler, then Declarative Net Request and cosmetic filtering engines, to the Chromium browser.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#071426"/>
+      <stop offset="0.55" stop-color="#0b1d33"/>
+      <stop offset="1" stop-color="#0b2330"/>
+    </linearGradient>
+    <linearGradient id="cyanStroke" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#22d3ee"/>
+      <stop offset="1" stop-color="#38bdf8"/>
+    </linearGradient>
+    <linearGradient id="greenStroke" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#34d399"/>
+      <stop offset="1" stop-color="#a3e635"/>
+    </linearGradient>
+    <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M 32 0 L 0 0 0 32" fill="none" stroke="#8ca3bd" stroke-opacity="0.055" stroke-width="1"/>
+    </pattern>
+    <marker id="arrowCyan" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
+      <path d="M1 1l7 4-7 4z" fill="#67e8f9"/>
+    </marker>
+    <marker id="arrowGreen" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
+      <path d="M1 1l7 4-7 4z" fill="#6ee7b7"/>
+    </marker>
+    <style>
+      .text { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .heading { fill: #f8fafc; font-size: 30px; font-weight: 750; letter-spacing: -.4px; }
+      .subheading { fill: #b9c8da; font-size: 16px; font-weight: 450; }
+      .node-title { fill: #f8fafc; font-size: 18px; font-weight: 700; }
+      .node-copy { fill: #b9c8da; font-size: 13px; font-weight: 450; }
+      .eyebrow { fill: #67e8f9; font-size: 12px; font-weight: 700; letter-spacing: 1.4px; }
+      .badge { fill: #d1fae5; font-size: 12px; font-weight: 650; }
+      .index { fill: #061827; font-size: 13px; font-weight: 800; text-anchor: middle; dominant-baseline: central; }
+    </style>
+  </defs>
+
+  <rect width="1200" height="640" rx="28" fill="url(#background)"/>
+  <rect width="1200" height="640" rx="28" fill="url(#grid)"/>
+  <circle cx="1080" cy="70" r="150" fill="#22d3ee" opacity="0.055"/>
+  <circle cx="80" cy="590" r="175" fill="#34d399" opacity="0.045"/>
+
+  <g class="text">
+    <text x="64" y="70" class="eyebrow">UBLOCK PLUS+ · MV3 PIPELINE</text>
+    <text x="64" y="112" class="heading">Your choices. A verified path. Efficient filtering.</text>
+    <text x="64" y="143" class="subheading">Filter lists remain data — never remote executable code.</text>
+
+    <!-- Main flow connectors -->
+    <path d="M228 325H270" fill="none" stroke="#67e8f9" stroke-width="3" stroke-linecap="round" marker-end="url(#arrowCyan)"/>
+    <path d="M536 325H578" fill="none" stroke="#67e8f9" stroke-width="3" stroke-linecap="round" marker-end="url(#arrowCyan)"/>
+    <path d="M812 325H854" fill="none" stroke="#6ee7b7" stroke-width="3" stroke-linecap="round" marker-end="url(#arrowGreen)"/>
+    <path d="M1052 325H1082" fill="none" stroke="#6ee7b7" stroke-width="3" stroke-linecap="round" marker-end="url(#arrowGreen)"/>
+
+    <!-- User -->
+    <g>
+      <rect x="52" y="238" width="176" height="174" rx="22" fill="#0e223a" stroke="#2b526d" stroke-width="1.5"/>
+      <circle cx="88" cy="276" r="17" fill="#164e63" stroke="#67e8f9"/>
+      <circle cx="88" cy="272" r="5" fill="#cffafe"/>
+      <path d="M78 286c2-7 18-7 20 0" fill="none" stroke="#cffafe" stroke-width="3" stroke-linecap="round"/>
+      <text x="116" y="282" class="node-title">You</text>
+      <text x="76" y="326" class="node-copy">Choose lists, profiles</text>
+      <text x="76" y="347" class="node-copy">and per-site controls.</text>
+      <rect x="76" y="371" width="107" height="24" rx="12" fill="#10394a"/>
+      <text x="129.5" y="387" text-anchor="middle" class="badge" fill="#a5f3fc">Local control</text>
+    </g>
+
+    <!-- Sources -->
+    <g>
+      <rect x="270" y="200" width="266" height="250" rx="22" fill="#0e223a" stroke="url(#cyanStroke)" stroke-width="1.5"/>
+      <circle cx="307" cy="238" r="15" fill="#67e8f9"/>
+      <text x="307" y="238" class="index">1</text>
+      <text x="334" y="244" class="node-title">Filter sources</text>
+
+      <rect x="294" y="273" width="218" height="61" rx="13" fill="#102b45" stroke="#285473"/>
+      <path d="M315 291h16m-16 8h16m-16 8h11" stroke="#67e8f9" stroke-width="2" stroke-linecap="round"/>
+      <text x="345" y="297" class="node-title" font-size="15">Filter Store</text>
+      <text x="345" y="318" class="node-copy">Curated built-in catalog</text>
+
+      <rect x="294" y="347" width="218" height="77" rx="13" fill="#102b45" stroke="#285473"/>
+      <path d="M314 372h18m-14-6v12" stroke="#67e8f9" stroke-width="2" stroke-linecap="round"/>
+      <text x="345" y="374" class="node-title" font-size="15">Custom repositories</text>
+      <text x="345" y="395" class="node-copy">Credential-free HTTPS URLs</text>
+      <text x="345" y="413" class="node-copy">with explicit user consent</text>
+    </g>
+
+    <!-- Verified compiler -->
+    <g>
+      <rect x="578" y="226" width="234" height="198" rx="22" fill="#0e2733" stroke="url(#greenStroke)" stroke-width="2"/>
+      <circle cx="615" cy="264" r="15" fill="#6ee7b7" filter="url(#softGlow)"/>
+      <text x="615" y="264" class="index">2</text>
+      <text x="642" y="270" class="node-title">Verified compiler</text>
+      <path d="M610 305l13 8 18-23" fill="none" stroke="#6ee7b7" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="655" y="305" class="node-copy">Digest-bound handoff</text>
+      <text x="655" y="326" class="node-copy">Strict size &amp; fetch limits</text>
+      <text x="655" y="347" class="node-copy">Transactional activation</text>
+      <rect x="610" y="375" width="167" height="28" rx="14" fill="#123c37"/>
+      <text x="693.5" y="394" text-anchor="middle" class="badge">Rules in · rules out</text>
+    </g>
+
+    <!-- Engines -->
+    <g>
+      <rect x="854" y="213" width="198" height="224" rx="22" fill="#0e2733" stroke="#327a67" stroke-width="1.5"/>
+      <circle cx="891" cy="251" r="15" fill="#6ee7b7"/>
+      <text x="891" y="251" class="index">3</text>
+      <text x="918" y="257" class="node-title">Filter engines</text>
+
+      <rect x="878" y="283" width="150" height="54" rx="12" fill="#123c37"/>
+      <text x="895" y="306" class="node-title" font-size="15">DNR rules</text>
+      <text x="895" y="324" class="node-copy">Network filtering</text>
+
+      <rect x="878" y="350" width="150" height="62" rx="12" fill="#123c37"/>
+      <text x="895" y="373" class="node-title" font-size="15">Cosmetic filters</text>
+      <text x="895" y="391" class="node-copy">Page-level cleanup</text>
+    </g>
+
+    <!-- Browser -->
+    <g>
+      <rect x="1082" y="258" width="82" height="134" rx="20" fill="#102b45" stroke="#4c7693" stroke-width="1.5"/>
+      <rect x="1100" y="282" width="46" height="38" rx="7" fill="#0b1728" stroke="#67e8f9"/>
+      <circle cx="1107" cy="290" r="2" fill="#fb7185"/>
+      <circle cx="1114" cy="290" r="2" fill="#facc15"/>
+      <circle cx="1121" cy="290" r="2" fill="#4ade80"/>
+      <path d="M1108 304h30" stroke="#4b6d86" stroke-width="2"/>
+      <text x="1123" y="348" text-anchor="middle" class="node-title" font-size="15">Browser</text>
+      <text x="1123" y="370" text-anchor="middle" class="node-copy">Chromium</text>
+    </g>
+
+    <!-- Footer assurance bar -->
+    <g>
+      <rect x="52" y="516" width="1112" height="72" rx="18" fill="#091827" stroke="#253d54"/>
+      <circle cx="82" cy="552" r="11" fill="#123c37" stroke="#6ee7b7"/>
+      <path d="M77 552l4 4 7-9" fill="none" stroke="#a7f3d0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="105" y="548" class="node-title" font-size="15">Local-first by design</text>
+      <text x="105" y="569" class="node-copy">Configuration and filtering state stay in the extension; community sources supply filter-list data only.</text>
+      <rect x="934" y="535" width="202" height="34" rx="17" fill="#10394a"/>
+      <text x="1035" y="557" text-anchor="middle" class="badge" fill="#cffafe">Open source · Sideloaded</text>
+    </g>
+  </g>
+</svg>

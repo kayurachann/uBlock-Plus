@@ -1,68 +1,254 @@
+<div align="center">
+
+<img src="docs/assets/readme/hero.png" alt="Illustration of a shield filtering ads, trackers, cookies and other unwanted web requests before Chromium pages load" width="1100">
+
+<sub>Concept illustration · v1.0.0 is a manually updated sideload pre-release</sub>
+
 # uBlock Plus+
 
-[Tiếng Việt](docs/README.vi.md) · [Compatibility](docs/FEATURE-MATRIX.md) · [Architecture](docs/ARCHITECTURE.md) · [Privacy](docs/PRIVACY.md)
+### Community-powered content blocking, built for Chromium Manifest V3
 
-uBlock Plus+ is an independent, sideload-first, GPL-3.0-or-later content-blocking platform for Chromium Manifest V3. It keeps the proven upstream filtering/compiler foundation while building a user-sovereign product around community filter repositories, explicit power-user modes and low-memory operation. Chrome Web Store submission is not a project goal.
+**Sideload-first · Local-first · Open source · Made for user control**
+
+[![MV3 Chromium CI](https://github.com/kayurachann/uBlock-Plus/actions/workflows/mv3-chromium.yml/badge.svg)](https://github.com/kayurachann/uBlock-Plus/actions/workflows/mv3-chromium.yml)
+[![Latest release](https://img.shields.io/github/v/release/kayurachann/uBlock-Plus?include_prereleases&label=pre--release&color=3b82f6)](https://github.com/kayurachann/uBlock-Plus/releases)
+[![Chromium 130+](https://img.shields.io/badge/Chromium-130%2B-4285F4?logo=googlechrome&logoColor=white)](#quick-start)
+[![Manifest V3](https://img.shields.io/badge/Manifest-V3-8b5cf6)](docs/ARCHITECTURE.md)
+[![GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-22c55e)](LICENSE.txt)
+
+[**Download v1.0.0 preview**](https://github.com/kayurachann/uBlock-Plus/releases/tag/v1.0.0) · [**Tiếng Việt**](docs/README.vi.md) · [Feature matrix](docs/FEATURE-MATRIX.md) · [Architecture](docs/ARCHITECTURE.md) · [Filter Store](docs/FILTER-STORE.md) · [Roadmap](docs/ROADMAP.md)
+
+</div>
+
+---
+
+uBlock Plus+ is an independent, GPL-licensed content blocker for Chromium MV3. It combines a proven upstream filtering/compiler foundation with a community Filter Store, portable configuration, explicit power-user controls and memory-conscious operation—without a project telemetry service or remote executable code.
 
 > [!IMPORTANT]
-> This is not an official uBlock Origin or uBO Lite release and is not endorsed by Raymond Hill. Public Chrome MV3 does not expose every blocking primitive available to the original MV2 extension. uBlock Plus+ documents those API gaps and uses separate, opt-in distribution modes where Chrome officially provides stronger capabilities; it does not bypass browser security controls or misrepresent feature parity.
+> **Release status:** v1.0.0 is a pre-release for manual sideloading and does not auto-update. uBlock Plus+ is not an official uBlock Origin or uBO Lite release and is not endorsed by Raymond Hill. Chrome MV3 does not expose every blocking primitive available to the original MV2 extension. Sideloading avoids Chrome Web Store distribution policy, but it does **not** remove DNR quotas, service-worker lifecycle rules or browser security boundaries. See the [honest compatibility matrix](docs/FEATURE-MATRIX.md).
 
-## User sovereignty
+## Built around your choices
 
-- Core settings, subscriptions, repositories and custom filters can be exported and restored by the user.
-- Any compatible HTTPS filter repository may be added; the built-in catalog is a convenience, not a lock-in mechanism.
-- Core filtering permissions are documented; the separate `privacy` permission is optional, requested at the point of use and reversible.
-- Remote filter lists are treated as data. Executable extension code remains packaged and reviewable.
-- No network telemetry, advertising, analytics account or project-operated browsing-history service. Storage-size diagnostics remain local.
+<table>
+<tr>
+<td width="50%" valign="top">
 
-## Power distribution modes
+### 🛡️ Layered content blocking
 
-| Mode | Installation | Purpose |
-| --- | --- | --- |
-| Power | Source build / Load unpacked | Default distribution with custom repositories, advanced user lists/scripts, DNR feedback diagnostics and portable core configuration. |
-| Enterprise | Organization policy | May use policy-only Chrome capabilities such as `webRequestBlocking` where administrators explicitly deploy them. |
-| Native companion | Optional separate open-source install | Future DNS/CNAME and local diagnostic capabilities unavailable to the public extension API; never required for core blocking. |
+Static, dynamic and session DNR rules work alongside cosmetic filtering, packaged scriptlets, strict blocking and popup controls.
 
-All modes share the same auditable filtering core. Sideloading removes Chrome Web Store policy constraints, but it does not remove Chrome's MV3 runtime quotas or security boundaries.
+</td>
+<td width="50%" valign="top">
 
-## Current foundation
+### 🧩 Community Filter Store
 
-- Static, dynamic and session Declarative Net Request rules.
-- Cosmetic filtering and packaged scriptlets.
-- Per-site filtering modes, strict blocking and popup blocking.
-- Element picker, zapper and unpicker.
-- Custom filters, imported lists, matched-rule diagnostics and backup/restore.
-- Unpacked-only `declarativeNetRequestFeedback` access for richer matched-rule diagnostics.
-- Automatic regional lists, including ABPVN for Vietnamese browser profiles.
-- Optional privacy controls for hyperlink auditing, network prediction, non-proxied WebRTC UDP and Privacy Sandbox advertising APIs.
-- Event-driven service worker with persistent state and no permanent MV2 background page.
-- Native PowerShell and Linux build paths, release validation and pinned GitHub Actions dependencies.
+Explore the packaged community catalog or add up to eight compatible HTTPS repositories. Every remote list is treated as filter **data**, never executable extension code.
 
-The current MVP adds a packaged curated Filter Store, up to eight user-supplied HTTPS catalogs, source-integrity/provenance checks, quota-cost visibility, selectable Low-memory Mode and community feature governance. Custom repositories are not publisher-signed in this release and are always labeled Community. See the architecture and roadmap documents for measured status rather than relying on marketing claims.
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
 
-## Build and sideload
+### 🎯 Controls for every site
 
-Prerequisites: Chrome/Chromium or Edge 130+, Git with submodules, Node.js 22 or newer and network access for downloading filter-list data.
+Choose per-site filtering modes, inspect matched-rule diagnostics and use the element picker, zapper or unpicker when a page needs a personal touch.
 
-### Windows
+</td>
+<td width="50%" valign="top">
+
+### 🌱 Memory-conscious profiles
+
+Choose `auto`, `balanced` or `low-memory`. Low-memory mode uses sequential compilation, bounded caches and safe cleanup without silently disabling enabled filters.
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+### 📦 Your configuration, portable
+
+Export and restore core settings, subscriptions, repositories and custom filters. The built-in catalog is a starting point—not a lock-in mechanism.
+
+</td>
+<td width="50%" valign="top">
+
+### 🔐 Privacy by design
+
+Filtering and storage diagnostics stay local. There is no project analytics account, advertising SDK or browsing-history service; Chrome privacy controls require a separate, reversible permission.
+
+</td>
+</tr>
+</table>
+
+<div align="center">
+
+[Explore every capability →](docs/FEATURE-MATRIX.md)
+
+</div>
+
+## See it in action
+
+<sub>Captured from the unpacked v1.0.0 artifact in a fresh Edge profile · no personal browsing data</sub>
+
+<table>
+<tr>
+<td width="62%" valign="top">
+
+<img src="docs/assets/readme/filter-store.png" alt="Real uBlock Plus+ Filter Store showing DNR quota estimates, three bundles and the first community filter card">
+
+<strong>Filter Store</strong><br>
+Browse community entries, inspect quota impact and activate opinionated bundles explicitly.
+
+</td>
+<td width="38%" valign="top">
+
+<img src="docs/assets/readme/memory-settings.png" alt="Real uBlock Plus+ Memory Profile settings showing Auto mode, Effective Balanced and local storage diagnostics">
+
+<strong>Memory Profile</strong><br>
+Select Auto, Balanced or Low-memory and inspect local cache/storage—not live RAM—metrics.
+
+</td>
+</tr>
+</table>
+
+## Quick start
+
+<div align="center">
+
+<img src="docs/assets/readme/install-flow.svg" alt="Four steps: download and extract, verify SHA-256, load unpacked, then allow user scripts if shown" width="1100">
+
+</div>
+
+### Install a release
+
+1. Download `uBlock-Plus_*.chromium.zip` and its matching `.sha256` file from [GitHub Releases](https://github.com/kayurachann/uBlock-Plus/releases).
+2. Verify the checksum, then extract the ZIP to a permanent folder.
+3. Open `chrome://extensions` or `edge://extensions`.
+4. Enable **Developer mode**, choose **Load unpacked**, and select the extracted folder containing `manifest.json`.
+5. On Chrome 138+, open the extension's **Details** page and enable **Allow User Scripts**. Chrome 130–137 uses the global **Developer mode** switch instead. If you change either switch after installation, click **Reload** on the extension card so its service-worker context sees the new API state. This lets supported imported cosmetic filters and packaged allowlisted scriptlets register. See Chrome's [`userScripts` guidance](https://developer.chrome.com/docs/extensions/reference/api/userScripts).
+
+> [!NOTE]
+> A sideloaded extension does not update through the Chrome Web Store. Follow [Releases](https://github.com/kayurachann/uBlock-Plus/releases) and replace the unpacked build when a new version is published. Install only artifacts from this repository and verify the supplied SHA-256 checksum.
+
+<details>
+<summary><strong>Verify the release checksum on Windows</strong></summary>
+
+```powershell
+(Get-FileHash .\uBlock-Plus_1.0.0.chromium.zip -Algorithm SHA256).Hash
+Get-Content .\uBlock-Plus_1.0.0.chromium.zip.sha256
+```
+
+The hexadecimal hashes must match (letter case does not matter).
+
+</details>
+
+### Build from source
+
+Requirements: Chrome/Chromium or Edge 130+, Git with submodules, Node.js 22+ and network access for build-time filter data.
+
+<details open>
+<summary><strong>Windows / PowerShell</strong></summary>
 
 ```powershell
 git clone --recurse-submodules https://github.com/kayurachann/uBlock-Plus.git
 cd uBlock-Plus
-.\tools\make-mv3.ps1 -Platform chromium -Version 1.0.0
+$version = (Get-Content -Raw package.json | ConvertFrom-Json).version
+.\tools\make-mv3.ps1 -Platform chromium -Version $version
 ```
 
-### Linux/macOS
+</details>
+
+<details>
+<summary><strong>Linux / macOS</strong></summary>
 
 ```bash
 git clone --recurse-submodules https://github.com/kayurachann/uBlock-Plus.git
 cd uBlock-Plus
 make mv3-chromium
+
+# Optional: also create the versioned ZIP and SHA-256 file.
+VERSION=$(node -p "require('./package.json').version")
+tools/make-mv3.sh chromium "$VERSION"
 ```
 
-Open `chrome://extensions` (or `edge://extensions`), enable **Developer mode**, choose **Load unpacked**, and select `dist/build/uBOLite.chromium`. Then open the extension's **Details** page and, whenever the browser shows it, enable **Allow User Scripts** so cosmetic and packaged-scriptlet filters from imported lists can run. Release ZIP files and their SHA-256 checksum files are created under `dist/build/` with the `uBlock-Plus_` prefix.
+</details>
 
-## Development checks
+Load `dist/build/uBOLite.chromium` from the browser's extensions page. The versioned PowerShell command and the optional versioned shell command create the ZIP and checksum under `dist/build/`; plain `make mv3-chromium` creates only the unpacked directory.
+
+## How it fits together
+
+<div align="center">
+
+<img src="docs/assets/readme/feature-map.svg" alt="Filtering flow from user-selected sources through verified compilation to DNR and cosmetic filtering in Chromium" width="1100">
+
+</div>
+
+- Chrome DNR handles network filtering without waking the service worker for every request.
+- The event-driven service worker manages settings, catalog state, migrations and recoverable rule updates.
+- Imported lists compile locally into DNR and cosmetic data; scriptlets must already exist in the packaged allowlist.
+- Offscreen compilation is temporary and closes after its work completes.
+
+[Read the architecture](docs/ARCHITECTURE.md) · [Review the threat model](docs/THREAT-MODEL.md) · [Understand privacy](docs/PRIVACY.md)
+
+## Security and trust boundaries
+
+| Boundary | Project rule |
+| --- | --- |
+| Remote sources | HTTPS catalogs and lists are parsed as bounded data; redirects, malformed schemas and executable payloads are rejected. |
+| Filter Store trust | Built-in and custom entries display their trust tier. Community popularity alone never upgrades an entry to `verified`. |
+| Extension code | JavaScript, scriptlets and redirect resources ship inside the reviewed extension package—never from a runtime URL. |
+| Permissions | Core filtering permissions are documented. Chrome's `privacy` permission is requested only when the user enables those controls and can be revoked. |
+| Local data | Settings, compiled filters and storage-size diagnostics remain on the device unless the user explicitly exports them. |
+| Release integrity | CI builds and validates the Chromium artifact; releases include a SHA-256 checksum. |
+
+Security issues should be reported privately through [GitHub Security Advisories](https://github.com/kayurachann/uBlock-Plus/security/advisories/new), not a public issue. See [SECURITY.md](SECURITY.md) for the reporting policy.
+
+## MV3: powerful, with honest limits
+
+| Available today | Constrained by MV3 | Future research—optional |
+| --- | --- | --- |
+| DNR network blocking, cosmetic filtering, packaged scriptlets, custom/imported lists, Filter Store, picker/zapper and backup/restore | Live request logging, procedural filters, dynamic-firewall semantics, response-header operations and redirect behavior are only partially equivalent to MV2 | Managed Enterprise adapters and an independently installed open-source native companion, subject to RFC, consent and security review |
+
+Arbitrary response-body rewriting, equivalent DNS/CNAME visibility and exact size-based response blocking are not available through the normal public MV3 extension APIs. Some MV2 filter syntax cannot be translated; consult the feature matrix before assuming equivalence. More detailed per-filter compatibility reporting remains roadmap work.
+
+## Roadmap
+
+<table>
+<tr>
+<th width="33%">Now</th>
+<th width="33%">Next</th>
+<th width="33%">Later</th>
+</tr>
+<tr>
+<td valign="top">
+
+- Harden the Power Edition
+- Validate Filter Store workflows
+- Exercise restart and rollback paths
+- Establish low-memory baselines
+
+</td>
+<td valign="top">
+
+- Safe rule deduplication and sharding
+- Richer local diagnostics
+- Accessibility and i18n polish
+- Public performance regression reports
+
+</td>
+<td valign="top">
+
+- Managed Enterprise adapter
+- Optional native companion research
+- Signed catalog provenance and revocation
+
+</td>
+</tr>
+</table>
+
+Roadmap items are not release promises. A feature ships only after implementation, tests, migration/rollback handling and security, privacy, license and performance review. [See the complete community roadmap →](docs/ROADMAP.md)
+
+## Develop and contribute
 
 ```bash
 npm ci
@@ -71,6 +257,26 @@ npm test
 node tools/validate-mv3.mjs dist/build/uBOLite.chromium --release
 ```
 
-The repository preserves upstream Git history and keeps [`gorhill/uBlock`](https://github.com/gorhill/uBlock) configured as a fetch-only `upstream` remote. See [NOTICE.md](NOTICE.md), [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
+Ideas and reports are welcome through the repository's structured issue forms:
 
-Licensed under the [GNU General Public License v3.0 or later](LICENSE.txt).
+- [Propose a feature or report a bug](https://github.com/kayurachann/uBlock-Plus/issues/new/choose)
+- [Submit a Filter Store entry](https://github.com/kayurachann/uBlock-Plus/issues/new?template=filter_store_submission.yml)
+- [Read the contribution guide](CONTRIBUTING.md)
+- [Understand community governance](docs/COMMUNITY-GOVERNANCE.md)
+- [Review module ownership and boundaries](docs/MODULE-PLAN.md)
+
+The repository preserves upstream Git history and keeps [`gorhill/uBlock`](https://github.com/gorhill/uBlock) configured as a fetch-only `upstream` remote.
+
+## Credits and license
+
+uBlock Plus+ is a derivative work based on [uBlock Origin](https://github.com/gorhill/uBlock) and its MV3/uBO Lite implementation. Copyright, source headers, author history and third-party attributions are preserved. See [NOTICE.md](NOTICE.md).
+
+Released under the [GNU General Public License v3.0 or later](LICENSE.txt).
+
+<div align="center">
+
+**Built in the open, shaped by its users.**
+
+[Back to top ↑](#ublock-plus)
+
+</div>
