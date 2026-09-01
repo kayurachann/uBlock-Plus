@@ -2,19 +2,21 @@
 
 Đây là bản đồ capability, **không phải lời hứa parity 100%**. Chrome MV3 buộc extension công khai dùng Declarative Net Request cho phần lớn tác vụ chặn; sideload không gỡ quota DNR và không biến service worker thành background page MV2.
 
-Ký hiệu: **Có** = MV3 có đường triển khai tương đương hữu ích; **Một phần** = semantics/quota khác MV2; **Không** = Chrome MV3 không có API tương đương; **R&D** = chỉ xem xét ở tầng enterprise/native tùy chọn.
+Ký hiệu: **Có** = MV3 có đường triển khai tương đương hữu ích; **Một phần** = semantics/quota khác MV2; **Không** = Chrome MV3 không có API tương đương; **R&D** = chỉ xem xét ở một tầng tùy chọn có artifact và threat model riêng.
 
-| Capability | uBO MV2 | Power Edition MV3 | Enterprise/native tương lai | Ghi chú trung thực |
+Theo [Chrome DNR API](https://developer.chrome.com/docs/extensions/reference/api/declarativeNetRequest), static ruleset được đóng gói và có ngân sách riêng với dynamic/session. Từ Chrome 120/121, giới hạn **số rule** dynamic và session được tách, nhưng [Chromium CL ngày 2023-10-18](https://chromium.googlesource.com/chromium/src/+/eab7fc99e59b69e929d02e43bdcf8bbd75333869%5E%21/) xác nhận quota **regex dynamic + session vẫn dùng chung một pool tối đa 1.000**; enabled static rulesets có aggregate pool tối đa 1.000 regex riêng. Con số cụ thể thay đổi theo browser/version, nên đây là mô hình budget chứ không phải bảo đảm mọi máy có cùng capacity.
+
+| Capability | uBO MV2 | Power Edition MV3 | Tầng tùy chọn tương lai | Ghi chú trung thực |
 | --- | --- | --- | --- | --- |
-| Static network blocking | Có | **Có**, static DNR | Không cần | Compile ở build-time; chịu quota ruleset/rule của trình duyệt. |
-| Custom/imported network lists | Có | **Có**, dynamic DNR | Có thể bổ sung compiler native | Filter không biểu diễn được phải được báo, không cắt im lặng. |
+| Static network blocking | Có | **Có**, packaged static DNR | Không cần | Chrome hiện cho khai báo tối đa 100 static ruleset, bật 50 và bảo đảm tối thiểu 30.000 static rules trên tập đang bật; phần vượt mức phụ thuộc `getAvailableStaticRuleCount()`. |
+| Custom/imported network lists | Có | **Có**, dynamic DNR trong subset hỗ trợ | Có thể bổ sung compiler native | Dynamic/session có rule-count budget riêng nhưng chia sẻ regex pool; filter không biểu diễn được phải được báo, không cắt im lặng. |
 | Per-site filtering mode | Có | **Có** | Không cần | Persist setting và sinh rule theo namespace. |
 | Dynamic firewall matrix | Có, quyết định runtime | **Một phần** | Managed adapter có thể mở rộng | MV3 cần khai báo rule trước request; không có quyết định đồng bộ tùy ý như MV2. |
 | Cosmetic filtering | Có | **Có** | Không cần | CSS/content script đăng ký theo site/ruleset. |
 | Procedural cosmetic filter | Có | **Một phần** | Native không giúp DOM trực tiếp | Chỉ hỗ trợ operator an toàn có trong packaged code. |
 | Scriptlets | Có | **Một phần** | Không tải scriptlet qua companion | Chỉ scriptlet đóng gói/allowlist; cấm remote executable code. |
 | Element picker/zapper | Có | **Có** | Không cần | Filter tạo ra được lưu cục bộ. |
-| Strict/popup blocking | Có | **Có/Một phần** | Có thể bổ sung policy | Smart Popup Blocker dùng opener, target, trusted gesture, burst và policy exact-host `Allow/Smart/Strict`; filter popup đóng gói vẫn được ưu tiên fail-closed. `$popup`/`$popunder` từ list import được phân loại và báo cáo nhưng chưa nối vào matcher runtime. |
+| Strict/popup blocking | Có | **Có/Một phần** | Có thể bổ sung policy | Smart policy vẫn xử lý opener/target/gesture. Observer thực thi corpus stock `$popup` đóng gói và subset `$popup`/`$popunder` của sandbox/imported: URL/regex đã kiểm tra cùng include/exclude request, initiator và top domains. Stock DNR export chưa giữ kind `$popunder`, nên metadata ghi `omitted` thay vì giả lập. Condition như `domainType`, method, resource type hoặc response header được giữ ở typed route `popup-compiler-required` với status `deferred`; deferred allow còn tạo guard superset chỉ có quyền buộc fail-open, không được tự allow/block. Thiếu context hoặc hết work budget cũng phải fail open. |
 | Redirect resource | Có | **Một phần** | Không cần | Chỉ redirect tới resource đóng gói/được manifest cho phép. |
 | Request/response header rules | Có | **Một phần** | Managed mode có thể mở rộng | DNR `modifyHeaders` không tương đương mọi thao tác `webRequestBlocking`. |
 | Full live request logger | Có | **Một phần** | **R&D** qua managed/native diagnostics | DNR feedback bị giới hạn; không được bật giám sát rộng mặc định. |
@@ -28,13 +30,28 @@ Ký hiệu: **Có** = MV3 có đường triển khai tương đương hữu ích
 
 ## Những điều sideload không thay đổi
 
-- quota static/dynamic/session/regex do Chrome áp đặt;
-- service worker có thể bị dừng khi idle;
+- quota static/dynamic/session/regex do Chrome áp đặt; static không thể được “mượn” để tăng pool regex dynamic + session;
+- extension service worker thường bị dừng sau idle và có thể bị chấm dứt ngoài dự kiến; state quan trọng không được chỉ giữ trong global variables;
 - API DNR chỉ biểu diễn được một tập con semantics của engine MV2;
 - extension MV3 bình thường không được dùng blocking `webRequest`; capability policy-installed chỉ có hiệu lực khi trình duyệt thực sự quản lý extension bằng enterprise policy;
-- remote JavaScript/remote executable code vẫn bị dự án cấm vì an toàn supply chain.
+- JavaScript/Wasm từ xa không được thực thi. Filter/catalog tải qua HTTPS chỉ là dữ liệu hostile đi qua parser hữu hạn; không được biến thành remote scriptlet/module.
 
-Quota thay đổi theo phiên bản Chrome, vì vậy compiler phải đọc capability/quota khi có API và CI phải kiểm tra trên browser được hỗ trợ. Nguồn tham khảo: [Chrome DNR API](https://developer.chrome.com/docs/extensions/reference/api/declarativeNetRequest), [migrate blocking web requests](https://developer.chrome.com/docs/extensions/develop/migrate/blocking-web-requests), [extension service workers](https://developer.chrome.com/docs/extensions/develop/migrate/to-service-workers) và [uBO Lite FAQ](https://github.com/uBlockOrigin/uBOL-home/wiki/Frequently-asked-questions-(FAQ)).
+Quota thay đổi theo phiên bản Chrome, vì vậy compiler phải đọc capability/quota khi có API và CI phải kiểm tra trên browser được hỗ trợ. Nguồn tham khảo: [Chrome DNR API](https://developer.chrome.com/docs/extensions/reference/api/declarativeNetRequest), [blocking webRequest migration](https://developer.chrome.com/docs/extensions/develop/migrate/blocking-web-requests), [service-worker lifecycle](https://developer.chrome.com/docs/extensions/develop/concepts/service-workers/lifecycle), [MV3 remote hosted code](https://developer.chrome.com/docs/extensions/develop/migrate/remote-hosted-code), [uAssets #30545 về regex MV3](https://github.com/uBlockOrigin/uAssets/issues/30545) và [COMMUNITY-RESEARCH.md](COMMUNITY-RESEARCH.md).
+
+## Semantics của compiled popup route
+
+- Một popup-only filter được classifier hỗ trợ được tính **một input accepted**, tăng `routed`, không tăng `deferred` và không cần tạo DNR rule.
+- Filter kết hợp, ví dụ `$popup,script`, có thể tạo cả DNR resource rule lẫn typed popup runtime route nhưng input chỉ được tính accepted một lần.
+- Condition chưa hỗ trợ vẫn giữ typed route `popup-compiler-required` với reason cụ thể. Popup-only khi đó là deferred/rejected; filter kết hợp vẫn có thể accepted ở phần DNR và đồng thời có deferred popup route.
+- Build phát sinh corpus stock bất biến tại `rulesets/popup/<rulesetId>.json`; runtime chỉ nạp lazy corpus của ruleset đang bật. Validator đối chiếu schema, provenance, count và classifier trước khi release.
+- Runtime cache matcher/regex theo identity bất biến và giới hạn 4.096 filter, 16 realm cùng 65.536 match-step cho mỗi event. Regex unbounded không neo đầu chuyển sang compiler-required; hết budget trả `defer`, không treo worker hoặc block gần đúng.
+- Runtime không block khi context cần thiết không đầy đủ. Đây là kiểm soát false positive, phù hợp với bài học từ [uBlock #2094](https://github.com/gorhill/uBlock/issues/2094) và [uAssets #7012](https://github.com/uBlockOrigin/uAssets/issues/7012), không phải lời hứa bắt được mọi popup.
+
+## Các tầng tùy chọn không hoán đổi cho nhau
+
+- **Managed Enterprise** là extension MV3 được browser cài bằng policy và có thể đủ điều kiện cho `webRequestBlocking`; capability chỉ active khi adapter đóng gói và probe thành công.
+- **Native Companion** là process cục bộ cài riêng qua Native Messaging. Nó không làm extension thành policy-installed và không tự tăng quota DNR.
+- **Custom Chromium** là một browser build riêng với patch riêng. Capability của build đó không được ghi như capability của Google Chrome hoặc artifact MV3 mặc định.
 
 ## Release gate
 

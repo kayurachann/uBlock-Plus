@@ -461,6 +461,8 @@ try {
     Copy-MatchingFiles $mv3Root '*.mjs' $rulesetBuildDirectory
     Copy-RequiredFile (Join-Path $extensionRoot 'js/ubo-parser.js') `
         (Join-Path $rulesetBuildDirectory 'js/ubo-parser.js')
+    Copy-RequiredFile (Join-Path $extensionRoot 'js/compiled-popup-matcher.js') `
+        (Join-Path $rulesetBuildDirectory 'js/compiled-popup-matcher.js')
     Copy-RequiredFile (Join-Path $extensionRoot 'js/utils.js') `
         (Join-Path $rulesetBuildDirectory 'js/utils.js')
     # make-rulesets imports offscreen/fetch-list.js, whose fetch-policy module

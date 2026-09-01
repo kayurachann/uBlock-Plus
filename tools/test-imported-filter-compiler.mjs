@@ -33,6 +33,10 @@ try {
             'platform/mv3/extension/js/ubo-parser.js',
             'js/ubo-parser.js',
         ],
+        [
+            'platform/mv3/extension/js/compiled-popup-matcher.js',
+            'js/compiled-popup-matcher.js',
+        ],
         [ 'src/js/static-filtering-parser.js', 'js/static-filtering-parser.js' ],
         [ 'src/js/arglist-parser.js', 'js/arglist-parser.js' ],
         [ 'src/js/jsonpath.js', 'js/jsonpath.js' ],
@@ -166,12 +170,13 @@ try {
         const compiler = new NetworkFilterCompiler({
             listid: 'https://filters.example/list.txt',
         });
+        const results = [];
         lines.forEach((line, index) => {
             parser.parse(line);
             assert.equal(parser.isNetworkFilter(), true, line);
-            compiler.add(parser, index + 1);
+            results.push(compiler.add(parser, index + 1));
         });
-        return compiler.finish();
+        return { ...compiler.finish(), results };
     };
 
     const unsupported = [
@@ -211,23 +216,44 @@ try {
         '@@||allowed.example^$popunder',
         '||combined.example^$popup,script',
         '||all-types.example^$popup,all',
+        '||party.example^$1p,popup',
+        '||combined-party.example^$1p,popup,script',
         '||cdn.example^$script',
     ]);
     assert.deepEqual(routed.filterStats, {
-        total: 5,
-        accepted: 3,
-        rejected: 2,
-        routed: 4,
-        deferred: 4,
+        total: 7,
+        accepted: 6,
+        rejected: 1,
+        routed: 6,
+        deferred: 2,
     });
-    assert.deepEqual(routed.rejections, [ 1, 2, 3, 4 ].map(lineNumber => ({
+    assert.deepEqual(routed.results, [
+        ...[ 1, 2, 3, 4 ].map(lineNumber => ({
+            status: 'accepted',
+            classification: 'popup-runtime',
+            lineNumber,
+        })),
+        ...[ 5, 6 ].map(lineNumber => ({
+            status: 'deferred',
+            reasonCode: 'unsupported-domain-type',
+            classification: 'popup-compiler-required',
+            disposition: 'deferred',
+            lineNumber,
+        })),
+        {
+            status: 'accepted',
+            classification: 'dnr',
+            lineNumber: 7,
+        },
+    ]);
+    assert.deepEqual(routed.rejections, [ 5, 6 ].map(lineNumber => ({
         status: 'deferred',
-        reasonCode: 'popup-runtime-consumer-required',
+        reasonCode: 'unsupported-domain-type',
         classification: 'popup-compiler-required',
         disposition: 'deferred',
         lineNumber,
     })));
-    assert.equal(routed.popupFilters.length, 4);
+    assert.equal(routed.popupFilters.length, 6);
     assert.deepEqual(routed.popupFilters.map(a => ({
         routeCode: a.routeCode,
         kind: a.kind,
@@ -235,42 +261,65 @@ try {
         lineNumber: a.lineNumber,
     })), [
         {
-            routeCode: 'popup-compiler-required',
+            routeCode: 'popup-observer-runtime',
             kind: 'popup',
             action: 'block',
             lineNumber: 1,
         },
         {
-            routeCode: 'popup-compiler-required',
+            routeCode: 'popup-observer-runtime',
             kind: 'popunder',
             action: 'allow',
             lineNumber: 2,
         },
         {
-            routeCode: 'popup-compiler-required',
+            routeCode: 'popup-observer-runtime',
             kind: 'popup',
             action: 'block',
             lineNumber: 3,
         },
         {
-            routeCode: 'popup-compiler-required',
+            routeCode: 'popup-observer-runtime',
             kind: 'popup',
             action: 'block',
             lineNumber: 4,
+        },
+        {
+            routeCode: 'popup-compiler-required',
+            kind: 'popup',
+            action: 'block',
+            lineNumber: 5,
+        },
+        {
+            routeCode: 'popup-compiler-required',
+            kind: 'popup',
+            action: 'block',
+            lineNumber: 6,
         },
     ]);
     assert.deepEqual(routed.popupFilters[0].condition.initiatorDomains,
         [ 'site.example' ]);
     assert.deepEqual(routed.popupFilters[0].condition.excludedInitiatorDomains,
         [ 'excluded.example' ]);
-    assert.equal(routed.dnrRules.length, 2);
+    assert.equal(routed.popupFilters[0].condition.domainType, undefined);
+    assert.equal(routed.popupFilters[4].condition.domainType, 'firstParty');
+    assert.equal(routed.dnrRules.length, 3);
     const scriptRule = routed.dnrRules.find(rule =>
         rule.condition.resourceTypes?.length === 1 &&
-        rule.condition.resourceTypes[0] === 'script'
+        rule.condition.resourceTypes[0] === 'script' &&
+        rule.condition.domainType === undefined
     );
     assert.deepEqual(scriptRule.condition.requestDomains, [
         'cdn.example',
         'combined.example',
+    ]);
+    const firstPartyScriptRule = routed.dnrRules.find(rule =>
+        rule.condition.resourceTypes?.length === 1 &&
+        rule.condition.resourceTypes[0] === 'script' &&
+        rule.condition.domainType === 'firstParty'
+    );
+    assert.deepEqual(firstPartyScriptRule.condition.requestDomains, [
+        'combined-party.example',
     ]);
     const allTypesRule = routed.dnrRules.find(rule =>
         rule.condition.requestDomains?.includes('all-types.example')

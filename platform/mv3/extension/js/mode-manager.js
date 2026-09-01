@@ -266,7 +266,7 @@ export async function readFilteringModeDetails(bypassCache = false) {
             }
         }
     }
-    filteringModesToDNR(userModes);
+    await filteringModesToDNR(userModes);
     sessionWrite('filteringModeDetails', serializeModeDetails(userModes));
     readFilteringModeDetails.cache = userModes;
     return userModes;

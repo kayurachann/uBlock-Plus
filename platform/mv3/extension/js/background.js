@@ -158,6 +158,8 @@ import {
     resetJobsAlarm,
 } from './alarms.js';
 
+import { POPUP_RUNTIME_ROUTE_CODE } from './compiled-popup-matcher.js';
+import { capturePopupFrameContext } from './popup-frame-context.js';
 import { createPopupBlocker } from './popup-blocker.js';
 import { dnr } from './ext-compat.js';
 import { getRuntimeCapabilities } from './runtime-capabilities.js';
@@ -172,8 +174,80 @@ const COMPILED_FILTERS_DIRTY_KEY = 'compiledFilters.dirtySources';
 const COMPILED_FILTERS_RETRY_JOB = 'retryCompiledFilters';
 const COMPILED_FILTER_WARNINGS_KEY = 'compiledFilters.lastWarnings';
 const RULESET_TRANSACTION_KEY = 'rulesets.pendingTransaction';
+const MAX_ACTIVE_STOCK_POPUP_FILTERS = 4096;
 let pendingFilteringMutation = Promise.resolve();
 let cssCacheWritesSincePrune = 0;
+let stockPopupSnapshotCache = {
+    key: undefined,
+    promise: undefined,
+};
+
+async function getStockPopupSnapshot() {
+    const ids = rulesetConfig.enabledRulesets.filter(id =>
+        typeof id === 'string' && /^[a-z0-9_-]+$/.test(id)
+    ).toSorted();
+    const key = ids.join('\n');
+    if ( stockPopupSnapshotCache.key === key ) {
+        return stockPopupSnapshotCache.promise;
+    }
+    const promise = (async ( ) => {
+        const detailsById = await getRulesetDetails();
+        const sources = [];
+        let declaredFilterCount = 0;
+        for ( const id of ids ) {
+            const observer = detailsById.get(id)?.popupObserver;
+            if ( typeof observer?.path !== 'string' ||
+                observer.schemaVersion !== 1 ||
+                Number.isSafeInteger(observer.filters) === false ||
+                observer.filters < 1 ||
+                observer.path !== `/rulesets/popup/${id}.json` ) {
+                continue;
+            }
+            declaredFilterCount += observer.filters;
+            sources.push({ id, observer });
+        }
+        if ( declaredFilterCount > MAX_ACTIVE_STOCK_POPUP_FILTERS ) {
+            ubolErr(
+                `Stock popup observer suppressed: ` +
+                `${declaredFilterCount}/${MAX_ACTIVE_STOCK_POPUP_FILTERS} ` +
+                `active filters`
+            );
+            return { key, filters: [], suppressed: true };
+        }
+        const corpora = await Promise.all(sources.map(async source => {
+            try {
+                const response = await fetch(runtime.getURL(
+                    source.observer.path.slice(1)
+                ));
+                if ( response.ok !== true ) { return; }
+                const corpus = await response.json();
+                if ( corpus?.schemaVersion !== 1 ||
+                    corpus.routeCode !== POPUP_RUNTIME_ROUTE_CODE ||
+                    corpus.source?.rulesetId !== source.id ||
+                    Array.isArray(corpus.filters) === false ||
+                    corpus.filters.length !== source.observer.filters ) {
+                    return;
+                }
+                return corpus.filters;
+            } catch ( reason ) {
+                ubolErr(`Stock popup corpus ${source.id}/${reason}`);
+            }
+        }));
+        if ( corpora.some(filters => Array.isArray(filters) === false) ) {
+            ubolErr('Stock popup observer suppressed: incomplete corpus set');
+            return { key, filters: [], suppressed: true };
+        }
+        return {
+            key,
+            filters: corpora.flat(),
+        };
+    })().catch(reason => {
+        ubolErr(`Stock popup observer unavailable/${reason}`);
+        return { key, filters: [], suppressed: true };
+    });
+    stockPopupSnapshotCache = { key, promise };
+    return promise;
+}
 
 async function getPopupGestureContexts(tabId) {
     let frames = [ { frameId: 0 } ];
@@ -194,13 +268,43 @@ async function getPopupGestureContexts(tabId) {
     return responses.filter(response => response !== undefined);
 }
 
+async function getPopupSourceFrameURL(tabId, frameId) {
+    if ( typeof browser.webNavigation?.getFrame !== 'function' ) { return ''; }
+    const context = await capturePopupFrameContext(
+        details => browser.webNavigation.getFrame(details),
+        tabId,
+        frameId
+    );
+    return context.initiatorContextComplete
+        ? context.initiatorURL
+        : '';
+}
+
+async function getPopupSourceContext(tabId, frameId) {
+    if ( typeof browser.webNavigation?.getFrame !== 'function' ) { return; }
+    return capturePopupFrameContext(
+        details => browser.webNavigation.getFrame(details),
+        tabId,
+        frameId
+    );
+}
+
+const supportsPopupNavigationTarget = webextFlavor === 'chromium' &&
+    typeof browser.webNavigation?.onCreatedNavigationTarget?.addListener ===
+        'function';
+
 const popupBlocker = createPopupBlocker({
     tabs: browser.tabs,
+    getFilteringMode,
     getGestureContexts: getPopupGestureContexts,
+    getStockPopupSnapshot,
+    getSourceContext: getPopupSourceContext,
+    getSourceFrameURL: getPopupSourceFrameURL,
     localRead,
     localWrite,
     sessionRead,
     sessionWrite,
+    supportsNavigationTargetContext: supportsPopupNavigationTarget,
     isEnabled: ( ) => rulesetConfig.popupBlockMode === true,
     log: message => ubolLog(message),
 });
@@ -1392,6 +1496,7 @@ async function startSession() {
         stockUpdated,
         importedUpdated,
         enabledRulesets,
+        error: rulesetEnableError,
     } = await enableRulesets(rulesetConfig.enabledRulesets);
     if ( stockUpdated || importedUpdated ) {
         rulesetConfig.enabledRulesets = enabledRulesets;
@@ -1402,10 +1507,18 @@ async function startSession() {
     // "The set of enabled static rulesets is persisted across sessions but not across extension updates"
     // "[Dynamic] rules persist across sessions and extension updates"
     // "[Session] rules do not persist across browser sessions"
-    if ( isNewVersion ) {
-        updateDynamicAndSessionRules();
-    } else {
-        updateSessionRules();
+    if ( rulesetEnableError ) {
+        ubolErr(`startSession/ruleset enable/${rulesetEnableError}`);
+    }
+    // enableRulesets() already rebuilt both dynamic and session namespaces
+    // when its stock selection changed. Avoid a second serialized rewrite.
+    if ( stockUpdated !== true ) {
+        const dnrRefreshResult = isNewVersion
+            ? await updateDynamicAndSessionRules()
+            : await updateSessionRules();
+        if ( dnrRefreshResult?.error ) {
+            ubolErr(`startSession/DNR refresh/${dnrRefreshResult.error}`);
+        }
     }
 
     // Permissions may have been removed while the extension was disabled
@@ -1591,8 +1704,13 @@ browser.commands.onCommand.addListener((...args) => {
 
 browser.tabs.onCreated.addListener(tab => {
     if ( Number.isSafeInteger(tab?.openerTabId) === false ) { return; }
+    // Capture transient provenance immediately, but do not evaluate until the
+    // global ruleset configuration and recovery journals are hydrated.
+    const openerTabPromise = browser.tabs.get(tab.openerTabId).catch(reason => {
+        ubolErr(`popupOpenerSnapshot/${reason}`);
+    });
     isFullyInitialized.then(( ) => {
-        return popupBlocker.onTabCreated(tab);
+        return popupBlocker.onTabCreated(tab, openerTabPromise);
     }).catch(reason => {
         ubolErr(`popupTabCreated/${reason}`);
     });
@@ -1612,11 +1730,19 @@ browser.tabs.onRemoved.addListener(tabId => {
     });
 });
 
-if ( webextFlavor === 'chromium' &&
-    browser.webNavigation?.onCreatedNavigationTarget ) {
+if ( supportsPopupNavigationTarget ) {
     browser.webNavigation.onCreatedNavigationTarget.addListener(details => {
+        const sourceContextPromise = getPopupSourceContext(
+            details.sourceTabId,
+            details.sourceFrameId
+        ).catch(reason => {
+            ubolErr(`popupSourceSnapshot/${reason}`);
+        });
         isFullyInitialized.then(( ) => {
-            return popupBlocker.onNavigationTarget(details);
+            return popupBlocker.onNavigationTarget(
+                details,
+                sourceContextPromise
+            );
         }).catch(reason => {
             ubolErr(`popupNavigationTarget/${reason}`);
         });

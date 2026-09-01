@@ -59,6 +59,35 @@ const USER_RULES_PRIORITY = 1000000;
 const TRUSTED_DIRECTIVE_BASE_RULE_ID = 8000000;
 const TRUSTED_DIRECTIVE_PRIORITY = USER_RULES_PRIORITY + 1000000;
 const STRICTBLOCK_PRIORITY = 29;
+let pendingDNRMutation = Promise.resolve();
+
+function enqueueDNRMutation(task) {
+    const result = pendingDNRMutation.then(task);
+    pendingDNRMutation = result.catch(reason => {
+        ubolErr(`DNR transaction queue/${reason}`);
+    });
+    return result;
+}
+
+function appendDNRResponseError(response, reason) {
+    const message = `${reason}`;
+    response.error = response.error === undefined
+        ? message
+        : `${response.error}; ${message}`;
+}
+
+async function refreshSessionRules(response = {}) {
+    try {
+        const result = await updateSessionRulesNow();
+        if ( result?.error ) {
+            appendDNRResponseError(response, result.error);
+        }
+    } catch ( reason ) {
+        ubolErr(`updateSessionRules/${reason}`);
+        appendDNRResponseError(response, reason);
+    }
+    return response;
+}
 
 /******************************************************************************/
 
@@ -138,10 +167,13 @@ pruneInvalidRegexRules.validated = new Map();
 
 /******************************************************************************/
 
+const countRegexRules = rules => rules.reduce((count, rule) =>
+    count + (rule?.condition?.regexFilter ? 1 : 0), 0
+);
+
 async function getDynamicRegexRuleCount() {
     const rules = await dnr.getDynamicRules();
-    const regexRules = rules.filter(a => Boolean(a.condition?.regexFilter));
-    return regexRules.length;
+    return countRegexRules(rules);
 }
 
 /******************************************************************************/
@@ -203,8 +235,9 @@ function toSafeDynamicRules(addRules) {
 
 /******************************************************************************/
 
-export async function updateDynamicAndSessionRules() {
+async function updateDynamicAndSessionRulesNow() {
     const currentRules = await dnr.getDynamicRules();
+    const dynamicRegexCountBefore = countRegexRules(currentRules);
 
     // Remove potentially left-over rules from previous version
     const removeRuleIds = [];
@@ -216,12 +249,11 @@ export async function updateDynamicAndSessionRules() {
 
     const addRules = [];
     await updateRegexRules(currentRules, addRules, removeRuleIds);
-    if ( addRules.length === 0 && removeRuleIds.length === 0 ) { return; }
+    if ( addRules.length === 0 && removeRuleIds.length === 0 ) {
+        return refreshSessionRules();
+    }
 
     const safeAddRules = toSafeDynamicRules(addRules) || [];
-    const dynamicRegexCountBefore = currentRules.reduce((count, rule) =>
-        count + (rule?.condition?.regexFilter ? 1 : 0), 0
-    );
     // Rules in the special/user realms are not replaced by this operation.
     // Include them in the projected total so an increase in stock regex rules
     // still clears session rules before Chrome evaluates the shared regex
@@ -241,18 +273,36 @@ export async function updateDynamicAndSessionRules() {
         rule.id = ruleId++;
     }
     const dynamicRegexCountAfter = retainedRegexCount + addedRegexCount;
-    if ( dynamicRegexCountAfter !== 0 ) {
-        ubolLog(`Using ${dynamicRegexCountAfter}/${dnr.MAX_NUMBER_OF_REGEX_RULES} dynamic regex-based DNR rules`);
-    }
-    // If we increase the number of dynamic regex rules, reset session rules to
-    // reduce risk of hitting maximum regex count
-    if ( dynamicRegexCountAfter > dynamicRegexCountBefore ) {
-        await clearSessionRules();
-    }
-
+    const maxRegexCount = Number.isSafeInteger(
+        dnr.MAX_NUMBER_OF_REGEX_RULES
+    ) ? dnr.MAX_NUMBER_OF_REGEX_RULES : Number.MAX_SAFE_INTEGER;
     const response = {};
+    if ( dynamicRegexCountAfter > maxRegexCount ) {
+        response.error =
+            `Dynamic regex plan requires ${dynamicRegexCountAfter}/` +
+            `${maxRegexCount} rules; the previous rules remain active`;
+        return refreshSessionRules(response);
+    }
+    if ( dynamicRegexCountAfter !== 0 ) {
+        ubolLog(`Using ${dynamicRegexCountAfter}/${maxRegexCount} dynamic regex-based DNR rules`);
+    }
 
+    let displacedSessionRegexRules = [];
+    let sessionRegexRemoved = false;
     try {
+        if ( dynamicRegexCountAfter !== dynamicRegexCountBefore ) {
+            const sessionRules = await dnr.getSessionRules();
+            if ( dynamicRegexCountAfter + countRegexRules(sessionRules) >
+                maxRegexCount ) {
+                displacedSessionRegexRules = sessionRules.filter(rule =>
+                    Boolean(rule.condition?.regexFilter)
+                );
+                await dnr.updateSessionRules({
+                    removeRuleIds: displacedSessionRegexRules.map(a => a.id),
+                });
+                sessionRegexRemoved = true;
+            }
+        }
         await dnr.updateDynamicRules({
             addRules: safeAddRules,
             removeRuleIds,
@@ -266,14 +316,33 @@ export async function updateDynamicAndSessionRules() {
     } catch(reason) {
         ubolErr(`updateDynamicAndSessionRules/${reason}`);
         response.error = `${reason}`;
+        if ( sessionRegexRemoved ) {
+            try {
+                await dnr.updateSessionRules({
+                    addRules: displacedSessionRegexRules,
+                });
+            } catch ( restoreReason ) {
+                response.error +=
+                    `; session rollback failed (${restoreReason})`;
+            }
+        }
     }
 
-    const result = await updateSessionRules();
-    if ( result?.error ) {
-        response.error ||= result.error;
-    }
+    // Strict-block session rules are independent of whether replacement of
+    // stock dynamic regex rules succeeded. Rebuild them against whichever
+    // dynamic snapshot Chrome actually kept.
+    return refreshSessionRules(response);
+}
 
-    return response;
+export function updateDynamicAndSessionRules() {
+    return enqueueDNRMutation(async ( ) => {
+        try {
+            return await updateDynamicAndSessionRulesNow();
+        } catch ( reason ) {
+            ubolErr(`updateDynamicAndSessionRules/${reason}`);
+            return refreshSessionRules({ error: `${reason}` });
+        }
+    });
 }
 
 /******************************************************************************/
@@ -379,33 +448,39 @@ async function setStrictBlockMode(state, force = false) {
 
 /******************************************************************************/
 
-async function updateSessionRules() {
+async function updateSessionRulesNow() {
     const addRulesUnfiltered = [];
     const removeRuleIds = [];
     const currentRules = await dnr.getSessionRules();
     await updateStrictBlockRules(currentRules, addRulesUnfiltered, removeRuleIds);
     if ( addRulesUnfiltered.length === 0 && removeRuleIds.length === 0 ) { return; }
-    const maxRegexCount = dnr.MAX_NUMBER_OF_REGEX_RULES * 0.95;
+    // Chromium accounts dynamic and session regex rules against one shared
+    // pool. Use the exact remaining capacity; a synthetic 5% reserve silently
+    // discarded valid strict-block rules without protecting another owner.
+    const maxRegexCount = Number.isSafeInteger(
+        dnr.MAX_NUMBER_OF_REGEX_RULES
+    ) ? dnr.MAX_NUMBER_OF_REGEX_RULES : Number.MAX_SAFE_INTEGER;
     const dynamicRegexCount = await getDynamicRegexRuleCount();
-    let regexCount = dynamicRegexCount;
+    let sessionRegexCount = 0;
     let ruleId = 1;
     for ( const rule of addRulesUnfiltered ) {
         rule.id = ruleId++;
         if ( Boolean(rule.condition.regexFilter) === false ) { continue; }
-        regexCount += 1;
-        if ( regexCount < maxRegexCount ) { continue; }
-        rule.id = 0;
+        if ( dynamicRegexCount + sessionRegexCount >= maxRegexCount ) {
+            rule.id = 0;
+            continue;
+        }
+        sessionRegexCount += 1;
     }
-    const sessionRegexCount = regexCount - dynamicRegexCount;
     const addRules = addRulesUnfiltered.filter(a => a.id !== 0);
     const rejectedRuleCount = addRulesUnfiltered.length - addRules.length;
     if ( rejectedRuleCount !== 0 ) {
         ubolLog(`Too many regex-based filters, ${rejectedRuleCount} session rules dropped`);
     }
     if ( sessionRegexCount !== 0 ) {
-        ubolLog(`Using ${sessionRegexCount}/${dnr.MAX_NUMBER_OF_REGEX_RULES} session regex-based DNR rules`);
+        ubolLog(`Using ${dynamicRegexCount + sessionRegexCount}/${maxRegexCount} shared dynamic/session regex-based DNR rules`);
     }
-    const response = {};
+    const response = { droppedRegexRules: rejectedRuleCount };
     try {
         await dnr.updateSessionRules({ addRules, removeRuleIds });
         if ( removeRuleIds.length !== 0 ) {
@@ -421,16 +496,18 @@ async function updateSessionRules() {
     return response;
 }
 
-async function clearSessionRules() {
-    const currentRules = await dnr.getSessionRules();
-    if ( currentRules.length === 0 ) { return; }
-    const removeRuleIds = currentRules.map(a => a.id);
-    return dnr.updateSessionRules({ removeRuleIds });
+function updateSessionRules() {
+    return enqueueDNRMutation(async ( ) => {
+        try {
+            return await updateSessionRulesNow();
+        } catch ( reason ) {
+            ubolErr(`updateSessionRules/${reason}`);
+            return { error: `${reason}` };
+        }
+    });
 }
 
-/******************************************************************************/
-
-async function filteringModesToDNR(modes) {
+async function filteringModesToDNRNow(modes) {
     const noneHostnames = new Set([ ...modes.none ]);
     const notNoneHostnames = new Set([ ...modes.basic, ...modes.optimal, ...modes.complete ]);
     const requestDomains = [];
@@ -454,6 +531,10 @@ async function filteringModesToDNR(modes) {
         if ( modified === false ) { return; }
         ubolLog(`${allowEverywhere ? 'Enabled' : 'Disabled'} DNR filtering for ${noneCount} sites`);
     });
+}
+
+function filteringModesToDNR(modes) {
+    return enqueueDNRMutation(( ) => filteringModesToDNRNow(modes));
 }
 
 /******************************************************************************/
@@ -762,11 +843,27 @@ async function getEffectiveUserRules() {
     return userRules;
 }
 
-async function updateUserRules(generation) {
+async function updateUserRulesNow(generation) {
     // Keep only ids from the existing dynamic rules before loading compiled
     // filter arrays. Holding all three large representations at once causes a
     // pronounced peak in a MV3 service worker on low-memory devices.
-    const removeRuleIds = (await getEffectiveUserRules()).map(a => a.id);
+    let removeRuleIds;
+    let retainedDynamicRegexCount = 0;
+    let previousUserRegexCount = 0;
+    {
+        const currentRules = await dnr.getDynamicRules();
+        removeRuleIds = [];
+        for ( const rule of currentRules ) {
+            if ( rule.id >= USER_RULES_BASE_RULE_ID ) {
+                removeRuleIds.push(rule.id);
+                if ( rule.condition?.regexFilter ) {
+                    previousUserRegexCount += 1;
+                }
+            } else if ( rule.condition?.regexFilter ) {
+                retainedDynamicRegexCount += 1;
+            }
+        }
+    }
     const userRulesText = await localRead('userDnrRules') || '';
     const effectiveGeneration = generation === undefined
         ? await localRead(ACTIVE_COMPILED_GENERATION_KEY) || ''
@@ -825,8 +922,40 @@ async function updateUserRules(generation) {
     }
 
     let effectiveRuleCount = removeRuleIds.length;
-    const safeAddRules = toSafeDynamicRules(addRules);
+    const safeAddRules = toSafeDynamicRules(addRules) || [];
+    const replacementRegexCount = countRegexRules(safeAddRules);
+    const projectedDynamicRegexCount =
+        retainedDynamicRegexCount + replacementRegexCount;
+    const maxRegexCount = Number.isSafeInteger(
+        dnr.MAX_NUMBER_OF_REGEX_RULES
+    ) ? dnr.MAX_NUMBER_OF_REGEX_RULES : Number.MAX_SAFE_INTEGER;
+    if ( projectedDynamicRegexCount > maxRegexCount ) {
+        out.fatalError =
+            `Dynamic regex plan requires ${projectedDynamicRegexCount}/` +
+            `${maxRegexCount} rules; the previous generation remains active`;
+        out.errors.push(out.fatalError);
+        return out;
+    }
+
+    const regexPlanChanged =
+        replacementRegexCount !== previousUserRegexCount;
+    let displacedSessionRegexRules = [];
+    let sessionRegexRemoved = false;
     try {
+        if ( regexPlanChanged ) {
+            const sessionRules = await dnr.getSessionRules();
+            const sessionRegexCount = countRegexRules(sessionRules);
+            if ( projectedDynamicRegexCount + sessionRegexCount >
+                maxRegexCount ) {
+                displacedSessionRegexRules = sessionRules.filter(rule =>
+                    Boolean(rule.condition?.regexFilter)
+                );
+                await dnr.updateSessionRules({
+                    removeRuleIds: displacedSessionRegexRules.map(a => a.id),
+                });
+                sessionRegexRemoved = true;
+            }
+        }
         // A single DNR update is atomic: if Chrome rejects any added rule or
         // the quota is exhausted, the previously active rules remain intact.
         await dnr.updateDynamicRules({
@@ -842,10 +971,45 @@ async function updateUserRules(generation) {
         out.added = safeAddRules.length;
         out.removed = removeRuleIds.length;
         effectiveRuleCount = safeAddRules.length;
+
+        if ( regexPlanChanged ) {
+            const sessionResult = await updateSessionRulesNow();
+            if ( sessionResult?.error ) {
+                out.errors.push(
+                    `Session regex rebuild failed: ${sessionResult.error}`
+                );
+            }
+            const displacedBySharedPool = Math.max(
+                sessionResult?.droppedRegexRules || 0,
+                projectedDynamicRegexCount +
+                    displacedSessionRegexRules.length - maxRegexCount,
+                0
+            );
+            if ( displacedBySharedPool > 0 ) {
+                out.errors.push(
+                    `${displacedBySharedPool} lower-priority ` +
+                    `session regex rule(s) could not fit the shared ` +
+                    `${maxRegexCount}-rule pool`
+                );
+            }
+        }
     } catch(reason) {
         ubolErr(`updateUserRules/${reason}`);
         out.fatalError = `${reason}`;
         out.errors.push(out.fatalError);
+        if ( sessionRegexRemoved && out.added === 0 ) {
+            try {
+                await dnr.updateSessionRules({
+                    addRules: displacedSessionRegexRules,
+                });
+            } catch ( restoreReason ) {
+                out.fatalError +=
+                    `; session rollback failed (${restoreReason})`;
+                out.errors.push(
+                    `Session regex rollback failed: ${restoreReason}`
+                );
+            }
+        }
     } finally {
         try {
             if ( effectiveRuleCount === 0 ) {
@@ -860,6 +1024,10 @@ async function updateUserRules(generation) {
         }
     }
     return out;
+}
+
+function updateUserRules(generation) {
+    return enqueueDNRMutation(( ) => updateUserRulesNow(generation));
 }
 
 /******************************************************************************/

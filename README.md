@@ -192,7 +192,7 @@ Load `dist/build/uBlockPlus.chromium` from the browser's extensions page. The ve
 - Imported lists compile locally into DNR and cosmetic data; scriptlets must already exist in the packaged allowlist.
 - Offscreen compilation is temporary and closes after its work completes.
 
-[Read the architecture](docs/ARCHITECTURE.md) · [Explore Power Runtime](docs/POWER-RUNTIME.md) · [Review the threat model](docs/THREAT-MODEL.md) · [Understand privacy](docs/PRIVACY.md)
+[Read the architecture](docs/ARCHITECTURE.md) · [Explore Power Runtime](docs/POWER-RUNTIME.md) · [Review the threat model](docs/THREAT-MODEL.md) · [Understand privacy](docs/PRIVACY.md) · [Review community research](docs/COMMUNITY-RESEARCH.md)
 
 ## Security and trust boundaries
 
@@ -211,9 +211,11 @@ Security issues should be reported privately through [GitHub Security Advisories
 
 | Available today | Constrained by MV3 | Future research—optional |
 | --- | --- | --- |
-| DNR network blocking, cosmetic filtering, packaged scriptlets, custom/imported lists, Filter Store, picker/zapper, context-aware per-host popup policies and backup/restore | Live request logging, procedural filters, imported popup-filter enforcement, dynamic-firewall semantics, response-header operations and redirect behavior are only partially equivalent to MV2 | Managed Enterprise adapters and an independently installed open-source native companion, subject to RFC, consent and security review |
+| DNR network blocking, cosmetic filtering, packaged scriptlets, custom/imported lists, Filter Store, picker/zapper, context-aware per-host popup policies, observer enforcement for packaged stock `$popup` rules and the supported imported `$popup`/`$popunder` subset with redacted realm/source-line/kind provenance, and backup/restore | Live request logging, procedural filters, asynchronous popup observation, dynamic-firewall semantics, response-header operations and redirect behavior do not provide exact MV2 parity | Managed Enterprise adapters and an independently installed open-source native companion, subject to RFC, consent and security review |
 
-Arbitrary response-body rewriting, equivalent DNS/CNAME visibility and exact size-based response blocking are not available through the normal public MV3 extension APIs. Some MV2 filter syntax cannot be translated; consult the feature matrix before assuming equivalence. Imported network-list compilation now records stable rejection reasons and source line numbers; surfacing that report more richly in the dashboard remains roadmap work.
+The observer now enforces the supported packaged stock `$popup` corpus and imported `$popup`/`$popunder` subset. Conditions that cannot be represented exactly—such as domain-type, request-method or response-header conditions—remain explicitly deferred instead of being approximated. Deferred allow conditions are retained as conservative fail-open guards: a guard may only defer a decision and never approximately allow or block. Stock DNR export does not preserve the original `$popunder` kind, so the build records that stock kind as omitted instead of silently relabelling it. Hostile regex/glob filters are validated, cached and evaluated under an aggregate work budget; budget exhaustion fails open. Because enforcement follows asynchronous MV3 tab and navigation events, it is not exact synchronous MV2 parity. Dynamic and session DNR rules share one 1,000-regex pool; they do not receive 1,000 each.
+
+Arbitrary response-body rewriting, equivalent DNS/CNAME visibility and exact size-based response blocking are not available through the normal public MV3 extension APIs. Some MV2 filter syntax cannot be translated; consult the feature matrix before assuming equivalence. Matched popup decisions expose only redacted realm, source-line and kind provenance locally. Imported network-list compilation records stable acceptance or deferral reasons and source line numbers; surfacing that report more richly in the dashboard remains roadmap work.
 
 ## Roadmap
 

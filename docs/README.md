@@ -24,13 +24,14 @@ This directory contains the user, architecture, security and community documenta
 
 | Document | Scope |
 | --- | --- |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | MV3 pipeline, durable state, memory profiles and capability layers. |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | MV3 pipeline, compiled popup routes, durable state, memory profiles and capability layers. |
 | [FEATURE-MATRIX.md](FEATURE-MATRIX.md) | Honest comparison between original MV2 behavior and current MV3 support. |
-| [POWER-RUNTIME.md](POWER-RUNTIME.md) | Supported flags, managed policy capability and security boundaries. |
+| [POWER-RUNTIME.md](POWER-RUNTIME.md) | DNR quota accounting, service-worker lifecycle, popup runtime and optional-tier boundaries. |
 | [FILTER-STORE.md](FILTER-STORE.md) | Catalog schema, repositories, trust tiers and review workflow. |
 | [PRIVACY.md](PRIVACY.md) | Local data, network access, permissions and retention. |
 | [THREAT-MODEL.md](THREAT-MODEL.md) | Assets, trust boundaries and supply-chain threats. |
 | [ROADMAP.md](ROADMAP.md) | Current, next and research work without release-date promises. |
+| [COMMUNITY-RESEARCH.md](COMMUNITY-RESEARCH.md) | Dated Chrome/Chromium and upstream uBO/uAssets evidence behind capability limits and priorities. |
 | [COMMUNITY-GOVERNANCE.md](COMMUNITY-GOVERNANCE.md) | RFCs, roles and community decision-making. |
 | [MODULE-PLAN.md](MODULE-PLAN.md) | Module ownership and implementation boundaries. |
 

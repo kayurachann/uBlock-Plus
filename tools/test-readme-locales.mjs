@@ -51,16 +51,23 @@ const requiredFragments = [
     'Manifest V3',
     'DNR',
     'Filter Store',
+    '$popup',
+    '$popunder',
     'uBlock-Plus_*.chromium.zip',
     'dist/build/uBlockPlus.chromium',
     'FEATURE-MATRIX.md',
     'ARCHITECTURE.md',
+    'COMMUNITY-RESEARCH.md',
     'POWER-RUNTIME.md',
     'THREAT-MODEL.md',
     'PRIVACY.md',
     'ROADMAP.md',
     'npm run lint',
     'npm test',
+];
+
+const requiredCaseInsensitiveFragments = [
+    'stock',
 ];
 
 const imageNames = [
@@ -160,6 +167,12 @@ for ( const [ locale, readmePath ] of readmes ) {
     for ( const fragment of requiredFragments ) {
         assert.ok(
             content.includes(fragment),
+            `${readmePath} is missing parity marker ${fragment}`
+        );
+    }
+    for ( const fragment of requiredCaseInsensitiveFragments ) {
+        assert.ok(
+            content.toLowerCase().includes(fragment),
             `${readmePath} is missing parity marker ${fragment}`
         );
     }

@@ -31,10 +31,13 @@ import {
 } from '../ubo-parser.js';
 
 import {
+    POPUP_DEFERRED_ROUTE_CODE,
+    POPUP_RUNTIME_ROUTE_CODE,
+} from '../compiled-popup-matcher.js';
+import {
     compiledStorageKey,
     newCompiledGeneration,
 } from '../compiled-storage.js';
-
 import { deserializeCompiledListOr } from '../compiled-cache.js';
 import { fetchList } from './fetch-list.js';
 import { isCredentialFreeHTTPS } from '../imported-fetch-policy.js';
@@ -841,10 +844,20 @@ async function runCompiler() {
             compiledGeneration,
             `${id}Filters.popupFilters`
         );
-        if ( compiled.popupFilters?.length ) {
+        // Keep only exact runtime filters plus deferred allow guards. The
+        // latter are not executable allows: the observer evaluates their
+        // supported condition projection and fails open whenever an omitted
+        // predicate could hide an exception. Deferred blocks remain in cached
+        // metadata only, avoiding diagnostics-only heap growth.
+        const runtimePopupFilters = compiled.popupFilters?.filter(filter =>
+            filter.routeCode === POPUP_RUNTIME_ROUTE_CODE ||
+            (filter.routeCode === POPUP_DEFERRED_ROUTE_CODE &&
+                filter.action === 'allow')
+        ) || [];
+        if ( runtimePopupFilters.length ) {
             values[popupFiltersKey] = {
                 schemaVersion: 1,
-                filters: compiled.popupFilters,
+                filters: runtimePopupFilters,
             };
         } else {
             toRemove.push(popupFiltersKey);

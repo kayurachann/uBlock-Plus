@@ -168,7 +168,9 @@ for ( const relativePath of [
     'platform/mv3/extension/js/imported-list-metadata.js',
     'platform/mv3/extension/js/memory-manager.js',
     'platform/mv3/extension/js/popup-blocker.js',
+    'platform/mv3/extension/js/popup-frame-context.js',
     'platform/mv3/extension/js/popup-policy.js',
+    'platform/mv3/extension/js/compiled-popup-matcher.js',
     'platform/mv3/extension/js/scripting/popup-context.js',
     'platform/mv3/extension/js/offscreen-lifecycle.js',
     'platform/mv3/extension/js/offscreen/compile-filters.js',
@@ -186,9 +188,14 @@ for ( const relativePath of [
 
 for ( const [ relativePath, stagedDependency ] of [
     [ 'tools/make-mv3.ps1', "'js/imported-fetch-policy.js'" ],
+    [ 'tools/make-mv3.ps1', "'js/compiled-popup-matcher.js'" ],
     [
         'tools/make-mv3.sh',
         'platform/mv3/extension/js/imported-fetch-policy.js',
+    ],
+    [
+        'tools/make-mv3.sh',
+        'platform/mv3/extension/js/compiled-popup-matcher.js',
     ],
 ] ) {
     const script = await fs.readFile(path.join(root, relativePath), 'utf8');
@@ -196,7 +203,7 @@ for ( const [ relativePath, stagedDependency ] of [
     assert(
         rulesetStageIndex !== -1 &&
             script.slice(rulesetStageIndex).includes(stagedDependency),
-        `${relativePath} must stage imported-fetch-policy.js for make-rulesets`
+        `${relativePath} must stage ${stagedDependency} for make-rulesets`
     );
 }
 
@@ -239,6 +246,34 @@ assert(
     background.includes('return processDueJobs(onMessage);') &&
         background.includes('ubolErr(`processDueJobs/${reason}`)'),
     'Deferred-job failures must not become unhandled rejections'
+);
+assert(
+    background.includes('if ( stockUpdated !== true )') &&
+        background.includes('startSession/ruleset enable/'),
+    'Startup must not repeat a stock DNR refresh already done by enableRulesets'
+);
+const popupListenerStart = background.indexOf(
+    'browser.tabs.onCreated.addListener'
+);
+const popupListenerEnd = background.indexOf(
+    'browser.alarms.onAlarm.addListener',
+    popupListenerStart
+);
+const popupListenerBlock = background.slice(
+    popupListenerStart,
+    popupListenerEnd
+);
+assert(
+    popupListenerStart !== -1 && popupListenerEnd !== -1 &&
+        popupListenerBlock.indexOf('const openerTabPromise =') <
+            popupListenerBlock.indexOf('isFullyInitialized.then') &&
+        popupListenerBlock.indexOf('const sourceContextPromise =') <
+            popupListenerBlock.lastIndexOf('isFullyInitialized.then') &&
+        popupListenerBlock.includes(
+            'popupBlocker.onTabCreated(tab, openerTabPromise)'
+        ) &&
+        popupListenerBlock.includes('sourceContextPromise'),
+    'Popup provenance must be captured before hydration and evaluated after it'
 );
 
 const backupRestore = await fs.readFile(

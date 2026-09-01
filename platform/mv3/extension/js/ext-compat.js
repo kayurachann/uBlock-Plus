@@ -77,23 +77,39 @@ dnr.setAllowAllRules = async function(id, allowed, notAllowed, reverse, priority
         }
         addSessionRules.push(rule1);
     }
-    const promises = [];
-    const modified = deepEquals(addDynamicRules, beforeDynamicRules) === false;
-    if ( modified ) {
-        promises.push(
-            dnr.updateDynamicRules({
+    const dynamicModified =
+        deepEquals(addDynamicRules, beforeDynamicRules) === false;
+    const sessionModified =
+        deepEquals(addSessionRules, beforeSessionRules) === false;
+    let dynamicApplied = false;
+    try {
+        if ( dynamicModified ) {
+            await dnr.updateDynamicRules({
                 addRules: addDynamicRules,
                 removeRuleIds: beforeDynamicRules.map(r => r.id),
-            })
-        );
-    }
-    if ( deepEquals(addSessionRules, beforeSessionRules) === false ) {
-        promises.push(
-            dnr.updateSessionRules({
+            });
+            dynamicApplied = true;
+        }
+        if ( sessionModified ) {
+            await dnr.updateSessionRules({
                 addRules: addSessionRules,
                 removeRuleIds: beforeSessionRules.map(r => r.id),
-            })
-        );
+            });
+        }
+    } catch ( reason ) {
+        if ( dynamicApplied ) {
+            try {
+                await dnr.updateDynamicRules({
+                    addRules: beforeDynamicRules,
+                    removeRuleIds: addDynamicRules.map(r => r.id),
+                });
+            } catch ( rollbackReason ) {
+                throw new Error(
+                    `${reason}; dynamic rollback failed (${rollbackReason})`
+                );
+            }
+        }
+        throw reason;
     }
-    return Promise.all(promises).then(( ) => modified).catch(( ) => false);
+    return dynamicModified || sessionModified;
 };

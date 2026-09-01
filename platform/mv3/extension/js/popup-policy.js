@@ -264,6 +264,19 @@ export function appendPopupDiagnostic(
         burstCount: Number.isSafeInteger(value?.burstCount)
             ? Math.max(1, value.burstCount)
             : 1,
+        filterKind: value?.kind === 'popup' || value?.kind === 'popunder'
+            ? value.kind
+            : '',
+        filterRealm:
+            value?.matchedRealm === 'sandbox' ||
+            value?.matchedRealm === 'imported' ||
+            value?.matchedRealm === 'stock'
+                ? value.matchedRealm
+                : '',
+        filterLineNumber:
+            Number.isSafeInteger(value?.lineNumber) && value.lineNumber > 0
+                ? value.lineNumber
+                : 0,
     };
     out.push(entry);
     const limit = Number.isSafeInteger(maximum) && maximum > 0

@@ -11,6 +11,11 @@
 *******************************************************************************/
 
 import {
+    ACTIVE_COMPILED_GENERATION_KEY,
+    compiledStorageKey,
+} from './compiled-storage.js';
+
+import {
     MAX_POPUP_DIAGNOSTICS,
     MAX_POPUP_POLICIES,
     POPUP_POLICY_MODES,
@@ -22,6 +27,10 @@ import {
     validatePopupPolicies,
 } from './popup-policy.js';
 
+import {
+    evaluateCompiledPopupFilters,
+} from './compiled-popup-matcher.js';
+
 const POLICY_STORAGE_KEY = 'popupBlocker.sitePolicies';
 const DIAGNOSTIC_STORAGE_KEY = 'popupBlocker.diagnostics';
 const TRANSIENT_STORAGE_KEY = 'popupBlocker.transient';
@@ -29,6 +38,13 @@ const GESTURE_TTL_MS = 5_000;
 const BURST_WINDOW_MS = 2_000;
 const CANDIDATE_TTL_MS = 30_000;
 const MAX_TRANSIENT_ENTRIES = 256;
+const COMPILED_POPUP_REALMS = Object.freeze([ 'sandbox', 'imported' ]);
+const PROTECTED_POPUP_PROTOCOLS = new Set([
+    'chrome:',
+    'chrome-extension:',
+    'edge:',
+    'moz-extension:',
+]);
 
 /******************************************************************************/
 
@@ -65,7 +81,33 @@ function checkpointURL(raw) {
 }
 
 function boundedContextURL(raw) {
-    return typeof raw === 'string' && raw.length <= 8192 ? raw : '';
+    return contextURLDetails(raw).url;
+}
+
+function contextURLDetails(raw) {
+    if ( typeof raw !== 'string' || raw === '' ) {
+        return { url: '', complete: false };
+    }
+    if ( raw.length <= 8192 ) { return { url: raw, complete: true }; }
+    let parsed;
+    try {
+        parsed = new URL(raw);
+    } catch {
+        return { url: '', complete: false };
+    }
+    let url = checkpointURL(raw);
+    if ( url === '' ) {
+        if ( parsed.protocol === 'data:' ) {
+            url = 'data:,';
+        } else if ( parsed.protocol === 'file:' ) {
+            url = 'file:///';
+        } else if ( parsed.origin !== 'null' ) {
+            url = `${parsed.origin}/`;
+        } else {
+            url = `${parsed.protocol}${parsed.pathname.slice(0, 256)}`;
+        }
+    }
+    return { url, complete: false };
 }
 
 function sameNavigationTarget(a, b) {
@@ -88,6 +130,29 @@ function boundedMapSet(map, key, value) {
     }
 }
 
+function filteringHostname(raw, allowGlobalFallback = false) {
+    const hostname = normalizePopupHostname(raw);
+    if ( hostname !== '' ) { return hostname; }
+    let url;
+    try {
+        url = new URL(raw);
+    } catch {
+        return '';
+    }
+    if ( url.protocol === 'blob:' ) {
+        try {
+            return normalizePopupHostname(new URL(url.pathname).hostname);
+        } catch {
+            return '';
+        }
+    }
+    if ( allowGlobalFallback === false ||
+        PROTECTED_POPUP_PROTOCOLS.has(url.protocol) ) {
+        return '';
+    }
+    return 'all-urls';
+}
+
 function cloneObject(value) {
     return Object.assign(Object.create(null), value);
 }
@@ -107,11 +172,16 @@ function validRecentTimestamp(value, timestamp, maximumAge) {
 export function createPopupBlocker(dependencies = {}) {
     const {
         tabs,
+        getFilteringMode = async ( ) => 3,
         getGestureContexts = async ( ) => [],
+        getStockPopupSnapshot = async ( ) => ({ key: '', filters: [] }),
+        getSourceContext = async ( ) => undefined,
+        getSourceFrameURL = async ( ) => '',
         localRead = async ( ) => undefined,
         localWrite = async ( ) => undefined,
         sessionRead = async ( ) => undefined,
         sessionWrite = async ( ) => undefined,
+        supportsNavigationTargetContext = true,
         isEnabled = ( ) => true,
         now = ( ) => Date.now(),
         log = ( ) => undefined,
@@ -125,6 +195,92 @@ export function createPopupBlocker(dependencies = {}) {
     let policyMutation = Promise.resolve();
     let diagnosticMutation = Promise.resolve();
     let transientMutation = Promise.resolve();
+    let compiledLoadMutation = Promise.resolve();
+    let compiledSnapshot = {
+        generation: undefined,
+        realms: new Map(),
+    };
+
+    async function loadCompiledPopupRealmsNow(filteringMode) {
+        // The generation pointer is the commit record. Generation-scoped
+        // values are immutable, so a worker may safely load them lazily after
+        // Chrome wakes it for a popup event without relying on global state.
+        const stockSnapshot = filteringMode >= 1
+            ? await getStockPopupSnapshot()
+            : { key: '', filters: [] };
+        const stockFilters = Array.isArray(stockSnapshot?.filters)
+            ? stockSnapshot.filters
+            : [];
+        const materializeRealms = (realmIds, realms) => {
+            const out = [ {
+                id: 'sandbox',
+                filters: realms.get('sandbox') || [],
+            } ];
+            if ( filteringMode >= 1 ) {
+                out.push({ id: 'stock', filters: stockFilters });
+            }
+            if ( realmIds.includes('imported') ) {
+                out.push({
+                    id: 'imported',
+                    filters: realms.get('imported') || [],
+                });
+            }
+            return out;
+        };
+        for ( let attempt = 0; attempt < 2; attempt++ ) {
+            const generation = await localRead(
+                ACTIVE_COMPILED_GENERATION_KEY
+            ) || '';
+            const realmIds = COMPILED_POPUP_REALMS.slice(
+                0,
+                filteringMode >= 2 ? 2 : 1
+            );
+            const currentRealms = compiledSnapshot.generation === generation
+                ? compiledSnapshot.realms
+                : new Map();
+            const missingRealmIds = realmIds.filter(
+                id => currentRealms.has(id) === false
+            );
+            if ( missingRealmIds.length === 0 ) {
+                return materializeRealms(realmIds, currentRealms);
+            }
+            const values = await Promise.all(missingRealmIds.map(id =>
+                localRead(compiledStorageKey(
+                    generation,
+                    `${id}Filters.popupFilters`
+                ))
+            ));
+            const committedGeneration = await localRead(
+                ACTIVE_COMPILED_GENERATION_KEY
+            ) || '';
+            if ( committedGeneration !== generation ) { continue; }
+            const realms = new Map(currentRealms);
+            for ( let i = 0; i < missingRealmIds.length; i++ ) {
+                const value = values[i];
+                if ( value?.schemaVersion !== 1 ||
+                    Array.isArray(value.filters) === false ) {
+                    realms.set(missingRealmIds[i], []);
+                    continue;
+                }
+                realms.set(missingRealmIds[i], value.filters);
+            }
+            compiledSnapshot = { generation, realms };
+            return materializeRealms(realmIds, realms);
+        }
+        // A compile committed twice while this event was loading. Failing
+        // open for this candidate is safer than mixing two generations.
+        return [];
+    }
+
+    function loadCompiledPopupRealms(filteringMode) {
+        const result = compiledLoadMutation.then(
+            ( ) => loadCompiledPopupRealmsNow(filteringMode)
+        );
+        compiledLoadMutation = result.catch(reason => {
+            log(`compiled popup filters unavailable: ${reason}`);
+        });
+        return result;
+    }
 
     function enforceCandidateLifetime(candidate, timestamp) {
         if ( validRecentTimestamp(
@@ -208,10 +364,27 @@ export function createPopupBlocker(dependencies = {}) {
                 ) === false ) {
                 continue;
             }
+            const initiatorURL = checkpointURL(entry.initiatorURL);
             const candidate = {
                 tabId: entry.tabId,
                 openerTabId: entry.openerTabId,
                 targetURL: checkpointURL(entry.targetURL),
+                targetURLComplete: false,
+                originalOpenerURL: checkpointURL(entry.originalOpenerURL),
+                originalOpenerURLComplete: false,
+                initiatorURL,
+                // Popup filter initiator conditions are hostname-only. The
+                // redacted origin therefore preserves all required matching
+                // information across a worker restart without retaining a
+                // path, query, fragment or credential.
+                initiatorContextComplete:
+                    entry.initiatorContextComplete === true &&
+                    initiatorURL !== '',
+                compiledPopupAllowed: entry.compiledPopupAllowed === true,
+                sourceFrameId: validTabId(entry.sourceFrameId)
+                    ? entry.sourceFrameId
+                    : -1,
+                popunderObserved: false,
                 gestureTargetURL: checkpointURL(entry.gestureTargetURL),
                 createdAt: entry.createdAt,
                 gestureResolved: entry.gestureResolved === true,
@@ -263,6 +436,16 @@ export function createPopupBlocker(dependencies = {}) {
                 tabId: candidate.tabId,
                 openerTabId: candidate.openerTabId,
                 targetURL: checkpointURL(candidate.targetURL),
+                targetURLComplete: false,
+                originalOpenerURL: checkpointURL(
+                    candidate.originalOpenerURL
+                ),
+                initiatorURL: checkpointURL(candidate.initiatorURL),
+                initiatorContextComplete:
+                    candidate.initiatorContextComplete === true,
+                compiledPopupAllowed:
+                    candidate.compiledPopupAllowed === true,
+                sourceFrameId: candidate.sourceFrameId,
                 gestureTargetURL: checkpointURL(
                     candidate.gestureTargetURL
                 ),
@@ -300,20 +483,45 @@ export function createPopupBlocker(dependencies = {}) {
         return count;
     }
 
-    function getOrCreateCandidate(tabId, openerTabId, targetURL = '') {
+    function getOrCreateCandidate(
+        tabId,
+        openerTabId,
+        targetURL = '',
+        context = {}
+    ) {
         let candidate = candidates.get(tabId);
         if ( candidate !== undefined ) {
             if ( targetURL !== '' ) {
-                candidate.targetURL = boundedContextURL(targetURL);
+                const target = contextURLDetails(targetURL);
+                const nextTargetURL = target.url;
+                if ( candidate.targetURL !== nextTargetURL ) {
+                    candidate.compiledPopupAllowed = false;
+                }
+                candidate.targetURL = nextTargetURL;
+                candidate.targetURLComplete = target.complete;
+            }
+            if ( validTabId(context.sourceFrameId) ) {
+                candidate.sourceFrameId = context.sourceFrameId;
             }
             return candidate;
         }
         const timestamp = now();
         pruneTransientState(timestamp);
+        const target = contextURLDetails(targetURL);
         candidate = {
             tabId,
             openerTabId,
-            targetURL: boundedContextURL(targetURL),
+            targetURL: target.url,
+            targetURLComplete: target.complete,
+            originalOpenerURL: '',
+            originalOpenerURLComplete: false,
+            initiatorURL: '',
+            initiatorContextComplete: false,
+            compiledPopupAllowed: false,
+            sourceFrameId: validTabId(context.sourceFrameId)
+                ? context.sourceFrameId
+                : -1,
+            popunderObserved: false,
             gestureTargetURL: '',
             createdAt: timestamp,
             gestureResolved: false,
@@ -325,6 +533,57 @@ export function createPopupBlocker(dependencies = {}) {
         };
         boundedMapSet(candidates, tabId, candidate);
         return candidate;
+    }
+
+    function applySourceContext(candidate, context) {
+        if ( context instanceof Object === false ) { return; }
+        const top = contextURLDetails(context.topURL);
+        if ( candidate.originalOpenerURL === '' && top.url !== '' ) {
+            candidate.originalOpenerURL = top.url;
+            candidate.originalOpenerURLComplete =
+                context.topContextComplete === true && top.complete;
+        }
+        const initiatorURL = boundedContextURL(context.initiatorURL);
+        if ( candidate.initiatorContextComplete !== true &&
+            context.initiatorContextComplete === true &&
+            initiatorURL !== '' ) {
+            candidate.initiatorURL = initiatorURL;
+            candidate.initiatorContextComplete = true;
+        }
+    }
+
+    async function resolveOpenerContext(candidate, openerURL) {
+        if ( candidate.originalOpenerURL === '' ) {
+            const opener = contextURLDetails(openerURL);
+            candidate.originalOpenerURL = opener.url;
+            candidate.originalOpenerURLComplete = opener.complete;
+        }
+        if ( candidate.initiatorContextComplete ) { return; }
+        if ( candidate.sourceFrameId === 0 ) {
+            candidate.initiatorURL = boundedContextURL(openerURL);
+            candidate.initiatorContextComplete =
+                candidate.initiatorURL !== '';
+            return;
+        }
+        if ( candidate.sourceFrameId > 0 ) {
+            try {
+                const frameURL = await getSourceFrameURL(
+                    candidate.openerTabId,
+                    candidate.sourceFrameId
+                );
+                candidate.initiatorURL = boundedContextURL(frameURL);
+                candidate.initiatorContextComplete =
+                    candidate.initiatorURL !== '';
+            } catch ( reason ) {
+                log(`popup source frame unavailable: ${reason}`);
+            }
+        }
+        if ( candidate.initiatorURL === '' ) {
+            // This fallback can be used by rules with no initiator condition.
+            // The completeness bit prevents it from broadening a domain-
+            // constrained block when the popup actually came from an iframe.
+            candidate.initiatorURL = boundedContextURL(openerURL);
+        }
     }
 
     async function resolveGesture(candidate) {
@@ -372,6 +631,87 @@ export function createPopupBlocker(dependencies = {}) {
         return diagnosticMutation;
     }
 
+    async function filteringModeFromURL(url, allowGlobalFallback = false) {
+        const hostname = filteringHostname(url, allowGlobalFallback);
+        if ( hostname === '' ) { return 0; }
+        try {
+            const mode = await getFilteringMode(hostname);
+            return Number.isSafeInteger(mode) ? mode : 0;
+        } catch ( reason ) {
+            log(`popup filtering mode unavailable: ${reason}`);
+            return 0;
+        }
+    }
+
+    async function finalizeDecision(candidate, result, closeTabId) {
+        if ( result.action === 'defer' ) {
+            await persistTransient();
+            return result;
+        }
+        const signature = [
+            result.action,
+            result.reason,
+            result.targetHostname,
+            result.kind,
+            result.matchedRealm,
+            result.lineNumber,
+            closeTabId,
+        ].join('|');
+        if ( signature === candidate.lastSignature ) { return result; }
+        candidate.lastSignature = signature;
+
+        if ( result.action === 'block' ) {
+            let action = 'blocked';
+            try {
+                await tabs.remove(closeTabId);
+            } catch ( reason ) {
+                action = 'block-failed';
+                log(`popup tab ${closeTabId} could not be closed: ${reason}`);
+            }
+            candidates.delete(candidate.tabId);
+            await Promise.all([
+                persistTransient(),
+                persistDiagnostic({ ...result, action, at: now() }),
+            ]);
+            return { ...result, action };
+        }
+
+        await Promise.all([
+            persistTransient(),
+            persistDiagnostic({ ...result, at: now() }),
+        ]);
+        return result;
+    }
+
+    async function evaluateCompiledCandidate(candidate, input) {
+        if ( supportsNavigationTargetContext !== true ) {
+            return { action: 'none' };
+        }
+        const filteringMode = input.filteringMode;
+        if ( filteringMode < 1 ) { return { action: 'none' }; }
+        const realms = await loadCompiledPopupRealms(filteringMode);
+        const result = evaluateCompiledPopupFilters(realms, {
+            kind: input.kind,
+            targetURL: input.targetURL,
+            targetURLComplete: input.targetURLComplete !== false,
+            initiatorURL: input.initiatorURL,
+            topURL: input.topURL,
+            initiatorContextComplete: input.initiatorContextComplete,
+            requireTargetHostnameMatch:
+                input.requireTargetHostnameMatch === true,
+            filteringMode,
+        });
+        if ( result?.action === 'defer' ) { return result; }
+        if ( result?.action !== 'allow' && result?.action !== 'block' ) {
+            return { action: 'none' };
+        }
+        return {
+            ...result,
+            openerHostname: normalizePopupHostname(input.initiatorURL),
+            targetHostname: normalizePopupHostname(input.targetURL),
+        };
+    }
+
     async function evaluateCandidate(candidate, fallbackTab) {
         if ( isEnabled() !== true ) {
             candidates.delete(candidate.tabId);
@@ -398,111 +738,257 @@ export function createPopupBlocker(dependencies = {}) {
             return { action: 'allow', reason: 'discarded-tab-restore' };
         }
         const openerURL = tabURL(openerTab);
-        const openerHostname = normalizePopupHostname(openerURL);
+        await resolveOpenerContext(candidate, openerURL);
+        const targetURL = candidate.targetURL ||
+            boundedContextURL(tabURL(fallbackTab));
+        const filteringSiteURL = candidate.originalOpenerURL || openerURL;
+        // The current opener tab may already be the popunder landing page.
+        // Policy lookup must use the immutable pre-navigation snapshot; its
+        // canonical origin also remains parseable when a long path was
+        // deliberately discarded.
+        const openerHostname = normalizePopupHostname(filteringSiteURL);
+        const [ filteringMode, targetFilteringMode ] = await Promise.all([
+            filteringModeFromURL(filteringSiteURL),
+            filteringModeFromURL(targetURL, true),
+        ]);
+        if ( filteringMode < 1 || targetFilteringMode < 1 ) {
+            candidate.compiledPopupAllowed = false;
+            return finalizeDecision(candidate, {
+                action: 'allow',
+                reason: 'popup-filtering-disabled',
+                openerHostname,
+                targetHostname: normalizePopupHostname(targetURL),
+            }, candidate.tabId);
+        }
+        const gestureTargetMatches = sameNavigationTarget(
+            candidate.gestureTargetURL,
+            targetURL
+        );
+        if ( candidate.hasRecentUserGesture !== true ||
+            gestureTargetMatches !== true ) {
+            const compiledResult = await evaluateCompiledCandidate(candidate, {
+                kind: 'popup',
+                targetURL,
+                targetURLComplete: candidate.targetURLComplete === true,
+                initiatorURL: candidate.initiatorURL || openerURL,
+                topURL: filteringSiteURL,
+                initiatorContextComplete:
+                    candidate.initiatorContextComplete === true,
+                filteringMode,
+            });
+            if ( compiledResult.action === 'allow' ) {
+                candidate.compiledPopupAllowed = true;
+            } else if ( compiledResult.action === 'none' ) {
+                candidate.compiledPopupAllowed = false;
+            }
+            if ( compiledResult.action !== 'none' ) {
+                return finalizeDecision(
+                    candidate,
+                    compiledResult,
+                    candidate.tabId
+                );
+            }
+        } else {
+            // A trusted exact click suppresses popup matching, but deliberately
+            // does not suppress the later, independently detected popunder.
+            candidate.compiledPopupAllowed = false;
+        }
         const { mode, matchedHostname } = resolvePopupPolicy(
             policies,
             openerHostname
         );
-        const targetURL = candidate.targetURL || checkpointURL(tabURL(fallbackTab));
         const result = evaluatePopupCandidate({
             policy: mode,
             matchedHostname,
-            openerURL,
+            openerURL: candidate.originalOpenerURL || openerURL,
             targetURL,
             gestureContextAvailable: candidate.gestureContextAvailable,
             hasRecentUserGesture: candidate.hasRecentUserGesture,
-            gestureTargetMatches: sameNavigationTarget(
-                candidate.gestureTargetURL,
-                targetURL
-            ),
+            gestureTargetMatches,
             burstCount: candidate.burstCount,
         });
-        if ( result.action === 'defer' ) {
-            await persistTransient();
-            return result;
-        }
-
-        const signature = [
-            result.action,
-            result.reason,
-            result.targetHostname,
-        ].join('|');
-        if ( signature === candidate.lastSignature ) { return result; }
-        candidate.lastSignature = signature;
-
-        if ( result.action === 'block' ) {
-            let action = 'blocked';
-            try {
-                await tabs.remove(candidate.tabId);
-            } catch ( reason ) {
-                action = 'block-failed';
-                log(`popup tab ${candidate.tabId} could not be closed: ${reason}`);
-            }
-            candidates.delete(candidate.tabId);
-            await Promise.all([
-                persistTransient(),
-                persistDiagnostic({ ...result, action, at: now() }),
-            ]);
-            return { ...result, action };
-        }
-
-        await Promise.all([
-            persistTransient(),
-            persistDiagnostic({ ...result, at: now() }),
-        ]);
-        return result;
+        return finalizeDecision(candidate, result, candidate.tabId);
     }
 
-    async function onTabCreated(tab) {
+    async function onTabCreated(tab, capturedOpenerTabPromise) {
         if ( isEnabled() !== true ) { return; }
         if ( validTabId(tab?.id) === false ||
             validTabId(tab?.openerTabId) === false ) {
             return;
         }
+        // Start the opener read before storage hydration. tabs.onCreated can
+        // be the only provenance event on platforms without
+        // onCreatedNavigationTarget, and a popunder may replace this URL in
+        // the same task which created the new tab.
+        const openerTabPromise = capturedOpenerTabPromise ||
+            tabs.get(tab.openerTabId).catch(reason => {
+                log(`popup opener snapshot unavailable: ${reason}`);
+            });
         await ready;
         const candidate = getOrCreateCandidate(
             tab.id,
             tab.openerTabId,
             tabURL(tab)
         );
+        const openerTab = await openerTabPromise;
+        if ( openerTab !== undefined ) {
+            await resolveOpenerContext(candidate, tabURL(openerTab));
+        }
         await resolveGesture(candidate);
         await persistTransient();
         return evaluateCandidate(candidate, tab);
     }
 
-    async function onNavigationTarget(details) {
+    async function onNavigationTarget(details, capturedSourceContextPromise) {
         if ( isEnabled() !== true ) { return; }
         if ( validTabId(details?.tabId) === false ||
             validTabId(details?.sourceTabId) === false ) {
             return;
         }
+        // Initiate browser frame reads before the first unrelated await. The
+        // opener may navigate synchronously after creating a popunder.
+        const sourceContextPromise = capturedSourceContextPromise ||
+            (async ( ) => getSourceContext(
+                details.sourceTabId,
+                details.sourceFrameId
+            ))().catch(reason => {
+                log(`popup source context unavailable: ${reason}`);
+            });
         await ready;
         const candidate = getOrCreateCandidate(
             details.tabId,
             details.sourceTabId,
-            details.url || ''
+            details.url || '',
+            { sourceFrameId: details.sourceFrameId }
         );
+        applySourceContext(candidate, await sourceContextPromise);
         await resolveGesture(candidate);
         await persistTransient();
         return evaluateCandidate(candidate);
     }
 
+    async function evaluatePopunderCandidate(candidate) {
+        if ( candidate.compiledPopupAllowed === true ) {
+            return {
+                action: 'none',
+                reason: 'compiled-popup-allow-suppresses-popunder',
+            };
+        }
+        if ( candidate.originalOpenerURLComplete !== true ) {
+            // The full pre-navigation URL is deliberately not checkpointed.
+            // After a worker restart we cannot safely apply a path exception,
+            // so fail open instead of turning a broad block into a false hit.
+            return { action: 'none', reason: 'popunder-context-incomplete' };
+        }
+        let targetTab;
+        try {
+            targetTab = await tabs.get(candidate.tabId);
+        } catch {
+            return { action: 'none', reason: 'popup-tab-unavailable' };
+        }
+        if ( targetTab?.discarded === true ) {
+            return { action: 'none', reason: 'discarded-tab-restore' };
+        }
+        const targetURL = candidate.targetURL ||
+            boundedContextURL(tabURL(targetTab));
+        const [ filteringMode, closingFilteringMode ] = await Promise.all([
+            filteringModeFromURL(targetURL),
+            filteringModeFromURL(candidate.originalOpenerURL, true),
+        ]);
+        if ( filteringMode < 1 || closingFilteringMode < 1 ) {
+            return { action: 'none', reason: 'popup-filtering-disabled' };
+        }
+        const commonInput = {
+            kind: 'popunder',
+            targetURL: candidate.originalOpenerURL,
+            targetURLComplete: true,
+            initiatorURL: targetURL,
+            topURL: targetURL,
+            initiatorContextComplete: targetURL !== '',
+            filteringMode,
+        };
+        const popunderResult = await evaluateCompiledCandidate(
+            candidate,
+            commonInput
+        );
+        if ( popunderResult.action === 'block' ||
+            popunderResult.action === 'defer' ) {
+            return finalizeDecision(
+                candidate,
+                popunderResult,
+                candidate.openerTabId
+            );
+        }
+        // uBO's original engine retries a hostname-touching ordinary $popup
+        // rule against the old opener when no explicit $popunder block won.
+        // The matcher accepts only positive hostname evidence here; broad and
+        // path-only popup filters are never guessed into popunder decisions.
+        const popupFallbackResult = await evaluateCompiledCandidate(
+            candidate,
+            {
+                ...commonInput,
+                kind: 'popup',
+                requireTargetHostnameMatch: true,
+            }
+        );
+        const result = popupFallbackResult.action === 'none'
+            ? popunderResult
+            : popupFallbackResult;
+        if ( result.action === 'none' ) { return result; }
+        return finalizeDecision(candidate, result, candidate.openerTabId);
+    }
+
     async function onTabUpdated(tabId, changeInfo, tab) {
         await ready;
+        let directResult;
         const candidate = candidates.get(tabId);
-        if ( candidate === undefined ) { return; }
-        const lifetime = enforceCandidateLifetime(candidate, now());
-        if ( lifetime.candidateExpired ) {
-            candidates.delete(candidate.tabId);
+        if ( candidate !== undefined ) {
+            const lifetime = enforceCandidateLifetime(candidate, now());
+            if ( lifetime.candidateExpired ) {
+                candidates.delete(candidate.tabId);
+                await persistTransient();
+                directResult = {
+                    action: 'allow',
+                    reason: 'candidate-expired',
+                };
+            } else {
+                const targetURL = changeInfo?.url || tabURL(tab);
+                if ( targetURL !== '' ) {
+                    const target = contextURLDetails(targetURL);
+                    const nextTargetURL = target.url;
+                    if ( candidate.targetURL !== nextTargetURL ) {
+                        candidate.compiledPopupAllowed = false;
+                    }
+                    candidate.targetURL = nextTargetURL;
+                    candidate.targetURLComplete = target.complete;
+                }
+                await resolveGesture(candidate);
+                directResult = await evaluateCandidate(candidate, tab);
+            }
+        }
+
+        let popunderResult;
+        if ( typeof changeInfo?.url === 'string' && changeInfo.url !== '' ) {
+            for ( const popupCandidate of Array.from(candidates.values()) ) {
+                if ( popupCandidate.openerTabId !== tabId ) { continue; }
+                if ( enforceCandidateLifetime(
+                    popupCandidate,
+                    now()
+                ).candidateExpired ) {
+                    candidates.delete(popupCandidate.tabId);
+                    continue;
+                }
+                popupCandidate.popunderObserved = true;
+                const result = await evaluatePopunderCandidate(
+                    popupCandidate
+                );
+                if ( result.action !== 'none' ) {
+                    popunderResult = result;
+                }
+            }
             await persistTransient();
-            return { action: 'allow', reason: 'candidate-expired' };
         }
-        const targetURL = changeInfo?.url || tabURL(tab);
-        if ( targetURL !== '' ) {
-            candidate.targetURL = boundedContextURL(targetURL);
-        }
-        await resolveGesture(candidate);
-        return evaluateCandidate(candidate, tab);
+        return popunderResult || directResult;
     }
 
     async function onTabRemoved(tabId) {

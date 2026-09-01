@@ -19,6 +19,16 @@
     Home: https://github.com/kayurachann/uBlock-Plus
 */
 
+import {
+    POPUP_DEFERRED_ROUTE_CODE,
+    POPUP_RUNTIME_ROUTE_CODE,
+    classifyPopupCondition,
+} from '../platform/mv3/extension/js/compiled-popup-matcher.js';
+import {
+    STOCK_POPUP_CORPUS_SCHEMA_VERSION,
+    STOCK_POPUP_DEFERRED_ROUTE_CODE,
+    STOCK_POPUP_SOURCE_KIND_PRECISION,
+} from '../platform/mv3/popup-corpus.js';
 import { Buffer } from 'node:buffer';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -142,6 +152,231 @@ const validateDnrRuleset = async resource => {
     }
 };
 
+const isPlainObject = value => {
+    if ( typeof value !== 'object' || value === null ) { return false; }
+    if ( Array.isArray(value) ) { return false; }
+    const prototype = Object.getPrototypeOf(value);
+    return prototype === Object.prototype || prototype === null;
+};
+
+const isNonnegativeInteger = value =>
+    Number.isSafeInteger(value) && value >= 0;
+
+const validateStockPopupFilter = (filter, rulesetId, lineNumbers) => {
+    if ( isPlainObject(filter) === false ) {
+        reportError(`Stock popup corpus ${rulesetId} has a non-object filter`);
+        return;
+    }
+    if ( filter.schemaVersion !== STOCK_POPUP_CORPUS_SCHEMA_VERSION ) {
+        reportError(`Stock popup filter ${rulesetId} has an invalid schema`);
+    }
+    const exactRoute = filter.routeCode === POPUP_RUNTIME_ROUTE_CODE;
+    const guardRoute = filter.routeCode === POPUP_DEFERRED_ROUTE_CODE;
+    if ( exactRoute === false && guardRoute === false ) {
+        reportError(`Stock popup filter ${rulesetId} has an invalid route`);
+    }
+    if ( filter.kind !== 'popup' ) {
+        reportError(`Stock popup filter ${rulesetId} has an invalid kind`);
+    }
+    if ( filter.action !== 'block' && filter.action !== 'allow' ) {
+        reportError(`Stock popup filter ${rulesetId} has an invalid action`);
+    }
+    if ( guardRoute && filter.action !== 'allow' ) {
+        reportError(`Stock popup guard ${rulesetId} is not an allow`);
+    }
+    if ( typeof filter.important !== 'boolean' ) {
+        reportError(`Stock popup filter ${rulesetId} has invalid importance`);
+    }
+    if ( filter.action === 'allow' && filter.important !== false ) {
+        reportError(`Stock popup allow filter ${rulesetId} is marked important`);
+    }
+    if ( filter.listid !== rulesetId ) {
+        reportError(`Stock popup filter ${rulesetId} has wrong provenance`);
+    }
+    if ( Number.isSafeInteger(filter.lineNumber) === false ||
+        filter.lineNumber < 1 ) {
+        reportError(`Stock popup filter ${rulesetId} has an invalid rule ID`);
+    } else if ( lineNumbers.has(filter.lineNumber) ) {
+        reportError(
+            `Stock popup corpus ${rulesetId} repeats rule ID ` +
+            filter.lineNumber
+        );
+    } else {
+        lineNumbers.add(filter.lineNumber);
+    }
+    const classification = classifyPopupCondition(filter.condition);
+    if ( exactRoute && classification.supported !== true ) {
+        reportError(
+            `Stock popup filter ${rulesetId}/${filter.lineNumber} cannot ` +
+            `run: ${classification.reasonCode}`
+        );
+    } else if ( guardRoute && classification.supported === true ) {
+        reportError(
+            `Stock popup guard ${rulesetId}/${filter.lineNumber} is exact`
+        );
+    }
+};
+
+const validateStockPopupCorpora = async ruleResources => {
+    if ( STOCK_POPUP_DEFERRED_ROUTE_CODE !== POPUP_DEFERRED_ROUTE_CODE ) {
+        reportError('Stock popup guard route is incompatible with runtime');
+    }
+    const rulesetDetailsPath = path.join(
+        extensionDir,
+        'rulesets',
+        'ruleset-details.json'
+    );
+    const rulesetDetails = await fs.readFile(rulesetDetailsPath, 'utf8')
+        .then(text => JSON.parse(text))
+        .catch(reason => {
+            reportError(`Unable to read ruleset details: ${reason.message}`);
+        });
+    if ( Array.isArray(rulesetDetails) === false ) { return; }
+    const declaredIds = new Set(ruleResources.map(resource => resource.id));
+    for ( const details of rulesetDetails ) {
+        const observer = details?.popupObserver;
+        const rulesetId = details.id;
+        if ( observer === undefined ) {
+            if ( details?.popups !== undefined ) {
+                reportError(
+                    `Ruleset ${rulesetId} has popup rules but no observer corpus`
+                );
+            }
+            continue;
+        }
+        if ( declaredIds.has(rulesetId) === false ) {
+            reportError(`Stock popup corpus has undeclared ruleset ${rulesetId}`);
+        }
+        if ( observer.schemaVersion !== STOCK_POPUP_CORPUS_SCHEMA_VERSION ) {
+            reportError(`Stock popup corpus ${rulesetId} has invalid metadata`);
+        }
+        if ( observer.kind !== 'popup' ||
+            observer.kindPrecision !== STOCK_POPUP_SOURCE_KIND_PRECISION ||
+            observer.omittedKinds?.length !== 1 ||
+            observer.omittedKinds[0] !== 'popunder' ) {
+            reportError(
+                `Stock popup corpus ${rulesetId} overstates source-kind precision`
+            );
+        }
+        if ( observer.lineNumberSemantics !== 'compiled-rule-id' ) {
+            reportError(
+                `Stock popup corpus ${rulesetId} has ambiguous provenance IDs`
+            );
+        }
+        for ( const field of [
+            'input',
+            'filters',
+            'runnable',
+            'guards',
+            'deferred',
+            'discarded',
+            'important',
+            'block',
+            'allow',
+        ] ) {
+            if ( isNonnegativeInteger(observer[field]) ) { continue; }
+            reportError(
+                `Stock popup corpus ${rulesetId} has invalid ${field} count`
+            );
+        }
+        if ( observer.suppressed !== true &&
+            observer.input !== observer.runnable + observer.deferred +
+                observer.discarded ) {
+            reportError(`Stock popup corpus ${rulesetId} counts do not balance`);
+        }
+        if ( observer.runnable !== observer.block + observer.allow ||
+            observer.filters !== observer.runnable + observer.guards ||
+            observer.guards > observer.deferred ||
+            observer.important > observer.block ) {
+            reportError(
+                `Stock popup corpus ${rulesetId} action counts do not balance`
+            );
+        }
+        const deferredReasonEntries = Object.entries(
+            observer.deferredReasons || {}
+        );
+        if ( deferredReasonEntries.some(([ reasonCode, count ]) =>
+            /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(reasonCode) === false ||
+            isNonnegativeInteger(count) === false
+        ) ) {
+            reportError(
+                `Stock popup corpus ${rulesetId} has malformed deferred reasons`
+            );
+        }
+        const reasonTotal = deferredReasonEntries.map(([, count ]) => count)
+            .reduce((total, count) => total + (
+                isNonnegativeInteger(count) ? count : 0
+            ), 0);
+        if ( reasonTotal !== observer.deferred ) {
+            reportError(
+                `Stock popup corpus ${rulesetId} has invalid deferred reasons`
+            );
+        }
+        if ( observer.filters === 0 ) {
+            if ( observer.path !== undefined ) {
+                reportError(
+                    `Empty stock popup corpus ${rulesetId} must not be packaged`
+                );
+            }
+            continue;
+        }
+        if ( typeof observer.path !== 'string' ) {
+            reportError(`Stock popup corpus ${rulesetId} has no package path`);
+            continue;
+        }
+        await validateFileReference(
+            observer.path,
+            `Stock popup corpus ${rulesetId}`
+        );
+        const corpusPath = relativeExtensionPath(observer.path);
+        if ( corpusPath === undefined ) { continue; }
+        const corpus = await fs.readFile(corpusPath.resolved, 'utf8')
+            .then(text => JSON.parse(text))
+            .catch(reason => {
+                reportError(
+                    `Unable to read stock popup corpus ${rulesetId}: ` +
+                    reason.message
+                );
+            });
+        if ( isPlainObject(corpus) === false ) { continue; }
+        if ( corpus.schemaVersion !== STOCK_POPUP_CORPUS_SCHEMA_VERSION ||
+            corpus.routeCode !== POPUP_RUNTIME_ROUTE_CODE ) {
+            reportError(`Stock popup corpus ${rulesetId} has invalid schema`);
+        }
+        if ( corpus.source?.rulesetId !== rulesetId ||
+            corpus.source?.type !== 'stock-static-ruleset' ||
+            corpus.source?.kind !== 'popup' ||
+            corpus.source?.kindPrecision !==
+                STOCK_POPUP_SOURCE_KIND_PRECISION ||
+            corpus.source?.omittedKinds?.length !== 1 ||
+            corpus.source?.omittedKinds[0] !== 'popunder' ||
+            corpus.source?.lineNumberSemantics !== 'compiled-rule-id' ) {
+            reportError(`Stock popup corpus ${rulesetId} has invalid source data`);
+        }
+        if ( Array.isArray(corpus.filters) === false ) {
+            reportError(`Stock popup corpus ${rulesetId} has no filter array`);
+            continue;
+        }
+        if ( corpus.filters.length !== observer.filters ||
+            corpus.stats?.runnable !== observer.runnable ||
+            corpus.stats?.input !== observer.input ||
+            corpus.stats?.guards !== observer.guards ||
+            corpus.stats?.deferred !== observer.deferred ||
+            corpus.stats?.discarded !== observer.discarded ||
+            corpus.stats?.important !== observer.important ||
+            corpus.stats?.block !== observer.block ||
+            corpus.stats?.allow !== observer.allow ||
+            JSON.stringify(corpus.stats?.deferredReasons) !==
+                JSON.stringify(observer.deferredReasons) ) {
+            reportError(`Stock popup corpus ${rulesetId} metadata is inconsistent`);
+        }
+        const lineNumbers = new Set();
+        for ( const filter of corpus.filters ) {
+            validateStockPopupFilter(filter, rulesetId, lineNumbers);
+        }
+    }
+};
+
 /******************************************************************************/
 
 const rootStat = await fs.stat(extensionDir).catch(( ) => { });
@@ -224,6 +459,7 @@ if ( Array.isArray(ruleResources) === false || ruleResources.length === 0 ) {
         );
         await validateDnrRuleset(resource);
     }
+    await validateStockPopupCorpora(ruleResources);
 }
 
 await validateFileReference(manifest.action?.default_popup, 'Action popup');

@@ -24,6 +24,18 @@ import './lib/regexanalyzer/regex.js';
 import * as makeScriptlets from './js/offscreen/make-scriptlets.js';
 
 import {
+    POPUP_DEFERRED_ROUTE_CODE,
+    POPUP_RUNTIME_ROUTE_CODE,
+    classifyPopupCondition,
+} from './js/compiled-popup-matcher.js';
+import {
+    STOCK_POPUP_CORPUS_SCHEMA_VERSION,
+    STOCK_POPUP_DEFERRED_ROUTE_CODE,
+    STOCK_POPUP_RUNTIME_ROUTE_CODE,
+    STOCK_POPUP_SOURCE_KIND_PRECISION,
+    makeStockPopupCorpus,
+} from './popup-corpus.js';
+import {
     createHash,
     randomBytes,
 } from 'crypto';
@@ -889,6 +901,44 @@ async function processScriptletFilters(assetDetails, mapin) {
 
 async function processPopupRules(assetDetails, popupRules) {
     if ( popupRules.length === 0 ) { return; }
+    if ( STOCK_POPUP_RUNTIME_ROUTE_CODE !== POPUP_RUNTIME_ROUTE_CODE ) {
+        throw new Error('Stock popup corpus route is incompatible with runtime');
+    }
+    if ( STOCK_POPUP_DEFERRED_ROUTE_CODE !== POPUP_DEFERRED_ROUTE_CODE ) {
+        throw new Error('Stock popup guard route is incompatible with runtime');
+    }
+    const corpus = makeStockPopupCorpus(
+        assetDetails.id,
+        popupRules,
+        classifyPopupCondition
+    );
+    const observerPath = `/rulesets/popup/${assetDetails.id}.json`;
+    if ( corpus.filters.length !== 0 ) {
+        writeFile(
+            `${rulesetDir}/popup/${assetDetails.id}.json`,
+            `${JSON.stringify(corpus)}\n`
+        );
+    }
+    const observerStats = {
+        schemaVersion: STOCK_POPUP_CORPUS_SCHEMA_VERSION,
+        path: corpus.filters.length !== 0 ? observerPath : undefined,
+        input: corpus.stats.input,
+        filters: corpus.filters.length,
+        runnable: corpus.stats.runnable,
+        guards: corpus.stats.guards,
+        deferred: corpus.stats.deferred,
+        discarded: corpus.stats.discarded,
+        important: corpus.stats.important,
+        block: corpus.stats.block,
+        allow: corpus.stats.allow,
+        deferredReasons: corpus.stats.deferredReasons,
+        suppressed: corpus.stats.suppressed,
+        suppressionReason: corpus.stats.suppressionReason,
+        kind: 'popup',
+        kindPrecision: STOCK_POPUP_SOURCE_KIND_PRECISION,
+        omittedKinds: [ 'popunder' ],
+        lineNumberSemantics: 'compiled-rule-id',
+    };
     const reduceRules = (data, rule) => {
         const { condition }  = rule;
         if ( condition.domainType ) { return data; }
@@ -953,25 +1003,29 @@ async function processPopupRules(assetDetails, popupRules) {
     };
     popupRules.reduce(reduceRules, data);
     const count = data.block.hostnames.length + data.block.regexes.size;
-    if ( count === 0 ) { return; }
-    data.block.hostnames = data.block.hostnames.toSorted(hostnameCompare);
-    data.block.regexes = Array.from(data.block.regexes.values()).map(a =>
-        [ a.token, JSON.stringify(a.rules) ]
-    ).flat();
-    data.allow.hostnames = data.allow.hostnames.toSorted(hostnameCompare);
-    data.allow.regexes = Array.from(data.allow.regexes.values()).map(a =>
-        [ a.token, JSON.stringify(a.rules) ]
-    ).flat();
-    const originalScriptletMap = await loadAllSourceScriptlets();
-    let patchedScriptlet = originalScriptletMap.get(`prevent-popup`);
-    patchedScriptlet = safeReplace(patchedScriptlet,
-        /self\.\$details\$/,
-        JSON.stringify(data)
-    );
-    writeFile(`${rulesetDir}/scripting/popup/${assetDetails.id}.js`,
-        patchedScriptlet
-    );
-    return count;
+    if ( count !== 0 ) {
+        data.block.hostnames = data.block.hostnames.toSorted(hostnameCompare);
+        data.block.regexes = Array.from(data.block.regexes.values()).map(a =>
+            [ a.token, JSON.stringify(a.rules) ]
+        ).flat();
+        data.allow.hostnames = data.allow.hostnames.toSorted(hostnameCompare);
+        data.allow.regexes = Array.from(data.allow.regexes.values()).map(a =>
+            [ a.token, JSON.stringify(a.rules) ]
+        ).flat();
+        const originalScriptletMap = await loadAllSourceScriptlets();
+        let patchedScriptlet = originalScriptletMap.get(`prevent-popup`);
+        patchedScriptlet = safeReplace(patchedScriptlet,
+            /self\.\$details\$/,
+            JSON.stringify(data)
+        );
+        writeFile(`${rulesetDir}/scripting/popup/${assetDetails.id}.js`,
+            patchedScriptlet
+        );
+    }
+    return {
+        scriptlet: count || undefined,
+        observer: observerStats,
+    };
 }
 
 function isPopupRule(rule) {
@@ -1149,7 +1203,8 @@ async function rulesetFromURLs(assetDetails) {
             generic: genericCosmeticStats,
             specific: specificCosmeticStats,
         },
-        popups: popupStats,
+        popups: popupStats?.scriptlet,
+        popupObserver: popupStats?.observer,
     });
 
     ruleResources.push({

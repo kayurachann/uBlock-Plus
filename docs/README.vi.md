@@ -190,7 +190,7 @@ Load thư mục `dist/build/uBlockPlus.chromium`. Lệnh PowerShell có version 
 - List import được compile cục bộ thành dữ liệu DNR và cosmetic; scriptlet phải có sẵn trong allowlist đóng gói.
 - Offscreen document chỉ tồn tại tạm thời trong lúc compile rồi tự đóng.
 
-[Đọc kiến trúc](ARCHITECTURE.md) · [Khám phá Power Runtime](POWER-RUNTIME.md) · [Xem threat model](THREAT-MODEL.md) · [Hiểu chính sách riêng tư](PRIVACY.md)
+[Đọc kiến trúc](ARCHITECTURE.md) · [Khám phá Power Runtime](POWER-RUNTIME.md) · [Xem threat model](THREAT-MODEL.md) · [Hiểu chính sách riêng tư](PRIVACY.md) · [Xem nghiên cứu cộng đồng](COMMUNITY-RESEARCH.md)
 
 ## Ranh giới an toàn
 
@@ -206,14 +206,16 @@ Lỗ hổng bảo mật cần được báo riêng qua [GitHub Security Advisori
 
 ## Giới hạn MV3 cần biết
 
-- DNR chịu quota static/dynamic/session/regex do Chromium đặt ra.
+- Dynamic và session DNR dùng chung một pool 1.000 regex rule của Chromium; không phải mỗi loại có 1.000 rule riêng.
 - Service worker có thể bị dừng khi idle; dự án dùng state bền vững và giao dịch có rollback thay vì giả định background page chạy mãi.
 - Live logger, procedural filter, dynamic firewall và một số header/redirect semantics chỉ tương đương **một phần** MV2.
-- `$popup`/`$popunder` từ list import hiện được phân loại và báo cáo nhưng chưa nối vào matcher runtime; popup filter đóng gói vẫn được thực thi fail-closed.
+- Observer runtime thực thi corpus `$popup` được đóng gói từ ruleset mặc định và subset `$popup`/`$popunder` được hỗ trợ từ list import; match chỉ ghi provenance đã rút gọn gồm realm, dòng nguồn và kind.
+- DNR export của stock ruleset chưa giữ được kind `$popunder`, nên build ghi rõ kind này là `omitted` thay vì âm thầm đổi nhãn. Regex/glob hostile bị validate, cache và giới hạn tổng work; hết budget phải fail open.
+- Condition không thể biểu diễn chính xác—như `domainType`, `requestMethods` hoặc `responseHeaders`—được deferred rõ ràng thay vì approximate. Các condition `allow` bị deferred vẫn được giữ như guard fail-open thận trọng; guard chỉ được trì hoãn quyết định, tuyệt đối không được cho phép hoặc chặn theo cách gần đúng. Enforcement dựa trên event tab/navigation bất đồng bộ của MV3 nên không phải parity đồng bộ chính xác với MV2.
 - Public MV3 API không cung cấp response-body rewrite tùy ý, DNS/CNAME visibility tương đương hoặc chặn chính xác theo kích thước response.
 - Tầng Enterprise hoặc Native Companion mới chỉ là hướng nghiên cứu tùy chọn; không tự cài, không phải cách bypass sandbox và không nằm trong lời hứa của pre-release này.
 
-Một phần cú pháp filter MV2 không thể chuyển đổi tương đương trên MV3; hãy đối chiếu [FEATURE-MATRIX.md](FEATURE-MATRIX.md) trước khi giả định tính năng đã được hỗ trợ. Báo cáo tương thích chi tiết đến từng filter vẫn là hạng mục roadmap.
+Một phần cú pháp filter MV2 không thể chuyển đổi tương đương trên MV3; hãy đối chiếu [FEATURE-MATRIX.md](FEATURE-MATRIX.md) trước khi giả định tính năng đã được hỗ trợ. Compiler lưu reason ổn định và dòng nguồn cho filter được nhận hoặc deferred; trình bày báo cáo đó chi tiết hơn trong dashboard vẫn là hạng mục roadmap.
 
 ## Lộ trình
 
@@ -274,12 +276,15 @@ Repository giữ nguyên lịch sử Git upstream và cấu hình [`gorhill/uBlo
 | Tài liệu | Nội dung |
 | --- | --- |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Pipeline MV3, transaction, memory profile và các tầng capability hợp pháp. |
+| [FEATURE-MATRIX.md](FEATURE-MATRIX.md) | So sánh trung thực giữa hành vi MV2 gốc và mức hỗ trợ MV3 hiện tại. |
 | [POWER-RUNTIME.md](POWER-RUNTIME.md) | Capability probe, policy/flag hợp pháp và ranh giới giữa unpacked, managed, custom Chromium. |
 | [FILTER-STORE.md](FILTER-STORE.md) | Schema catalog, trust tier, giới hạn nguồn và quy trình review. |
 | [THREAT-MODEL.md](THREAT-MODEL.md) | Tài sản, trust boundary và rủi ro supply chain. |
 | [PRIVACY.md](PRIVACY.md) | Dữ liệu lưu cục bộ, network access và permission. |
 | [ROADMAP.md](ROADMAP.md) | Now/Next/Later cùng definition of done; không phải cam kết ngày phát hành. |
 | [COMMUNITY-GOVERNANCE.md](COMMUNITY-GOVERNANCE.md) | RFC, vai trò, biểu quyết và cách xử lý xung đột. |
+| [COMMUNITY-RESEARCH.md](COMMUNITY-RESEARCH.md) | Nghiên cứu capability dựa trên nguồn Chromium/Chrome chính thức và các hướng thay thế được hỗ trợ. |
+| [MODULE-PLAN.md](MODULE-PLAN.md) | Quyền sở hữu module và ranh giới triển khai. |
 
 [Đề xuất tính năng hoặc báo lỗi](https://github.com/kayurachann/uBlock-Plus/issues/new/choose) · [Gửi Filter Store entry](https://github.com/kayurachann/uBlock-Plus/issues/new?template=filter_store_submission.yml) · [Xem toàn bộ roadmap](ROADMAP.md)
 

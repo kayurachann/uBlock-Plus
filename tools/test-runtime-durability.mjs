@@ -55,9 +55,13 @@ const alarmOperations = [];
 let currentDynamicRules = [];
 let dynamicRulesReads = 0;
 let rejectDynamicUpdate = false;
+let rejectDynamicReadOnce = false;
 let currentSessionRules = [];
+let sessionRulesReads = 0;
+let rejectSessionUpdate = false;
 let enabledStaticRulesets = [];
 const sessionRuleUpdates = [];
+let dynamicUpdateGate;
 
 const dnr = {
     DYNAMIC_RULESET_ID: '_dynamic',
@@ -66,9 +70,14 @@ const dnr = {
     RuleConditionKeys: { TOP_DOMAINS: true },
     async getDynamicRules() {
         dynamicRulesReads += 1;
+        if ( rejectDynamicReadOnce ) {
+            rejectDynamicReadOnce = false;
+            throw new Error('mock dynamic read rejection');
+        }
         return structuredClone(currentDynamicRules);
     },
     async getSessionRules() {
+        sessionRulesReads += 1;
         return structuredClone(currentSessionRules);
     },
     async getEnabledRulesets() {
@@ -78,18 +87,45 @@ const dnr = {
         return { isSupported: true };
     },
     async updateDynamicRules(details) {
+        if ( dynamicUpdateGate !== undefined ) {
+            const gate = dynamicUpdateGate;
+            dynamicUpdateGate = undefined;
+            gate.entered();
+            await gate.wait;
+        }
         if ( rejectDynamicUpdate ) { throw new Error('mock DNR rejection'); }
         const removed = new Set(details.removeRuleIds || []);
-        currentDynamicRules = currentDynamicRules
+        const replacement = currentDynamicRules
             .filter(rule => removed.has(rule.id) === false)
             .concat(structuredClone(details.addRules || []));
+        const sharedRegexCount = replacement.filter(rule =>
+            Boolean(rule.condition?.regexFilter)
+        ).length + currentSessionRules.filter(rule =>
+            Boolean(rule.condition?.regexFilter)
+        ).length;
+        if ( sharedRegexCount > dnr.MAX_NUMBER_OF_REGEX_RULES ) {
+            throw new Error('mock shared regex quota exceeded');
+        }
+        currentDynamicRules = replacement;
     },
     async updateSessionRules(details) {
         sessionRuleUpdates.push(structuredClone(details));
+        if ( rejectSessionUpdate ) {
+            throw new Error('mock session DNR rejection');
+        }
         const removed = new Set(details.removeRuleIds || []);
-        currentSessionRules = currentSessionRules
+        const replacement = currentSessionRules
             .filter(rule => removed.has(rule.id) === false)
             .concat(structuredClone(details.addRules || []));
+        const sharedRegexCount = currentDynamicRules.filter(rule =>
+            Boolean(rule.condition?.regexFilter)
+        ).length + replacement.filter(rule =>
+            Boolean(rule.condition?.regexFilter)
+        ).length;
+        if ( sharedRegexCount > dnr.MAX_NUMBER_OF_REGEX_RULES ) {
+            throw new Error('mock shared regex quota exceeded');
+        }
+        currentSessionRules = replacement;
     },
     async updateEnabledRulesets() {
     },
@@ -218,6 +254,11 @@ const makeRule = id => ({
     action: { type: 'block' },
     condition: { urlFilter: `||example${id}.test^` },
 });
+const makeRegexRule = (id, regexFilter) => ({
+    id,
+    action: { type: 'block' },
+    condition: { regexFilter },
+});
 
 currentDynamicRules = [
     makeRule(42),
@@ -246,10 +287,77 @@ assert.match(failure.fatalError, /mock DNR rejection/);
 assert.equal(dynamicRulesReads, 1);
 assert.equal(local.values.get('userDnrRuleCount'), 3);
 
-// Stock-regex replacement must project the retained imported/user regexes as
-// well. Otherwise a stock increase can skip the pre-emptive session cleanup
-// because the old implementation compared a stock-only after-count with an
-// all-realms before-count.
+// Chromium uses one regex pool for dynamic + session rules. Imported/user
+// regex growth must make room before the atomic dynamic update, then report
+// any lower-priority session rules that no longer fit.
+const configModule = await import(pathToFileURL(
+    path.join(extensionJS, 'config.js')
+));
+const previousStrictBlockMode = configModule.rulesetConfig.strictBlockMode;
+configModule.rulesetConfig.strictBlockMode = false;
+dnr.MAX_NUMBER_OF_REGEX_RULES = 3;
+rejectDynamicUpdate = false;
+currentDynamicRules = [
+    makeRegexRule(1, 'retained-stock'),
+    makeRegexRule(9000000, 'old-user'),
+];
+currentSessionRules = [ makeRegexRule(88, 'session-low-priority') ];
+local.values.set(
+    'compiledFilters.g.regex-success.sandboxFilters.dnrRules',
+    [
+        makeRegexRule(1, 'new-user-a'),
+        makeRegexRule(2, 'new-user-b'),
+    ]
+);
+sessionRuleUpdates.length = 0;
+const regexSuccess = await rulesetManager.updateUserRules('regex-success');
+assert.equal(regexSuccess.fatalError, '');
+assert.equal(regexSuccess.added, 2);
+assert.match(regexSuccess.errors.join('\n'), /shared 3-rule pool/);
+assert.deepEqual(sessionRuleUpdates[0], { removeRuleIds: [ 88 ] });
+assert.equal(currentSessionRules.length, 0);
+assert.equal(
+    currentDynamicRules.filter(rule => rule.condition.regexFilter).length,
+    3
+);
+
+// If Chrome rejects the dynamic transaction after session capacity was
+// displaced, restore the exact session snapshot and keep dynamic rules intact.
+currentDynamicRules = [
+    makeRegexRule(1, 'retained-stock'),
+    makeRegexRule(9000000, 'old-user'),
+];
+currentSessionRules = [ makeRegexRule(89, 'session-restore') ];
+local.values.set(
+    'compiledFilters.g.regex-failure.sandboxFilters.dnrRules',
+    [
+        makeRegexRule(1, 'replacement-a'),
+        makeRegexRule(2, 'replacement-b'),
+    ]
+);
+sessionRuleUpdates.length = 0;
+rejectDynamicUpdate = true;
+const regexFailure = await rulesetManager.updateUserRules('regex-failure');
+rejectDynamicUpdate = false;
+assert.match(regexFailure.fatalError, /mock DNR rejection/);
+assert.deepEqual(
+    currentSessionRules.map(rule => rule.condition.regexFilter),
+    [ 'session-restore' ]
+);
+assert.deepEqual(sessionRuleUpdates, [
+    { removeRuleIds: [ 89 ] },
+    { addRules: [ makeRegexRule(89, 'session-restore') ] },
+]);
+assert.deepEqual(
+    currentDynamicRules.map(rule => rule.condition.regexFilter),
+    [ 'retained-stock', 'old-user' ]
+);
+dnr.MAX_NUMBER_OF_REGEX_RULES = 1000;
+configModule.rulesetConfig.strictBlockMode = previousStrictBlockMode;
+
+// Stock-regex replacement must project retained imported/user regexes without
+// clearing unrelated non-regex session rules merely because the regex count
+// grew.
 const originalFetch = globalThis.fetch;
 globalThis.fetch = async url => ({
     async json() {
@@ -291,10 +399,9 @@ currentDynamicRules = [
 currentSessionRules = [ makeRule(77) ];
 sessionRuleUpdates.length = 0;
 const stockUpdate = await rulesetManager.updateDynamicAndSessionRules();
-globalThis.fetch = originalFetch;
 assert.equal(stockUpdate.error, undefined);
-assert.deepEqual(sessionRuleUpdates[0], { removeRuleIds: [ 77 ] });
-assert.equal(currentSessionRules.length, 0);
+assert.deepEqual(sessionRuleUpdates, []);
+assert.deepEqual(currentSessionRules.map(rule => rule.id), [ 77 ]);
 assert.equal(
     currentDynamicRules.filter(rule => rule.condition.regexFilter).length,
     4
@@ -305,6 +412,104 @@ assert.deepEqual(
         .map(rule => rule.condition.regexFilter)
         .sort(),
     [ 'retained-imported', 'retained-user' ]
+);
+
+// A failed stock transaction restores any session regex snapshot displaced
+// to make room in Chromium's shared pool.
+dnr.MAX_NUMBER_OF_REGEX_RULES = 4;
+currentDynamicRules = [
+    makeRegexRule(1, 'old-stock'),
+    makeRegexRule(8000000, 'retained-imported'),
+    makeRegexRule(9000000, 'retained-user'),
+];
+currentSessionRules = [ makeRegexRule(78, 'stock-session-restore') ];
+sessionRuleUpdates.length = 0;
+rejectDynamicUpdate = true;
+const stockFailure = await rulesetManager.updateDynamicAndSessionRules();
+rejectDynamicUpdate = false;
+dnr.MAX_NUMBER_OF_REGEX_RULES = 1000;
+globalThis.fetch = originalFetch;
+assert.match(stockFailure.error, /mock DNR rejection/);
+assert.deepEqual(sessionRuleUpdates, [
+    { removeRuleIds: [ 78 ] },
+    { addRules: [ makeRegexRule(78, 'stock-session-restore') ] },
+]);
+assert.deepEqual(
+    currentDynamicRules.map(rule => rule.condition.regexFilter),
+    [ 'old-stock', 'retained-imported', 'retained-user' ]
+);
+
+// A cold-start dynamic read failure is reported as data, not leaked as a
+// rejection which aborts background initialization. Session reconstruction is
+// still attempted against the dynamic snapshot available on the retry.
+const sessionReadsBeforeColdFailure = sessionRulesReads;
+rejectDynamicReadOnce = true;
+const coldReadFailure = await rulesetManager.updateDynamicAndSessionRules();
+assert.match(coldReadFailure.error, /mock dynamic read rejection/);
+assert.ok(sessionRulesReads > sessionReadsBeforeColdFailure);
+
+// Filtering-mode dynamic/session rules form one logical transaction. If the
+// session half is rejected, restore the previous dynamic half and propagate
+// the error so mode-manager cannot persist a mode Chrome is not enforcing.
+currentDynamicRules = [];
+currentSessionRules = [];
+rejectSessionUpdate = true;
+await assert.rejects(
+    rulesetManager.filteringModesToDNR({
+        none: new Set([ 'disabled.example' ]),
+        basic: new Set([ 'all-urls' ]),
+        optimal: new Set(),
+        complete: new Set(),
+    }),
+    /mock session DNR rejection/
+);
+rejectSessionUpdate = false;
+assert.deepEqual(currentDynamicRules, []);
+assert.deepEqual(currentSessionRules, []);
+
+// Every dynamic/session writer shares one manager-level queue. A second user
+// generation must not even read a stale DNR snapshot while the first atomic
+// update is paused inside Chrome.
+currentDynamicRules = [ makeRule(9000000) ];
+currentSessionRules = [];
+local.values.set(
+    'compiledFilters.g.queue-a.sandboxFilters.dnrRules',
+    [ makeRule(301) ]
+);
+local.values.set(
+    'compiledFilters.g.queue-b.sandboxFilters.dnrRules',
+    [ makeRule(302) ]
+);
+let releaseDynamicUpdate;
+let markDynamicUpdateEntered;
+const dynamicUpdateEntered = new Promise(resolve => {
+    markDynamicUpdateEntered = resolve;
+});
+dynamicUpdateGate = {
+    entered: markDynamicUpdateEntered,
+    wait: new Promise(resolve => {
+        releaseDynamicUpdate = resolve;
+    }),
+};
+const readsBeforeQueueTest = dynamicRulesReads;
+const queuedA = rulesetManager.updateUserRules('queue-a');
+await dynamicUpdateEntered;
+const queuedB = rulesetManager.updateUserRules('queue-b');
+await new Promise(resolve => setTimeout(resolve, 0));
+assert.equal(dynamicRulesReads, readsBeforeQueueTest + 1);
+releaseDynamicUpdate();
+const [ queuedAResult, queuedBResult ] = await Promise.all([
+    queuedA,
+    queuedB,
+]);
+assert.equal(queuedAResult.fatalError, '');
+assert.equal(queuedBResult.fatalError, '');
+assert.equal(dynamicRulesReads, readsBeforeQueueTest + 2);
+assert.equal(
+    currentDynamicRules.some(rule =>
+        rule.condition.urlFilter === '||example302.test^'
+    ),
+    true
 );
 
 console.log('Runtime durability checks passed.');

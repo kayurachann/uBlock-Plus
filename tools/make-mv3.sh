@@ -141,6 +141,7 @@ cp platform/mv3/*.json "$UBOL_BUILD_DIR"/
 cp platform/mv3/*.js "$UBOL_BUILD_DIR"/
 cp platform/mv3/*.mjs "$UBOL_BUILD_DIR"/
 cp platform/mv3/extension/js/ubo-parser.js "$UBOL_BUILD_DIR"/js/
+cp platform/mv3/extension/js/compiled-popup-matcher.js "$UBOL_BUILD_DIR"/js/
 cp platform/mv3/extension/js/utils.js "$UBOL_BUILD_DIR"/js/
 # make-rulesets imports offscreen/fetch-list.js, whose fetch-policy module
 # lives one directory above the copied offscreen tree.

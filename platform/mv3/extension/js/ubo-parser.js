@@ -20,6 +20,11 @@
 */
 
 import * as sfp from './static-filtering-parser.js';
+import {
+    POPUP_DEFERRED_ROUTE_CODE,
+    POPUP_RUNTIME_ROUTE_CODE,
+    classifyPopupCondition,
+} from './compiled-popup-matcher.js';
 import punycode from './punycode.js';
 import redirectResourceMap from './redirect-resources.js';
 
@@ -503,6 +508,7 @@ export function parseNetworkFilter(parser, details = {}, out = []) {
     const excludedResourceTypes = new Set();
     const popupKinds = new Set();
     const routedPopupFilters = [];
+    let popupConditionClassification;
     let hasDnrResourceTypeOption = false;
 
     const processResourceType = (resourceType, nodeType) => {
@@ -854,16 +860,21 @@ export function parseNetworkFilter(parser, details = {}, out = []) {
             return reject('popup-action-conflict');
         }
         if ( Array.isArray(details.popupFilters) === false ) {
-            return reject('popup-compiler-required');
+            return reject(POPUP_DEFERRED_ROUTE_CODE);
         }
+        const popupCondition = structuredClone(rule.condition);
+        popupConditionClassification = classifyPopupCondition(popupCondition);
+        const routeCode = popupConditionClassification.supported
+            ? POPUP_RUNTIME_ROUTE_CODE
+            : POPUP_DEFERRED_ROUTE_CODE;
         for ( const kind of popupKinds ) {
             const popupFilter = {
                 schemaVersion: 1,
-                routeCode: 'popup-compiler-required',
+                routeCode,
                 kind,
                 action: isException ? 'allow' : 'block',
                 important: isImportant,
-                condition: structuredClone(rule.condition),
+                condition: structuredClone(popupCondition),
             };
             if ( typeof details.listid === 'string' ) {
                 popupFilter.listid = details.listid;
@@ -899,11 +910,19 @@ export function parseNetworkFilter(parser, details = {}, out = []) {
         defaultResourceTypes.size === 0;
     if ( popupOnly ) {
         details.popupFilters.push(...routedPopupFilters);
+        if ( popupConditionClassification.supported ) {
+            return networkFilterResult(
+                'accepted',
+                details,
+                undefined,
+                'popup-runtime'
+            );
+        }
         return networkFilterResult(
             'deferred',
             details,
-            'popup-runtime-consumer-required',
-            'popup-compiler-required'
+            popupConditionClassification.reasonCode,
+            POPUP_DEFERRED_ROUTE_CODE
         );
     }
     let priority = 1;
@@ -950,15 +969,23 @@ export function parseNetworkFilter(parser, details = {}, out = []) {
     if ( routedPopupFilters.length !== 0 ) {
         details.popupFilters.push(...routedPopupFilters);
     }
+    if ( popupKinds.size !== 0 && popupConditionClassification.supported ) {
+        return networkFilterResult(
+            'accepted',
+            details,
+            undefined,
+            'popup-runtime'
+        );
+    }
     return networkFilterResult(
         popupKinds.size === 0 ? 'accepted' : 'deferred',
         details,
         popupKinds.size === 0
             ? undefined
-            : 'popup-runtime-consumer-required',
+            : popupConditionClassification.reasonCode,
         popupKinds.size === 0
             ? 'dnr'
-            : 'popup-compiler-required'
+            : POPUP_DEFERRED_ROUTE_CODE
     );
 }
 
@@ -992,8 +1019,11 @@ export class NetworkFilterCompiler {
             this.rejections.push(result);
             return result;
         }
-        if ( result.status === 'deferred' ) {
+        if ( result.classification === 'popup-runtime' ||
+            result.classification === POPUP_DEFERRED_ROUTE_CODE ) {
             this.filterStats.routed += 1;
+        }
+        if ( result.status === 'deferred' ) {
             this.filterStats.deferred += 1;
             this.rejections.push(result);
             if ( lineRules.length === 0 ) {

@@ -194,7 +194,7 @@ Laden Sie `dist/build/uBlockPlus.chromium` über die Erweiterungsseite des Brows
 - Importierte Listen werden lokal in DNR- und kosmetische Daten kompiliert; Scriptlets müssen bereits in der mitgelieferten Zulassungsliste enthalten sein.
 - Die Offscreen-Kompilierung ist vorübergehend und wird nach Abschluss ihrer Arbeit beendet.
 
-[Architektur lesen](ARCHITECTURE.md) · [Power Runtime erkunden](POWER-RUNTIME.md) · [Bedrohungsmodell prüfen](THREAT-MODEL.md) · [Datenschutz verstehen](PRIVACY.md)
+[Architektur lesen](ARCHITECTURE.md) · [Power Runtime erkunden](POWER-RUNTIME.md) · [Bedrohungsmodell prüfen](THREAT-MODEL.md) · [Datenschutz verstehen](PRIVACY.md) · [Community-Forschung lesen](COMMUNITY-RESEARCH.md)
 
 ## Sicherheits- und Vertrauensgrenzen
 
@@ -213,9 +213,11 @@ Sicherheitsprobleme sollten vertraulich über [GitHub Security Advisories](https
 
 | Heute verfügbar | Durch MV3 eingeschränkt | Zukünftige Forschung – optional |
 | --- | --- | --- |
-| DNR-Netzwerkblockierung, kosmetische Filterung, mitgelieferte Scriptlets, benutzerdefinierte/importierte Listen, Filter Store, Picker/Zapper, kontextabhängige Popup-Richtlinien pro Host sowie Sichern/Wiederherstellen | Live-Protokollierung von Anfragen, prozedurale Filter, Durchsetzung importierter Popup-Filter, Semantik der dynamischen Firewall, Antwort-Header-Operationen und Redirect-Verhalten entsprechen MV2 nur teilweise | Verwaltete Enterprise-Adapter und ein unabhängig installiertes, quelloffenes natives Begleitprogramm, vorbehaltlich RFC, Zustimmung und Sicherheitsprüfung |
+| DNR-Netzwerkblockierung, kosmetische Filterung, mitgelieferte Scriptlets, benutzerdefinierte/importierte Listen, Filter Store, Picker/Zapper, kontextabhängige Popup-Richtlinien pro Host, Observer-Durchsetzung für verpackte Stock-`$popup`-Regeln und den unterstützten Teil importierter `$popup`-/`$popunder`-Filter mit redigierter Herkunft aus Bereich/Quellzeile/Typ sowie Sichern/Wiederherstellen | Live-Protokollierung von Anfragen, prozedurale Filter, asynchrone Popup-Beobachtung, Semantik der dynamischen Firewall, Antwort-Header-Operationen und Redirect-Verhalten bieten keine exakte MV2-Parität | Verwaltete Enterprise-Adapter und ein unabhängig installiertes, quelloffenes natives Begleitprogramm, vorbehaltlich RFC, Zustimmung und Sicherheitsprüfung |
 
-Beliebiges Umschreiben von Antwortinhalten, eine gleichwertige DNS-/CNAME-Sichtbarkeit und exaktes Blockieren anhand der Antwortgröße sind über die normalen öffentlichen MV3-Erweiterungs-APIs nicht verfügbar. Manche MV2-Filtersyntax kann nicht übersetzt werden; prüfen Sie die Funktionsmatrix, bevor Sie Gleichwertigkeit voraussetzen. Die Kompilierung importierter Netzwerklisten protokolliert inzwischen stabile Ablehnungsgründe und Quellzeilennummern; eine ausführlichere Darstellung dieses Berichts im Dashboard bleibt Teil der Roadmap.
+Der unterstützte Teil importierter Popup-Filter wird jetzt durch die Observer-Laufzeit durchgesetzt. Bedingungen, die nicht exakt abgebildet werden können—etwa Domain-Typ-, Request-Method- oder Response-Header-Bedingungen—bleiben ausdrücklich zurückgestellt, statt angenähert zu werden. Zurückgestellte Freigabebedingungen bleiben als konservative Fail-open-Schutzregeln erhalten; eine solche Schutzregel darf eine Entscheidung nur aufschieben und niemals näherungsweise erlauben oder blockieren. Da die Durchsetzung asynchronen Tab- und Navigationsereignissen von MV3 folgt, entspricht sie nicht exakt der synchronen MV2-Ausführung. Dynamische und sitzungsbezogene DNR-Regeln teilen sich einen einzigen Pool von 1.000 Regex-Regeln; sie erhalten nicht jeweils 1.000.
+
+Beliebiges Umschreiben von Antwortinhalten, eine gleichwertige DNS-/CNAME-Sichtbarkeit und exaktes Blockieren anhand der Antwortgröße sind über die normalen öffentlichen MV3-Erweiterungs-APIs nicht verfügbar. Manche MV2-Filtersyntax kann nicht übersetzt werden; prüfen Sie die Funktionsmatrix, bevor Sie Gleichwertigkeit voraussetzen. Popup-Treffer legen lokal nur redigierte Herkunftsdaten zu Bereich, Quellzeile und Typ offen. Die Kompilierung importierter Netzwerklisten protokolliert stabile Annahme- oder Zurückstellungsgründe und Quellzeilennummern; eine ausführlichere Darstellung dieses Berichts im Dashboard bleibt Teil der Roadmap.
 
 ## Roadmap
 

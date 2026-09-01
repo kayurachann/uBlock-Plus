@@ -194,7 +194,7 @@ Carga `dist/build/uBlockPlus.chromium` desde la página de extensiones del naveg
 - Las listas importadas se compilan localmente como datos DNR y cosméticos; los scriptlets deben existir previamente en la lista permitida incluida.
 - La compilación fuera de pantalla es temporal y se cierra cuando termina su trabajo.
 
-[Leer la arquitectura](ARCHITECTURE.md) · [Explorar Power Runtime](POWER-RUNTIME.md) · [Revisar el modelo de amenazas](THREAT-MODEL.md) · [Entender la privacidad](PRIVACY.md)
+[Leer la arquitectura](ARCHITECTURE.md) · [Explorar Power Runtime](POWER-RUNTIME.md) · [Revisar el modelo de amenazas](THREAT-MODEL.md) · [Entender la privacidad](PRIVACY.md) · [Consultar la investigación comunitaria](COMMUNITY-RESEARCH.md)
 
 ## Límites de seguridad y confianza
 
@@ -213,9 +213,11 @@ Los problemas de seguridad deben comunicarse de forma privada mediante [GitHub S
 
 | Disponible hoy | Limitado por MV3 | Investigación futura, opcional |
 | --- | --- | --- |
-| Bloqueo de red DNR, filtrado cosmético, scriptlets incluidos, listas personalizadas/importadas, Filter Store, selector/zapper, políticas contextuales de ventanas emergentes por host y copia de seguridad/restauración | El registro de solicitudes en vivo, los filtros procedimentales, la aplicación de filtros de ventanas emergentes importados, la semántica del firewall dinámico, las operaciones sobre cabeceras de respuesta y el comportamiento de redirección solo equivalen parcialmente a MV2 | Adaptadores Enterprise administrados y un complemento nativo de código abierto instalado de forma independiente, sujeto a RFC, consentimiento y revisión de seguridad |
+| Bloqueo de red DNR, filtrado cosmético, scriptlets incluidos, listas personalizadas/importadas, Filter Store, selector/zapper, políticas contextuales de ventanas emergentes por host, aplicación mediante observador de reglas `$popup` stock empaquetadas y del subconjunto compatible de filtros `$popup`/`$popunder` importados con procedencia redactada de ámbito/línea de origen/tipo y copia de seguridad/restauración | El registro de solicitudes en vivo, los filtros procedimentales, la observación asíncrona de ventanas emergentes, la semántica del firewall dinámico, las operaciones sobre cabeceras de respuesta y el comportamiento de redirección no ofrecen una paridad exacta con MV2 | Adaptadores Enterprise administrados y un complemento nativo de código abierto instalado de forma independiente, sujeto a RFC, consentimiento y revisión de seguridad |
 
-Las API públicas normales de extensiones MV3 no permiten reescribir arbitrariamente el cuerpo de las respuestas, obtener una visibilidad DNS/CNAME equivalente ni bloquear con precisión según el tamaño de la respuesta. Parte de la sintaxis de filtros MV2 no puede traducirse; consulta la matriz de funciones antes de suponer equivalencia. La compilación de listas de red importadas ya registra motivos de rechazo estables y números de línea de origen; presentar ese informe con más detalle en el panel sigue siendo una tarea de la hoja de ruta.
+El subconjunto compatible de filtros de ventanas emergentes importados se aplica ahora mediante el runtime observador. Las condiciones que no pueden representarse con exactitud—por ejemplo, las de tipo de dominio, método de solicitud o cabecera de respuesta—se mantienen diferidas explícitamente, sin aproximarlas. Las condiciones `allow` diferidas se conservan como guardas conservadoras de apertura segura (*fail-open*): una guarda solo puede aplazar la decisión y nunca permitir ni bloquear de forma aproximada. Como la aplicación sigue eventos asíncronos de pestañas y navegación de MV3, no ofrece una paridad síncrona exacta con MV2. Las reglas DNR dinámicas y de sesión comparten un único cupo de 1.000 expresiones regulares; no disponen de 1.000 cada una.
+
+Las API públicas normales de extensiones MV3 no permiten reescribir arbitrariamente el cuerpo de las respuestas, obtener una visibilidad DNS/CNAME equivalente ni bloquear con precisión según el tamaño de la respuesta. Parte de la sintaxis de filtros MV2 no puede traducirse; consulta la matriz de funciones antes de suponer equivalencia. Las coincidencias de ventanas emergentes solo exponen localmente procedencia redactada de ámbito, línea de origen y tipo. La compilación de listas de red importadas registra motivos estables de aceptación o aplazamiento y números de línea de origen; presentar ese informe con más detalle en el panel sigue siendo una tarea de la hoja de ruta.
 
 ## Hoja de ruta
 
