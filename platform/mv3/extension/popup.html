@@ -28,6 +28,17 @@
     <!-- -------- -->
     <div id="filteringModeText"><label data-i18n="popupFilteringModeLabel">_</label><br><span>_</span><span></span></div>
     <!-- -------- -->
+    <div id="popupPolicy" class="popupPolicy needHTTP">
+        <label for="popupPolicySelect" data-i18n="popupPolicyLabel">_</label>
+        <select id="popupPolicySelect" aria-label="popupPolicyLabel">
+            <option value="default" data-i18n="popupPolicyDefault">_</option>
+            <option value="allow" data-i18n="popupPolicyAllow">_</option>
+            <option value="block" data-i18n="popupPolicySmart">_</option>
+            <option value="strict" data-i18n="popupPolicyStrict">_</option>
+        </select>
+        <p data-i18n="popupPolicyDescription">_</p>
+    </div>
+    <!-- -------- -->
     <div class="toolMenu localTools needHTTP">
         <label data-i18n="popupLocalToolsLabel"></label>
         <span id="gotoZapper" class="tool enabled" tabindex="0">

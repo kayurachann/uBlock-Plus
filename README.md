@@ -35,7 +35,7 @@ uBlock Plus+ is an independent, GPL-licensed content blocker for Chromium MV3. I
 
 ### 🛡️ Layered content blocking
 
-Static, dynamic and session DNR rules work alongside cosmetic filtering, packaged scriptlets, strict blocking and popup controls.
+Static, dynamic and session DNR rules work alongside cosmetic filtering, packaged scriptlets, strict blocking and a context-aware Smart Popup Blocker.
 
 </td>
 <td width="50%" valign="top">
@@ -67,7 +67,7 @@ Choose `auto`, `balanced` or `low-memory`. Low-memory mode uses sequential compi
 
 ### 📦 Your configuration, portable
 
-Export and restore core settings, subscriptions, repositories and custom filters. The built-in catalog is a starting point—not a lock-in mechanism.
+Export and restore core settings, subscriptions, repositories, popup policies and custom filters. The built-in catalog is a starting point—not a lock-in mechanism.
 
 </td>
 <td width="50%" valign="top">
@@ -79,6 +79,8 @@ Filtering and storage diagnostics stay local. There is no project analytics acco
 </td>
 </tr>
 </table>
+
+The complete Power UI string set is translated for English, German, Spanish, French, Japanese, Korean, Russian, Vietnamese, Simplified Chinese and Traditional Chinese. The other 61 packaged locales receive a deterministic English build fallback, so a new control never renders blank while community translation catches up.
 
 <div align="center">
 
@@ -173,7 +175,7 @@ tools/make-mv3.sh chromium "$VERSION"
 
 </details>
 
-Load `dist/build/uBOLite.chromium` from the browser's extensions page. The versioned PowerShell command and the optional versioned shell command create the ZIP and checksum under `dist/build/`; plain `make mv3-chromium` creates only the unpacked directory.
+Load `dist/build/uBlockPlus.chromium` from the browser's extensions page. The versioned PowerShell command and the optional versioned shell command create the ZIP and checksum under `dist/build/`; plain `make mv3-chromium` creates only the unpacked directory.
 
 ## How it fits together
 
@@ -188,7 +190,7 @@ Load `dist/build/uBOLite.chromium` from the browser's extensions page. The versi
 - Imported lists compile locally into DNR and cosmetic data; scriptlets must already exist in the packaged allowlist.
 - Offscreen compilation is temporary and closes after its work completes.
 
-[Read the architecture](docs/ARCHITECTURE.md) · [Review the threat model](docs/THREAT-MODEL.md) · [Understand privacy](docs/PRIVACY.md)
+[Read the architecture](docs/ARCHITECTURE.md) · [Explore Power Runtime](docs/POWER-RUNTIME.md) · [Review the threat model](docs/THREAT-MODEL.md) · [Understand privacy](docs/PRIVACY.md)
 
 ## Security and trust boundaries
 
@@ -207,9 +209,9 @@ Security issues should be reported privately through [GitHub Security Advisories
 
 | Available today | Constrained by MV3 | Future research—optional |
 | --- | --- | --- |
-| DNR network blocking, cosmetic filtering, packaged scriptlets, custom/imported lists, Filter Store, picker/zapper and backup/restore | Live request logging, procedural filters, dynamic-firewall semantics, response-header operations and redirect behavior are only partially equivalent to MV2 | Managed Enterprise adapters and an independently installed open-source native companion, subject to RFC, consent and security review |
+| DNR network blocking, cosmetic filtering, packaged scriptlets, custom/imported lists, Filter Store, picker/zapper, context-aware per-host popup policies and backup/restore | Live request logging, procedural filters, imported popup-filter enforcement, dynamic-firewall semantics, response-header operations and redirect behavior are only partially equivalent to MV2 | Managed Enterprise adapters and an independently installed open-source native companion, subject to RFC, consent and security review |
 
-Arbitrary response-body rewriting, equivalent DNS/CNAME visibility and exact size-based response blocking are not available through the normal public MV3 extension APIs. Some MV2 filter syntax cannot be translated; consult the feature matrix before assuming equivalence. More detailed per-filter compatibility reporting remains roadmap work.
+Arbitrary response-body rewriting, equivalent DNS/CNAME visibility and exact size-based response blocking are not available through the normal public MV3 extension APIs. Some MV2 filter syntax cannot be translated; consult the feature matrix before assuming equivalence. Imported network-list compilation now records stable rejection reasons and source line numbers; surfacing that report more richly in the dashboard remains roadmap work.
 
 ## Roadmap
 
@@ -254,7 +256,7 @@ Roadmap items are not release promises. A feature ships only after implementatio
 npm ci
 npm run lint
 npm test
-node tools/validate-mv3.mjs dist/build/uBOLite.chromium --release
+node tools/validate-mv3.mjs dist/build/uBlockPlus.chromium --release
 ```
 
 Ideas and reports are welcome through the repository's structured issue forms:

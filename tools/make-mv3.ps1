@@ -245,7 +245,7 @@ function Test-ChromiumExtensionVersion {
 
 $projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $buildRoot = Join-Path $projectRoot 'dist/build'
-$outputDirectory = Join-Path $buildRoot "uBOLite.$Platform"
+$outputDirectory = Join-Path $buildRoot "uBlockPlus.$Platform"
 $nodeCommand = @(Get-Command node -CommandType Application `
     -ErrorAction SilentlyContinue)[0]
 if ( $null -eq $nodeCommand ) {
@@ -268,7 +268,7 @@ if ( $Before -ne '' ) {
     Assert-Path (Join-Path $beforeDirectory $Platform)
 }
 
-Write-Host '*** uBOLite.mv3: Creating extension'
+Write-Host '*** uBlock Plus+ MV3: Creating extension'
 Write-Host "PLATFORM=$Platform"
 Write-Host "VERSION=$Version"
 Write-Host "BEFORE=$beforeDirectory"
@@ -290,7 +290,7 @@ try {
         $git = [string] $gitCommand.Source
         $uboRoot = New-BuildTempDirectory
         $temporaryDirectories.Add($uboRoot)
-        Write-Host "*** uBOLite.mv3: Fetching uBO $UboVersion into $uboRoot"
+        Write-Host "*** uBlock Plus+ MV3: Fetching uBO $UboVersion into $uboRoot"
         Invoke-NativeCommand $git @('init', '-q') $uboRoot
         Invoke-NativeCommand $git @(
             'remote', 'add', 'origin', 'https://github.com/gorhill/uBlock.git'
@@ -301,7 +301,7 @@ try {
         Invoke-NativeCommand $git @('checkout', '-q', 'FETCH_HEAD') $uboRoot
     }
 
-    Write-Host '*** uBOLite.mv3: Copying common files'
+    Write-Host '*** uBlock Plus+ MV3: Copying common files'
     Copy-TreeContents (Join-Path $uboRoot 'src/css/fonts/Inter') `
         (Join-Path $outputDirectory 'css/fonts/Inter')
     foreach ( $file in @(
@@ -346,7 +346,7 @@ try {
     Copy-RequiredFile (Join-Path $projectRoot 'NOTICE.md') `
         (Join-Path $outputDirectory 'NOTICE.md')
 
-    Write-Host '*** uBOLite.mv3: Copying MV3-specific files'
+    Write-Host '*** uBlock Plus+ MV3: Copying MV3-specific files'
     $mv3Root = Join-Path $projectRoot 'platform/mv3'
     $extensionRoot = Join-Path $mv3Root 'extension'
     Copy-RequiredFile (Join-Path $mv3Root 'chromium/manifest.json') `
@@ -375,6 +375,10 @@ try {
     }
     Copy-TreeContents (Join-Path $extensionRoot '_locales') `
         (Join-Path $outputDirectory '_locales')
+    Invoke-NativeCommand $node @(
+        'tools/merge-mv3-locale-fallbacks.mjs',
+        $outputDirectory
+    ) $projectRoot
     Copy-RequiredFile (Join-Path $mv3Root 'README.md') `
         (Join-Path $outputDirectory 'README.md')
 
@@ -397,7 +401,7 @@ try {
         Join-Path $extensionRoot 'lib/s14e-serializer/LICENSE'
     ) (Join-Path $outputDirectory 'lib/s14e-serializer.LICENSE')
 
-    Write-Host '*** uBOLite.mv3: Generating rulesets'
+    Write-Host '*** uBlock Plus+ MV3: Generating rulesets'
     $rulesetBuildDirectory = New-BuildTempDirectory
     $temporaryDirectories.Add($rulesetBuildDirectory)
 
@@ -504,7 +508,7 @@ try {
     }
 
     if ( $beforeDirectory -ne '' ) {
-        Write-Host '*** uBOLite.mv3: Salvaging rule IDs to minimize diff size'
+        Write-Host '*** uBlock Plus+ MV3: Salvaging rule IDs to minimize diff size'
         Invoke-NativeCommand $node @(
             'salvage-ruleids.mjs',
             ('before=' + (Join-Path $beforeDirectory $Platform)),
@@ -534,12 +538,12 @@ try {
         ($manifest | ConvertTo-Json -Depth 100) + "`n"
     )
 
-    Write-Host "*** uBOLite.${Platform}: Extension ready"
+    Write-Host "*** uBlock Plus+ ${Platform}: Extension ready"
     Write-Host "Extension location: $outputDirectory"
 
     $createPackage = $Full.IsPresent -or $Version -ne ''
     if ( $createPackage ) {
-        Write-Host '*** uBOLite.mv3: Creating publishable package'
+        Write-Host '*** uBlock Plus+ MV3: Creating publishable package'
         $packageDirectory = New-BuildTempDirectory
         $temporaryDirectories.Add($packageDirectory)
         Copy-TreeContents $outputDirectory $packageDirectory

@@ -107,6 +107,230 @@
     "message": "若要套用從匯入清單中的樣式或小令稿過濾規則，您必須授予 uBlock Plus+ 執行使用者命令稿的權限。",
     "description": "A notice to inform user that the enforcement of some filters requires permission to execute 'user scripts'"
   },
+  "memoryProfileSectionLabel": {
+    "message": "記憶體設定檔",
+    "description": "Heading for the memory optimization controls"
+  },
+  "memoryProfileSelectLabel": {
+    "message": "記憶體設定檔",
+    "description": "Accessible label for the memory profile selector"
+  },
+  "memoryProfileDescription": {
+    "message": "控制編譯並行數與快取預算。低記憶體模式旨在不停用已啟用篩選器的情況下降低尖峰記憶體用量。",
+    "description": "Description of the memory profile setting"
+  },
+  "memoryProfileAuto": {
+    "message": "自動",
+    "description": "Automatically selected memory profile"
+  },
+  "memoryProfileBalanced": {
+    "message": "平衡",
+    "description": "Balanced memory profile"
+  },
+  "memoryProfileLow": {
+    "message": "低記憶體",
+    "description": "Low-memory profile"
+  },
+  "memoryProfileEffective": {
+    "message": "目前生效的設定檔：$1",
+    "description": "Currently effective memory profile"
+  },
+  "memoryProfileStorageMetrics": {
+    "message": "本機快取/儲存空間用量（非即時記憶體）：本機 $1，工作階段 $2。",
+    "description": "Local extension storage size metrics"
+  },
+  "memoryProfileUnavailable": {
+    "message": "無法使用",
+    "description": "Metric is unavailable in this browser"
+  },
+  "memoryProfileRefresh": {
+    "message": "重新整理指標",
+    "description": "Refresh local memory/storage metrics"
+  },
+  "memoryProfileCleanup": {
+    "message": "清理孤立快取",
+    "description": "Remove unused compiled list caches"
+  },
+  "memoryProfileCleanupDone": {
+    "message": "清理完成；已移除 $1 個孤立快取項目。",
+    "description": "Memory cleanup result"
+  },
+  "memoryProfileCleanupUnavailable": {
+    "message": "此 Chrome 版本可以回報總儲存空間，但無法列舉孤立快取索引鍵（清理功能需要 Chrome 130 或更新版本）。",
+    "description": "Memory cleanup API unavailable"
+  },
+  "memoryProfileError": {
+    "message": "無法更新記憶體設定檔。",
+    "description": "Memory profile operation error"
+  },
+  "filterStoreTitle": {
+    "message": "篩選器商店（Power 版）",
+    "description": "Heading for the curated and custom filter repository browser"
+  },
+  "filterStoreCategoryLabel": {
+    "message": "篩選器商店類別",
+    "description": "Accessible label for the Filter Store category selector"
+  },
+  "filterStoreLanguageLabel": {
+    "message": "篩選器商店語言",
+    "description": "Accessible label for the Filter Store language selector"
+  },
+  "filterStoreProfileLabel": {
+    "message": "篩選器商店資源設定檔",
+    "description": "Accessible label for the Filter Store resource profile selector"
+  },
+  "filterStoreDescription": {
+    "message": "瀏覽經驗證及社群提供的篩選資料。目錄絕不提供可執行的擴充功能程式碼；匯入的清單會由 uBlock Plus+ 剖析並編譯成 MV3 規則。",
+    "description": "Filter Store security summary"
+  },
+  "filterStoreSearchPlaceholder": {
+    "message": "搜尋篩選清單",
+    "description": "Filter Store search field placeholder"
+  },
+  "filterStoreAllCategories": {
+    "message": "所有類別",
+    "description": "Filter Store category filter"
+  },
+  "filterStoreAllLanguages": {
+    "message": "所有語言",
+    "description": "Filter Store language filter"
+  },
+  "filterStoreAllProfiles": {
+    "message": "所有設定檔",
+    "description": "Filter Store resource profile filter"
+  },
+  "filterStoreGlobal": {
+    "message": "全域",
+    "description": "A filter list intended for all languages"
+  },
+  "filterStoreStaticSlots": {
+    "message": "靜態規則集插槽",
+    "description": "MV3 static ruleset quota unit"
+  },
+  "filterStoreDynamicRules": {
+    "message": "動態規則",
+    "description": "MV3 dynamic rule quota unit"
+  },
+  "filterStoreRegexRules": {
+    "message": "規則運算式規則",
+    "description": "MV3 regular expression rule quota unit"
+  },
+  "filterStoreUnknownCosts": {
+    "message": "$1 個匯入清單的規則成本未知",
+    "description": "Filter Store unknown quota-cost notice"
+  },
+  "filterStoreStaticCost": {
+    "message": "$1 個靜態插槽，$2 條封裝規則",
+    "description": "Estimated cost of a packaged filter list"
+  },
+  "filterStoreDynamicCost": {
+    "message": "最多 $1 條動態規則 / $2 條規則運算式規則",
+    "description": "Estimated cost of an imported filter list"
+  },
+  "filterStoreVerified": {
+    "message": "已驗證",
+    "description": "Trust badge for a reviewed catalog entry"
+  },
+  "filterStoreCommunity": {
+    "message": "社群",
+    "description": "Trust badge for a user-provided catalog entry"
+  },
+  "filterStoreHomepage": {
+    "message": "首頁",
+    "description": "Link to a filter list homepage"
+  },
+  "filterStoreEnable": {
+    "message": "啟用",
+    "description": "Enable a Filter Store entry"
+  },
+  "filterStoreDisable": {
+    "message": "停用",
+    "description": "Disable a Filter Store entry"
+  },
+  "filterStoreNoResults": {
+    "message": "沒有相符的篩選清單。",
+    "description": "Empty Filter Store search result"
+  },
+  "filterStoreResultsLimited": {
+    "message": "正在顯示前 $1 個結果，共 $2 個。請縮小搜尋範圍以查看其餘結果。",
+    "description": "Filter Store rendering limit notice"
+  },
+  "filterStoreBundles": {
+    "message": "套裝組合",
+    "description": "Filter Store bundle section heading"
+  },
+  "filterStoreBundleEnabled": {
+    "message": "套裝組合已啟用",
+    "description": "Filter Store bundle state"
+  },
+  "filterStoreEnableBundle": {
+    "message": "啟用套裝組合",
+    "description": "Enable all entries in a Filter Store bundle"
+  },
+  "filterStoreRepositories": {
+    "message": "自訂存放庫",
+    "description": "Filter Store custom repository section"
+  },
+  "filterStoreRepositoryWarning": {
+    "message": "僅新增您控制或信任的 HTTPS JSON 目錄。自訂存放庫一律顯示為「社群」，即使其宣稱擁有更高的信任層級。",
+    "description": "Security warning for custom Filter Store repositories"
+  },
+  "filterStoreRepositoryPlaceholder": {
+    "message": "catalog.json 的 HTTPS URL",
+    "description": "Custom Filter Store repository URL placeholder"
+  },
+  "filterStoreAddRepository": {
+    "message": "新增存放庫",
+    "description": "Add a custom Filter Store repository"
+  },
+  "filterStoreRemoveRepository": {
+    "message": "移除",
+    "description": "Remove a custom Filter Store repository"
+  },
+  "filterStoreRepositoryFailed": {
+    "message": "無法載入存放庫：$1",
+    "description": "Custom repository load error"
+  },
+  "filterStoreQuotaExceeded": {
+    "message": "此選擇將超出 MV3 規則集配額。",
+    "description": "Filter Store MV3 quota error"
+  },
+  "filterStoreCommunityConfirm": {
+    "message": "此社群存放庫未經 uBlock Plus+ 驗證。是否匯入其篩選資料？",
+    "description": "Confirmation before enabling a custom repository entry"
+  },
+  "filterStoreVerifying": {
+    "message": "正在驗證 $1…",
+    "description": "Filter data integrity check status"
+  },
+  "filterStoreDisabledStatus": {
+    "message": "已停用 $1。",
+    "description": "Filter Store disabled status"
+  },
+  "filterStoreEnabledStatus": {
+    "message": "已啟用 $1。",
+    "description": "Filter Store enabled status"
+  },
+  "filterStoreActivationWarnings": {
+    "message": "已啟用，同時略過 $1 條與 Chrome 不相容的規則運算式規則。",
+    "description": "Filter Store partial compatibility warning"
+  },
+  "filterStoreBundleStatus": {
+    "message": "已啟用套裝組合：$1。",
+    "description": "Filter Store bundle enabled status"
+  },
+  "filterStoreInvalidRepository": {
+    "message": "請輸入有效的 HTTPS 目錄 URL。",
+    "description": "Custom Filter Store repository validation error"
+  },
+  "filterStoreRepositoryAdded": {
+    "message": "已新增存放庫。",
+    "description": "Custom Filter Store repository added status"
+  },
+  "filterStoreRepositoryRemoved": {
+    "message": "已移除存放庫。其中已啟用的清單仍可在「匯入的清單」中使用。",
+    "description": "Custom Filter Store repository removed status"
+  },
   "customFiltersImportExportLabel": {
     "message": "匯入 / 匯出",
     "description": "Text label heading the import/export area of custom filters"
@@ -263,6 +487,46 @@
     "message": "行為",
     "description": "The header text for the 'Behavior' section"
   },
+  "privacyHardeningSectionLabel": {
+    "message": "選用的瀏覽器隱私強化",
+    "description": "Header for the optional Chrome privacy controls"
+  },
+  "privacyHardeningDescription": {
+    "message": "這些控制項只會在您授予選用權限後變更 Chrome 的隱私設定。關閉控制項會將該設定的控制權交還給 Chrome。",
+    "description": "Explains the optional privacy permission and reversible controls"
+  },
+  "privacyPermissionButton": {
+    "message": "啟用隱私控制項…",
+    "description": "Button which requests the optional privacy permission"
+  },
+  "privacyPermissionDenied": {
+    "message": "未授予選用的隱私權限。",
+    "description": "Shown when the user declines the optional privacy permission"
+  },
+  "privacySettingUpdateFailed": {
+    "message": "Chrome 無法更新一或多個隱私設定。",
+    "description": "Shown when a requested Chrome privacy setting change fails"
+  },
+  "privacyDisableHyperlinkAuditing": {
+    "message": "停用超連結稽核 ping",
+    "description": "Privacy setting label"
+  },
+  "privacyDisableNetworkPrediction": {
+    "message": "停用 Chrome 網路預測",
+    "description": "Privacy setting label"
+  },
+  "privacyProtectWebRTC": {
+    "message": "阻止 WebRTC 使用未經 Proxy 的 UDP",
+    "description": "Privacy setting label"
+  },
+  "privacyDisableAdApis": {
+    "message": "停用 Chrome Privacy Sandbox 廣告 API",
+    "description": "Privacy setting label"
+  },
+  "privacySettingNotControllable": {
+    "message": "此設定由 Chrome 政策或其他擴充功能控制。",
+    "description": "Privacy setting is managed elsewhere"
+  },
   "autoReloadLabel": {
     "message": "變更過濾模式時自動重新載入",
     "description": "Label for a checkbox in the options page"
@@ -287,6 +551,12 @@
     "message": "啟用後，符合的篩選規則將自動關閉網站所建立的不需要的瀏覽器分頁。",
     "description": "Short description for a checkbox in the options page"
   },
+  "popupPolicyLabel": { "message": "此主機名稱的彈出式視窗策略" },
+  "popupPolicyDefault": { "message": "預設（智慧型）" },
+  "popupPolicyAllow": { "message": "允許" },
+  "popupPolicySmart": { "message": "智慧型" },
+  "popupPolicyStrict": { "message": "嚴格" },
+  "popupPolicyDescription": { "message": "只套用至這個完全相符的主機名稱。允許和智慧型只影響情境檢查；符合篩選器清單規則時仍會立即關閉視窗（fail-closed）。嚴格模式要求受信任操作，且目標必須是相同、上層或下層主機名稱。" },
   "sandboxEditorLabel": {
     "message": "篩選規則建立沙盒",
     "description": "Header for filter-creation section in the dashboard"

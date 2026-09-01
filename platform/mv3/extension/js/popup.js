@@ -40,6 +40,33 @@ function renderAdminRules() {
 
 /******************************************************************************/
 
+function renderPopupPolicy() {
+    const select = qs$('#popupPolicySelect');
+    const details = popupPanelData.popupPolicy;
+    select.value = details?.matchedHostname === tabURL.hostname
+        ? details.mode
+        : 'default';
+    select.disabled = popupPanelData.popupBlockMode === false;
+}
+
+dom.on('#popupPolicySelect', 'change', async ev => {
+    if ( ev.isTrusted !== true || tabURL.hostname === '' ) { return; }
+    dom.cl.add(dom.body, 'busy');
+    try {
+        const response = await sendMessage({
+            what: 'setPopupPolicy',
+            hostname: tabURL.hostname,
+            mode: ev.target.value,
+        });
+        popupPanelData.popupPolicy = response.effective;
+    } catch {
+    }
+    renderPopupPolicy();
+    dom.cl.remove(dom.body, 'busy');
+});
+
+/******************************************************************************/
+
 const BLOCKING_MODE_MAX = 3;
 
 async function setFilteringMode(level, commit = false) {
@@ -329,6 +356,7 @@ async function init() {
     renderAdminRules();
 
     setFilteringMode(popupPanelData.level);
+    renderPopupPolicy();
 
     dom.text('#hostname', punycode.toUnicode(tabURL.hostname));
 

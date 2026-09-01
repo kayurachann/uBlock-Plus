@@ -30,7 +30,7 @@ const releaseMode = process.argv.includes('--release');
 const extensionArgument = process.argv.slice(2)
     .find(argument => argument !== '--release');
 const extensionDir = path.resolve(
-    extensionArgument || 'dist/build/uBOLite.chromium'
+    extensionArgument || 'dist/build/uBlockPlus.chromium'
 );
 const errors = [];
 let jsonFileCount = 0;
@@ -195,6 +195,9 @@ if ( manifest.permissions?.includes('declarativeNetRequestFeedback') !== true ) 
 if ( manifest.permissions?.includes('userScripts') !== true ) {
     reportError('Sideload builds must request userScripts');
 }
+if ( manifest.permissions?.includes('webNavigation') !== true ) {
+    reportError('Power builds must request webNavigation for smart popup context');
+}
 if ( manifest.permissions?.includes('webRequestBlocking') ) {
     reportError(
         'The unpacked Power build must not request the policy-only ' +
@@ -248,6 +251,11 @@ for ( const requiredPath of [
     'js/filter-store-model.js',
     'js/imported-fetch-policy.js',
     'js/memory-manager.js',
+    'js/popup-blocker.js',
+    'js/popup-policy.js',
+    'js/runtime-capabilities-core.js',
+    'js/runtime-capabilities.js',
+    'js/scripting/popup-context.js',
 ] ) {
     await validateFileReference(requiredPath, 'Required uBlock Plus+ component');
 }

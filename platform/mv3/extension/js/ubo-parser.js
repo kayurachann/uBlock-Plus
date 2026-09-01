@@ -303,8 +303,11 @@ function dropEntities(rule, prop) {
     if ( condition[prop] === undefined ) { return; }
     const sanitized = condition[prop].filter(a => isNotEntity(a));
     if ( sanitized.length === condition[prop].length ) { return; }
-    if ( sanitized.length === 0 ) { return 0; }
-    condition.requestDomains = sanitized;
+    if ( sanitized.length === 0 ) {
+        delete condition[prop];
+        return 0;
+    }
+    condition[prop] = sanitized;
 }
 
 /******************************************************************************/
@@ -348,26 +351,60 @@ export function expandRemoveparamsRule(rule0, out) {
 
 /******************************************************************************/
 
-export function validateRules(rules) {
+const entityOnlyReasonCodes = Object.freeze({
+    requestDomains: 'entity-only-request-domains',
+    excludedRequestDomains: 'entity-only-excluded-request-domains',
+    initiatorDomains: 'entity-only-initiator-domains',
+    excludedInitiatorDomains: 'entity-only-excluded-initiator-domains',
+});
+
+export function validateRule(rule) {
+    const { condition } = rule;
+    // "Only one of resourceTypes and excludedResourceTypes should be specified"
+    if ( condition.resourceTypes && condition.excludedResourceTypes ) {
+        return {
+            status: 'rejected',
+            reasonCode: 'dnr-resource-types-conflict',
+        };
+    }
+    // "Only one of requestMethods and excludedRequestMethods should be specified"
+    if ( condition.requestMethods && condition.excludedRequestMethods ) {
+        return {
+            status: 'rejected',
+            reasonCode: 'dnr-request-methods-conflict',
+        };
+    }
+    // Drop entity-based hostnames. An entity-only condition cannot be
+    // represented by DNR; deleting only the inspected property ensures a
+    // caller which retains the rejected rule for diagnostics cannot observe
+    // an unrelated condition being overwritten.
+    for ( const prop of Object.keys(entityOnlyReasonCodes) ) {
+        if ( dropEntities(rule, prop) !== 0 ) { continue; }
+        return {
+            status: 'rejected',
+            reasonCode: entityOnlyReasonCodes[prop],
+        };
+    }
+    // regexSubstitution requires regexFilter
+    if ( rule.action?.redirect?.regexSubstitution &&
+        condition.regexFilter === undefined ) {
+        return {
+            status: 'rejected',
+            reasonCode: 'dnr-regex-substitution-without-regex-filter',
+        };
+    }
+    return { status: 'accepted' };
+}
+
+export function validateRules(rules, rejections) {
     const out = [];
     for ( const rule of rules ) {
-        const { condition } = rule;
-        // "Only one of resourceTypes and excludedResourceTypes should be specified"
-        if ( condition.resourceTypes ) {
-            if ( condition.excludedResourceTypes ) { continue; }
-        }
-        // "Only one of requestMethods and excludedRequestMethods should be specified"
-        if ( condition.requestMethods ) {
-            if ( condition.excludedRequestMethods ) { continue; }
-        }
-        // Drop entity-based hostnames
-        if ( dropEntities(rule, 'requestDomains') === 0 ) { continue; }
-        if ( dropEntities(rule, 'excludedRequestDomains') === 0 ) { continue; }
-        if ( dropEntities(rule, 'initiatorDomains') === 0 ) { continue; }
-        if ( dropEntities(rule, 'excludedInitiatorDomains') === 0 ) { continue; }
-        // regexSubstitution requires regexFilter
-        if ( rule.action?.redirect?.regexSubstitution ) {
-            if ( rule.condition.regexFilter === undefined ) { continue; }
+        const result = validateRule(rule);
+        if ( result.status === 'rejected' ) {
+            if ( Array.isArray(rejections) ) {
+                rejections.push(result);
+            }
+            continue;
         }
         out.push(rule);
     }
@@ -385,9 +422,44 @@ export function validateRules(rules) {
 //   Block important: 40
 //   Redirect important: 41-49
 
+function networkFilterResult(status, details, reasonCode, classification) {
+    const result = { status };
+    if ( reasonCode ) { result.reasonCode = reasonCode; }
+    if ( classification ) { result.classification = classification; }
+    if ( status === 'deferred' ) { result.disposition = 'deferred'; }
+    if ( Number.isSafeInteger(details.lineNumber) && details.lineNumber > 0 ) {
+        result.lineNumber = details.lineNumber;
+    }
+    return result;
+}
+
+function parserErrorReason(parser) {
+    for ( const type of parser.getNodeTypes() ) {
+        switch ( type ) {
+        case sfp.NODE_TYPE_NET_OPTION_NAME_DENYALLOW:
+            return 'invalid-denyallow-domain-list';
+        case sfp.NODE_TYPE_NET_OPTION_NAME_FROM:
+            return 'invalid-from-domain-list';
+        case sfp.NODE_TYPE_NET_OPTION_NAME_TO:
+            return 'invalid-to-domain-list';
+        case sfp.NODE_TYPE_NET_OPTION_NAME_TOP:
+            return 'invalid-top-domain-list';
+        default:
+            break;
+        }
+    }
+    return 'parser-error';
+}
+
+/******************************************************************************/
+
 export function parseNetworkFilter(parser, details = {}, out = []) {
-    if ( parser.isNetworkFilter() === false ) { return; }
-    if ( parser.hasError() ) { return; }
+    const reject = reasonCode =>
+        networkFilterResult('rejected', details, reasonCode);
+    if ( parser.isNetworkFilter() === false ) {
+        return reject('not-network-filter');
+    }
+    if ( parser.hasError() ) { return reject(parserErrorReason(parser)); }
 
     const validResourceTypes = details.resourceTypes ?? safeResourceTypes;
     const rule = {
@@ -429,6 +501,9 @@ export function parseNetworkFilter(parser, details = {}, out = []) {
     const excludedRequestMethods = new Set();
     const resourceTypes = new Set();
     const excludedResourceTypes = new Set();
+    const popupKinds = new Set();
+    const routedPopupFilters = [];
+    let hasDnrResourceTypeOption = false;
 
     const processResourceType = (resourceType, nodeType) => {
         const not = parser.isNegatedOption(nodeType)
@@ -440,6 +515,7 @@ export function parseNetworkFilter(parser, details = {}, out = []) {
         } else {
             resourceTypes.add(resourceType);
         }
+        hasDnrResourceTypeOption = true;
     };
 
     let subpriority = 0;
@@ -453,24 +529,44 @@ export function parseNetworkFilter(parser, details = {}, out = []) {
                 : 'firstParty';
             break;
         case sfp.NODE_TYPE_NET_OPTION_NAME_STRICT1P:
+            return reject('unsupported-strict-first-party');
         case sfp.NODE_TYPE_NET_OPTION_NAME_STRICT3P:
+            return reject('unsupported-strict-third-party');
         case sfp.NODE_TYPE_NET_OPTION_NAME_BADFILTER:
+            return reject('unsupported-badfilter');
         case sfp.NODE_TYPE_NET_OPTION_NAME_CNAME:
+            return reject('unsupported-cname');
         case sfp.NODE_TYPE_NET_OPTION_NAME_EHIDE:
+            return reject('unsupported-ehide');
         case sfp.NODE_TYPE_NET_OPTION_NAME_GENERICBLOCK:
+            return reject('unsupported-genericblock');
         case sfp.NODE_TYPE_NET_OPTION_NAME_GHIDE:
+            return reject('unsupported-ghide');
         case sfp.NODE_TYPE_NET_OPTION_NAME_IPADDRESS:
+            return reject('unsupported-ipaddress');
         case sfp.NODE_TYPE_NET_OPTION_NAME_REDIRECTRULE:
+            return reject('unsupported-redirect-rule');
         case sfp.NODE_TYPE_NET_OPTION_NAME_REPLACE:
+            return reject('unsupported-replace');
         case sfp.NODE_TYPE_NET_OPTION_NAME_SHIDE:
+            return reject('unsupported-shide');
         case sfp.NODE_TYPE_NET_OPTION_NAME_URLSKIP:
-            return;
+            return reject('unsupported-urlskip');
         case sfp.NODE_TYPE_NET_OPTION_NAME_INLINEFONT:
+            return reject('unsupported-inline-font');
         case sfp.NODE_TYPE_NET_OPTION_NAME_INLINESCRIPT:
-        case sfp.NODE_TYPE_NET_OPTION_NAME_POPUNDER:
-        case sfp.NODE_TYPE_NET_OPTION_NAME_POPUP:
+            return reject('unsupported-inline-script');
         case sfp.NODE_TYPE_NET_OPTION_NAME_WEBRTC:
-            processResourceType('', type);
+            return reject('unsupported-webrtc');
+        case sfp.NODE_TYPE_NET_OPTION_NAME_POPUNDER:
+            if ( parser.isNegatedOption(type) === false ) {
+                popupKinds.add('popunder');
+            }
+            break;
+        case sfp.NODE_TYPE_NET_OPTION_NAME_POPUP:
+            if ( parser.isNegatedOption(type) === false ) {
+                popupKinds.add('popup');
+            }
             break;
         case sfp.NODE_TYPE_NET_OPTION_NAME_3P:
             rule.condition.domainType = parser.isNegatedOption(type)
@@ -479,9 +575,12 @@ export function parseNetworkFilter(parser, details = {}, out = []) {
             break;
         case sfp.NODE_TYPE_NET_OPTION_NAME_ALL:
             validResourceTypes.forEach(a => resourceTypes.add(a));
+            hasDnrResourceTypeOption = true;
             break;
         case sfp.NODE_TYPE_NET_OPTION_NAME_CSP:
-            if ( rule.action.responseHeaders ) { return; }
+            if ( rule.action.responseHeaders ) {
+                return reject('response-header-action-conflict');
+            }
             rule.action.type = 'modifyHeaders';
             rule.action.responseHeaders = [ {
                 header: 'content-security-policy',
@@ -499,9 +598,15 @@ export function parseNetworkFilter(parser, details = {}, out = []) {
             const { included, excluded } = parseHostnameList(
                 parser.getNetFilterDenyallowOptionIterator()
             );
-            if ( excluded.good.length !== 0 || excluded.bad.length !== 0 ) { return; }
-            if ( included.bad.length !== 0 ) { return; }
-            if ( included.good.length === 0 ) { return; }
+            if ( excluded.good.length !== 0 || excluded.bad.length !== 0 ) {
+                return reject('invalid-denyallow-domain-list');
+            }
+            if ( included.bad.length !== 0 ) {
+                return reject('invalid-denyallow-domain-list');
+            }
+            if ( included.good.length === 0 ) {
+                return reject('empty-denyallow-domain-list');
+            }
             for ( const hn of included.good ) {
                 excludedRequestDomains.add(hn);
             }
@@ -521,9 +626,13 @@ export function parseNetworkFilter(parser, details = {}, out = []) {
                 parser.getNetFilterFromOptionIterator()
             );
             if ( included.good.length === 0 ) {
-                if ( included.bad.length !== 0 ) { return; }
+                if ( included.bad.length !== 0 ) {
+                    return reject('invalid-from-domain-list');
+                }
             }
-            if ( excluded.bad.length !== 0 ) { return; }
+            if ( excluded.bad.length !== 0 ) {
+                return reject('invalid-from-domain-list');
+            }
             for ( const hn of included.good ) {
                 initiatorDomains.add(hn);
             }
@@ -534,12 +643,16 @@ export function parseNetworkFilter(parser, details = {}, out = []) {
         }
         case sfp.NODE_TYPE_NET_OPTION_NAME_RESPONSEHEADER: {
             const details = sfp.parseHeaderValue(parser.getNetOptionValue(type));
-            if ( details.bad ) { return; }
+            if ( details.bad ) {
+                return reject('invalid-response-header');
+            }
             const headerInfo = {
                 header: details.name,
             };
             if ( details.value !== '' ) {
-                if ( details.isRegex ) { return; }
+                if ( details.isRegex ) {
+                    return reject('unsupported-response-header-regex');
+                }
                 headerInfo.values = [ details.value ];
             }
             if ( details.not ) {
@@ -580,7 +693,9 @@ export function parseNetworkFilter(parser, details = {}, out = []) {
             processResourceType('other', type);
             break;
         case sfp.NODE_TYPE_NET_OPTION_NAME_PERMISSIONS:
-            if ( rule.action.responseHeaders ) { return; }
+            if ( rule.action.responseHeaders ) {
+                return reject('response-header-action-conflict');
+            }
             rule.action.type = 'modifyHeaders';
             rule.action.responseHeaders = [ {
                 header: 'permissions-policy',
@@ -597,14 +712,18 @@ export function parseNetworkFilter(parser, details = {}, out = []) {
         case sfp.NODE_TYPE_NET_OPTION_NAME_REASON:
             break;
         case sfp.NODE_TYPE_NET_OPTION_NAME_REDIRECT: {
-            if ( rule.action.type !== 'block' ) { return; }
+            if ( rule.action.type !== 'block' ) {
+                return reject('redirect-action-conflict');
+            }
             let value = parser.getNetOptionValue(type);
             const match = /:(\d+)$/.exec(value);
             if ( match ) {
                 subpriority = Math.min(parseInt(match[1], 10) || 0, 8);
                 value = value.slice(0, match.index);
             }
-            if ( validRedirectResources.has(value) === false ) { return; }
+            if ( validRedirectResources.has(value) === false ) {
+                return reject('unsupported-redirect-resource');
+            }
             rule.action.type = 'redirect';
             rule.action.redirect = {
                 extensionPath: `/web_accessible_resources/${validRedirectResources.get(value)}`,
@@ -613,9 +732,13 @@ export function parseNetworkFilter(parser, details = {}, out = []) {
         }
         case sfp.NODE_TYPE_NET_OPTION_NAME_REMOVEPARAM: {
             const details = sfp.parseQueryPruneValue(parser.getNetOptionValue(type));
-            if ( details.bad ) { return; }
-            if ( details.not ) { return; }
-            if ( details.re ) { return; }
+            if ( details.bad ) { return reject('invalid-removeparam'); }
+            if ( details.not ) {
+                return reject('unsupported-removeparam-negated');
+            }
+            if ( details.re ) {
+                return reject('unsupported-removeparam-regex');
+            }
             const removeParams = [];
             if ( details.name ) {
                 removeParams.push(details.name);
@@ -642,9 +765,13 @@ export function parseNetworkFilter(parser, details = {}, out = []) {
                 parser.getNetFilterToOptionIterator()
             );
             if ( included.good.length === 0 ) {
-                if ( included.bad.length !== 0 ) { return; }
+                if ( included.bad.length !== 0 ) {
+                    return reject('invalid-to-domain-list');
+                }
             }
-            if ( excluded.bad.length !== 0 ) { return; }
+            if ( excluded.bad.length !== 0 ) {
+                return reject('invalid-to-domain-list');
+            }
             for ( const hn of included.good ) {
                 requestDomains.add(hn);
             }
@@ -658,9 +785,13 @@ export function parseNetworkFilter(parser, details = {}, out = []) {
                 parser.getNetFilterTopOptionIterator()
             );
             if ( included.good.length === 0 ) {
-                if ( included.bad.length !== 0 ) { return; }
+                if ( included.bad.length !== 0 ) {
+                    return reject('invalid-top-domain-list');
+                }
             }
-            if ( excluded.bad.length !== 0 ) { return; }
+            if ( excluded.bad.length !== 0 ) {
+                return reject('invalid-top-domain-list');
+            }
             for ( const hn of included.good ) {
                 topDomains.add(hn);
             }
@@ -671,8 +802,12 @@ export function parseNetworkFilter(parser, details = {}, out = []) {
         }
         case sfp.NODE_TYPE_NET_OPTION_NAME_URLTRANSFORM: {
             const parsed = sfp.parseReplaceByRegexValue(parser.getNetOptionValue(type));
-            if ( parsed === undefined ) { return; }
-            if ( parsed.re ) { return; }
+            if ( parsed === undefined ) {
+                return reject('invalid-urltransform');
+            }
+            if ( parsed.re ) {
+                return reject('unsupported-urltransform-regex');
+            }
             rule.action.type = 'redirect';
             rule.action.redirect = {
                 regexSubstitution: parsed.replacement.replace(/\$(\d+)/g, '\\$1'),
@@ -713,18 +848,63 @@ export function parseNetworkFilter(parser, details = {}, out = []) {
     if ( excludedRequestMethods.size !== 0 ) {
         rule.condition.excludedRequestMethods = Array.from(excludedRequestMethods).sort();
     }
+
+    if ( popupKinds.size !== 0 ) {
+        if ( rule.action.type !== 'block' && rule.action.type !== 'allow' ) {
+            return reject('popup-action-conflict');
+        }
+        if ( Array.isArray(details.popupFilters) === false ) {
+            return reject('popup-compiler-required');
+        }
+        for ( const kind of popupKinds ) {
+            const popupFilter = {
+                schemaVersion: 1,
+                routeCode: 'popup-compiler-required',
+                kind,
+                action: isException ? 'allow' : 'block',
+                important: isImportant,
+                condition: structuredClone(rule.condition),
+            };
+            if ( typeof details.listid === 'string' ) {
+                popupFilter.listid = details.listid;
+            }
+            if ( Number.isSafeInteger(details.lineNumber) &&
+                details.lineNumber > 0 ) {
+                popupFilter.lineNumber = details.lineNumber;
+            }
+            routedPopupFilters.push(popupFilter);
+        }
+    }
+
     if ( resourceTypes.size === 0 && excludedResourceTypes.size === 0 ) {
         defaultResourceTypes.forEach(a => resourceTypes.add(a));
     }
     if ( resourceTypes.size !== 0 ) {
         const types = Array.from(resourceTypes).filter(a => a !== '').sort();
-        if ( types.length === 0 ) { return; }
+        if ( types.length === 0 ) {
+            return reject('unsupported-resource-type');
+        }
         rule.condition.resourceTypes = types;
     }
     if ( excludedResourceTypes.size !== 0 ) {
-        if ( resourceTypes.size !== 0 ) { return; }
+        if ( resourceTypes.size !== 0 ) {
+            return reject('dnr-resource-types-conflict');
+        }
         excludedResourceTypes.add('main_frame');
         rule.condition.excludedResourceTypes = Array.from(excludedResourceTypes).sort();
+    }
+
+    const popupOnly = popupKinds.size !== 0 &&
+        hasDnrResourceTypeOption === false &&
+        defaultResourceTypes.size === 0;
+    if ( popupOnly ) {
+        details.popupFilters.push(...routedPopupFilters);
+        return networkFilterResult(
+            'deferred',
+            details,
+            'popup-runtime-consumer-required',
+            'popup-compiler-required'
+        );
     }
     let priority = 1;
     if ( rule.action.type === 'block' ) {
@@ -756,11 +936,96 @@ export function parseNetworkFilter(parser, details = {}, out = []) {
     if ( priority !== 1 ) {
         rule.priority = priority;
     }
-    out.push(rule);
+    const parsedRules = [ rule ];
     if ( rule.action.redirect?.transform?.queryTransform?.removeParams ) {
-        expandRemoveparamsRule(rule, out);
+        expandRemoveparamsRule(rule, parsedRules);
     }
-    return out;
+    for ( const parsedRule of parsedRules ) {
+        const validation = validateRule(parsedRule);
+        if ( validation.status === 'rejected' ) {
+            return reject(validation.reasonCode);
+        }
+    }
+    out.push(...parsedRules);
+    if ( routedPopupFilters.length !== 0 ) {
+        details.popupFilters.push(...routedPopupFilters);
+    }
+    return networkFilterResult(
+        popupKinds.size === 0 ? 'accepted' : 'deferred',
+        details,
+        popupKinds.size === 0
+            ? undefined
+            : 'popup-runtime-consumer-required',
+        popupKinds.size === 0
+            ? 'dnr'
+            : 'popup-compiler-required'
+    );
+}
+
+/******************************************************************************/
+
+export class NetworkFilterCompiler {
+    constructor(details = {}) {
+        this.details = { ...details };
+        this.dnrRules = [];
+        this.popupFilters = [];
+        this.rejections = [];
+        this.filterStats = {
+            total: 0,
+            accepted: 0,
+            rejected: 0,
+            routed: 0,
+            deferred: 0,
+        };
+    }
+
+    add(parser, lineNumber) {
+        this.filterStats.total += 1;
+        const lineRules = [];
+        const result = parseNetworkFilter(parser, {
+            ...this.details,
+            lineNumber,
+            popupFilters: this.popupFilters,
+        }, lineRules);
+        if ( result.status === 'rejected' ) {
+            this.filterStats.rejected += 1;
+            this.rejections.push(result);
+            return result;
+        }
+        if ( result.status === 'deferred' ) {
+            this.filterStats.routed += 1;
+            this.filterStats.deferred += 1;
+            this.rejections.push(result);
+            if ( lineRules.length === 0 ) {
+                this.filterStats.rejected += 1;
+                return result;
+            }
+        }
+        this.filterStats.accepted += 1;
+        this.dnrRules.push(...lineRules);
+        return result;
+    }
+
+    finish() {
+        let dnrRules = minimizeRuleset(this.dnrRules);
+        dnrRules = minimizeRules(dnrRules);
+        const finalRejections = [];
+        const validatedRules = validateRules(dnrRules, finalRejections);
+        if ( finalRejections.length !== 0 ) {
+            const reasons = Array.from(new Set(
+                finalRejections.map(a => a.reasonCode)
+            )).sort();
+            throw new TypeError(
+                `Internal DNR validation failed: ${reasons.join(',')}`
+            );
+        }
+        return {
+            filterStats: this.filterStats,
+            dnrRules: validatedRules,
+            popupFilters: this.popupFilters,
+            rejections: this.rejections,
+        };
+    }
 }
 
 /******************************************************************************/
@@ -770,15 +1035,13 @@ export function parseFilters(text, details) {
     if ( text.endsWith('---') ) { return; }
     const lines = text.split(/\n/);
     if ( lines.some(a => a.startsWith(' ')) ) { return; }
-    let rules = [];
     const parser = new sfp.AstFilterParser({ trustedSource: true });
-    for ( const line of lines ) {
+    const compiler = new NetworkFilterCompiler(details);
+    for ( let i = 0; i < lines.length; i++ ) {
+        const line = lines[i];
         parser.parse(line);
         if ( parser.isNetworkFilter() === false ) { continue; }
-        parseNetworkFilter(parser, details, rules);
+        compiler.add(parser, i + 1);
     }
-    rules = minimizeRuleset(rules);
-    rules = minimizeRules(rules);
-    rules = validateRules(rules);
-    return rules;
+    return compiler.finish().dnrRules;
 }

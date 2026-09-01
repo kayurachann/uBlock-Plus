@@ -23,6 +23,8 @@ uBlock Plus+ là một fork độc lập, sideload-first, chạy trên Manifest 
 
 Enterprise/native là adapter bổ sung, không phải đường tắt để vô hiệu hóa sandbox, tải remote code hoặc vượt quota một cách không được Chrome hỗ trợ. Nếu capability probe thất bại, extension phải hạ cấp an toàn về Power Edition.
 
+Capability probe và phạm vi các browser flag/policy được định nghĩa tại [POWER-RUNTIME.md](POWER-RUNTIME.md). Runtime chỉ báo một engine là `eligible`; việc kích hoạt còn yêu cầu adapter tương ứng đã được đóng gói và đăng ký thành công.
+
 ## Luồng build
 
 1. Lấy source/filter từ nguồn được pin hoặc khai báo trong build input.

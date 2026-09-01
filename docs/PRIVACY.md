@@ -25,6 +25,7 @@ The extension may open GitHub or filter-list support pages when the user explici
 - `alarms`: schedule filter-list maintenance without a permanent background page.
 - `offscreen`: compile supported imported/custom filter data outside the service worker when required.
 - `userScripts`: register supported user/imported scriptlet filters using packaged code. Chrome may require the user to enable this capability separately.
+- `webNavigation`: correlate newly created navigation targets and enumerate opener frames for the Smart Popup Blocker. Candidate URLs and trusted-gesture targets exist in memory for at most 30 seconds and 5 seconds respectively; service-worker recovery checkpoints retain only origin-level URLs, while the bounded session diagnostic log retains at most 100 hostname-only decisions. Paths, queries, fragments and credentials are not persisted.
 - Optional `privacy`: only requested after the user clicks **Enable privacy controls**. It can disable hyperlink auditing, network prediction, non-proxied WebRTC UDP and Privacy Sandbox advertising APIs. Disabling a control calls Chrome's `clear()` operation so the setting returns to Chrome/user policy.
 
 ## Optional future capability layers

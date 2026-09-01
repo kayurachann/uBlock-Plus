@@ -18,6 +18,10 @@ import { normalizeBackupObject } from
 const valid = normalizeBackupObject({
     autoReload: true,
     memoryProfile: 'low-memory',
+    popupPolicies: {
+        'example.com': 'strict',
+        'trusted.example': 'allow',
+    },
     filterStoreRepositories: [ 'https://catalog.example/store.json' ],
     rulesets: [ '+easylist', '-annoyances-cookies' ],
     importedLists: [ {
@@ -40,12 +44,16 @@ const valid = normalizeBackupObject({
     dnrRules: [ '||example.test^' ],
 });
 assert.equal(valid.memoryProfile, 'low-memory');
+assert.equal(valid.popupPolicies['example.com'], 'strict');
 assert.notEqual(valid.customFilters[0], undefined);
 
 for ( const invalid of [
     null,
     [],
     { autoReload: 'yes' },
+    { popupPolicies: [] },
+    { popupPolicies: { 'not a hostname': 'strict' } },
+    { popupPolicies: { 'example.com': 'aggressive' } },
     { filterStoreRepositories: 'https://catalog.example/store.json' },
     { rulesets: [ 'easylist' ] },
     { importedLists: {} },

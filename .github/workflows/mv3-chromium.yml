@@ -50,7 +50,7 @@ jobs:
           ./tools/make-mv3.ps1 -Platform chromium -Version $version
 
       - name: Validate MV3 Chromium artifact
-        run: node tools/validate-mv3.mjs dist/build/uBOLite.chromium --release
+        run: node tools/validate-mv3.mjs dist/build/uBlockPlus.chromium --release
 
       - name: Upload unpacked extension and zip
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -58,6 +58,6 @@ jobs:
           name: uBlock-Plus-chromium-${{ github.sha }}
           if-no-files-found: error
           path: |
-            dist/build/uBOLite.chromium/
+            dist/build/uBlockPlus.chromium/
             dist/build/uBlock-Plus_*.chromium.zip
             dist/build/uBlock-Plus_*.chromium.zip.sha256

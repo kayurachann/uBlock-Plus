@@ -18,6 +18,34 @@ function isStats(value, fields) {
     );
 }
 
+function isFilterRejection(value) {
+    if ( typeof value !== 'object' || value === null ) { return false; }
+    if ( value.status !== 'rejected' && value.status !== 'deferred' ) {
+        return false;
+    }
+    if ( /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value.reasonCode) === false ) {
+        return false;
+    }
+    if ( value.status === 'deferred' &&
+        (value.disposition !== 'deferred' ||
+        value.reasonCode !== 'popup-runtime-consumer-required') ) {
+        return false;
+    }
+    return Number.isSafeInteger(value.lineNumber) && value.lineNumber > 0;
+}
+
+function isPopupFilter(value) {
+    if ( typeof value !== 'object' || value === null ) { return false; }
+    if ( value.schemaVersion !== 1 ) { return false; }
+    if ( value.routeCode !== 'popup-compiler-required' ) { return false; }
+    if ( value.kind !== 'popup' && value.kind !== 'popunder' ) { return false; }
+    if ( value.action !== 'allow' && value.action !== 'block' ) { return false; }
+    if ( typeof value.condition !== 'object' || value.condition === null ) {
+        return false;
+    }
+    return Number.isSafeInteger(value.lineNumber) && value.lineNumber > 0;
+}
+
 export function isCompiledListData(value) {
     if ( typeof value !== 'object' || value === null ) { return false; }
     if ( Array.isArray(value.dnrRules) === false ) { return false; }
@@ -28,6 +56,32 @@ export function isCompiledListData(value) {
     if ( isStats(value.filterStats, [
         'total', 'accepted', 'rejected',
     ]) === false ) {
+        return false;
+    }
+    if ( value.filterStats.total !==
+        value.filterStats.accepted + value.filterStats.rejected ) {
+        return false;
+    }
+    if ( value.filterStats.routed !== undefined &&
+        (Number.isSafeInteger(value.filterStats.routed) === false ||
+        value.filterStats.routed < 0 ||
+        value.filterStats.routed > value.filterStats.total) ) {
+        return false;
+    }
+    if ( value.filterStats.deferred !== undefined &&
+        (Number.isSafeInteger(value.filterStats.deferred) === false ||
+        value.filterStats.deferred < 0 ||
+        value.filterStats.deferred > (value.filterStats.routed ?? 0)) ) {
+        return false;
+    }
+    if ( value.rejections !== undefined &&
+        (Array.isArray(value.rejections) === false ||
+        value.rejections.every(isFilterRejection) === false) ) {
+        return false;
+    }
+    if ( value.popupFilters !== undefined &&
+        (Array.isArray(value.popupFilters) === false ||
+        value.popupFilters.every(isPopupFilter) === false) ) {
         return false;
     }
     return isStats(value.ruleStats, [ 'total', 'plain', 'regex' ]);

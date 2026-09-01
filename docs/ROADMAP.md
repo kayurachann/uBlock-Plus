@@ -8,7 +8,8 @@ Roadmap dùng các nhóm **Now / Next / Later**, không hứa ngày phát hành.
 - Giữ parity MV3 hiện có: DNR, cosmetic filtering, packaged scriptlets, per-site modes, picker/zapper, custom/imported lists và backup/restore.
 - Filter Store schema v1, catalog đóng gói, issue form, validator và trust badge `verified|community`.
 - Memory profiles `auto|balanced|low-memory`, local telemetry và cleanup an toàn.
-- Compile report công khai supported/rejected filter và DNR cost; không silent drop.
+- Compiler phát mã lý do ổn định và số dòng cho network filter import bị từ chối; dashboard chi tiết và export báo cáo vẫn cần hoàn thiện.
+- Smart Popup Blocker theo opener/target/trusted gesture/burst, policy exact-host `Allow|Smart|Strict`, chẩn đoán đã redaction và backup/restore policy.
 - Test browser/service-worker restart, state migration, quota failure và máy `<= 4 GiB`.
 
 ## Next — chất lượng và trải nghiệm cộng đồng
@@ -16,6 +17,7 @@ Roadmap dùng các nhóm **Now / Next / Later**, không hứa ngày phát hành.
 - Semantic-safe dedupe/merge/sharding với equivalence test và rollback.
 - Filter Store search/category/language, diff review automation và quarantine workflow.
 - Diagnostics cục bộ có redaction, matched-rule view và export do người dùng chủ động.
+- Nối typed index `$popup`/`$popunder` của list import vào matcher runtime, kèm semantics initiator/target và test popunder riêng.
 - Benchmark dashboard trong CI: cold start, idle memory, list compile peak, CSS cache và p95 update time.
 - Accessibility/i18n, import conflict UX và cảnh báo list không được chứng thực.
 - Upstream sync automation có human review cho compiler/security-sensitive conflicts.

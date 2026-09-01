@@ -23,15 +23,15 @@ Upstream also supports `mv3-edge`, `mv3-firefox` and `mv3-safari`; this communit
 
 ## Outputs
 
-- Unpacked extension: `dist/build/uBOLite.chromium`
+- Unpacked extension: `dist/build/uBlockPlus.chromium`
 - Full package: `dist/build/uBlock-Plus_<version>.chromium.zip`
-- Conversion report: `dist/build/uBOLite.chromium/log.txt`
+- Conversion report: `dist/build/uBlockPlus.chromium/log.txt`
 - Downloaded list cache: `dist/build/mv3-data`
 
 Validate an assembled extension with:
 
 ```bash
-node tools/validate-mv3.mjs dist/build/uBOLite.chromium
+node tools/validate-mv3.mjs dist/build/uBlockPlus.chromium
 ```
 
 The build compiles supported uBO/ABP network filters into DNR rules and prepares declarative cosmetic/scriptlet resources. Filter lists are live external inputs, the cache contains a generated secret, and development versions can be date-generated; independent builds are therefore not expected to be byte-for-byte identical.

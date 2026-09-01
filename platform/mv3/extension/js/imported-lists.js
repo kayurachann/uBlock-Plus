@@ -232,6 +232,9 @@ export function updateImportedListData(listid, details) {
         }
         if ( details.filterStats ) { list.filters = details.filterStats; }
         if ( details.ruleStats ) { list.rules = details.ruleStats; }
+        if ( Array.isArray(details.rejections) ) {
+            list.rejections = details.rejections;
+        }
         if ( Object.hasOwn(details, 'compiledIntegrity') ) {
             const compiledIntegrity = normalizeSourceIntegrity(
             details.compiledIntegrity

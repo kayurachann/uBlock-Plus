@@ -64,7 +64,8 @@
             if ( href.includes(regexes[i+0]) === false ) { continue; }
             const entries = JSON.parse(regexes[i+1]);
             for ( const entry of entries ) {
-                if ( entry.xto && hostnameSearch(entry.xto) ) { continue; }
+                if ( entry.xto &&
+                    hostnameSearch(entry.xto) !== -1 ) { continue; }
                 if ( entry.to && hostnameSearch(entry.to) === -1 ) { continue; }
                 const re = new RegExp(entry.re, entry.f);
                 if ( re.test(href) === false ) { continue; }
@@ -92,6 +93,9 @@
     }
     if ( shouldClose === false ) { return; }
     
+    // A compiled popup rule is authoritative. Do not yield to the service
+    // worker here: the target document must not get a chance to load or run
+    // while an asynchronous policy decision is pending.
     self.close();
 })();
 

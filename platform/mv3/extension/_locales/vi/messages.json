@@ -111,6 +111,10 @@
     "message": "Cấu hình bộ nhớ",
     "description": "Heading for the memory optimization controls"
   },
+  "memoryProfileSelectLabel": {
+    "message": "Cấu hình bộ nhớ",
+    "description": "Accessible label for the memory profile selector"
+  },
   "memoryProfileDescription": {
     "message": "Điều chỉnh mức song song khi biên dịch và ngân sách cache. Chế độ RAM thấp được thiết kế để giảm đỉnh bộ nhớ mà không tắt các bộ lọc đang bật.",
     "description": "Description of the memory profile setting"
@@ -162,6 +166,18 @@
   "filterStoreTitle": {
     "message": "Kho bộ lọc (Power Edition)",
     "description": "Heading for the curated and custom filter repository browser"
+  },
+  "filterStoreCategoryLabel": {
+    "message": "Danh mục trong Kho bộ lọc",
+    "description": "Accessible label for the Filter Store category selector"
+  },
+  "filterStoreLanguageLabel": {
+    "message": "Ngôn ngữ trong Kho bộ lọc",
+    "description": "Accessible label for the Filter Store language selector"
+  },
+  "filterStoreProfileLabel": {
+    "message": "Cấu hình tài nguyên trong Kho bộ lọc",
+    "description": "Accessible label for the Filter Store resource profile selector"
   },
   "filterStoreDescription": {
     "message": "Duyệt dữ liệu bộ lọc đã xác minh và từ cộng đồng. Catalog không cung cấp mã tiện ích thực thi; danh sách được uBlock Plus+ phân tích và biên dịch thành quy tắc MV3.",
@@ -535,6 +551,12 @@
     "message": "Khi được kích hoạt, các bộ lọc phù hợp sẽ tự động đóng các tab trình duyệt không mong muốn do các trang web tạo ra.",
     "description": "Short description for a checkbox in the options page"
   },
+  "popupPolicyLabel": { "message": "Chính sách cửa sổ bật lên cho hostname này" },
+  "popupPolicyDefault": { "message": "Mặc định (Thông minh)" },
+  "popupPolicyAllow": { "message": "Cho phép" },
+  "popupPolicySmart": { "message": "Thông minh" },
+  "popupPolicyStrict": { "message": "Nghiêm ngặt" },
+  "popupPolicyDescription": { "message": "Chỉ áp dụng cho đúng hostname này. Cho phép và Thông minh tác động tới kiểm tra ngữ cảnh; quy tắc khớp từ danh sách bộ lọc vẫn đóng cửa sổ ngay (fail-closed). Nghiêm ngặt yêu cầu thao tác đáng tin cậy và hostname trùng, cha hoặc con." },
   "sandboxEditorLabel": {
     "message": "Hộp thử nghiệm tạo bộ lọc",
     "description": "Header for filter-creation section in the dashboard"

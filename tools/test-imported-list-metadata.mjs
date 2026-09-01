@@ -47,12 +47,24 @@ assert.deepEqual(
         metadataToken: token,
         title: 'Fresh name',
         expires: 2,
+        rejections: [ {
+            status: 'deferred',
+            disposition: 'deferred',
+            reasonCode: 'popup-runtime-consumer-required',
+            lineNumber: 7,
+        } ],
     }, 456),
     { fresh: true, modified: true }
 );
 assert.equal(list.time.updated, 456);
 assert.equal(list.name, 'Fresh name');
 assert.equal(list.compiledMetadataToken, token);
+assert.deepEqual(list.rejections, [ {
+    status: 'deferred',
+    disposition: 'deferred',
+    reasonCode: 'popup-runtime-consumer-required',
+    lineNumber: 7,
+} ]);
 
 assert.deepEqual(
     applyFreshImportedListMetadata(list, {

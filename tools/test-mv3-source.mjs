@@ -53,6 +53,10 @@ assert(
     'Sideload builds must expose supported user-script filters'
 );
 assert(
+    manifest.permissions?.includes('webNavigation'),
+    'Context-aware popup blocking requires navigation-target context'
+);
+assert(
     manifest.permissions?.includes('webRequestBlocking') !== true,
     'Public MV3 builds must not request webRequestBlocking'
 );
@@ -163,6 +167,9 @@ for ( const relativePath of [
     'platform/mv3/extension/js/imported-fetch-policy.js',
     'platform/mv3/extension/js/imported-list-metadata.js',
     'platform/mv3/extension/js/memory-manager.js',
+    'platform/mv3/extension/js/popup-blocker.js',
+    'platform/mv3/extension/js/popup-policy.js',
+    'platform/mv3/extension/js/scripting/popup-context.js',
     'platform/mv3/extension/js/offscreen-lifecycle.js',
     'platform/mv3/extension/js/offscreen/compile-filters.js',
     'platform/mv3/extension/js/offscreen/fetch-list.js',

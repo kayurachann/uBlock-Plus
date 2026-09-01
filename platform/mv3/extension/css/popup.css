@@ -129,6 +129,31 @@ body[data-forbid~="dashboard"] .globalTools {
     content: '\2002\2190\2002';
 }
 
+.popupPolicy {
+    border-top: 1px solid var(--surface-2);
+    display: grid;
+    gap: var(--popup-gap-extra-thin);
+    padding: var(--popup-gap-thin);
+}
+.popupPolicy > label {
+    color: var(--ink-2);
+    font-size: 90%;
+}
+.popupPolicy > select {
+    background-color: var(--surface-1);
+    border: 1px solid var(--surface-3);
+    border-radius: var(--button-border-radius);
+    color: var(--ink-1);
+    min-height: 2.2em;
+    padding: 0 var(--popup-gap-extra-thin);
+}
+.popupPolicy > p {
+    color: var(--ink-3);
+    font-size: 80%;
+    margin: 0;
+    max-width: var(--popup-min-width);
+}
+
 .filteringModeSlider {
     align-self: center;
     margin: var(--popup-gap) 0;

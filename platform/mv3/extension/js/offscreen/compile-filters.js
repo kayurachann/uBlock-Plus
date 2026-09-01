@@ -24,18 +24,22 @@ import * as s14e from '../../lib/s14e-serializer.js';
 import * as sfp from '../static-filtering-parser.js';
 
 import {
+    NetworkFilterCompiler,
+    minimizeRules,
+    minimizeRuleset,
+    validateRules,
+} from '../ubo-parser.js';
+
+import {
     compiledStorageKey,
     newCompiledGeneration,
 } from '../compiled-storage.js';
-
-import { minimizeRules, minimizeRuleset, validateRules } from '../ubo-parser.js';
 
 import { deserializeCompiledListOr } from '../compiled-cache.js';
 import { fetchList } from './fetch-list.js';
 import { isCredentialFreeHTTPS } from '../imported-fetch-policy.js';
 import { isVerifiedSourceKey } from '../verified-source-handoff.js';
 import { makeCosmeticScripts } from './make-cosmetic-filters.js';
-import { parseNetworkFilter } from '../ubo-parser.js';
 import { pendingImportedMetadataKey } from '../imported-list-metadata.js';
 import { safeReplace } from './safe-replace.js';
 
@@ -223,22 +227,26 @@ export function compileFilters(listid, text, context = {}) {
 
     const parser = new sfp.AstFilterParser(context);
 
-    const unminimizedRules = [];
+    const networkCompiler = new NetworkFilterCompiler({
+        listid,
+        resourceTypes,
+    });
     const specificCosmeticDetails = new Map();
     const scriptletDetails = new Map();
 
-    const filterStats = {
-       total: 0,
-       accepted: 0,
-       rejected: 0,
-    };
     let lineBeg = 0;
+    let lineNumber = 0;
     while ( lineBeg <= text.length ) {
         let lineEnd = text.indexOf('\n', lineBeg);
         if ( lineEnd === -1 ) { lineEnd = text.length; }
         const line = text.slice(lineBeg, lineEnd).trim();
         lineBeg = lineEnd + 1;
+        lineNumber += 1;
         parser.parse(line);
+        if ( parser.isNetworkFilter() ) {
+            networkCompiler.add(parser, lineNumber);
+            continue;
+        }
         if ( parser.hasError() ) { continue; }
         if ( parser.isScriptletFilter() ) {
             if ( parser.hasOptions() === false ) { continue; }
@@ -250,33 +258,24 @@ export function compileFilters(listid, text, context = {}) {
             compileCosmeticFilter(parser, specificCosmeticDetails);
             continue;
         }
-        if ( parser.isNetworkFilter() ) {
-            filterStats.total += 1;
-            const result = parseNetworkFilter(parser, { resourceTypes }, unminimizedRules);
-            if ( result ) {
-                filterStats.accepted += 1;
-            } else {
-                filterStats.rejected += 1;
-            }
-            continue;
-        }
     }
 
-    let minimizedRules = minimizeRuleset(unminimizedRules);
-    minimizedRules = minimizeRules(minimizedRules);
-    minimizedRules = validateRules(minimizedRules);
+    const networkCompiled = networkCompiler.finish();
+    const minimizedRules = networkCompiled.dnrRules;
     const regexRuleCount = minimizedRules.reduce((a, b) => {
         return b.condition.regexFilter ? a+1 : a;
     }, 0);
 
     return {
-        filterStats,
+        filterStats: networkCompiled.filterStats,
         ruleStats: {
             total: minimizedRules.length,
             plain: minimizedRules.length - regexRuleCount,
             regex: regexRuleCount,
         },
         dnrRules: minimizedRules,
+        popupFilters: networkCompiled.popupFilters,
+        rejections: networkCompiled.rejections,
         specificCosmeticDetails,
         scriptletDetails,
     };
@@ -360,7 +359,19 @@ export async function toMv3Data(rulesetid, compiledData) {
     if ( compiledData.dnrRules.length ) {
         output.dnrRules = minimizeRuleset(compiledData.dnrRules);
         output.dnrRules = minimizeRules(output.dnrRules);
-        output.dnrRules = validateRules(output.dnrRules);
+        const rejections = [];
+        output.dnrRules = validateRules(output.dnrRules, rejections);
+        if ( rejections.length !== 0 ) {
+            const reasons = Array.from(new Set(
+                rejections.map(a => a.reasonCode)
+            )).sort();
+            throw new TypeError(
+                `Merged DNR validation failed: ${reasons.join(',')}`
+            );
+        }
+    }
+    if ( compiledData.popupFilters?.length ) {
+        output.popupFilters = compiledData.popupFilters;
     }
     if ( isolated.length ) {
         output.isolated = isolated;
@@ -557,6 +568,7 @@ async function updateList(list) {
         verifiedSourceKey: '',
         filterStats: compiled.filterStats,
         ruleStats: compiled.ruleStats,
+        rejections: compiled.rejections,
     };
     const metadataKey = pendingImportedMetadataKey(list.id);
     await browser.storage.local.set({
@@ -697,6 +709,20 @@ function mergeCompiledData(to, from) {
             to.scriptletDetails = from.scriptletDetails;
         }
     }
+    if ( from.popupFilters?.length ) {
+        if ( to.popupFilters ) {
+            to.popupFilters.push(...from.popupFilters);
+        } else {
+            to.popupFilters = from.popupFilters;
+        }
+    }
+    if ( from.rejections?.length ) {
+        if ( to.rejections ) {
+            to.rejections.push(...from.rejections);
+        } else {
+            to.rejections = from.rejections;
+        }
+    }
 }
 
 /******************************************************************************/
@@ -810,6 +836,18 @@ async function runCompiler() {
             };
         } else {
             toRemove.push(scriptsKey);
+        }
+        const popupFiltersKey = compiledStorageKey(
+            compiledGeneration,
+            `${id}Filters.popupFilters`
+        );
+        if ( compiled.popupFilters?.length ) {
+            values[popupFiltersKey] = {
+                schemaVersion: 1,
+                filters: compiled.popupFilters,
+            };
+        } else {
+            toRemove.push(popupFiltersKey);
         }
     }
     if ( Object.keys(values).length !== 0 ) {

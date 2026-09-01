@@ -50,7 +50,8 @@
     "scripting",
     "storage",
     "unlimitedStorage",
-    "userScripts"
+    "userScripts",
+    "webNavigation"
   ],
   "optional_permissions": [
     "privacy"

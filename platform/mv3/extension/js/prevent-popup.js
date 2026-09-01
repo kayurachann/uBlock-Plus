@@ -28,16 +28,19 @@ import { matchesFromHostnames } from './utils.js';
 
 export async function registerPreventPopup(context) {
     if ( rulesetConfig.popupBlockMode !== true ) { return; }
-    const js = [];
+    const popupFilterJS = [];
     for ( const { id, popups } of context.rulesetsDetails ) {
         if ( popups === undefined ) { continue; }
-        js.push(`/rulesets/scripting/popup/${id}.js`);
+        popupFilterJS.push(`/rulesets/scripting/popup/${id}.js`);
     }
-    if ( js.length === 0 ) { return; }
-    js.push(
-        '/js/scripting/prevent-popup-target.js',
-        '/js/scripting/prevent-popup.js'
-    );
+    const js = [ '/js/scripting/popup-context.js' ];
+    if ( popupFilterJS.length !== 0 ) {
+        js.push(
+            ...popupFilterJS,
+            '/js/scripting/prevent-popup-target.js',
+            '/js/scripting/prevent-popup.js'
+        );
+    }
 
     const { none, basic, optimal, complete } = context.filteringModeDetails;
     let matches = [];
@@ -55,6 +58,8 @@ export async function registerPreventPopup(context) {
         js,
         matches: matchesFromHostnames(matches),
         excludeMatches: matchesFromHostnames(excludeMatches),
+        allFrames: true,
+        matchOriginAsFallback: true,
         runAt: 'document_start',
     };
     context.toAdd.push(directive);

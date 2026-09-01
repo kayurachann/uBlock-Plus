@@ -42,7 +42,11 @@ function newCompiledListData() {
             total: 0,
             accepted: 0,
             rejected: 0,
+            routed: 0,
+            deferred: 0,
         },
+        popupFilters: [],
+        rejections: [],
         ruleStats: {
             total: 0,
             plain: 0,
@@ -53,6 +57,30 @@ function newCompiledListData() {
 
 // Only complete compiler payloads may be accepted from persistent cache.
 assert.equal(isCompiledListData(newCompiledListData()), true);
+assert.equal(isCompiledListData({
+    ...newCompiledListData(),
+    filterStats: {
+        total: 1,
+        accepted: 0,
+        rejected: 1,
+        routed: 1,
+        deferred: 1,
+    },
+    popupFilters: [ {
+        schemaVersion: 1,
+        routeCode: 'popup-compiler-required',
+        kind: 'popup',
+        action: 'block',
+        condition: { requestDomains: [ 'ads.example' ] },
+        lineNumber: 1,
+    } ],
+    rejections: [ {
+        status: 'deferred',
+        disposition: 'deferred',
+        reasonCode: 'popup-runtime-consumer-required',
+        lineNumber: 1,
+    } ],
+}), true);
 for ( const invalid of [
     null,
     {},
@@ -62,6 +90,35 @@ for ( const invalid of [
     {
         ...newCompiledListData(),
         filterStats: { total: -1, accepted: 0, rejected: 0 },
+    },
+    {
+        ...newCompiledListData(),
+        filterStats: {
+            total: 1,
+            accepted: 1,
+            rejected: 1,
+            routed: 0,
+            deferred: 0,
+        },
+    },
+    {
+        ...newCompiledListData(),
+        filterStats: {
+            total: 1,
+            accepted: 0,
+            rejected: 1,
+            routed: 1,
+            deferred: 2,
+        },
+    },
+    {
+        ...newCompiledListData(),
+        rejections: [ {
+            status: 'deferred',
+            disposition: 'deferred',
+            reasonCode: 'some-other-reason',
+            lineNumber: 1,
+        } ],
     },
     {
         ...newCompiledListData(),

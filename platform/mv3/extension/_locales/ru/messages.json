@@ -107,6 +107,230 @@
     "message": "Чтобы применять косметические фильтры или скриптлеты из импортированных списков, необходимо предоставить uBlock Plus+ разрешение на выполнение пользовательских скриптов.",
     "description": "A notice to inform user that the enforcement of some filters requires permission to execute 'user scripts'"
   },
+  "memoryProfileSectionLabel": {
+    "message": "Профиль памяти",
+    "description": "Heading for the memory optimization controls"
+  },
+  "memoryProfileSelectLabel": {
+    "message": "Профиль памяти",
+    "description": "Accessible label for the memory profile selector"
+  },
+  "memoryProfileDescription": {
+    "message": "Управляет параллельной компиляцией и объёмом кэша. Режим малого потребления памяти снижает пиковое использование памяти, не отключая активные фильтры.",
+    "description": "Description of the memory profile setting"
+  },
+  "memoryProfileAuto": {
+    "message": "Авто",
+    "description": "Automatically selected memory profile"
+  },
+  "memoryProfileBalanced": {
+    "message": "Сбалансированный",
+    "description": "Balanced memory profile"
+  },
+  "memoryProfileLow": {
+    "message": "Мало памяти",
+    "description": "Low-memory profile"
+  },
+  "memoryProfileEffective": {
+    "message": "Текущий профиль: $1",
+    "description": "Currently effective memory profile"
+  },
+  "memoryProfileStorageMetrics": {
+    "message": "Объём локального кэша/хранилища (не оперативная память): локально — $1, в сеансе — $2.",
+    "description": "Local extension storage size metrics"
+  },
+  "memoryProfileUnavailable": {
+    "message": "недоступно",
+    "description": "Metric is unavailable in this browser"
+  },
+  "memoryProfileRefresh": {
+    "message": "Обновить показатели",
+    "description": "Refresh local memory/storage metrics"
+  },
+  "memoryProfileCleanup": {
+    "message": "Очистить неиспользуемый кэш",
+    "description": "Remove unused compiled list caches"
+  },
+  "memoryProfileCleanupDone": {
+    "message": "Очистка завершена; удалено элементов кэша: $1.",
+    "description": "Memory cleanup result"
+  },
+  "memoryProfileCleanupUnavailable": {
+    "message": "Эта версия Chrome может сообщить общий объём хранилища, но не может перечислить ключи неиспользуемого кэша (для очистки требуется Chrome 130 или новее).",
+    "description": "Memory cleanup API unavailable"
+  },
+  "memoryProfileError": {
+    "message": "Не удалось обновить профиль памяти.",
+    "description": "Memory profile operation error"
+  },
+  "filterStoreTitle": {
+    "message": "Магазин фильтров (версия Power)",
+    "description": "Heading for the curated and custom filter repository browser"
+  },
+  "filterStoreCategoryLabel": {
+    "message": "Категория в Магазине фильтров",
+    "description": "Accessible label for the Filter Store category selector"
+  },
+  "filterStoreLanguageLabel": {
+    "message": "Язык в Магазине фильтров",
+    "description": "Accessible label for the Filter Store language selector"
+  },
+  "filterStoreProfileLabel": {
+    "message": "Профиль ресурсов в Магазине фильтров",
+    "description": "Accessible label for the Filter Store resource profile selector"
+  },
+  "filterStoreDescription": {
+    "message": "Просматривайте проверенные и предоставленные сообществом данные фильтров. Каталоги никогда не предоставляют исполняемый код расширения; импортированные списки анализируются uBlock Plus+ и компилируются в правила MV3.",
+    "description": "Filter Store security summary"
+  },
+  "filterStoreSearchPlaceholder": {
+    "message": "Поиск списков фильтров",
+    "description": "Filter Store search field placeholder"
+  },
+  "filterStoreAllCategories": {
+    "message": "Все категории",
+    "description": "Filter Store category filter"
+  },
+  "filterStoreAllLanguages": {
+    "message": "Все языки",
+    "description": "Filter Store language filter"
+  },
+  "filterStoreAllProfiles": {
+    "message": "Все профили",
+    "description": "Filter Store resource profile filter"
+  },
+  "filterStoreGlobal": {
+    "message": "Для всех языков",
+    "description": "A filter list intended for all languages"
+  },
+  "filterStoreStaticSlots": {
+    "message": "слоты статических наборов правил",
+    "description": "MV3 static ruleset quota unit"
+  },
+  "filterStoreDynamicRules": {
+    "message": "динамические правила",
+    "description": "MV3 dynamic rule quota unit"
+  },
+  "filterStoreRegexRules": {
+    "message": "правила с регулярными выражениями",
+    "description": "MV3 regular expression rule quota unit"
+  },
+  "filterStoreUnknownCosts": {
+    "message": "Стоимость импортированных списков ($1) неизвестна",
+    "description": "Filter Store unknown quota-cost notice"
+  },
+  "filterStoreStaticCost": {
+    "message": "Статических слотов: $1, встроенных правил: $2",
+    "description": "Estimated cost of a packaged filter list"
+  },
+  "filterStoreDynamicCost": {
+    "message": "До $1 динамических правил / $2 правил с регулярными выражениями",
+    "description": "Estimated cost of an imported filter list"
+  },
+  "filterStoreVerified": {
+    "message": "Проверено",
+    "description": "Trust badge for a reviewed catalog entry"
+  },
+  "filterStoreCommunity": {
+    "message": "Сообщество",
+    "description": "Trust badge for a user-provided catalog entry"
+  },
+  "filterStoreHomepage": {
+    "message": "Домашняя страница",
+    "description": "Link to a filter list homepage"
+  },
+  "filterStoreEnable": {
+    "message": "Включить",
+    "description": "Enable a Filter Store entry"
+  },
+  "filterStoreDisable": {
+    "message": "Отключить",
+    "description": "Disable a Filter Store entry"
+  },
+  "filterStoreNoResults": {
+    "message": "Подходящие списки фильтров не найдены.",
+    "description": "Empty Filter Store search result"
+  },
+  "filterStoreResultsLimited": {
+    "message": "Показаны первые $1 из $2 результатов. Уточните запрос, чтобы увидеть остальные.",
+    "description": "Filter Store rendering limit notice"
+  },
+  "filterStoreBundles": {
+    "message": "Наборы",
+    "description": "Filter Store bundle section heading"
+  },
+  "filterStoreBundleEnabled": {
+    "message": "Набор включён",
+    "description": "Filter Store bundle state"
+  },
+  "filterStoreEnableBundle": {
+    "message": "Включить набор",
+    "description": "Enable all entries in a Filter Store bundle"
+  },
+  "filterStoreRepositories": {
+    "message": "Пользовательские репозитории",
+    "description": "Filter Store custom repository section"
+  },
+  "filterStoreRepositoryWarning": {
+    "message": "Добавляйте только каталоги HTTPS JSON, которые вы контролируете или которым доверяете. Пользовательские репозитории всегда помечаются как предоставленные сообществом, даже если заявляют более высокий уровень доверия.",
+    "description": "Security warning for custom Filter Store repositories"
+  },
+  "filterStoreRepositoryPlaceholder": {
+    "message": "HTTPS-адрес файла catalog.json",
+    "description": "Custom Filter Store repository URL placeholder"
+  },
+  "filterStoreAddRepository": {
+    "message": "Добавить репозиторий",
+    "description": "Add a custom Filter Store repository"
+  },
+  "filterStoreRemoveRepository": {
+    "message": "Удалить",
+    "description": "Remove a custom Filter Store repository"
+  },
+  "filterStoreRepositoryFailed": {
+    "message": "Не удалось загрузить репозиторий: $1",
+    "description": "Custom repository load error"
+  },
+  "filterStoreQuotaExceeded": {
+    "message": "Этот выбор превысит квоту наборов правил MV3.",
+    "description": "Filter Store MV3 quota error"
+  },
+  "filterStoreCommunityConfirm": {
+    "message": "Этот репозиторий сообщества не проверен uBlock Plus+. Импортировать его данные фильтров?",
+    "description": "Confirmation before enabling a custom repository entry"
+  },
+  "filterStoreVerifying": {
+    "message": "Проверка $1…",
+    "description": "Filter data integrity check status"
+  },
+  "filterStoreDisabledStatus": {
+    "message": "$1 отключён.",
+    "description": "Filter Store disabled status"
+  },
+  "filterStoreEnabledStatus": {
+    "message": "$1 включён.",
+    "description": "Filter Store enabled status"
+  },
+  "filterStoreActivationWarnings": {
+    "message": "Включено; пропущено несовместимых с Chrome фильтров с регулярными выражениями: $1.",
+    "description": "Filter Store partial compatibility warning"
+  },
+  "filterStoreBundleStatus": {
+    "message": "Включён набор: $1.",
+    "description": "Filter Store bundle enabled status"
+  },
+  "filterStoreInvalidRepository": {
+    "message": "Введите действительный HTTPS-адрес каталога.",
+    "description": "Custom Filter Store repository validation error"
+  },
+  "filterStoreRepositoryAdded": {
+    "message": "Репозиторий добавлен.",
+    "description": "Custom Filter Store repository added status"
+  },
+  "filterStoreRepositoryRemoved": {
+    "message": "Репозиторий удалён. Его включённые списки по-прежнему доступны в разделе импортированных списков.",
+    "description": "Custom Filter Store repository removed status"
+  },
   "customFiltersImportExportLabel": {
     "message": "Импорт / Экспорт",
     "description": "Text label heading the import/export area of custom filters"
@@ -263,6 +487,46 @@
     "message": "Поведение",
     "description": "The header text for the 'Behavior' section"
   },
+  "privacyHardeningSectionLabel": {
+    "message": "Дополнительная защита конфиденциальности браузера",
+    "description": "Header for the optional Chrome privacy controls"
+  },
+  "privacyHardeningDescription": {
+    "message": "Эти элементы управления изменяют настройки конфиденциальности Chrome только после предоставления дополнительного разрешения. При отключении элемента управление настройкой возвращается Chrome.",
+    "description": "Explains the optional privacy permission and reversible controls"
+  },
+  "privacyPermissionButton": {
+    "message": "Включить управление конфиденциальностью…",
+    "description": "Button which requests the optional privacy permission"
+  },
+  "privacyPermissionDenied": {
+    "message": "Дополнительное разрешение конфиденциальности не предоставлено.",
+    "description": "Shown when the user declines the optional privacy permission"
+  },
+  "privacySettingUpdateFailed": {
+    "message": "Chrome не удалось обновить одну или несколько настроек конфиденциальности.",
+    "description": "Shown when a requested Chrome privacy setting change fails"
+  },
+  "privacyDisableHyperlinkAuditing": {
+    "message": "Отключить проверочные ping-запросы гиперссылок",
+    "description": "Privacy setting label"
+  },
+  "privacyDisableNetworkPrediction": {
+    "message": "Отключить прогнозирование сети Chrome",
+    "description": "Privacy setting label"
+  },
+  "privacyProtectWebRTC": {
+    "message": "Запретить WebRTC использовать UDP в обход прокси",
+    "description": "Privacy setting label"
+  },
+  "privacyDisableAdApis": {
+    "message": "Отключить рекламные API Chrome Privacy Sandbox",
+    "description": "Privacy setting label"
+  },
+  "privacySettingNotControllable": {
+    "message": "Эта настройка контролируется политикой Chrome или другим расширением.",
+    "description": "Privacy setting is managed elsewhere"
+  },
   "autoReloadLabel": {
     "message": "Автоматически перезагружать страницу при изменении режима фильтрации",
     "description": "Label for a checkbox in the options page"
@@ -287,6 +551,12 @@
     "message": "Если активно, то подходящие фильтры будут автоматически закрывать нежелательные вкладки браузера, создаваемые веб-сайтами.",
     "description": "Short description for a checkbox in the options page"
   },
+  "popupPolicyLabel": { "message": "Политика всплывающих окон для этого имени хоста" },
+  "popupPolicyDefault": { "message": "По умолчанию (умная)" },
+  "popupPolicyAllow": { "message": "Разрешить" },
+  "popupPolicySmart": { "message": "Умная" },
+  "popupPolicyStrict": { "message": "Строгая" },
+  "popupPolicyDescription": { "message": "Действует только для точного имени хоста. «Разрешить» и «Умная» влияют на контекстные проверки; совпавшее правило списка фильтров по-прежнему сразу закрывает окно (fail-closed). Строгий режим требует доверенного действия и того же, родительского или дочернего имени хоста." },
   "sandboxEditorLabel": {
     "message": "Песочница для создания фильтров",
     "description": "Header for filter-creation section in the dashboard"

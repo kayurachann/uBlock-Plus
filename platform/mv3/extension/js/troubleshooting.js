@@ -62,6 +62,7 @@ export async function getTroubleshootingInfo(details) {
         consoleOutput,
         registeredScripts,
         hasOmnipotence,
+        runtimeCapabilities,
     ] = await Promise.all([
         runtime.getPlatformInfo(),
         sendMessage({ what: 'getDefaultConfig' }),
@@ -73,6 +74,7 @@ export async function getTroubleshootingInfo(details) {
         sendMessage({ what: 'getConsoleOutput' }),
         sendMessage({ what: 'getRegisteredContentScripts' }),
         sendMessage({ what: 'hasBroadHostPermissions' }),
+        sendMessage({ what: 'getRuntimeCapabilities' }),
     ]);
     const vendor = (( ) => {
         const extURL = runtime.getURL('');
@@ -112,6 +114,12 @@ export async function getTroubleshootingInfo(details) {
         browser: vendor,
         filtering,
         permission: hasOmnipotence ? 'all' : 'ask',
+        runtime: {
+            install: runtimeCapabilities.installType,
+            engine: runtimeCapabilities.activeNetworkEngine,
+            eligible: runtimeCapabilities.eligibleNetworkEngines.join(','),
+            'smart popup': runtimeCapabilities.smartPopupObservation,
+        },
     };
     if ( currentConfig.strictBlockMode !== defaultConfig.strictBlockMode ) {
         config.strictblock = currentConfig.strictBlockMode;

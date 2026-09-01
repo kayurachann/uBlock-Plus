@@ -111,6 +111,10 @@
     "message": "Memory profile",
     "description": "Heading for the memory optimization controls"
   },
+  "memoryProfileSelectLabel": {
+    "message": "Memory profile",
+    "description": "Accessible label for the memory profile selector"
+  },
   "memoryProfileDescription": {
     "message": "Controls compilation concurrency and cache budgets. Low-memory mode is designed to reduce peak memory without disabling enabled filters.",
     "description": "Description of the memory profile setting"
@@ -162,6 +166,18 @@
   "filterStoreTitle": {
     "message": "Filter Store (Power Edition)",
     "description": "Heading for the curated and custom filter repository browser"
+  },
+  "filterStoreCategoryLabel": {
+    "message": "Filter Store category",
+    "description": "Accessible label for the Filter Store category selector"
+  },
+  "filterStoreLanguageLabel": {
+    "message": "Filter Store language",
+    "description": "Accessible label for the Filter Store language selector"
+  },
+  "filterStoreProfileLabel": {
+    "message": "Filter Store resource profile",
+    "description": "Accessible label for the Filter Store resource profile selector"
   },
   "filterStoreDescription": {
     "message": "Browse verified and community filter data. Catalogs never provide executable extension code; imported lists are parsed by uBlock Plus+ and compiled to MV3 rules.",
@@ -535,6 +551,12 @@
     "message": "When active, matching filters will automatically close unwanted browser tabs created by websites.",
     "description": "Short description for a checkbox in the options page"
   },
+  "popupPolicyLabel": { "message": "Popup policy for this hostname" },
+  "popupPolicyDefault": { "message": "Default (Smart)" },
+  "popupPolicyAllow": { "message": "Allow" },
+  "popupPolicySmart": { "message": "Smart" },
+  "popupPolicyStrict": { "message": "Strict" },
+  "popupPolicyDescription": { "message": "Applies to this exact hostname. Allow and Smart affect contextual checks; matching filter list rules still close immediately (fail-closed). Strict requires a trusted action and the same, a parent, or a child hostname." },
   "sandboxEditorLabel": {
     "message": "Filter-creation sandbox",
     "description": "Header for filter-creation section in the dashboard"

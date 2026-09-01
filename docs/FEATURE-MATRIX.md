@@ -14,7 +14,7 @@ Ký hiệu: **Có** = MV3 có đường triển khai tương đương hữu ích
 | Procedural cosmetic filter | Có | **Một phần** | Native không giúp DOM trực tiếp | Chỉ hỗ trợ operator an toàn có trong packaged code. |
 | Scriptlets | Có | **Một phần** | Không tải scriptlet qua companion | Chỉ scriptlet đóng gói/allowlist; cấm remote executable code. |
 | Element picker/zapper | Có | **Có** | Không cần | Filter tạo ra được lưu cục bộ. |
-| Strict/popup blocking | Có | **Có/Một phần** | Có thể bổ sung policy | Phụ thuộc biểu diễn DNR và quota. |
+| Strict/popup blocking | Có | **Có/Một phần** | Có thể bổ sung policy | Smart Popup Blocker dùng opener, target, trusted gesture, burst và policy exact-host `Allow/Smart/Strict`; filter popup đóng gói vẫn được ưu tiên fail-closed. `$popup`/`$popunder` từ list import được phân loại và báo cáo nhưng chưa nối vào matcher runtime. |
 | Redirect resource | Có | **Một phần** | Không cần | Chỉ redirect tới resource đóng gói/được manifest cho phép. |
 | Request/response header rules | Có | **Một phần** | Managed mode có thể mở rộng | DNR `modifyHeaders` không tương đương mọi thao tác `webRequestBlocking`. |
 | Full live request logger | Có | **Một phần** | **R&D** qua managed/native diagnostics | DNR feedback bị giới hạn; không được bật giám sát rộng mặc định. |
@@ -22,6 +22,7 @@ Ký hiệu: **Có** = MV3 có đường triển khai tương đương hữu ích
 | CNAME uncloaking/DNS resolution | Có trên engine hỗ trợ | **Không** | **R&D** qua DNS-aware companion | Chrome extension không có đường DNS tương đương. |
 | Chặn media theo kích thước response | Có | **Không tương đương chính xác** | **R&D** qua proxy | DNR quyết định trước khi có đủ thông tin response. |
 | Backup/restore | Có | **Có** | Có thể export policy riêng | Không bao gồm secret/native config nếu chưa có schema mã hóa. |
+| Internationalization | Có | **Có** | Không cần | 10 locale ưu tiên có toàn bộ chuỗi Power; 61 locale còn lại dùng English fallback build-time thay cho control trống. |
 | Filter Store/catalog | Không phải core store | **MVP có** | Không cần | Catalog đóng gói và tối đa 8 catalog HTTPS do người dùng thêm; filter là dữ liệu, không phải plugin/code store. |
 | Low-memory profile | Tối ưu runtime MV2 | **MVP có** | Companion có budget riêng | Compile tuần tự, cache có ngân sách và số liệu storage cục bộ; chưa có benchmark heap/RSS trên máy 2–4 GiB. |
 

@@ -23,6 +23,8 @@ export const COMPILED_LOGICAL_KEYS = Object.freeze([
     'importedFilters.dnrRules',
     'sandboxFilters.userScripts',
     'importedFilters.userScripts',
+    'sandboxFilters.popupFilters',
+    'importedFilters.popupFilters',
 ]);
 
 export function newCompiledGeneration() {

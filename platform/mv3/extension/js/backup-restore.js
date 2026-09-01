@@ -39,11 +39,13 @@ export async function backupToObject(currentConfig) {
         sandboxFilters,
         memoryProfile,
         filterStoreRepositories,
+        popupPolicies,
     ] = await Promise.all([
         sendMessage({ what: 'getDefaultConfig' }),
         sendMessage({ what: 'getSandboxFilters' }).then(a => a?.trim() ?? ''),
         sendMessage({ what: 'getMemoryProfile' }),
         localRead('filterStore.repositories'),
+        sendMessage({ what: 'getPopupPolicies' }),
     ]);
     if ( currentConfig.autoReload !== defaultConfig.autoReload ) {
         out.autoReload = currentConfig.autoReload;
@@ -65,6 +67,9 @@ export async function backupToObject(currentConfig) {
     }
     if ( Array.isArray(filterStoreRepositories) && filterStoreRepositories.length ) {
         out.filterStoreRepositories = filterStoreRepositories.slice();
+    }
+    if ( Object.keys(popupPolicies?.policies || {}).length !== 0 ) {
+        out.popupPolicies = { ...popupPolicies.policies };
     }
     const { enabledRulesets } = currentConfig;
     const customRulesets = [];
@@ -138,6 +143,11 @@ export async function restoreFromObject(targetConfig) {
     await sendMessage({
         what: 'setPopupBlockMode',
         state: targetConfig.popupBlockMode ?? defaultConfig.popupBlockMode
+    });
+
+    await sendMessage({
+        what: 'replacePopupPolicies',
+        policies: targetConfig.popupPolicies ?? {},
     });
 
     const memoryProfile = [ 'auto', 'balanced', 'low-memory' ]

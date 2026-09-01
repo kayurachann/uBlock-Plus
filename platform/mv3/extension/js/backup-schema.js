@@ -11,6 +11,8 @@
     Home: https://github.com/kayurachann/uBlock-Plus
 */
 
+import { validatePopupPolicies } from './popup-policy.js';
+
 const MAX_TEXT_CHARS = 20 * 1024 * 1024;
 const MAX_FILTER_SOURCE_BYTES = 5 * 1024 * 1024;
 const SHA256_PATTERN = /^[a-f0-9]{64}$/;
@@ -207,6 +209,9 @@ export function normalizeBackupObject(value) {
             throw new TypeError('memoryProfile is invalid');
         }
         out.memoryProfile = value.memoryProfile;
+    }
+    if ( value.popupPolicies !== undefined ) {
+        out.popupPolicies = validatePopupPolicies(value.popupPolicies);
     }
     if ( value.filterStoreRepositories !== undefined ) {
         const repositories = stringArray(

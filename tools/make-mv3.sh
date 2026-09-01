@@ -5,7 +5,7 @@
 set -e
 shopt -s extglob
 
-echo "*** uBOLite.mv3: Creating extension"
+echo "*** uBlock Plus+ MV3: Creating extension"
 
 PLATFORM="chromium"
 
@@ -40,7 +40,7 @@ echo "PLATFORM=$PLATFORM"
 echo "TAGNAME=$TAGNAME"
 echo "BEFORE=$BEFORE"
 
-UBOL_DIR="dist/build/uBOLite.$PLATFORM"
+UBOL_DIR="dist/build/uBlockPlus.$PLATFORM"
 
 if [ "$PLATFORM" = "edge" ]; then
     MANIFEST_DIR="chromium"
@@ -63,7 +63,7 @@ mkdir -p "$UBOL_DIR"/lib
 if [ -n "$UBO_VERSION" ]; then
     UBO_REPO="https://github.com/gorhill/uBlock.git"
     UBO_DIR=$(mktemp -d)
-    echo "*** uBOLite.mv3: Fetching uBO $UBO_VERSION from $UBO_REPO into $UBO_DIR"
+    echo "*** uBlock Plus+ MV3: Fetching uBO $UBO_VERSION from $UBO_REPO into $UBO_DIR"
     cd "$UBO_DIR"
     git init -q
     git remote add origin "https://github.com/gorhill/uBlock.git"
@@ -74,7 +74,7 @@ else
     UBO_DIR=.
 fi
 
-echo "*** uBOLite.mv3: Copying common files"
+echo "*** uBlock Plus+ MV3: Copying common files"
 cp -R "$UBO_DIR"/src/css/fonts/Inter "$UBOL_DIR"/css/fonts/
 cp "$UBO_DIR"/src/css/themes/default.css "$UBOL_DIR"/css/
 cp "$UBO_DIR"/src/css/common.css "$UBOL_DIR"/css/
@@ -99,7 +99,7 @@ cp -R "$UBO_DIR/src/img/flags-of-the-world" "$UBOL_DIR"/img
 cp LICENSE.txt "$UBOL_DIR"/
 cp NOTICE.md "$UBOL_DIR"/
 
-echo "*** uBOLite.mv3: Copying mv3-specific files"
+echo "*** uBlock Plus+ MV3: Copying MV3-specific files"
 cp platform/mv3/"$MANIFEST_DIR"/manifest.json "$UBOL_DIR"/
 cp platform/mv3/extension/*.html "$UBOL_DIR"/
 cp platform/mv3/extension/*.json "$UBOL_DIR"/
@@ -113,6 +113,7 @@ cp platform/mv3/"$PLATFORM"/css-user.js "$UBOL_DIR"/js/scripting/ 2>/dev/null ||
 cp platform/mv3/extension/img/* "$UBOL_DIR"/img/
 cp platform/mv3/"$PLATFORM"/img/* "$UBOL_DIR"/img/ 2>/dev/null || :
 cp -R platform/mv3/extension/_locales "$UBOL_DIR"/
+node tools/merge-mv3-locale-fallbacks.mjs "$UBOL_DIR"
 cp platform/mv3/README.md "$UBOL_DIR/"
 
 # Libraries
@@ -132,7 +133,7 @@ cp platform/mv3/extension/lib/s14e-serializer/s14e-serializer.js \
 cp platform/mv3/extension/lib/s14e-serializer/LICENSE \
     "$UBOL_DIR"/lib/s14e-serializer.LICENSE
 
-echo "*** uBOLite.mv3: Generating rulesets"
+echo "*** uBlock Plus+ MV3: Generating rulesets"
 UBOL_BUILD_DIR=$(mktemp -d)
 mkdir -p "$UBOL_BUILD_DIR"
 ./tools/make-nodejs.sh "$UBOL_BUILD_DIR"
@@ -157,7 +158,7 @@ cp -R platform/mv3/"$PLATFORM" "$UBOL_BUILD_DIR"/
 cd "$UBOL_BUILD_DIR"
 node --no-warnings make-rulesets.js output="$UBOL_DIR" platform="$PLATFORM"
 if [ -n "$BEFORE" ]; then
-    echo "*** uBOLite.mv3: salvaging rule ids to minimize diff size"
+    echo "*** uBlock Plus+ MV3: salvaging rule ids to minimize diff size"
     echo "    before=$BEFORE/$PLATFORM"
     echo "    after=$UBOL_DIR"
     node salvage-ruleids.mjs before="$BEFORE"/"$PLATFORM" after="$UBOL_DIR"
@@ -165,7 +166,7 @@ fi
 cd - > /dev/null
 rm -rf "$UBOL_BUILD_DIR"
 
-echo "*** uBOLite.$PLATFORM: extension ready"
+echo "*** uBlock Plus+ $PLATFORM: extension ready"
 echo "Extension location: $UBOL_DIR/"
 
 # Local build
@@ -191,7 +192,7 @@ fi
 # Platform-specific steps
 if [ "$PLATFORM" = "edge" ]; then
     # For Edge, declared rulesets must be at package root
-    echo "*** uBOLite.edge: Modify reference implementation for Edge compatibility"
+    echo "*** uBlock Plus+ edge: Modify reference implementation for Edge compatibility"
     mv "$UBOL_DIR"/rulesets/main/* "$UBOL_DIR/"
     rmdir "$UBOL_DIR/rulesets/main"
     node platform/mv3/edge/patch-extension.js packageDir="$UBOL_DIR"
@@ -205,7 +206,7 @@ if [ "$FULL" = "yes" ]; then
     if [ "$PLATFORM" = "firefox" ]; then
         EXTENSION="xpi"
     fi
-    echo "*** uBOLite.mv3: Creating publishable package..."
+    echo "*** uBlock Plus+ MV3: Creating publishable package..."
     UBOL_PACKAGE_NAME="uBlock-Plus_$TAGNAME.$PLATFORM.$EXTENSION"
     UBOL_PACKAGE_DIR=$(mktemp -d)
     mkdir -p "$UBOL_PACKAGE_DIR"

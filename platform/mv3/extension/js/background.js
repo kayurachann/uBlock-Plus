@@ -79,7 +79,7 @@ import {
     browser,
     localRead, localRemove, localWrite,
     runtime,
-    sessionAccessLevel,
+    sessionAccessLevel, sessionRead, sessionWrite,
     supportsUserScripts,
     webextFlavor,
 } from './ext.js';
@@ -158,7 +158,9 @@ import {
     resetJobsAlarm,
 } from './alarms.js';
 
+import { createPopupBlocker } from './popup-blocker.js';
 import { dnr } from './ext-compat.js';
+import { getRuntimeCapabilities } from './runtime-capabilities.js';
 import { setPopupBlockMode } from './prevent-popup.js';
 import { toggleToolbarIcon } from './action.js';
 
@@ -172,6 +174,36 @@ const COMPILED_FILTER_WARNINGS_KEY = 'compiledFilters.lastWarnings';
 const RULESET_TRANSACTION_KEY = 'rulesets.pendingTransaction';
 let pendingFilteringMutation = Promise.resolve();
 let cssCacheWritesSincePrune = 0;
+
+async function getPopupGestureContexts(tabId) {
+    let frames = [ { frameId: 0 } ];
+    if ( webextFlavor === 'chromium' &&
+        browser.webNavigation?.getAllFrames ) {
+        frames = await browser.webNavigation.getAllFrames({ tabId })
+            .catch(( ) => frames);
+    }
+    const responses = await Promise.all(frames.slice(0, 64).map(async frame => {
+        const response = await browser.tabs.sendMessage(
+            tabId,
+            { what: 'getPopupGestureContext' },
+            { frameId: frame.frameId }
+        ).catch(( ) => undefined);
+        if ( response instanceof Object === false ) { return; }
+        return { ...response, frameId: frame.frameId };
+    }));
+    return responses.filter(response => response !== undefined);
+}
+
+const popupBlocker = createPopupBlocker({
+    tabs: browser.tabs,
+    getGestureContexts: getPopupGestureContexts,
+    localRead,
+    localWrite,
+    sessionRead,
+    sessionWrite,
+    isEnabled: ( ) => rulesetConfig.popupBlockMode === true,
+    log: message => ubolLog(message),
+});
 
 function enqueueFilteringMutation(task) {
     const result = pendingFilteringMutation.then(task);
@@ -939,6 +971,9 @@ async function onMessage(request, sender) {
     case 'getCurrentConfig':
         return rulesetConfig;
 
+    case 'getRuntimeCapabilities':
+        return getRuntimeCapabilities();
+
     case 'getMemoryProfile':
         return getMemoryProfileConfig(request.deviceMemoryGiB);
 
@@ -959,6 +994,21 @@ async function onMessage(request, sender) {
             refresh: request.refresh === true,
             deviceMemoryGiB: request.deviceMemoryGiB,
         });
+
+    case 'getPopupPolicies':
+        return popupBlocker.getPolicies(request.hostname);
+
+    case 'setPopupPolicy':
+        return popupBlocker.setPolicy(request.hostname, request.mode);
+
+    case 'replacePopupPolicies':
+        return popupBlocker.replacePolicies(request.policies);
+
+    case 'getPopupDiagnostics':
+        return popupBlocker.getDiagnostics();
+
+    case 'clearPopupDiagnostics':
+        return popupBlocker.clearDiagnostics();
 
     case 'runMemoryCleanup':
         return enqueueFilteringMutation(async ( ) => {
@@ -1060,6 +1110,7 @@ async function onMessage(request, sender) {
             getFilteringMode(request.hostname),
             adminReadEx('disabledFeatures'),
             hasCustomFilters(request.hostname),
+            popupBlocker.getPolicies(request.hostname),
         ]);
         return {
             hasOmnipotence: results[0],
@@ -1069,6 +1120,8 @@ async function onMessage(request, sender) {
             developerMode: rulesetConfig.developerMode,
             disabledFeatures: results[2],
             hasCustomFilters: results[3],
+            popupPolicy: results[4].effective,
+            popupBlockMode: rulesetConfig.popupBlockMode,
         };
     }
 
@@ -1461,6 +1514,7 @@ async function start() {
         await registerContentScripts();
     }
 
+    await popupBlocker.resume();
     toggleDeveloperMode(rulesetConfig.developerMode);
 }
 
@@ -1534,6 +1588,40 @@ browser.commands.onCommand.addListener((...args) => {
         ubolErr(`onCommand/${reason}`);
     });
 });
+
+browser.tabs.onCreated.addListener(tab => {
+    if ( Number.isSafeInteger(tab?.openerTabId) === false ) { return; }
+    isFullyInitialized.then(( ) => {
+        return popupBlocker.onTabCreated(tab);
+    }).catch(reason => {
+        ubolErr(`popupTabCreated/${reason}`);
+    });
+});
+
+browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    isFullyInitialized.then(( ) => {
+        return popupBlocker.onTabUpdated(tabId, changeInfo, tab);
+    }).catch(reason => {
+        ubolErr(`popupTabUpdated/${reason}`);
+    });
+});
+
+browser.tabs.onRemoved.addListener(tabId => {
+    popupBlocker.onTabRemoved(tabId).catch(reason => {
+        ubolErr(`popupTabRemoved/${reason}`);
+    });
+});
+
+if ( webextFlavor === 'chromium' &&
+    browser.webNavigation?.onCreatedNavigationTarget ) {
+    browser.webNavigation.onCreatedNavigationTarget.addListener(details => {
+        isFullyInitialized.then(( ) => {
+            return popupBlocker.onNavigationTarget(details);
+        }).catch(reason => {
+            ubolErr(`popupNavigationTarget/${reason}`);
+        });
+    });
+}
 
 browser.alarms.onAlarm.addListener(alarm => {
     if ( alarm.name !== 'deferredJobs' ) { return; }

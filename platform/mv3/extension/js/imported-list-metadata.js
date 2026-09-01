@@ -43,6 +43,9 @@ export function applyFreshImportedListMetadata(list, update, now = Date.now()) {
     }
     if ( update.filterStats ) { list.filters = update.filterStats; }
     if ( update.ruleStats ) { list.rules = update.ruleStats; }
+    if ( Array.isArray(update.rejections) ) {
+        list.rejections = update.rejections;
+    }
     list.compiledMetadataToken = metadataToken;
     return { fresh: true, modified: true };
 }

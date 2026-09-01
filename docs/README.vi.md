@@ -38,7 +38,7 @@ uBlock Plus+ là bộ chặn nội dung GPL dành cho Chromium MV3, phát triể
 
 ### 🛡️ Chặn nội dung nhiều lớp
 
-Static, dynamic và session DNR phối hợp với cosmetic filtering, scriptlet đóng gói, strict blocking, popup control và chế độ lọc riêng cho từng website.
+Static, dynamic và session DNR phối hợp với cosmetic filtering, scriptlet đóng gói, strict blocking, Smart Popup Blocker theo ngữ cảnh và chế độ lọc riêng cho từng website.
 
 </td>
 <td width="50%" valign="top">
@@ -66,6 +66,8 @@ Chọn `auto`, `balanced` hoặc `low-memory`. Low-memory được thiết kế 
 </td>
 </tr>
 </table>
+
+Bộ chuỗi giao diện Power đã được dịch đầy đủ sang tiếng Anh, Đức, Tây Ban Nha, Pháp, Nhật, Hàn, Nga, Việt, Trung giản thể và Trung phồn thể. 61 locale đóng gói còn lại nhận fallback tiếng Anh xác định ở build-time, vì vậy control mới không bị trống trong khi chờ cộng đồng hoàn thiện bản dịch.
 
 > [!NOTE]
 > Dự án chưa quảng cáo một con số RAM tuyệt đối. Hiệu quả thực tế phụ thuộc phiên bản Chromium, số danh sách bật và workload; benchmark có thể tái lập vẫn là release gate của dự án.
@@ -157,7 +159,7 @@ tools/make-mv3.sh chromium "$VERSION"
 
 </details>
 
-Load thư mục `dist/build/uBOLite.chromium`. Lệnh PowerShell có version và lệnh shell tùy chọn ở trên tạo ZIP/checksum trong `dist/build/`; riêng `make mv3-chromium` chỉ tạo thư mục unpacked.
+Load thư mục `dist/build/uBlockPlus.chromium`. Lệnh PowerShell có version và lệnh shell tùy chọn ở trên tạo ZIP/checksum trong `dist/build/`; riêng `make mv3-chromium` chỉ tạo thư mục unpacked.
 
 ## Ranh giới an toàn
 
@@ -186,6 +188,7 @@ Một phần cú pháp filter MV2 không thể chuyển đổi tương đương 
 | Tài liệu | Nội dung |
 | --- | --- |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Pipeline MV3, transaction, memory profile và các tầng capability hợp pháp. |
+| [POWER-RUNTIME.md](POWER-RUNTIME.md) | Capability probe, policy/flag hợp pháp và ranh giới giữa unpacked, managed, custom Chromium. |
 | [FILTER-STORE.md](FILTER-STORE.md) | Schema catalog, trust tier, giới hạn nguồn và quy trình review. |
 | [THREAT-MODEL.md](THREAT-MODEL.md) | Tài sản, trust boundary và rủi ro supply chain. |
 | [PRIVACY.md](PRIVACY.md) | Dữ liệu lưu cục bộ, network access và permission. |
