@@ -38,6 +38,7 @@ import {
     compiledStorageKey,
     newCompiledGeneration,
 } from '../compiled-storage.js';
+import { createCompilerStorageClient } from '../offscreen-storage.js';
 import { deserializeCompiledListOr } from '../compiled-cache.js';
 import { fetchList } from './fetch-list.js';
 import { isCredentialFreeHTTPS } from '../imported-fetch-policy.js';
@@ -59,6 +60,9 @@ const requestedGeneration = new URL(self.location.href)
 const compiledGeneration = /^[a-f0-9]{32}$/.test(requestedGeneration)
     ? requestedGeneration
     : newCompiledGeneration();
+const compilerStorage = createCompilerStorageClient(
+    browser.runtime, compiledGeneration
+);
 
 function reportProgress(stage, listid = '') {
     const pending = browser.runtime.sendMessage({
@@ -447,9 +451,9 @@ async function fetchPinnedText(list) {
         list.verifiedSourceKey,
         integrity.digest
     ) ) {
-        const bin = await browser.storage.local.get(list.verifiedSourceKey);
+        const bin = await compilerStorage.get(list.verifiedSourceKey);
         const cached = bin?.[list.verifiedSourceKey];
-        await browser.storage.local.remove(list.verifiedSourceKey);
+        await compilerStorage.remove(list.verifiedSourceKey);
         if ( cached !== undefined ) {
             const metadataMatches = cached.sourceURL === list.id &&
                 cached.digest === integrity.digest &&
@@ -574,7 +578,7 @@ async function updateList(list) {
         rejections: compiled.rejections,
     };
     const metadataKey = pendingImportedMetadataKey(list.id);
-    await browser.storage.local.set({
+    await compilerStorage.set({
         [cacheKey]: {
             serialized: s14e.serialize(compiled, { compress: true }),
             sourceDigest: list.sourceIntegrity?.digest || '',
@@ -601,7 +605,7 @@ async function updateList(list) {
 async function getCompiledListData(list) {
     const cacheKey = `rulesets.imported.compiled.${list.id}`;
     const metadataKey = pendingImportedMetadataKey(list.id);
-    const bin = await browser.storage.local.get(cacheKey);
+    const bin = await compilerStorage.get(cacheKey);
     const cached = bin?.[cacheKey];
     const serialized = typeof cached === 'string'
         ? cached
@@ -619,7 +623,7 @@ async function getCompiledListData(list) {
         serialized,
         s14e.deserialize,
         async ( ) => {
-            await browser.storage.local.remove([ cacheKey, metadataKey ]);
+            await compilerStorage.remove([ cacheKey, metadataKey ]);
             return updateList(list);
         }
     );
@@ -628,7 +632,7 @@ async function getCompiledListData(list) {
     const pendingMetadataToken = cached?.pendingMetadataToken;
     if ( pendingMetadataToken !== list.compiledMetadataToken &&
         /^[a-f0-9]{32}$/.test(pendingMetadataToken) ) {
-        const metadataBin = await browser.storage.local.get(metadataKey);
+        const metadataBin = await compilerStorage.get(metadataKey);
         const pendingMetadata = metadataBin?.[metadataKey];
         if ( pendingMetadata?.metadataToken === pendingMetadataToken ) {
             stageImportedListUpdate(pendingMetadata);
@@ -864,10 +868,10 @@ async function runCompiler() {
         }
     }
     if ( Object.keys(values).length !== 0 ) {
-        await browser.storage.local.set(values);
+        await compilerStorage.set(values);
     }
     if ( toRemove.length !== 0 ) {
-        await browser.storage.local.remove(toRemove);
+        await compilerStorage.remove(toRemove);
     }
     reportProgress('generation-persisted');
     await browser.runtime.sendMessage({

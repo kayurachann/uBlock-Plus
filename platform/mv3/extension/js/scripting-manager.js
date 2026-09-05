@@ -89,7 +89,13 @@ async function resetCSSCache() {
 
 /******************************************************************************/
 
-function registerGeneric(context, genericDetails) {
+function explicitModeHostnames(...modes) {
+    // A global None/Basic/Optimal default does not exclude explicitly enabled
+    // advanced sites. Explicit child exceptions still apply within them.
+    return modes.flatMap(mode => [ ...mode ]).filter(hn => hn !== 'all-urls');
+}
+
+export function registerGeneric(context, genericDetails) {
     const { filteringModeDetails, rulesetsDetails } = context;
 
     const excludedByFilter = [];
@@ -117,7 +123,8 @@ function registerGeneric(context, genericDetails) {
 
     const { none, basic, optimal, complete } = filteringModeDetails;
     const includedByMode = [ ...complete ];
-    const excludedByMode = [ ...none, ...basic, ...optimal ];
+    const excludedByMode = explicitModeHostnames(none, basic, optimal);
+    const modeExcludeMatches = ut.matchesFromHostnames(excludedByMode);
 
     if ( complete.has('all-urls') === false ) {
         const matches = [
@@ -136,12 +143,15 @@ function registerGeneric(context, genericDetails) {
             matches,
             runAt: 'document_idle',
         };
+        if ( modeExcludeMatches.length !== 0 ) {
+            directive.excludeMatches = modeExcludeMatches;
+        }
         context.toAdd.push(directive);
         return;
     }
 
     const excludeMatches = [
-        ...ut.matchesFromHostnames(excludedByMode),
+        ...modeExcludeMatches,
         ...ut.matchesFromHostnames(excludedByFilter),
     ];
     const directiveAll = {
@@ -169,12 +179,15 @@ function registerGeneric(context, genericDetails) {
         matches,
         runAt: 'document_idle',
     };
+    if ( modeExcludeMatches.length !== 0 ) {
+        directiveSome.excludeMatches = modeExcludeMatches;
+    }
     context.toAdd.push(directiveSome);
 }
 
 /******************************************************************************/
 
-async function registerCosmetic(context) {
+export async function registerCosmetic(context) {
     const {
         filteringModeDetails,
         memoryProfile,
@@ -222,16 +235,9 @@ async function registerCosmetic(context) {
     }
     js.push('/js/scripting/css-specific.js');
 
-    const excludeMatches = [];
-    if ( none.has('all-urls') === false && basic.has('all-urls') === false ) {
-        const toExclude = [
-            ...ut.matchesFromHostnames(none),
-            ...ut.matchesFromHostnames(basic),
-        ];
-        for ( const hn of toExclude ) {
-            excludeMatches.push(hn);
-        }
-    }
+    const excludeMatches = ut.matchesFromHostnames(
+        explicitModeHostnames(none, basic)
+    );
 
     const directive = {
         id: 'css-specific',
@@ -250,17 +256,16 @@ async function registerCosmetic(context) {
 
 /******************************************************************************/
 
-function registerScriptlet(context, scriptletDetails) {
+export function registerScriptlet(context, scriptletDetails) {
     const { filteringModeDetails, rulesetsDetails } = context;
 
     const hasBroadHostPermission =
         filteringModeDetails.optimal.has('all-urls') ||
         filteringModeDetails.complete.has('all-urls');
 
-    const permissionRevokedMatches = [
-        ...ut.matchesFromHostnames(filteringModeDetails.none),
-        ...ut.matchesFromHostnames(filteringModeDetails.basic),
-    ];
+    const permissionRevokedMatches = ut.matchesFromHostnames(explicitModeHostnames(
+        filteringModeDetails.none, filteringModeDetails.basic
+    ));
     const permissionGrantedHostnames = [
         ...filteringModeDetails.optimal,
         ...filteringModeDetails.complete,
@@ -273,11 +278,10 @@ function registerScriptlet(context, scriptletDetails) {
             const id = `${rulesetId}.${world.toLowerCase()}`;
 
             const matches = [];
-            const excludeMatches = [];
+            const excludeMatches = permissionRevokedMatches.slice();
             const hostnames = worlds[world];
             let targetHostnames = [];
             if ( hasBroadHostPermission ) {
-                excludeMatches.push(...permissionRevokedMatches);
                 targetHostnames = hostnames;
             } else if ( permissionGrantedHostnames.length !== 0 ) {
                 if ( hostnames.includes('*') ) {

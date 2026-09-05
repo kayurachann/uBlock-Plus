@@ -107,25 +107,8 @@ function fragmentFromTemplate(template, placeholder, text, details) {
 
 /******************************************************************************/
 
-// Enforce popup filters
-
-(async ( ) => {
-    const currentConfig = await sendMessage({
-        what: 'getCurrentConfig',
-    });
-    // Enforce popup filtering in complete mode only
-    if ( currentConfig.popupBlockingMode !== true ) { return; }
-    const rulesetDetails = await rulesetDetailsPromise;
-    const toImport = [];
-    for ( const details of rulesetDetails ) {
-        if ( Boolean(details.popups) === false ) { continue; }
-        toImport.push(`/rulesets/scripting/popup/${details.id}.js`);
-    }
-    if ( toImport.length === 0 ) { return; }
-    await Promise.all(toImport.map(a => import(a)));
-    self.preventPopupTarget = toURL;
-    await import('/js/scripting/prevent-popup.js');
-})();
+// Popup closing stays with the context-aware observer. This interstitial has
+// no authoritative opener/intent context and must not bypass that decision.
 
 /******************************************************************************/
 

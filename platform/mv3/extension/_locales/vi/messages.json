@@ -40,7 +40,7 @@
     "description": "Link to documentation in About pane"
   },
   "popupFilteringModeLabel": {
-    "message": "chế độ lọc",
+    "message": "Lọc cho trang web này",
     "description": "Label in the popup panel for the current filtering mode"
   },
   "popupLocalToolsLabel": {
@@ -567,7 +567,7 @@
     "message": "Nghiêm ngặt"
   },
   "popupPolicyDescription": {
-    "message": "Chỉ áp dụng cho đúng tên máy chủ này. Cho phép/Thông minh tác động đến kiểm tra ngữ cảnh; cửa sổ khớp quy tắc trong danh sách bộ lọc vẫn bị đóng ngay. Nghiêm ngặt yêu cầu thao tác đáng tin cậy và tên máy chủ liên quan trực tiếp."
+    "message": "Chỉ áp dụng cho máy chủ này. Quy tắc danh sách lọc và cài đặt trang đáng tin cậy vẫn có hiệu lực. Chế độ Nghiêm ngặt yêu cầu thao tác đáng tin cậy và tên máy chủ có liên quan trực tiếp."
   },
   "sandboxEditorLabel": {
     "message": "Hộp thử nghiệm tạo bộ lọc",
@@ -1044,6 +1044,42 @@
   "diagnosticReason": {
     "message": "Lý do"
   },
+  "popupUnavailable": {
+    "message": "Không thể sử dụng tính năng bảo vệ trên trang này"
+  },
+  "popupCapabilityUnavailable": {
+    "message": "Không khả dụng"
+  },
+  "popupLoadFailed": {
+    "message": "Không thể tải cài đặt bảo vệ. Vui lòng thử lại."
+  },
+  "popupParentScope": {
+    "message": "Trang web này kế thừa quy tắc của trang web cấp trên. Hãy đổi quy tắc của trang web cấp trên trong mục “Quy tắc theo trang” trước."
+  },
+  "popupActionFailed": {
+    "message": "Không thể lưu thay đổi này. Vui lòng thử lại."
+  },
+  "popupToolFailed": {
+    "message": "Không thể mở công cụ này trên trang hiện tại."
+  },
+  "popupPermissionDenied": {
+    "message": "Quyền truy cập trang web chưa được cấp. Cài đặt bảo vệ được giữ nguyên."
+  },
+  "popupPermissionFailed": {
+    "message": "Không thể yêu cầu quyền truy cập trang web này."
+  },
+  "popupReloadFailed": {
+    "message": "Không thể tải lại trang này."
+  },
+  "popupRetry": {
+    "message": "Thử lại"
+  },
+  "popupMore": {
+    "message": "Xem thêm"
+  },
+  "popupLess": {
+    "message": "Thu gọn"
+  },
   "popupPowerEdition": {
     "message": "Phiên bản Power"
   },
@@ -1090,6 +1126,6 @@
     "message": "Quy tắc khớp gần đây"
   },
   "popupRecentBlocks": {
-    "message": "$1 popup bị chặn gần đây"
+    "message": "$1 popup bị chặn gần đây trên trang web này"
   }
 }

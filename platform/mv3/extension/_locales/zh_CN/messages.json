@@ -40,7 +40,7 @@
     "description": "Link to documentation in About pane"
   },
   "popupFilteringModeLabel": {
-    "message": "过滤模式",
+    "message": "此网站的过滤设置",
     "description": "Label in the popup panel for the current filtering mode"
   },
   "popupLocalToolsLabel": {
@@ -567,7 +567,7 @@
     "message": "严格"
   },
   "popupPolicyDescription": {
-    "message": "仅应用于此精确主机名。允许/智能仅影响上下文检查；匹配过滤器列表规则的窗口仍会立即关闭。严格模式要求可信操作和直接相关的主机名。"
+    "message": "仅适用于此主机。过滤列表规则和受信任站点设置仍然生效。严格模式需要可信操作以及直接相关的主机名。"
   },
   "sandboxEditorLabel": {
     "message": "过滤器创建沙盒",
@@ -1044,6 +1044,42 @@
   "diagnosticReason": {
     "message": "原因"
   },
+  "popupUnavailable": {
+    "message": "此页面无法使用防护功能"
+  },
+  "popupCapabilityUnavailable": {
+    "message": "不可用"
+  },
+  "popupLoadFailed": {
+    "message": "无法加载防护设置。请重试。"
+  },
+  "popupParentScope": {
+    "message": "此网站继承了上级网站的规则。请先在“网站规则”中更改上级网站的规则。"
+  },
+  "popupActionFailed": {
+    "message": "无法保存此更改。请重试。"
+  },
+  "popupToolFailed": {
+    "message": "无法在当前页面打开此工具。"
+  },
+  "popupPermissionDenied": {
+    "message": "未获准访问此网站。防护设置保持不变。"
+  },
+  "popupPermissionFailed": {
+    "message": "无法请求此网站的访问权限。"
+  },
+  "popupReloadFailed": {
+    "message": "无法重新加载此页面。"
+  },
+  "popupRetry": {
+    "message": "重试"
+  },
+  "popupMore": {
+    "message": "展开"
+  },
+  "popupLess": {
+    "message": "收起"
+  },
   "popupPowerEdition": {
     "message": "Power 版"
   },
@@ -1090,6 +1126,6 @@
     "message": "最近匹配的规则"
   },
   "popupRecentBlocks": {
-    "message": "最近拦截 $1 个弹窗"
+    "message": "近期在此网站上拦截了 $1 个弹出窗口"
   }
 }

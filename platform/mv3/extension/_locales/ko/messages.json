@@ -40,7 +40,7 @@
     "description": "Link to documentation in About pane"
   },
   "popupFilteringModeLabel": {
-    "message": "필터링 모드",
+    "message": "이 사이트의 필터링",
     "description": "Label in the popup panel for the current filtering mode"
   },
   "popupLocalToolsLabel": {
@@ -501,7 +501,7 @@
     "message": "엄격"
   },
   "popupPolicyDescription": {
-    "message": "이 정확한 호스트 이름에만 적용됩니다. 허용/스마트는 상황별 검사에만 영향을 주며, 필터 목록 규칙과 일치하는 팝업은 계속 즉시 닫힙니다. 엄격은 신뢰할 수 있는 동작과 직접 관련된 호스트 이름을 요구합니다."
+    "message": "이 호스트에만 적용됩니다. 필터 목록 규칙과 신뢰하는 사이트 설정은 계속 적용됩니다. 엄격 모드에서는 신뢰할 수 있는 동작과 직접 관련된 호스트 이름이 필요합니다."
   },
   "sandboxEditorLabel": {
     "message": "필터 제작용 샌드박스",
@@ -978,6 +978,42 @@
   "diagnosticReason": {
     "message": "이유"
   },
+  "popupUnavailable": {
+    "message": "이 페이지에서는 보호 기능을 사용할 수 없습니다"
+  },
+  "popupCapabilityUnavailable": {
+    "message": "사용할 수 없음"
+  },
+  "popupLoadFailed": {
+    "message": "보호 설정을 불러오지 못했습니다. 다시 시도하세요."
+  },
+  "popupParentScope": {
+    "message": "이 사이트는 상위 사이트의 규칙을 상속합니다. 먼저 ‘사이트별 규칙’에서 상위 사이트의 규칙을 변경하세요."
+  },
+  "popupActionFailed": {
+    "message": "변경 사항을 저장하지 못했습니다. 다시 시도하세요."
+  },
+  "popupToolFailed": {
+    "message": "현재 페이지에서 이 도구를 열지 못했습니다."
+  },
+  "popupPermissionDenied": {
+    "message": "사이트 접근이 허용되지 않았습니다. 보호 설정은 유지되었습니다."
+  },
+  "popupPermissionFailed": {
+    "message": "이 사이트에 대한 접근 권한을 요청하지 못했습니다."
+  },
+  "popupReloadFailed": {
+    "message": "이 페이지를 새로고침하지 못했습니다."
+  },
+  "popupRetry": {
+    "message": "다시 시도"
+  },
+  "popupMore": {
+    "message": "더 보기"
+  },
+  "popupLess": {
+    "message": "간략히 보기"
+  },
   "popupPowerEdition": {
     "message": "Power 에디션"
   },
@@ -1024,6 +1060,6 @@
     "message": "최근 일치 규칙"
   },
   "popupRecentBlocks": {
-    "message": "최근 팝업 차단 $1건"
+    "message": "이 사이트에서 최근 차단한 팝업 $1개"
   }
 }

@@ -45,27 +45,43 @@ const isCSS = a => isProcedural(a) === false && isScriptlet(a) === false;
 
 /******************************************************************************/
 
-async function keysFromStorage() {
-    pendingStorageOp = pendingStorageOp.then(( ) => localKeys());
-    return pendingStorageOp;
+function enqueueStorageOperation(task) {
+    const result = pendingStorageOp.then(task);
+    pendingStorageOp = result.catch(( ) => {});
+    return result;
 }
 
-async function readFromStorage(key) {
-    pendingStorageOp = pendingStorageOp.then(( ) => localRead(key));
-    return pendingStorageOp;
+function keysFromStorage() {
+    return enqueueStorageOperation(( ) => localKeys());
 }
 
-async function writeToStorage(key, value) {
-    pendingStorageOp = pendingStorageOp.then(( ) => localWrite(key, value));
-    return pendingStorageOp;
+function readFromStorage(key) {
+    // A failed read is not an empty filter set: callers must not overwrite an
+    // existing set after an unreadable storage snapshot.
+    return enqueueStorageOperation(async ( ) => {
+        const bin = await browser.storage.local.get(key);
+        return bin[key];
+    });
 }
 
-async function removeFromStorage(key) {
-    pendingStorageOp = pendingStorageOp.then(( ) => localRemove(key));
-    return pendingStorageOp;
+function writeToStorage(key, value) {
+    return enqueueStorageOperation(( ) => localWrite(key, value));
+}
+
+function removeFromStorage(key) {
+    return enqueueStorageOperation(( ) => localRemove(key));
 }
 
 let pendingStorageOp = Promise.resolve();
+let pendingFilterMutation = Promise.resolve();
+
+function enqueueFilterMutation(task) {
+    // Serialize the entire read/modify/write operation, including duplicate
+    // hostnames in a batch import. Serializing individual API calls loses edits.
+    const result = pendingFilterMutation.then(task);
+    pendingFilterMutation = result.catch(( ) => {});
+    return result;
+}
 
 /******************************************************************************/
 
@@ -215,7 +231,7 @@ export async function registerCustomFilters(context) {
 
 /******************************************************************************/
 
-export async function addCustomFilters(hostname, toAdd) {
+async function addCustomFiltersNow(hostname, toAdd) {
     if ( hostname === '' ) { return false; }
     const key = `site.${hostname}`;
     const selectors = await readFromStorage(key) || [];
@@ -226,28 +242,34 @@ export async function addCustomFilters(hostname, toAdd) {
     }
     if ( selectors.length === countBefore ) { return false; }
     selectors.sort();
-    writeToStorage(key, selectors);
+    await writeToStorage(key, selectors);
     return true;
+}
+
+export function addCustomFilters(hostname, toAdd) {
+    return enqueueFilterMutation(( ) => addCustomFiltersNow(hostname, toAdd));
 }
 
 /******************************************************************************/
 
-export async function removeAllCustomFilters(hostname) {
+async function removeAllCustomFiltersNow(hostname) {
     if ( hostname === '*' ) {
         const keys = await getAllCustomFilterKeys();
         if ( keys.length === 0 ) { return false; }
-        for ( const key of keys ) {
-            removeFromStorage(key);
-        }
+        await removeFromStorage(keys);
         return true;
     }
     const key = `site.${hostname}`;
     const selectors = await readFromStorage(key) || [];
-    removeFromStorage(key);
+    await removeFromStorage(key);
     return selectors.length !== 0;
 }
 
-export async function removeCustomFilters(hostname, selectors) {
+export function removeAllCustomFilters(hostname) {
+    return enqueueFilterMutation(( ) => removeAllCustomFiltersNow(hostname));
+}
+
+async function removeCustomFiltersNow(hostname, selectors) {
     const promises = [];
     let hn = hostname;
     while ( hn !== '' ) {
@@ -258,6 +280,10 @@ export async function removeCustomFilters(hostname, selectors) {
     }
     const results = await Promise.all(promises);
     return results.some(a => a);
+}
+
+export function removeCustomFilters(hostname, selectors) {
+    return enqueueFilterMutation(( ) => removeCustomFiltersNow(hostname, selectors));
 }
 
 async function removeCustomFiltersByKey(key, toRemove) {
@@ -272,9 +298,9 @@ async function removeCustomFiltersByKey(key, toRemove) {
     const afterCount = selectors.length;
     if ( afterCount === beforeCount ) { return false; }
     if ( afterCount !== 0 ) {
-        writeToStorage(key, selectors);
+        await writeToStorage(key, selectors);
     } else {
-        removeFromStorage(key);
+        await removeFromStorage(key);
     }
     return true;
 }

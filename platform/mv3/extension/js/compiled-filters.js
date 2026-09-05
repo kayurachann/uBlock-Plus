@@ -65,6 +65,7 @@ import {
     matchesFromHostnames,
 } from './utils.js';
 
+import { createCompilerStorageHandler } from './offscreen-storage.js';
 import { dnr } from './ext-compat.js';
 import { getEnabledImportedLists } from './imported-lists.js';
 import { getFilteringModeDetails } from './mode-manager.js';
@@ -106,6 +107,24 @@ async function parseRawFilters() {
     let hardTimeoutId;
     let timedOut = false;
     let lifecycleClosed = false;
+    let importedListsPromise;
+    let storageHandlerPromise;
+    const pendingStorageOperations = new Set();
+    const getCompilerLists = ( ) => {
+        importedListsPromise ??= getEnabledImportedLists();
+        return importedListsPromise;
+    };
+    const handleStorage = request => {
+        storageHandlerPromise ??= getCompilerLists().then(lists =>
+            createCompilerStorageHandler({
+                generation,
+                lists,
+                storage: browser.storage.local,
+                isCurrent: ( ) => lifecycleClosed === false && timedOut === false,
+            })
+        );
+        return storageHandlerPromise.then(handle => handle(request));
+    };
     const {
         promise: timeoutPromise,
         reject: timeoutReject,
@@ -151,12 +170,27 @@ async function parseRawFilters() {
             offscreenResolve(request);
             break;
         case 'compileFilters:getEnabledImportedLists':
-            getEnabledImportedLists().then(result => {
+            getCompilerLists().then(result => {
                 if ( result?.length ) { ublockPlusLog(`Compiling ${result.length} imported lists`); }
                 setHardTimeout(result);
                 callback(result);
             });
             return true;
+        case 'compileFilters:storage': {
+            const pending = handleStorage(request);
+            pendingStorageOperations.add(pending);
+            pending.then(result => {
+                pendingStorageOperations.delete(pending);
+                callback(result);
+            }, reason => {
+                pendingStorageOperations.delete(pending);
+                callback({
+                    ok: false,
+                    error: reason?.message || 'Compiler storage operation failed',
+                });
+            });
+            return true;
+        }
         case 'compileFilters:getMemoryProfile':
             getMemoryProfileConfig(request.deviceMemoryGiB).then(result => {
                 callback(result);
@@ -197,6 +231,9 @@ async function parseRawFilters() {
         if ( idleTimeoutId !== undefined ) { self.clearTimeout(idleTimeoutId); }
         if ( hardTimeoutId !== undefined ) { self.clearTimeout(hardTimeoutId); }
         runtime.onMessage.removeListener(handler);
+        // Await writes already issued before cleaning up a failed generation;
+        // a late storage completion must not recreate abandoned staging data.
+        await Promise.allSettled(pendingStorageOperations);
         if ( keepStaging === false ) {
             await finalizeFailedOffscreenCompilation({
                 setupPromise,

@@ -45,7 +45,9 @@ const powerKeyPattern = new RegExp(
     'saveSiteRules$|diagnostic|runtimeCapabilities|performance|' +
     'popup(?:PowerEdition|PowerToggle|Protection|Capability|' +
     'SiteControls|FilteringModeLabel|ReloadPage|QuickTools|' +
-    'MatchedRules|RecentBlocks|Diagnostics))'
+    'MatchedRules|RecentBlocks|Diagnostics|Unavailable|LoadFailed|' +
+    'ActionFailed|ToolFailed|PermissionDenied|PermissionFailed|ReloadFailed|' +
+    'Retry|More|Less|ParentScope))'
 );
 const legitimateEnglishCognates = new Set([
     'de:popupPolicyHostnameLabel',
@@ -64,16 +66,16 @@ const legitimateEnglishCognates = new Set([
         .map(locale => `${locale}:popupPolicyHostnamePlaceholder`),
 ]);
 const popupCompiledRuleMarkers = new Map([
-    [ 'en', /filter-list rules still close immediately/i ],
-    [ 'de', /Filterlistenregeln schließen weiterhin sofort/i ],
-    [ 'es', /listas de filtros[\s\S]*cierran[\s\S]*de inmediato/i ],
-    [ 'fr', /listes de filtres[\s\S]*ferment[\s\S]*immédiatement/i ],
-    [ 'ja', /フィルターリスト[\s\S]*直ちに閉じ/ ],
-    [ 'ko', /필터 목록[\s\S]*즉시 닫/ ],
-    [ 'ru', /списка фильтров[\s\S]*закрывается сразу/i ],
-    [ 'vi', /danh sách bộ lọc[\s\S]*đóng ngay/i ],
-    [ 'zh_CN', /过滤器列表[\s\S]*立即关闭/ ],
-    [ 'zh_TW', /篩選器清單[\s\S]*立即關閉/ ],
+    [ 'en', /Filter-list rules and trusted-site settings still apply/i ],
+    [ 'de', /Filterlisten[\s\S]*vertrauenswürdige Websites[\s\S]*weiterhin/i ],
+    [ 'es', /listas de filtros[\s\S]*sitios de confianza[\s\S]*vigentes/i ],
+    [ 'fr', /listes de filtres[\s\S]*sites de confiance[\s\S]*actifs/i ],
+    [ 'ja', /フィルターリスト[\s\S]*信頼済みサイト[\s\S]*適用/ ],
+    [ 'ko', /필터 목록[\s\S]*신뢰하는 사이트[\s\S]*적용/ ],
+    [ 'ru', /списков фильтров[\s\S]*доверенных сайтов[\s\S]*действовать/i ],
+    [ 'vi', /danh sách lọc[\s\S]*trang đáng tin cậy[\s\S]*hiệu lực/i ],
+    [ 'zh_CN', /过滤列表[\s\S]*受信任站点[\s\S]*生效/ ],
+    [ 'zh_TW', /過濾清單[\s\S]*受信任網站[\s\S]*生效/ ],
 ]);
 
 async function readJSON(url) {
@@ -132,7 +134,7 @@ for ( const locale of priorityLocales ) {
     assert.match(
         messages.popupPolicyDescription.message,
         popupCompiledRuleMarkers.get(locale),
-        `${locale}: popup policy must disclose compiled-rule precedence`
+        `${locale}: popup policy must describe filter rules and trusted sites`
     );
 }
 

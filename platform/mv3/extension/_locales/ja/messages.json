@@ -40,7 +40,7 @@
     "description": "Link to documentation in About pane"
   },
   "popupFilteringModeLabel": {
-    "message": "フィルタリングモード",
+    "message": "このサイトのフィルタリング",
     "description": "Label in the popup panel for the current filtering mode"
   },
   "popupLocalToolsLabel": {
@@ -501,7 +501,7 @@
     "message": "厳格"
   },
   "popupPolicyDescription": {
-    "message": "このホスト名だけに適用します。許可/スマートは状況判定にのみ影響し、フィルターリストの一致ルールは引き続きポップアップを直ちに閉じます。厳格では、信頼できる操作と直接関連するホスト名が必要です。"
+    "message": "このホストにのみ適用します。フィルターリストのルールと信頼済みサイトの設定は引き続き適用されます。厳格モードでは、信頼できる操作と直接関連するホスト名が必要です。"
   },
   "sandboxEditorLabel": {
     "message": "フィルター作成サンドボックス",
@@ -978,6 +978,42 @@
   "diagnosticReason": {
     "message": "理由"
   },
+  "popupUnavailable": {
+    "message": "このページでは保護を利用できません"
+  },
+  "popupCapabilityUnavailable": {
+    "message": "利用できません"
+  },
+  "popupLoadFailed": {
+    "message": "保護設定を読み込めませんでした。もう一度お試しください。"
+  },
+  "popupParentScope": {
+    "message": "このサイトには親サイトのルールが適用されています。先に「サイト別ルール」で親サイトのルールを変更してください。"
+  },
+  "popupActionFailed": {
+    "message": "この変更を保存できませんでした。もう一度お試しください。"
+  },
+  "popupToolFailed": {
+    "message": "現在のページでこのツールを開けませんでした。"
+  },
+  "popupPermissionDenied": {
+    "message": "サイトへのアクセスが許可されませんでした。保護設定は維持されました。"
+  },
+  "popupPermissionFailed": {
+    "message": "このサイトへのアクセス権限を要求できませんでした。"
+  },
+  "popupReloadFailed": {
+    "message": "このページを再読み込みできませんでした。"
+  },
+  "popupRetry": {
+    "message": "再試行"
+  },
+  "popupMore": {
+    "message": "もっと見る"
+  },
+  "popupLess": {
+    "message": "表示を減らす"
+  },
   "popupPowerEdition": {
     "message": "Power エディション"
   },
@@ -1024,6 +1060,6 @@
     "message": "最近一致した規則"
   },
   "popupRecentBlocks": {
-    "message": "最近のポップアップブロック: $1 件"
+    "message": "このサイトで最近ブロックしたポップアップ: $1 件"
   }
 }

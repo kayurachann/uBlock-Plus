@@ -40,7 +40,7 @@
     "description": "Link to documentation in About pane"
   },
   "popupFilteringModeLabel": {
-    "message": "過濾模式",
+    "message": "此網站的篩選設定",
     "description": "Label in the popup panel for the current filtering mode"
   },
   "popupLocalToolsLabel": {
@@ -567,7 +567,7 @@
     "message": "嚴格"
   },
   "popupPolicyDescription": {
-    "message": "只套用至這個完全相符的主機名稱。允許/智慧型只影響情境檢查；符合篩選器清單規則的視窗仍會立即關閉。嚴格模式要求受信任操作和直接相關的主機名稱。"
+    "message": "僅適用於此主機。過濾清單規則與受信任網站設定仍然生效。嚴格模式需要可信任的操作以及直接相關的主機名稱。"
   },
   "sandboxEditorLabel": {
     "message": "篩選規則建立沙盒",
@@ -1044,6 +1044,42 @@
   "diagnosticReason": {
     "message": "原因"
   },
+  "popupUnavailable": {
+    "message": "此頁面無法使用防護功能"
+  },
+  "popupCapabilityUnavailable": {
+    "message": "無法使用"
+  },
+  "popupLoadFailed": {
+    "message": "無法載入防護設定。請重試。"
+  },
+  "popupParentScope": {
+    "message": "此網站繼承了上層網站的規則。請先在「網站規則」中變更上層網站的規則。"
+  },
+  "popupActionFailed": {
+    "message": "無法儲存此變更。請重試。"
+  },
+  "popupToolFailed": {
+    "message": "無法在目前頁面開啟此工具。"
+  },
+  "popupPermissionDenied": {
+    "message": "未獲准存取此網站。防護設定保持不變。"
+  },
+  "popupPermissionFailed": {
+    "message": "無法要求此網站的存取權限。"
+  },
+  "popupReloadFailed": {
+    "message": "無法重新載入此頁面。"
+  },
+  "popupRetry": {
+    "message": "重試"
+  },
+  "popupMore": {
+    "message": "展開"
+  },
+  "popupLess": {
+    "message": "收合"
+  },
   "popupPowerEdition": {
     "message": "Power 版"
   },
@@ -1090,6 +1126,6 @@
     "message": "最近符合的規則"
   },
   "popupRecentBlocks": {
-    "message": "最近封鎖 $1 個彈出視窗"
+    "message": "近期在此網站上封鎖了 $1 個彈出式視窗"
   }
 }

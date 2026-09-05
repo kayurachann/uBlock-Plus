@@ -55,7 +55,11 @@ export function supportsUserScripts() {
 export function sendMessage(msg) {
     return runtime.sendMessage(msg).then(response => {
         if ( typeof response?.__ublockPlusError === 'string' ) {
-            throw new Error(response.__ublockPlusError);
+            const error = new Error(response.__ublockPlusError);
+            if ( response.__ublockPlusErrorCode === 'ERR_FILTERING_MODE_PARENT_SCOPE' ) {
+                error.code = response.__ublockPlusErrorCode;
+            }
+            throw error;
         }
         return response;
     }, reason => {

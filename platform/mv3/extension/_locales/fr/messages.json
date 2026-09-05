@@ -40,7 +40,7 @@
     "description": "Link to documentation in About pane"
   },
   "popupFilteringModeLabel": {
-    "message": "Mode de filtrage",
+    "message": "Filtrage pour ce site",
     "description": "Label in the popup panel for the current filtering mode"
   },
   "popupLocalToolsLabel": {
@@ -501,7 +501,7 @@
     "message": "Strict"
   },
   "popupPolicyDescription": {
-    "message": "S’applique uniquement à cet hôte précis. Autoriser/Intelligent agissent sur les contrôles contextuels ; les règles de listes de filtres correspondantes ferment toujours la fenêtre immédiatement. Strict exige une action fiable et un nom d’hôte directement lié."
+    "message": "S’applique à cet hôte précis. Les listes de filtres et les réglages des sites de confiance restent actifs. Strict exige une action de confiance et un nom d’hôte directement lié."
   },
   "sandboxEditorLabel": {
     "message": "Bac à sable de création de filtres",
@@ -978,6 +978,42 @@
   "diagnosticReason": {
     "message": "Motif"
   },
+  "popupUnavailable": {
+    "message": "La protection n’est pas disponible sur cette page"
+  },
+  "popupCapabilityUnavailable": {
+    "message": "Indisponible"
+  },
+  "popupLoadFailed": {
+    "message": "Impossible de charger les paramètres de protection. Réessayez."
+  },
+  "popupParentScope": {
+    "message": "Ce site hérite d’une règle du site parent. Modifiez d’abord cette règle dans « Règles par site »."
+  },
+  "popupActionFailed": {
+    "message": "Impossible d’enregistrer cette modification. Réessayez."
+  },
+  "popupToolFailed": {
+    "message": "Impossible d’ouvrir cet outil sur la page actuelle."
+  },
+  "popupPermissionDenied": {
+    "message": "L’accès au site n’a pas été accordé. Les paramètres de protection ont été conservés."
+  },
+  "popupPermissionFailed": {
+    "message": "Impossible de demander l’accès à ce site."
+  },
+  "popupReloadFailed": {
+    "message": "Impossible de recharger cette page."
+  },
+  "popupRetry": {
+    "message": "Réessayer"
+  },
+  "popupMore": {
+    "message": "Plus"
+  },
+  "popupLess": {
+    "message": "Moins"
+  },
   "popupPowerEdition": {
     "message": "Édition Power"
   },
@@ -1024,6 +1060,6 @@
     "message": "Règles récemment correspondantes"
   },
   "popupRecentBlocks": {
-    "message": "$1 fenêtres récemment bloquées"
+    "message": "$1 fenêtres contextuelles récemment bloquées sur ce site"
   }
 }

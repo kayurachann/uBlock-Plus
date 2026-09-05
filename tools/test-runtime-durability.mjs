@@ -94,6 +94,14 @@ const dnr = {
             await gate.wait;
         }
         if ( rejectDynamicUpdate ) { throw new Error('mock DNR rejection'); }
+        if ( dnr.RuleConditionKeys?.TOP_DOMAINS !== true ) {
+            for ( const rule of details.addRules || [] ) {
+                if ( rule.condition?.topDomains !== undefined ||
+                    rule.condition?.excludedTopDomains !== undefined ) {
+                    throw new Error('mock browser: unsupported top-site condition');
+                }
+            }
+        }
         const removed = new Set(details.removeRuleIds || []);
         const replacement = currentDynamicRules
             .filter(rule => removed.has(rule.id) === false)
@@ -359,6 +367,11 @@ configModule.rulesetConfig.strictBlockMode = previousStrictBlockMode;
 // clearing unrelated non-regex session rules merely because the regex count
 // grew.
 const originalFetch = globalThis.fetch;
+let stockRegexRules = [ 101, 102 ].map(id => ({
+    id,
+    action: { type: 'block' },
+    condition: { regexFilter: `stock${id}` },
+}));
 globalThis.fetch = async url => ({
     async json() {
         if ( url === '/rulesets/ruleset-details.json' ) {
@@ -368,11 +381,7 @@ globalThis.fetch = async url => ({
             } ];
         }
         if ( url === '/rulesets/regex/stock-regex.json' ) {
-            return [ 101, 102 ].map(id => ({
-                id,
-                action: { type: 'block' },
-                condition: { regexFilter: `stock${id}` },
-            }));
+            return structuredClone(stockRegexRules);
         }
         throw new Error(`Unexpected test fetch: ${url}`);
     },
@@ -428,7 +437,6 @@ rejectDynamicUpdate = true;
 const stockFailure = await rulesetManager.updateDynamicAndSessionRules();
 rejectDynamicUpdate = false;
 dnr.MAX_NUMBER_OF_REGEX_RULES = 1000;
-globalThis.fetch = originalFetch;
 assert.match(stockFailure.error, /mock DNR rejection/);
 assert.deepEqual(sessionRuleUpdates, [
     { removeRuleIds: [ 78 ] },
@@ -438,6 +446,103 @@ assert.deepEqual(
     currentDynamicRules.map(rule => rule.condition.regexFilter),
     [ 'old-stock', 'retained-imported', 'retained-user' ]
 );
+
+// Older Chromium must never turn a scoped filter into a broader one. Exercise
+// actual stock and compiled user/imported replacement paths with an API mock
+// that rejects the unsupported fields, as Chrome before 145 does.
+configModule.rulesetConfig.strictBlockMode = false;
+const makeTopScopedRule = (type, field) => ({
+    id: 101,
+    action: type === 'redirect'
+        ? { type, redirect: { url: 'https://replacement.example/' } }
+        : { type },
+    condition: {
+        regexFilter: 'top-scoped-request',
+        [field]: [ 'allowed.example' ],
+        ...(type === 'allowAllRequests'
+            ? { resourceTypes: [ 'main_frame' ] }
+            : {}),
+    },
+});
+for ( const realm of [ 'stock', 'sandbox', 'imported' ] ) {
+    const replaceRules = async rules => {
+        if ( realm === 'stock' ) {
+            stockRegexRules = structuredClone(rules);
+            return rulesetManager.updateDynamicAndSessionRules();
+        }
+        const key = realm === 'sandbox'
+            ? 'sandboxFilters.dnrRules'
+            : 'importedFilters.dnrRules';
+        local.values.set(`compiledFilters.g.top-scope.${key}`, rules);
+        const otherKey = realm === 'sandbox'
+            ? 'importedFilters.dnrRules'
+            : 'sandboxFilters.dnrRules';
+        local.values.delete(`compiledFilters.g.top-scope.${otherKey}`);
+        return rulesetManager.updateUserRules('top-scope');
+    };
+    for ( const field of [ 'excludedTopDomains', 'topDomains' ] ) {
+        for ( const type of [ 'block', 'redirect', 'allow', 'allowAllRequests' ] ) {
+            const scopedRule = makeTopScopedRule(type, field);
+            const supportedRule = makeRegexRule(
+                102, 'top-scoped-request|supported-request'
+            );
+            // The supported browser must retain the exact top-site scope.
+            dnr.RuleConditionKeys = { TOP_DOMAINS: true };
+            currentDynamicRules = [];
+            currentSessionRules = [];
+            const modern = await replaceRules([ scopedRule, supportedRule ]);
+            assert.equal(modern.error || modern.fatalError || '', '');
+            const installed = currentDynamicRules.find(rule =>
+                rule.condition.regexFilter === 'top-scoped-request'
+            );
+            assert.deepEqual(installed.condition, scopedRule.condition);
+
+            // Omitting an allow exception can broaden the other rules in its
+            // batch. Abort the whole replacement and preserve previous rules.
+            dnr.RuleConditionKeys = undefined;
+            const previous = [
+                makeRegexRule(1, 'last-good-stock'),
+                makeRegexRule(8000000, 'last-good-special'),
+                makeRegexRule(9000000, 'last-good-user'),
+            ];
+            currentDynamicRules = structuredClone(previous);
+            currentSessionRules = [ makeRule(78) ];
+            sessionRuleUpdates.length = 0;
+            local.values.set('userDnrRuleCount', 1);
+            const legacy = await replaceRules([ scopedRule, supportedRule ]);
+            if ( type === 'allow' || type === 'allowAllRequests' ) {
+                assert.match(
+                    legacy.error || legacy.fatalError || '',
+                    /unsupported top-site.*previous rules remain active/,
+                    `${realm}/${type}/${field}: report unsafe exception`
+                );
+                assert.deepEqual(currentDynamicRules, previous);
+                assert.deepEqual(sessionRuleUpdates, []);
+                if ( realm !== 'stock' ) {
+                    assert.equal(legacy.added, 0);
+                    assert.equal(legacy.removed, 0);
+                    assert.equal(local.values.get('userDnrRuleCount'), 1);
+                }
+                continue;
+            }
+            assert.equal(legacy.error || legacy.fatalError || '', '');
+            assert.equal(currentDynamicRules.some(rule =>
+                rule.condition.regexFilter === 'top-scoped-request'
+            ), false, `${realm}/${type}/${field}: omit the whole scoped rule`);
+            assert.equal(currentDynamicRules.some(rule =>
+                rule.condition.regexFilter === supportedRule.condition.regexFilter
+            ), true);
+            assert.match(
+                (legacy.warnings || legacy.errors || []).join('\n'),
+                /unsupported top-site/,
+                `${realm}/${type}/${field}: report omitted rules`
+            );
+        }
+    }
+}
+dnr.RuleConditionKeys = { TOP_DOMAINS: true };
+globalThis.fetch = originalFetch;
+configModule.rulesetConfig.strictBlockMode = previousStrictBlockMode;
 
 // A cold-start dynamic read failure is reported as data, not leaked as a
 // rejection which aborts background initialization. Session reconstruction is

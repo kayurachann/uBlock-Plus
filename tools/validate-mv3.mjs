@@ -490,7 +490,7 @@ const popupStyles = await fs.readFile(
     'utf8'
 ).catch(( ) => '');
 for ( const marker of [
-    'height: 600px;',
+    'max-height: 600px;',
     'overflow-y: auto;',
     'scrollbar-gutter: stable;',
 ] ) {
@@ -536,12 +536,15 @@ for ( const requiredPath of [
     'css/power-ui.css',
     'js/compiled-filters.js',
     'js/compiled-storage.js',
+    'js/offscreen-storage.js',
     'js/filter-store.js',
     'js/filter-store-model.js',
     'js/imported-fetch-policy.js',
     'js/memory-manager.js',
     'js/popup-blocker.js',
     'js/popup-policy.js',
+    'js/popup-panel-core.js',
+    'js/popup-panel-data.js',
     'js/power-settings.js',
     'js/power-ui-core.js',
     'js/power-ui.js',

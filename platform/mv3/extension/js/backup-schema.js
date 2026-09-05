@@ -142,6 +142,30 @@ function normalizeImportedLists(value) {
     });
 }
 
+function normalizeModeHostname(value) {
+    if ( typeof value !== 'string' || value === '' || value.length > 253 ) {
+        throw new TypeError('Invalid filtering-mode hostname');
+    }
+    // Preserve literal IPv6 hostnames emitted by URL.hostname in the popup.
+    if ( value.startsWith('[') && value.endsWith(']') ) {
+        try { return new URL(`http://${value}/`).hostname; }
+        catch { throw new TypeError('Invalid filtering-mode IPv6 hostname'); }
+    }
+    if ( /[%\s/:@*?#\\]/.test(value) ) {
+        throw new TypeError('Invalid filtering-mode hostname');
+    }
+    let hostname;
+    try { hostname = new URL(`http://${value}/`).hostname; }
+    catch { throw new TypeError('Invalid filtering-mode hostname'); }
+    if ( hostname.length > 253 || hostname.split('.').some(label =>
+        label.length === 0 || label.length > 63 ||
+        /^[^\da-z]|[^\da-z]$|[^\da-z-]/.test(label)
+    ) ) {
+        throw new TypeError('Invalid filtering-mode hostname');
+    }
+    return hostname;
+}
+
 function normalizeFilteringModes(value) {
     if ( value === undefined ) { return; }
     if ( isObject(value) === false ) {
@@ -149,6 +173,8 @@ function normalizeFilteringModes(value) {
     }
     const out = {};
     let total = 0;
+    let defaults = 0;
+    const seen = new Set();
     for ( const key of [ 'none', 'basic', 'optimal', 'complete' ] ) {
         const entries = stringArray(value[key], `filteringModes.${key}`, {
             maxItems: 100000,
@@ -158,9 +184,38 @@ function normalizeFilteringModes(value) {
         if ( total > 100000 ) {
             throw new TypeError('filteringModes contains too many hostnames');
         }
-        out[key] = entries;
+        out[key] = entries.map(normalizeModeHostname);
+        for ( const hostname of out[key] ) {
+            if ( seen.has(hostname) ) {
+                throw new TypeError('Duplicate filtering-mode hostname or default');
+            }
+            seen.add(hostname);
+            if ( hostname === 'all-urls' ) { defaults += 1; }
+        }
+    }
+    if ( defaults !== 1 ) {
+        throw new TypeError('Filtering modes require exactly one global default');
     }
     return out;
+}
+
+function normalizeRestoreLevels(value) {
+    if ( value === undefined ) { return; }
+    if ( isObject(value) === false || Object.keys(value).length > 100000 ) {
+        throw new TypeError('filteringModeRestoreLevels must be a bounded object');
+    }
+    const entries = [];
+    const seen = new Set();
+    for ( const [ hostname, level ] of Object.entries(value) ) {
+        const normalized = normalizeModeHostname(hostname);
+        if ( seen.has(normalized) || Number.isInteger(level) === false ||
+            level < 1 || level > 3 ) {
+            throw new TypeError('Invalid filteringModeRestoreLevels entry');
+        }
+        seen.add(normalized);
+        entries.push([ normalized, level ]);
+    }
+    return Object.fromEntries(entries);
 }
 
 function normalizeCustomFilters(value) {
@@ -268,6 +323,8 @@ export function normalizeBackupObject(value) {
     }
     const filteringModes = normalizeFilteringModes(value.filteringModes);
     if ( filteringModes ) { out.filteringModes = filteringModes; }
+    const restoreLevels = normalizeRestoreLevels(value.filteringModeRestoreLevels);
+    if ( restoreLevels ) { out.filteringModeRestoreLevels = restoreLevels; }
     if ( value.cosmeticFilters !== undefined ) {
         out.cosmeticFilters = stringArray(
             value.cosmeticFilters,

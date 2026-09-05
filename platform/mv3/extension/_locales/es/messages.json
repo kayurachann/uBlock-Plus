@@ -40,7 +40,7 @@
     "description": "Link to documentation in About pane"
   },
   "popupFilteringModeLabel": {
-    "message": "modo de filtrado",
+    "message": "Filtrado para este sitio",
     "description": "Label in the popup panel for the current filtering mode"
   },
   "popupLocalToolsLabel": {
@@ -501,7 +501,7 @@
     "message": "Estricto"
   },
   "popupPolicyDescription": {
-    "message": "Solo se aplica a este host exacto. Permitir/Inteligente afectan las comprobaciones contextuales; las reglas coincidentes de listas de filtros aún cierran la ventana de inmediato. Estricto exige una acción de confianza y un nombre de host directamente relacionado."
+    "message": "Se aplica a este host exacto. Las listas de filtros y los ajustes de sitios de confianza siguen vigentes. Estricto requiere una acción de confianza y un nombre de host directamente relacionado."
   },
   "sandboxEditorLabel": {
     "message": "Caja de arena de creación de filtro",
@@ -978,6 +978,42 @@
   "diagnosticReason": {
     "message": "Motivo"
   },
+  "popupUnavailable": {
+    "message": "La protección no está disponible en esta página"
+  },
+  "popupCapabilityUnavailable": {
+    "message": "No disponible"
+  },
+  "popupLoadFailed": {
+    "message": "No se pudo cargar la configuración de protección. Inténtalo de nuevo."
+  },
+  "popupParentScope": {
+    "message": "Este sitio hereda una regla del sitio principal. Cambia primero la regla del sitio principal en «Reglas por sitio»."
+  },
+  "popupActionFailed": {
+    "message": "No se pudo guardar este cambio. Inténtalo de nuevo."
+  },
+  "popupToolFailed": {
+    "message": "No se pudo abrir esta herramienta en la página actual."
+  },
+  "popupPermissionDenied": {
+    "message": "No se concedió acceso al sitio. Se mantuvo la configuración de protección."
+  },
+  "popupPermissionFailed": {
+    "message": "No se pudo solicitar acceso a este sitio."
+  },
+  "popupReloadFailed": {
+    "message": "No se pudo volver a cargar esta página."
+  },
+  "popupRetry": {
+    "message": "Intentar de nuevo"
+  },
+  "popupMore": {
+    "message": "Más"
+  },
+  "popupLess": {
+    "message": "Menos"
+  },
   "popupPowerEdition": {
     "message": "Edición Power"
   },
@@ -1024,6 +1060,6 @@
     "message": "Reglas coincidentes recientes"
   },
   "popupRecentBlocks": {
-    "message": "$1 ventanas emergentes bloqueadas recientemente"
+    "message": "$1 ventanas emergentes bloqueadas recientemente en este sitio"
   }
 }

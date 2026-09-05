@@ -1025,8 +1025,8 @@ assert.equal(stockDiagnostic.filterKind, 'popup');
 assert.equal(stockDiagnostic.filterRealm, 'stock');
 assert.equal(JSON.stringify(compiledDiagnostics).includes('/path'), false);
 
-// Regression: an excluded target at sorted index 0 must be recognized, while
-// a non-matching exclusion must not suppress a matching popup regex.
+// Old registrations must fail open even when their target-only data contains
+// a matching block. Only the observer has authoritative opener/intent context.
 const preventPopupSource = await fs.readFile(path.join(
     import.meta.dirname,
     '..',
@@ -1074,14 +1074,14 @@ function runPreventPopup(xto, runtime) {
 }
 
 assert.equal(runPreventPopup([ 'target.example' ]), false);
-assert.equal(runPreventPopup([ 'excluded.example' ]), true);
+assert.equal(runPreventPopup([ 'excluded.example' ]), false);
 let compiledMessageSent = false;
 assert.equal(runPreventPopup([ 'excluded.example' ], {
     sendMessage: ( ) => {
         compiledMessageSent = true;
         return new Promise(( ) => { });
     },
-}), true);
+}), false);
 assert.equal(compiledMessageSent, false);
 assert.doesNotMatch(preventPopupSource, /\bawait\b|\(async\s*\(/);
 
@@ -1124,7 +1124,7 @@ for ( const mode of [ 'default', 'allow', 'block', 'strict' ] ) {
 }
 assert.match(
     popupSource,
-    /what:\s*'setPopupPolicy'[\s\S]{0,160}mode:\s*ev\.target\.value/
+    /const mode = ev\.target\.value;[\s\S]{0,300}what:\s*'setPopupPolicy',[\s\S]{0,100}\bmode,/
 );
 
 console.log('Context-aware popup policy tests passed');

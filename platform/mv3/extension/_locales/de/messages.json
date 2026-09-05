@@ -40,7 +40,7 @@
     "description": "Link to documentation in About pane"
   },
   "popupFilteringModeLabel": {
-    "message": "Filtermodus",
+    "message": "Filterung für diese Website",
     "description": "Label in the popup panel for the current filtering mode"
   },
   "popupLocalToolsLabel": {
@@ -501,7 +501,7 @@
     "message": "Streng"
   },
   "popupPolicyDescription": {
-    "message": "Gilt nur für diesen exakten Host. Zulassen/Intelligent beeinflussen Kontextprüfungen; passende Filterlistenregeln schließen weiterhin sofort. Streng verlangt eine vertrauenswürdige Aktion und einen direkt verwandten Hostnamen."
+    "message": "Gilt für genau diesen Host. Filterlisten und Einstellungen für vertrauenswürdige Websites gelten weiterhin. Streng erfordert eine vertrauenswürdige Aktion und einen direkt verwandten Hostnamen."
   },
   "sandboxEditorLabel": {
     "message": "Testumgebung zum Erstellen von Filtern",
@@ -978,6 +978,42 @@
   "diagnosticReason": {
     "message": "Grund"
   },
+  "popupUnavailable": {
+    "message": "Der Schutz ist auf dieser Seite nicht verfügbar"
+  },
+  "popupCapabilityUnavailable": {
+    "message": "Nicht verfügbar"
+  },
+  "popupLoadFailed": {
+    "message": "Die Schutzeinstellungen konnten nicht geladen werden. Bitte erneut versuchen."
+  },
+  "popupParentScope": {
+    "message": "Diese Website übernimmt eine Regel der übergeordneten Website. Ändern Sie zuerst die übergeordnete Regel unter „Website-Regeln“."
+  },
+  "popupActionFailed": {
+    "message": "Diese Änderung konnte nicht gespeichert werden. Bitte erneut versuchen."
+  },
+  "popupToolFailed": {
+    "message": "Dieses Werkzeug konnte auf der aktuellen Seite nicht geöffnet werden."
+  },
+  "popupPermissionDenied": {
+    "message": "Der Websitezugriff wurde nicht gewährt. Die Schutzeinstellungen wurden beibehalten."
+  },
+  "popupPermissionFailed": {
+    "message": "Der Zugriff auf diese Website konnte nicht angefordert werden."
+  },
+  "popupReloadFailed": {
+    "message": "Diese Seite konnte nicht neu geladen werden."
+  },
+  "popupRetry": {
+    "message": "Erneut versuchen"
+  },
+  "popupMore": {
+    "message": "Mehr"
+  },
+  "popupLess": {
+    "message": "Weniger"
+  },
   "popupPowerEdition": {
     "message": "Power-Ausgabe"
   },
@@ -1024,6 +1060,6 @@
     "message": "Zuletzt passende Regeln"
   },
   "popupRecentBlocks": {
-    "message": "$1 kürzlich blockierte Popups"
+    "message": "$1 kürzlich blockierte Pop-ups auf dieser Website"
   }
 }

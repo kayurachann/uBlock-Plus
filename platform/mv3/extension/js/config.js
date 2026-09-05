@@ -22,8 +22,8 @@
 */
 
 import {
-    localRead, localWrite,
-    sessionRead, sessionWrite,
+    browser, localWrite,
+    sessionRead, sessionRemove, sessionWrite,
     webextFlavor,
 } from './ext.js';
 
@@ -52,36 +52,49 @@ let pendingOpPromise = Promise.resolve();
 /******************************************************************************/
 
 async function _loadRulesetConfig() {
+    // Local storage is authoritative. A failed read must not replace saved
+    // settings with defaults; a stale session cache must not resurrect them.
+    const bin = await browser.storage.local.get('rulesetConfig');
+    const localData = bin.rulesetConfig;
     const sessionData = await sessionRead('rulesetConfig');
-    if ( sessionData ) {
-        Object.assign(rulesetConfig, sessionData);
-        process.wakeupRun = true;
-        return;
-    }
-    const localData = await localRead('rulesetConfig');
     if ( localData ) {
-        Object.assign(rulesetConfig, localData)
-        sessionWrite('rulesetConfig', rulesetConfig);
+        Object.assign(rulesetConfig, localData);
+        process.wakeupRun = sessionData !== undefined &&
+            JSON.stringify(sessionData) === JSON.stringify(localData);
+        await cacheRulesetConfig(rulesetConfig);
         return;
     }
-    sessionWrite('rulesetConfig', rulesetConfig);
-    localWrite('rulesetConfig', rulesetConfig);
+    await _saveRulesetConfig(structuredClone(rulesetConfig));
     process.firstRun = true;
 }
 
-async function _saveRulesetConfig() {
-    sessionWrite('rulesetConfig', rulesetConfig);
-    return localWrite('rulesetConfig', rulesetConfig);
+async function cacheRulesetConfig(snapshot) {
+    try {
+        await sessionWrite('rulesetConfig', snapshot);
+    } catch {
+        // Cache availability is optional. Wakeup always rechecks local state.
+        await sessionRemove('rulesetConfig').catch(( ) => {});
+    }
+}
+
+async function _saveRulesetConfig(snapshot) {
+    await localWrite('rulesetConfig', snapshot);
+    await cacheRulesetConfig(snapshot);
+}
+
+function enqueueConfigOperation(operation) {
+    const result = pendingOpPromise.then(operation);
+    pendingOpPromise = result.catch(( ) => {});
+    return result;
 }
 
 /******************************************************************************/
 
 export function loadRulesetConfig() {
-    pendingOpPromise = pendingOpPromise.then(_loadRulesetConfig);
-    return pendingOpPromise;
+    return enqueueConfigOperation(_loadRulesetConfig);
 }
 
 export function saveRulesetConfig() {
-    pendingOpPromise = pendingOpPromise.then(_saveRulesetConfig);
-    return pendingOpPromise;
+    const snapshot = structuredClone(rulesetConfig);
+    return enqueueConfigOperation(( ) => _saveRulesetConfig(snapshot));
 }

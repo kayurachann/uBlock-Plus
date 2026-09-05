@@ -28,6 +28,8 @@ import {
     getDefaultFilteringMode,
     getFilteringMode,
     getFilteringModeDetails,
+    getFilteringModeRestoreLevel,
+    getFilteringModeRestoreLevels,
     persistHostPermissions,
     setDefaultFilteringMode,
     setFilteringMode,
@@ -100,6 +102,8 @@ import {
     updateCompiledFilters,
 } from './compiled-filters.js';
 
+import { countSitePopupBlocks, matchesPendingPermission } from './popup-panel-data.js';
+
 import {
     defaultConfig,
     loadRulesetConfig,
@@ -152,6 +156,11 @@ import {
     gotoURL,
     hasBroadHostPermissions,
 } from './ext-utils.js';
+
+import {
+    popupPageContext,
+    reloadPopupTab,
+} from './popup-panel-core.js';
 
 import {
     processDueJobs,
@@ -317,6 +326,19 @@ function enqueueFilteringMutation(task) {
     return result;
 }
 
+async function refreshFilteringScripts() {
+    // Keep the filtering queue occupied until both registrations settle. A
+    // rejected branch must not overlap the next mode change or its rollback.
+    const results = await Promise.allSettled([
+        registerContentScripts(), registerUserScripts(),
+    ]);
+    const errors = results.filter(result => result.status === 'rejected')
+        .map(result => result.reason);
+    if ( errors.length !== 0 ) {
+        throw new AggregateError(errors, errors.map(String).join('; '));
+    }
+}
+
 let pendingPermissionRequest;
 
 /******************************************************************************/
@@ -327,17 +349,11 @@ function getCurrentVersion() {
 
 /******************************************************************************/
 
-async function reloadTab(tabId, url = '') {
-    return new Promise(resolve => {
-        self.setTimeout(( ) => {
-            if ( url !== '' ) {
-                browser.tabs.update(tabId, { url });
-            } else {
-                browser.tabs.reload(tabId);
-            }
-            resolve();
-        }, 437);
-    });
+async function reloadTab(tabId, context) {
+    await new Promise(resolve => self.setTimeout(resolve, 437));
+    // Check the captured page after the delay/permission queue has elapsed.
+    // Await the mutation so permission listeners can report browser failures.
+    return reloadPopupTab(browser.tabs, tabId, context);
 }
 
 // When a new host permission is granted through the popup panel
@@ -352,16 +368,19 @@ async function onPermissionGrantedThruExtension(details, origins) {
     if ( beforeLevel === details.afterLevel ) { return; }
     const afterLevel = await setFilteringMode(details.hostname, details.afterLevel);
     if ( afterLevel !== details.afterLevel ) { return; }
-    await registerContentScripts();
+    await refreshFilteringScripts();
     if ( rulesetConfig.autoReload !== true ) { return; }
-    await reloadTab(details.tabId, details.url);
+    const context = popupPageContext(details.actualURL, runtime.getURL('/'));
+    if ( context.canFilter === false || context.url !== details.url ||
+        context.hostname !== details.hostname ) { return; }
+    await reloadTab(details.tabId, context);
 }
 
 // When a new host permission is granted through the browser
 async function onPermissionGrantedThruBrowser(origins) {
     const modified = await syncWithBrowserPermissions();
     if ( modified === false ) { return; }
-    await registerContentScripts();
+    await refreshFilteringScripts();
     if ( rulesetConfig.autoReload !== true ) { return; }
     if ( origins.length !== 1 ) { return; }
     const tabs = await browser.tabs.query({ active: true, currentWindow: true });
@@ -369,16 +388,17 @@ async function onPermissionGrantedThruBrowser(origins) {
     if ( typeof tabId !== 'number' || tabId === -1 ) { return; }
     const results = await browser.scripting.executeScript({
         target: { tabId, frameIds: [ 0 ] },
-        func: ( ) => document.location.hostname,
+        func: ( ) => document.location.href,
     }).catch(( ) => {
     });
-    const tabHostname = results?.[0]?.result;
-    if ( typeof tabHostname !== 'string' ) { return; }
+    const context = popupPageContext(results?.[0]?.result, runtime.getURL('/'));
+    if ( context.canInject === false ) { return; }
+    const tabHostname = context.hostname;
     const hostname = hostnameFromMatch(origins[0]);
     if ( tabHostname.endsWith(hostname) === false ) { return; }
     const pos = tabHostname.length - hostname.length;
     if ( pos !== 0 && tabHostname.charAt(pos-1) !== '.' ) { return; }
-    await reloadTab(tabId);
+    await reloadTab(tabId, context);
 }
 
 // https://github.com/uBlockOrigin/uBOL-home/issues/280
@@ -386,7 +406,7 @@ async function onPermissionsAdded(permissions) {
     const details = pendingPermissionRequest;
     pendingPermissionRequest = undefined;
     const { origins = [] } = permissions;
-    return details !== undefined
+    return matchesPendingPermission(details, hostnamesFromMatches(origins))
         ? onPermissionGrantedThruExtension(details, origins)
         : onPermissionGrantedThruBrowser(origins);
 }
@@ -394,20 +414,16 @@ async function onPermissionsAdded(permissions) {
 async function onPermissionsRemoved() {
     const modified = await syncWithBrowserPermissions();
     if ( modified === false ) { return false; }
-    registerContentScripts();
+    await refreshFilteringScripts();
     return true;
 }
 
 async function onPermissionsChanged(op, permissions) {
     await isFullyInitialized;
-    const { pending } = onPermissionsChanged;
-    await Promise.all(pending);
-    const promise = op === 'removed'
+    return enqueueFilteringMutation(( ) => op === 'removed'
         ? onPermissionsRemoved()
-        : onPermissionsAdded(permissions);
-    pending.push(promise);
+        : onPermissionsAdded(permissions));
 }
-onPermissionsChanged.pending = [];
 
 /******************************************************************************/
 
@@ -1219,10 +1235,9 @@ async function onMessage(request, sender) {
             popupBlocker.getPolicies(request.hostname),
             popupBlocker.getDiagnostics(),
             getDefaultFilteringMode(),
+            getFilteringModeRestoreLevel(request.hostname),
         ]);
-        const recentPopupBlocks = results[5].filter(entry =>
-            entry.action === 'blocked' || entry.action === 'block-failed'
-        ).length;
+        const recentPopupBlocks = countSitePopupBlocks(results[5], request.hostname);
         return {
             hasOmnipotence: results[0],
             level: results[1],
@@ -1230,11 +1245,12 @@ async function onMessage(request, sender) {
             isSideloaded,
             developerMode: rulesetConfig.developerMode,
             disabledFeatures: results[2],
-            hasCustomFilters: results[3],
+            hasCustomFilters: results[3] > 0,
             popupPolicy: results[4].effective,
             popupBlockMode: rulesetConfig.popupBlockMode,
             recentPopupBlocks,
             defaultFilteringMode: results[6],
+            restoreFilteringMode: results[7],
             enabledRulesetCount: rulesetConfig.enabledRulesets.length,
         };
     }
@@ -1248,16 +1264,23 @@ async function onMessage(request, sender) {
 
     case 'setFilteringMode': {
         return enqueueFilteringMutation(async ( ) => {
-            const beforeLevel = await getFilteringMode(request.hostname);
-            if ( request.level === beforeLevel ) { return beforeLevel; }
             const afterLevel = await setFilteringMode(request.hostname, request.level);
-            await Promise.all([ registerContentScripts(), registerUserScripts() ]);
+            // Retrying the same mode repairs registrations after a previous
+            // post-commit scripting failure.
+            await refreshFilteringScripts();
             return afterLevel;
         });
     }
 
     case 'setPendingFilteringMode':
-        pendingPermissionRequest = request;
+        pendingPermissionRequest = { ...request, createdAt: Date.now() };
+        return;
+
+    case 'clearPendingFilteringMode':
+        if ( typeof request.requestId === 'string' &&
+            pendingPermissionRequest?.requestId === request.requestId ) {
+            pendingPermissionRequest = undefined;
+        }
         return;
 
     case 'getDefaultFilteringMode': {
@@ -1266,11 +1289,8 @@ async function onMessage(request, sender) {
 
     case 'setDefaultFilteringMode': {
         return enqueueFilteringMutation(async ( ) => {
-            const beforeLevel = await getDefaultFilteringMode();
             const afterLevel = await setDefaultFilteringMode(request.level);
-            if ( afterLevel !== beforeLevel ) {
-                await Promise.all([ registerContentScripts(), registerUserScripts() ]);
-            }
+            await refreshFilteringScripts();
             return afterLevel;
         });
     }
@@ -1278,10 +1298,13 @@ async function onMessage(request, sender) {
     case 'getFilteringModeDetails':
         return getFilteringModeDetails(true);
 
+    case 'getFilteringModeRestoreLevels':
+        return getFilteringModeRestoreLevels();
+
     case 'setFilteringModeDetails': {
         return enqueueFilteringMutation(async ( ) => {
-            await setFilteringModeDetails(request.modes);
-            await Promise.all([ registerContentScripts(), registerUserScripts() ]);
+            await setFilteringModeDetails(request.modes, request.restoreLevels);
+            await refreshFilteringScripts();
             const defaultFilteringMode = await getDefaultFilteringMode();
             broadcastMessage({ defaultFilteringMode });
             return getFilteringModeDetails(true);
@@ -1669,7 +1692,12 @@ runtime.onMessage.addListener((request, sender, callback) => {
     if ( request.what.includes(':') ) { return; }
     onMessage(request, sender).then(callback, reason => {
         ublockPlusErr(`onMessage/${request.what}/${reason}`);
-        callback({ __ublockPlusError: reason?.message || `${reason}` });
+        callback({
+            __ublockPlusError: reason?.message || `${reason}`,
+            __ublockPlusErrorCode: reason?.code === 'ERR_FILTERING_MODE_PARENT_SCOPE'
+                ? reason.code
+                : undefined,
+        });
     });
     return true;
 });
@@ -1682,7 +1710,12 @@ if ( supportsUserScripts() && runtime.onUserScriptMessage ) {
         if ( typeof request?.what !== 'string' ) { return; }
         onMessage(request, sender).then(callback, reason => {
             ublockPlusErr(`onUserScriptMessage/${request.what}/${reason}`);
-            callback({ __ublockPlusError: reason?.message || `${reason}` });
+            callback({
+                __ublockPlusError: reason?.message || `${reason}`,
+                __ublockPlusErrorCode: reason?.code === 'ERR_FILTERING_MODE_PARENT_SCOPE'
+                    ? reason.code
+                    : undefined,
+            });
         });
         return true;
     });

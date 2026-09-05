@@ -221,18 +221,43 @@ async function updateRegexRules(currentRules, addRules, removeRuleIds) {
 // https://github.com/uBlockOrigin/uBOL-home/issues/715
 
 function toSafeDynamicRules(addRules) {
-    if ( Array.isArray(addRules) === false ) { return; }
-    if ( dnr.RuleConditionKeys?.TOP_DOMAINS ) { return addRules; }
+    const out = {
+        rules: Array.isArray(addRules) ? addRules : [],
+        warnings: [],
+        error: '',
+    };
+    if ( dnr.RuleConditionKeys?.TOP_DOMAINS ) { return out; }
     const safeRules = [];
-    for ( const rule of addRules ) {
+    let omittedCount = 0;
+    for ( const rule of out.rules ) {
         const { condition } = rule;
-        if ( condition.topDomains ) { continue; }
-        if ( condition.excludedTopDomains ) {
-            delete condition.excludedTopDomains;
+        if ( condition?.topDomains !== undefined ||
+            condition?.excludedTopDomains !== undefined ) {
+            // Removing either scope field broadens a rule. Dropping an allow
+            // exception can also broaden other rules, including rules from a
+            // different list in the same batch. Keep the last good batch when
+            // the browser cannot represent an exception exactly.
+            if ( rule.action.type === 'allow' ||
+                rule.action.type === 'allowAllRequests' ) {
+                out.rules = [];
+                out.error =
+                    'An allow exception uses unsupported top-site ' +
+                    'conditions; the previous rules remain active';
+                return out;
+            }
+            omittedCount += 1;
+            continue;
         }
         safeRules.push(rule);
     }
-    return safeRules;
+    out.rules = safeRules;
+    if ( omittedCount !== 0 ) {
+        out.warnings.push(
+            `${omittedCount} rule(s) with unsupported top-site conditions ` +
+            'were omitted to preserve their scope'
+        );
+    }
+    return out;
 }
 
 /******************************************************************************/
@@ -255,7 +280,15 @@ async function updateDynamicAndSessionRulesNow() {
         return refreshSessionRules();
     }
 
-    const safeAddRules = toSafeDynamicRules(addRules) || [];
+    const safePlan = toSafeDynamicRules(addRules);
+    if ( safePlan.error ) {
+        ublockPlusErr(`updateDynamicAndSessionRules/${safePlan.error}`);
+        return refreshSessionRules({ error: safePlan.error });
+    }
+    const safeAddRules = safePlan.rules;
+    for ( const warning of safePlan.warnings ) {
+        ublockPlusErr(`updateDynamicAndSessionRules/${warning}`);
+    }
     // Rules in the special/user realms are not replaced by this operation.
     // Include them in the projected total so an increase in stock regex rules
     // still clears session rules before Chrome evaluates the shared regex
@@ -279,6 +312,9 @@ async function updateDynamicAndSessionRulesNow() {
         dnr.MAX_NUMBER_OF_REGEX_RULES
     ) ? dnr.MAX_NUMBER_OF_REGEX_RULES : Number.MAX_SAFE_INTEGER;
     const response = {};
+    if ( safePlan.warnings.length !== 0 ) {
+        response.warnings = safePlan.warnings;
+    }
     if ( dynamicRegexCountAfter > maxRegexCount ) {
         response.error =
             `Dynamic regex plan requires ${dynamicRegexCountAfter}/` +
@@ -876,6 +912,17 @@ async function updateUserRulesNow(generation) {
         : '';
 
     const parsed = rulesFromText(effectiveRulesText);
+    const out = { added: 0, removed: 0, errors: [], fatalError: '' };
+    if ( parsed.bad.length !== 0 ) {
+        // Keep drafts editable, but never activate only their successfully
+        // parsed subset: a skipped allow rule could broaden blocking, and an
+        // entirely invalid draft could silently remove the last active set.
+        const lines = parsed.bad.slice(0, 16).map(index => index + 1).join(', ');
+        out.fatalError = `Invalid developer DNR syntax at line(s) ${lines}; ` +
+            'the previous rules remain active';
+        out.errors.push(out.fatalError);
+        return out;
+    }
     const { rules } = parsed;
     {
         const sandboxRules = await localRead(compiledStorageKey(
@@ -905,7 +952,6 @@ async function updateUserRulesNow(generation) {
     }
     const rejectedRegexes = [];
     const addRules = await pruneInvalidRegexRules('user', rules, rejectedRegexes);
-    const out = { added: 0, removed: 0, errors: [], fatalError: '' };
 
     if ( rejectedRegexes.length !== 0 ) {
         rejectedRegexes.forEach(e =>
@@ -924,7 +970,14 @@ async function updateUserRulesNow(generation) {
     }
 
     let effectiveRuleCount = removeRuleIds.length;
-    const safeAddRules = toSafeDynamicRules(addRules) || [];
+    const safePlan = toSafeDynamicRules(addRules);
+    if ( safePlan.error ) {
+        out.fatalError = safePlan.error;
+        out.errors.push(out.fatalError);
+        return out;
+    }
+    out.errors.push(...safePlan.warnings);
+    const safeAddRules = safePlan.rules;
     const replacementRegexCount = countRegexRules(safeAddRules);
     const projectedDynamicRegexCount =
         retainedDynamicRegexCount + replacementRegexCount;
@@ -967,8 +1020,8 @@ async function updateUserRulesNow(generation) {
         if ( removeRuleIds.length !== 0 ) {
             ublockPlusLog(`updateUserRules() / Removed ${removeRuleIds.length} dynamic DNR rules`);
         }
-        if ( addRules.length !== 0 ) {
-            ublockPlusLog(`updateUserRules() / Added ${addRules.length} DNR rules`);
+        if ( safeAddRules.length !== 0 ) {
+            ublockPlusLog(`updateUserRules() / Added ${safeAddRules.length} DNR rules`);
         }
         out.added = safeAddRules.length;
         out.removed = removeRuleIds.length;

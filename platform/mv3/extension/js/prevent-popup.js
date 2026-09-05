@@ -30,26 +30,15 @@ import { matchesFromHostnames } from './utils.js';
 
 export async function registerPreventPopup(context) {
     if ( rulesetConfig.popupBlockMode !== true ) { return; }
-    const popupFilterJS = [];
-    for ( const { id, popups } of context.rulesetsDetails ) {
-        if ( popups === undefined ) { continue; }
-        popupFilterJS.push(`/rulesets/scripting/popup/${id}.js`);
-    }
+    // Only collect gesture/intent context here. Closing a popup requires the
+    // observer's opener, target, filtering-mode and compiled exception checks.
     const js = [ '/js/scripting/popup-context.js' ];
-    if ( popupFilterJS.length !== 0 ) {
-        js.push(
-            ...popupFilterJS,
-            '/js/scripting/prevent-popup-target.js',
-            '/js/scripting/prevent-popup.js'
-        );
-    }
 
     const { none, basic, optimal, complete } = context.filteringModeDetails;
     let matches = [];
-    let excludeMatches = [];
+    const excludeMatches = [ ...none, ...basic ].filter(hn => hn !== 'all-urls');
     if ( complete.has('all-urls') || optimal.has('all-urls') ) {
         matches = [ '*' ];
-        excludeMatches = [ ...none, ...basic ];
     } else {
         matches = [ ...complete, ...optimal ];
     }

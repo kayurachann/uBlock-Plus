@@ -102,8 +102,13 @@ export const subtractHostnameIters = (itera, iterb) => {
 
 /******************************************************************************/
 
-export const matchFromHostname = hn =>
-    hn === '*' || hn === 'all-urls' ? '<all_urls>' : `*://*.${hn}/*`;
+export const matchFromHostname = hn => {
+    if ( hn === '*' || hn === 'all-urls' ) { return '<all_urls>'; }
+    // IP literals have no subdomains. In particular, a wildcard before an
+    // IPv6 literal is rejected by Chromium as an invalid port.
+    const literal = hn.startsWith('[') || /^\d+(?:\.\d+){3}$/.test(hn);
+    return `*://${literal ? '' : '*.'}${hn}/*`;
+};
 
 export const matchesFromHostnames = hostnames => {
     const out = [];

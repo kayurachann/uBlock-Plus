@@ -40,7 +40,7 @@
     "description": "Link to documentation in About pane"
   },
   "popupFilteringModeLabel": {
-    "message": "filtering mode",
+    "message": "Filtering for this site",
     "description": "Label in the popup panel for the current filtering mode"
   },
   "popupLocalToolsLabel": {
@@ -556,7 +556,7 @@
   "popupPolicyAllow": { "message": "Allow" },
   "popupPolicySmart": { "message": "Smart" },
   "popupPolicyStrict": { "message": "Strict" },
-  "popupPolicyDescription": { "message": "Applies to this exact host. Allow/Smart affect contextual checks; matching filter-list rules still close immediately. Strict requires a trusted action and a directly related hostname." },
+  "popupPolicyDescription": { "message": "Applies to this exact host. Filter-list rules and trusted-site settings still apply. Strict requires a trusted action and a directly related hostname." },
   "sandboxEditorLabel": {
     "message": "Filter-creation sandbox",
     "description": "Header for filter-creation section in the dashboard"
@@ -830,6 +830,18 @@
   "diagnosticSource": { "message": "Source" },
   "diagnosticTarget": { "message": "Target" },
   "diagnosticReason": { "message": "Reason" },
+  "popupUnavailable": { "message": "Protection is unavailable on this page" },
+  "popupCapabilityUnavailable": { "message": "Unavailable" },
+  "popupLoadFailed": { "message": "Could not load protection settings. Try again." },
+  "popupParentScope": { "message": "This site inherits a parent-site rule. Change the parent rule in Site rules first." },
+  "popupActionFailed": { "message": "Could not save this change. Try again." },
+  "popupToolFailed": { "message": "Could not open this tool on the current page." },
+  "popupPermissionDenied": { "message": "Site access was not granted. Protection settings were kept." },
+  "popupPermissionFailed": { "message": "Could not request access to this site." },
+  "popupReloadFailed": { "message": "Could not reload this page." },
+  "popupRetry": { "message": "Try again" },
+  "popupMore": { "message": "More" },
+  "popupLess": { "message": "Less" },
   "popupPowerEdition": { "message": "Power Edition" },
   "popupPowerToggle": { "message": "Toggle protection for this site" },
   "popupReloadPage": { "message": "Reload this page" },
@@ -845,5 +857,5 @@
   "popupSiteControls": { "message": "Site controls" },
   "popupQuickTools": { "message": "Quick tools" },
   "popupMatchedRules": { "message": "Recent matched rules" },
-  "popupRecentBlocks": { "message": "$1 recent popup block(s)" }
+  "popupRecentBlocks": { "message": "$1 recent popup block(s) on this site" }
 }

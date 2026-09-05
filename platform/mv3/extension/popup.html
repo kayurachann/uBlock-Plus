@@ -14,21 +14,28 @@
 </head>
 
 <body class="loading busy">
-
 <main>
     <header class="popupHeader">
-        <img src="img/icon_64.png" alt="">
-        <div><strong data-i18n="extName">_</strong><span data-i18n="popupPowerEdition">_</span></div>
-        <button id="gotoDashboard" class="iconButton fa-icon" type="button" data-i18n-title="popupTipDashboard">cogs</button>
+        <img src="img/icon_32.png" alt="">
+        <strong data-i18n="extName">_</strong>
+        <span id="version"></span>
     </header>
 
     <section class="protectionCard">
         <div id="hostname"><span></span>&shy;<span></span></div>
         <div class="protectionControl">
-            <button id="sitePower" class="sitePower fa-icon" type="button" role="switch" aria-checked="true" aria-label="popupPowerToggle" data-i18n-title="popupPowerToggle">power-off</button>
-            <div class="protectionCopy"><strong id="protectionStatus">_</strong><span id="protectionMode">_</span></div>
+            <button id="sitePower" class="sitePower fa-icon" type="button" role="switch" aria-checked="false" disabled aria-label="popupPowerToggle" data-i18n-title="popupPowerToggle">power-off</button>
             <button id="refresh" class="iconButton fa-icon" type="button" data-i18n-title="popupReloadPage">refresh</button>
         </div>
+        <div class="protectionCopy"><strong id="protectionStatus" aria-live="polite">_</strong><span id="protectionMode">_</span></div>
+    </section>
+
+    <section class="quickTools needHTTP" aria-label="popupQuickTools">
+        <button id="gotoZapper" class="tool" type="button" data-i18n-title="zapperTipEnter"><span class="fa-icon">bolt</span><span class="caption" data-i18n="zapperTipEnter">_</span></button>
+        <button id="gotoPicker" class="tool" type="button" data-i18n-title="pickerTipEnter"><span class="fa-icon">eye-dropper</span><span class="caption" data-i18n="pickerTipEnter">_</span></button>
+        <button id="gotoUnpicker" class="tool" type="button" data-i18n-title="unpickerTipEnter"><span class="fa-icon">eye-open</span><span class="caption" data-i18n="unpickerTipEnter">_</span></button>
+        <button id="gotoReport" class="tool" type="button" data-i18n-title="popupTipReport"><span class="fa-icon">comment-alt</span><span class="caption" data-i18n="popupTipReport">_</span></button>
+        <button id="gotoDashboard" class="tool enabled" type="button" data-i18n-title="popupTipDashboard"><span class="fa-icon">cogs</span><span class="caption" data-i18n="popupTipDashboard">_</span></button>
     </section>
 
     <section class="capabilityGrid powerDetails" aria-label="popupCapabilitySummary">
@@ -38,11 +45,19 @@
         <div data-capability="lists"><span data-i18n="popupCapabilityLists">_</span><strong>_</strong></div>
     </section>
 
-    <details id="siteControls" class="powerDetails" open>
-        <summary data-i18n="popupSiteControls">_</summary>
-        <div id="popupPolicy" class="popupPolicy needHTTP">
+    <section id="siteControls" class="powerDetails needHTTP">
+        <h2 data-i18n="popupSiteControls">_</h2>
+        <div class="siteMode">
+            <label for="siteFilteringMode" data-i18n="popupFilteringModeLabel">_</label>
+            <select id="siteFilteringMode" disabled>
+                <option value="1" data-i18n="filteringMode1Name">_</option>
+                <option value="2" data-i18n="filteringMode2Name">_</option>
+                <option value="3" data-i18n="filteringMode3Name">_</option>
+            </select>
+        </div>
+        <div id="popupPolicy" class="popupPolicy">
             <label for="popupPolicySelect" data-i18n="popupPolicyLabel">_</label>
-            <select id="popupPolicySelect" aria-label="popupPolicyLabel">
+            <select id="popupPolicySelect" disabled>
                 <option value="default" data-i18n="popupPolicyDefault">_</option>
                 <option value="allow" data-i18n="popupPolicyAllow">_</option>
                 <option value="block" data-i18n="popupPolicySmart">_</option>
@@ -50,31 +65,30 @@
             </select>
             <p data-i18n="popupPolicyDescription">_</p>
         </div>
-    </details>
-
-    <section class="quickTools needHTTP">
-        <h2 data-i18n="popupQuickTools">_</h2>
-        <div class="quickToolGrid">
-            <button id="gotoZapper" class="tool enabled" type="button"><span class="fa-icon">bolt</span><span data-i18n="zapperTipEnter">_</span></button>
-            <button id="gotoPicker" class="tool enabled" type="button"><span class="fa-icon">eye-slash</span><span data-i18n="pickerTipEnter">_</span></button>
-            <button id="gotoUnpicker" class="tool" type="button"><span class="fa-icon">eye-open</span><span data-i18n="unpickerTipEnter">_</span></button>
-            <button id="gotoReport" class="tool enabled" type="button"><span class="fa-icon">comment-alt</span><span data-i18n="popupTipReport">_</span></button>
-        </div>
     </section>
 
-    <footer class="toolRibbon globalTools">
+    <nav class="dashboardLinks powerDetails" aria-label="popupSiteControls">
+        <button id="gotoMyFilters" type="button" data-i18n="myFiltersPageName">_</button>
+        <button id="gotoSiteRules" type="button" data-i18n="siteRulesPageName">_</button>
+    </nav>
+
+    <div class="operationStatus">
+        <p id="popupError" role="status" aria-live="polite"></p>
+        <button id="retryPopup" type="button" hidden data-i18n="popupRetry">_</button>
+    </div>
+
+    <footer class="toolRibbon">
         <button id="gotoMatchedRules" class="tool fa-icon" type="button" data-i18n-title="popupMatchedRules">list-alt<span class="caption" data-i18n="popupMatchedRules"></span></button>
+        <button id="gotoDashboardFooter" class="tool enabled fa-icon" type="button" data-i18n-title="popupTipDashboard">cogs<span class="caption" data-i18n="popupTipDashboard"></span></button>
         <span id="popupActivity" class="popupActivity powerDetails"></span>
-        <button id="gotoDashboardFooter" class="tool enabled fa-icon" type="button" data-i18n-title="popupTipDashboard">sliders<span class="caption" data-i18n="popupTipDashboard"></span></button>
+        <button id="toggleDetails" type="button" aria-expanded="true" aria-controls="siteControls" data-i18n="popupLess">_</button>
     </footer>
 </main>
 
-<aside><span class="fa-icon">spinner</span></aside>
-
+<aside aria-hidden="true"><span class="fa-icon">spinner</span></aside>
 <script src="js/theme.js" type="module"></script>
 <script src="js/fa-icons.js" type="module"></script>
 <script src="js/i18n.js" type="module"></script>
 <script src="js/popup.js" type="module"></script>
-
 </body>
 </html>

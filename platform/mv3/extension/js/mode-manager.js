@@ -25,13 +25,12 @@ import {
     broadcastMessage,
     hostnamesFromMatches,
     isDescendantHostnameOfIter,
-    toBroaderHostname,
 } from './utils.js';
 
 import {
     browser,
     localRead, localRemove, localWrite,
-    sessionRead, sessionWrite,
+    sessionWrite,
 } from './ext.js';
 
 import {
@@ -63,6 +62,20 @@ export const defaultFilteringModes = {
     complete: [],
 };
 
+const MODE_KEY = 'filteringModeDetails';
+const RESTORE_KEY = 'filteringModeRestoreLevels';
+const TRANSACTION_KEY = 'filteringModeTransaction';
+let pendingModeMutation = Promise.resolve();
+let loadingModes;
+let recoveryNeeded = false;
+let restoreLevels = {};
+
+function enqueueModeMutation(task) {
+    const result = pendingModeMutation.then(task);
+    pendingModeMutation = result.catch(( ) => { });
+    return result;
+}
+
 /******************************************************************************/
 
 const pruneDescendantHostnamesFromSet = (hostname, hnSet) => {
@@ -73,17 +86,6 @@ const pruneDescendantHostnamesFromSet = (hostname, hnSet) => {
         hnSet.delete(hn);
     }
 };
-
-const pruneHostnameFromSet = (hostname, hnSet) => {
-    let hn = hostname;
-    for (;;) {
-        hnSet.delete(hn);
-        hn = toBroaderHostname(hn);
-        if ( hn === '*' ) { break; }
-    }
-};
-
-/******************************************************************************/
 
 const serializeModeDetails = details => {
     return {
@@ -176,26 +178,43 @@ function applyFilteringMode(filteringModes, hostname, afterLevel) {
     const beforeLevel = lookupFilteringMode(filteringModes, hostname);
     if ( afterLevel === beforeLevel ) { return afterLevel; }
     const { none, basic, optimal, complete } = filteringModes;
-    switch ( beforeLevel ) {
-    case MODE_NONE:
-        pruneHostnameFromSet(hostname, none);
-        break;
-    case MODE_BASIC:
-        pruneHostnameFromSet(hostname, basic);
-        break;
-    case MODE_OPTIMAL:
-        pruneHostnameFromSet(hostname, optimal);
-        break;
-    case MODE_COMPLETE:
-        pruneHostnameFromSet(hostname, complete);
-        break;
+    // DNR trusted-site and cosmetic/scriptlet registration scopes do not all
+    // support positive child exceptions. Never remove an inherited parent to
+    // emulate one: that changes sibling sites. A child can still turn off or
+    // return to the parent's level; other levels require editing the parent.
+    const scopes = [ none, basic, optimal, complete ];
+    if ( afterLevel === MODE_NONE && defaultLevel === MODE_NONE &&
+        scopes.slice(1).some(hostnames =>
+            isDescendantHostnameOfIter(hostname, hostnames)
+        ) ) {
+        const error = new Error('Turn off filtering on the parent site first');
+        error.code = 'ERR_FILTERING_MODE_PARENT_SCOPE';
+        throw error;
     }
+    if ( afterLevel !== MODE_NONE ) {
+        for ( const [ level, hostnames ] of scopes.entries() ) {
+            if ( level === afterLevel ) { continue; }
+            const parents = [ ...hostnames ].filter(hn =>
+                hn !== hostname && hn !== 'all-urls'
+            );
+            if ( isDescendantHostnameOfIter(hostname, parents) === false ) {
+                continue;
+            }
+            const error = new Error(level === MODE_NONE
+                ? 'Enable filtering on the trusted parent site first'
+                : 'Change filtering on the parent site first');
+            error.code = 'ERR_FILTERING_MODE_PARENT_SCOPE';
+            throw error;
+        }
+    }
+    scopes[beforeLevel].delete(hostname);
     if ( afterLevel !== defaultLevel ) {
         switch ( afterLevel ) {
         case MODE_NONE:
             if ( isDescendantHostnameOfIter(hostname, none) === false ) {
                 filteringModes.none.add(hostname);
-                pruneDescendantHostnamesFromSet(hostname, none);
+                // Preserve independently trusted descendants so turning the
+                // parent back on does not enable filtering on those children.
             }
             break;
         case MODE_BASIC:
@@ -223,27 +242,15 @@ function applyFilteringMode(filteringModes, hostname, afterLevel) {
 
 /******************************************************************************/
 
-export async function readFilteringModeDetails(bypassCache = false) {
-    if ( bypassCache === false ) {
-        if ( readFilteringModeDetails.cache ) {
-            return readFilteringModeDetails.cache;
-        }
-        const sessionModes = await sessionRead('filteringModeDetails');
-        if ( sessionModes instanceof Object ) {
-            readFilteringModeDetails.cache = unserializeModeDetails(sessionModes);
-            return readFilteringModeDetails.cache;
-        }
-    }
-    let [
-        userModes = structuredClone(defaultFilteringModes),
+async function effectiveModeDetails(details) {
+    const [
         adminDefaultFiltering,
         adminNoFiltering,
     ] = await Promise.all([
-        localRead('filteringModeDetails'),
         adminReadEx('defaultFiltering'),
         adminReadEx('noFiltering'),
     ]);
-    userModes = unserializeModeDetails(userModes);
+    const userModes = unserializeModeDetails(details);
     if ( adminDefaultFiltering !== undefined ) {
         const modefromName = {
             none: MODE_NONE,
@@ -268,31 +275,134 @@ export async function readFilteringModeDetails(bypassCache = false) {
             }
         }
     }
-    await filteringModesToDNR(userModes);
-    sessionWrite('filteringModeDetails', serializeModeDetails(userModes));
-    readFilteringModeDetails.cache = userModes;
     return userModes;
 }
 
 /******************************************************************************/
 
-async function writeFilteringModeDetails(afterDetails) {
-    await filteringModesToDNR(afterDetails);
+function normalizeRestoreLevels(value) {
+    if ( value === undefined ) { return {}; }
+    if ( value === null || typeof value !== 'object' || Array.isArray(value) ) {
+        throw new Error('Invalid filtering-mode restore settings');
+    }
+    return Object.fromEntries(Object.entries(value).filter(([ hostname, level ]) =>
+        hostname !== '' && Number.isInteger(level) && level >= 1 && level <= 3
+    ));
+}
+
+async function readPersistedModes() {
+    // Unlike optional settings, failure to read trusted sites must not fall
+    // back to the default blocking mode. Session data is only a cache.
+    return browser.storage.local.get([ MODE_KEY, RESTORE_KEY, TRANSACTION_KEY ]);
+}
+
+async function restoreModeTransaction(transaction) {
+    if ( transaction?.version !== 1 ||
+        transaction.previousModes instanceof Object === false ) {
+        throw new Error('Invalid pending filtering-mode transaction');
+    }
+    const modes = await effectiveModeDetails(transaction.previousModes);
+    const levels = normalizeRestoreLevels(transaction.previousRestoreLevels);
+    const errors = [];
+    for ( const task of [
+        ( ) => filteringModesToDNR(modes),
+        ( ) => localWrite(MODE_KEY, transaction.previousModes),
+        ( ) => localWrite(RESTORE_KEY, levels),
+        ( ) => sessionWrite(MODE_KEY, serializeModeDetails(modes)),
+    ] ) {
+        try { await task(); }
+        catch ( reason ) { errors.push(`${reason}`); }
+    }
+    if ( errors.length !== 0 ) {
+        throw new Error(`Filtering-mode rollback failed: ${errors.join('; ')}`);
+    }
+    await localRemove(TRANSACTION_KEY);
+    restoreLevels = levels;
+    readFilteringModeDetails.cache = modes;
+    recoveryNeeded = false;
+    return modes;
+}
+
+async function loadFilteringModes() {
+    const stored = await readPersistedModes();
+    if ( stored[TRANSACTION_KEY] !== undefined ) {
+        recoveryNeeded = true;
+        return restoreModeTransaction(stored[TRANSACTION_KEY]);
+    }
+    const modes = await effectiveModeDetails(
+        stored[MODE_KEY] ?? defaultFilteringModes
+    );
+    const levels = normalizeRestoreLevels(stored[RESTORE_KEY]);
+    await filteringModesToDNR(modes);
+    await sessionWrite(MODE_KEY, serializeModeDetails(modes));
+    restoreLevels = levels;
+    readFilteringModeDetails.cache = modes;
+    recoveryNeeded = false;
+    return modes;
+}
+
+export function readFilteringModeDetails(bypassCache = false) {
+    if ( bypassCache ) {
+        return enqueueModeMutation(( ) => loadFilteringModes());
+    }
+    if ( readFilteringModeDetails.cache && recoveryNeeded === false ) {
+        return Promise.resolve(readFilteringModeDetails.cache);
+    }
+    if ( loadingModes !== undefined ) { return loadingModes; }
+    loadingModes = loadFilteringModes().finally(( ) => {
+        loadingModes = undefined;
+    });
+    return loadingModes;
+}
+
+async function writeFilteringModeDetails(
+    afterDetails, afterRestore = restoreLevels, restoreHostname
+) {
+    const stored = await readPersistedModes();
+    if ( stored[TRANSACTION_KEY] !== undefined ) {
+        throw new Error('Filtering-mode transaction recovery is required');
+    }
+    const before = {
+        version: 1,
+        previousModes: stored[MODE_KEY] ?? structuredClone(defaultFilteringModes),
+        previousRestoreLevels: normalizeRestoreLevels(stored[RESTORE_KEY]),
+    };
     const data = serializeModeDetails(afterDetails);
-    localWrite('filteringModeDetails', data);
-    sessionWrite('filteringModeDetails', data);
-    readFilteringModeDetails.cache = unserializeModeDetails(data);
-    return Promise.all([
-        getDefaultFilteringMode(),
-        hasBroadHostPermissions(),
-        localWrite('filteringModeDetails', data),
-        sessionWrite('filteringModeDetails', data),
-    ]).then(results => {
-        broadcastMessage({
-            defaultFilteringMode: results[0],
-            hasOmnipotence: results[1],
-            filteringModeDetails: readFilteringModeDetails.cache,
-        });
+    const effectiveModes = await effectiveModeDetails(data);
+    if ( typeof restoreHostname === 'string' &&
+        lookupFilteringMode(effectiveModes, restoreHostname) > MODE_NONE ) {
+        afterRestore = { ...afterRestore };
+        delete afterRestore[restoreHostname];
+    }
+    const hasOmnipotence = await hasBroadHostPermissions();
+    // An existing journal always means "restore the previous committed mode".
+    // Its removal is the commit point, including after a worker restart.
+    try { await localWrite(TRANSACTION_KEY, before); }
+    catch ( reason ) {
+        recoveryNeeded = true;
+        throw reason;
+    }
+    try {
+        await filteringModesToDNR(effectiveModes);
+        await localWrite(MODE_KEY, data);
+        await localWrite(RESTORE_KEY, afterRestore);
+        await sessionWrite(MODE_KEY, serializeModeDetails(effectiveModes));
+        await localRemove(TRANSACTION_KEY);
+    } catch ( reason ) {
+        try { await restoreModeTransaction(before); }
+        catch ( rollbackReason ) {
+            recoveryNeeded = true;
+            throw new Error(`${reason}; ${rollbackReason}`);
+        }
+        throw reason;
+    }
+    restoreLevels = afterRestore;
+    readFilteringModeDetails.cache = effectiveModes;
+    recoveryNeeded = false;
+    broadcastMessage({
+        defaultFilteringMode: lookupFilteringMode(effectiveModes, 'all-urls'),
+        hasOmnipotence,
+        filteringModeDetails: effectiveModes,
     });
 }
 
@@ -309,9 +419,20 @@ export async function getFilteringModeDetails(serializable = false) {
     return serializable ? serializeModeDetails(out) : out;
 }
 
-export async function setFilteringModeDetails(details) {
-    await localWrite('filteringModeDetails', serializeModeDetails(details));
-    await readFilteringModeDetails(true);
+export async function getFilteringModeRestoreLevels() {
+    await readFilteringModeDetails();
+    return { ...restoreLevels };
+}
+
+export async function setFilteringModeDetails(details, restoredLevels) {
+    const modes = unserializeModeDetails(serializeModeDetails(details));
+    const levels = restoredLevels === undefined
+        ? undefined
+        : normalizeRestoreLevels(restoredLevels);
+    return enqueueModeMutation(async ( ) => {
+        await readFilteringModeDetails();
+        await writeFilteringModeDetails(modes, levels);
+    });
 }
 
 /******************************************************************************/
@@ -321,11 +442,37 @@ export async function getFilteringMode(hostname) {
     return lookupFilteringMode(filteringModes, hostname);
 }
 
-export async function setFilteringMode(hostname, afterLevel) {
+async function setFilteringModeNow(hostname, afterLevel) {
+    if ( typeof hostname !== 'string' || hostname === '' ||
+        Number.isInteger(afterLevel) === false || afterLevel < 0 || afterLevel > 3 ) {
+        throw new Error('Invalid filtering mode or hostname');
+    }
     const filteringModes = await getFilteringModeDetails();
+    const beforeLevel = lookupFilteringMode(filteringModes, hostname);
     const level = applyFilteringMode(filteringModes, hostname, afterLevel);
-    await writeFilteringModeDetails(filteringModes);
-    return level;
+    if ( beforeLevel === level ) { return level; }
+    const levels = { ...restoreLevels };
+    if ( beforeLevel > MODE_NONE && level === MODE_NONE ) {
+        Object.defineProperty(levels, hostname, {
+            value: beforeLevel, enumerable: true, configurable: true, writable: true,
+        });
+    }
+    await writeFilteringModeDetails(filteringModes, levels, hostname);
+    return lookupFilteringMode(readFilteringModeDetails.cache, hostname);
+}
+
+export function setFilteringMode(hostname, afterLevel) {
+    return enqueueModeMutation(( ) => setFilteringModeNow(hostname, afterLevel));
+}
+
+export async function getFilteringModeRestoreLevel(hostname) {
+    const modes = await readFilteringModeDetails();
+    const current = lookupFilteringMode(modes, hostname);
+    if ( current > MODE_NONE ) { return current; }
+    const previous = Object.hasOwn(restoreLevels, hostname)
+        ? restoreLevels[hostname]
+        : undefined;
+    return previous ?? Math.max(lookupFilteringMode(modes, 'all-urls'), MODE_BASIC);
 }
 
 /******************************************************************************/
@@ -353,7 +500,7 @@ export async function persistHostPermissions(iter) {
 
 /******************************************************************************/
 
-export async function syncWithBrowserPermissions() {
+async function syncWithBrowserPermissionsNow() {
     const [
         beforePermissions,
         afterPermissions,
@@ -371,10 +518,10 @@ export async function syncWithBrowserPermissions() {
         hasBroadHostPermissions !== rulesetConfig.hasBroadHostPermissions;
     let modified = false;
     if ( beforeMode > MODE_BASIC && hasBroadHostPermissions === false ) {
-        await setDefaultFilteringMode(MODE_BASIC);
+        await setFilteringModeNow('all-urls', MODE_BASIC);
         modified = true;
     } else if ( beforeMode === MODE_BASIC && hasBroadHostPermissions && broadHostPermissionsToggled ) {
-        await setDefaultFilteringMode(MODE_OPTIMAL);
+        await setFilteringModeNow('all-urls', MODE_OPTIMAL);
         modified = true;
     }
     if ( broadHostPermissionsToggled ) {
@@ -404,6 +551,10 @@ export async function syncWithBrowserPermissions() {
         }
     }
     return modified;
+}
+
+export function syncWithBrowserPermissions() {
+    return enqueueModeMutation(( ) => syncWithBrowserPermissionsNow());
 }
 
 /******************************************************************************/

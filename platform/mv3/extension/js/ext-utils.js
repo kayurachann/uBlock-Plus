@@ -43,8 +43,10 @@ export async function hasBroadHostPermissions() {
 
 export async function gotoURL(url, type) {
     const pageURL = new URL(url, runtime.getURL('/'));
+    const queryURL = new URL(pageURL);
+    queryURL.hash = '';
     const tabs = await browser.tabs.query({
-        url: pageURL.href,
+        url: queryURL.href,
         windowType: type !== 'popup' ? 'normal' : 'popup'
     });
 
@@ -52,7 +54,10 @@ export async function gotoURL(url, type) {
         const { windowId, id } = tabs[0];
         return Promise.all([
             browser.windows.update(windowId, { focused: true }),
-            browser.tabs.update(id, { active: true }),
+            browser.tabs.update(id, {
+                active: true,
+                ...(tabs[0].url !== pageURL.href ? { url: pageURL.href } : {}),
+            }),
         ]);
     }
 

@@ -41,19 +41,34 @@ dom.body.dataset.platform = webextFlavor;
 
 dom.attr('a', 'target', '_blank');
 
-dom.on('#dashboard-nav', 'click', '.tabButton', ev => {
-    const { pane } = ev.target.dataset;
+function selectPane(pane) {
+    const knownPane = Array.from(document.querySelectorAll('.tabButton[data-pane]'))
+        .some(button => button.dataset.pane === pane);
+    if ( knownPane === false ) { return false; }
     dom.body.dataset.pane = pane;
     if ( pane === 'settings' ) {
         localRemove('dashboard.activePane');
     } else {
         localWrite('dashboard.activePane', pane);
     }
+    return true;
+}
+
+function selectHashPane() {
+    return selectPane(self.location.hash.slice(1));
+}
+
+dom.on('#dashboard-nav', 'click', '.tabButton', ev => {
+    const pane = ev.target.closest('.tabButton')?.dataset.pane;
+    if ( selectPane(pane) ) { self.location.hash = pane; }
 });
 
+self.addEventListener('hashchange', selectHashPane);
+
 localRead('dashboard.activePane').then(pane => {
+    if ( selectHashPane() ) { return; }
     if ( typeof pane !== 'string' ) { return; }
-    dom.body.dataset.pane = pane;
+    selectPane(pane);
 });
 
 // Update troubleshooting on-demand

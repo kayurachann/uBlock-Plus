@@ -22,6 +22,7 @@
 */
 
 import {
+    browser,
     localRead, localRemove, localWrite,
     runtime,
     sendMessage,
@@ -93,6 +94,10 @@ export async function backupToObject(currentConfig) {
         out.rulesets = customRulesets;
     }
     out.filteringModes = await sendMessage({ what: 'getFilteringModeDetails' });
+    const restoreLevels = await sendMessage({ what: 'getFilteringModeRestoreLevels' });
+    if ( Object.keys(restoreLevels).length !== 0 ) {
+        out.filteringModeRestoreLevels = restoreLevels;
+    }
     const customFilters = await sendMessage({ what: 'getAllCustomFilters' });
     if ( customFilters.length !== 0 ) {
         out.customFilters = customFilters;
@@ -263,6 +268,7 @@ export async function restoreFromObject(targetConfig) {
     await sendMessage({
         what: 'setFilteringModeDetails',
         modes: targetConfig.filteringModes ?? defaultConfig.filteringModes,
+        restoreLevels: targetConfig.filteringModeRestoreLevels ?? {},
     });
 
     await sendMessage({ what: 'removeAllCustomFilters', hostname: '*' });
@@ -301,11 +307,25 @@ export async function restoreFromObject(targetConfig) {
     });
 
     const dnrRules = targetConfig.dnrRules ?? [];
+    const previousDNRRules = (await browser.storage.local.get('userDnrRules')).userDnrRules;
     if ( dnrRules.length !== 0 ) {
         await localWrite('userDnrRules', dnrRules.join('\n'));
     } else {
         await localRemove('userDnrRules');
     }
-    await sendMessage({ what: 'updateUserDnrRules' });
+    const result = await sendMessage({ what: 'updateUserDnrRules' });
+    if ( result?.fatalError ) {
+        // DNR rejects an invalid replacement atomically. Keep the previous
+        // rule text paired with that still-active rule set and report failure.
+        // A transport rejection is ambiguous (the update may have committed),
+        // so it must not roll back only the saved text of a possibly active set.
+        const reason = new Error(`Unable to restore DNR rules: ${result.fatalError}`);
+        if ( previousDNRRules === undefined ) {
+            await localRemove('userDnrRules');
+        } else {
+            await localWrite('userDnrRules', previousDNRRules);
+        }
+        throw reason;
+    }
 
 }

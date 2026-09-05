@@ -223,7 +223,7 @@ const popupCss = await fs.readFile(
     'utf8'
 );
 for ( const marker of [
-    'height: 600px;',
+    'max-height: 600px;',
     'overflow-y: auto;',
     'scrollbar-gutter: stable;',
 ] ) {
@@ -298,6 +298,7 @@ for ( const relativePath of [
     'platform/mv3/extension/js/compiled-filters.js',
     'platform/mv3/extension/js/compiled-cache.js',
     'platform/mv3/extension/js/compiled-storage.js',
+    'platform/mv3/extension/js/offscreen-storage.js',
     'platform/mv3/extension/js/filter-store.js',
     'platform/mv3/extension/js/filter-store-model.js',
     'platform/mv3/extension/js/imported-lists.js',
