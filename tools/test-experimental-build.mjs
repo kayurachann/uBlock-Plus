@@ -1,6 +1,6 @@
 // uBlock Plus+ — GPL-3.0-or-later. See LICENSE.txt.
 
-import { access, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
 import {
     experimentalExtensionId,
     experimentalIdentityErrors,
@@ -79,13 +79,15 @@ try {
         const launcher = path.join(projectRoot, 'tools/start-experimental-chrome.ps1');
         const command = [ '-NoProfile', '-NonInteractive', '-File', launcher,
             '-ExtensionDirectory', fixture, '-ChromePath', chromeFixture, '-PrintCommand' ];
-        const expectedProfile = path.join(process.env.LOCALAPPDATA,
+        const expectedProfile = path.join(await realpath(process.env.LOCALAPPDATA),
             'uBlockPlus', 'ExperimentalChrome', experimentalExtensionId);
         const existed = await access(expectedProfile).then(() => true, () => false);
         const launch = spawnSync('pwsh', command, { encoding: 'utf8' });
         assert.equal(launch.status, 0, launch.stderr);
         const specification = JSON.parse(launch.stdout);
-        assert.equal(specification.executable, chromeFixture);
+        // CI can expose TEMP via an 8.3 alias (RUNNER~1) which .NET expands.
+        // Verify that the command targets the same file, not its path spelling.
+        assert.equal(await realpath(specification.executable), await realpath(chromeFixture));
         assert.equal(specification.extensionId, experimentalExtensionId);
         assert.equal(specification.profileDirectory, expectedProfile);
         assert.deepEqual(specification.arguments, [
