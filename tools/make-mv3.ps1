@@ -41,6 +41,11 @@ declarativeNetRequestFeedback is enabled for local development builds.
 .PARAMETER Before
 Path containing a previous chromium build whose rule IDs should be salvaged.
 
+.PARAMETER ExperimentalWebRequest
+Builds the separate experimental synchronous webRequest firewall supplement.
+Chrome must grant webRequestBlocking through policy or a launch allowlist.
+The normal Chromium package and its permissions are not changed.
+
 .EXAMPLE
 pwsh -File tools/make-mv3.ps1
 
@@ -57,6 +62,8 @@ param(
     [string] $Platform = 'chromium',
 
     [switch] $Full,
+
+    [switch] $ExperimentalWebRequest,
 
     [Alias('TagName')]
     [string] $Version = '',
@@ -245,7 +252,14 @@ function Test-ChromiumExtensionVersion {
 
 $projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $buildRoot = Join-Path $projectRoot 'dist/build'
-$outputDirectory = Join-Path $buildRoot "uBlockPlus.$Platform"
+$editionSuffix = if ( $ExperimentalWebRequest ) { '.experimental' } else { '' }
+$outputDirectory = [IO.Path]::GetFullPath((Join-Path $buildRoot "uBlockPlus$editionSuffix.$Platform"))
+if ( $outputDirectory.StartsWith(
+    [IO.Path]::GetFullPath($buildRoot) + [IO.Path]::DirectorySeparatorChar,
+    [StringComparison]::OrdinalIgnoreCase
+) -eq $false ) {
+    throw 'The build output directory escaped dist/build.'
+}
 $nodeCommand = @(Get-Command node -CommandType Application `
     -ErrorAction SilentlyContinue)[0]
 if ( $null -eq $nodeCommand ) {
@@ -253,6 +267,22 @@ if ( $null -eq $nodeCommand ) {
 }
 $node = [string] $nodeCommand.Source
 $temporaryDirectories = [Collections.Generic.List[string]]::new()
+
+$experimentalMetadata = $null
+if ( $ExperimentalWebRequest ) {
+    $metadataPath = Join-Path $projectRoot 'platform/mv3/chromium-experimental/metadata.json'
+    Assert-Path $metadataPath
+    $identityCheck = @'
+import fs from 'node:fs';
+import { experimentalIdentityErrors } from './tools/experimental-build-config.mjs';
+const errors = experimentalIdentityErrors(JSON.parse(fs.readFileSync(process.argv[1], 'utf8')));
+if ( errors.length ) { throw new Error(errors.join('\n')); }
+'@
+    Invoke-NativeCommand $node @(
+        '--input-type=module', '--eval', $identityCheck, $metadataPath
+    ) $projectRoot
+    $experimentalMetadata = Get-Content -Raw -LiteralPath $metadataPath | ConvertFrom-Json
+}
 
 if ( $Version -ne '' -and (Test-ChromiumExtensionVersion $Version) -eq $false ) {
     throw "Invalid Chromium extension version: $Version"
@@ -538,6 +568,27 @@ try {
             Remove-Item -LiteralPath $debugRules -Recurse -Force
         }
     }
+    if ( $ExperimentalWebRequest ) {
+        # Apply after ruleset generation, which can restore the standard manifest
+        # when retrying. The baseline DNR engine remains in this separate build.
+        $manifest.permissions = @(
+            @($manifest.permissions) + @('webRequest', 'webRequestBlocking') |
+                Select-Object -Unique
+        )
+        $manifest.optional_permissions = @(
+            $manifest.optional_permissions | Where-Object { $_ -ne 'webRequest' }
+        )
+        $manifest.name = 'uBlock Plus+ Experimental'
+        $manifest | Add-Member -MemberType NoteProperty -Name key `
+            -Value $experimentalMetadata.publicKey -Force
+        Write-Utf8NoBom (Join-Path $outputDirectory 'experimental-webrequest.json') (
+            ($experimentalMetadata | ConvertTo-Json -Depth 10) + "`n"
+        )
+        Copy-RequiredFile (Join-Path $projectRoot 'tools/start-experimental-chrome.ps1') `
+            (Join-Path $outputDirectory 'start-experimental-chrome.ps1')
+        Copy-RequiredFile (Join-Path $projectRoot 'tools/start-experimental-chrome.cmd') `
+            (Join-Path $outputDirectory 'start-experimental-chrome.cmd')
+    }
     Write-Utf8NoBom $manifestPath (
         ($manifest | ConvertTo-Json -Depth 100) + "`n"
     )
@@ -547,7 +598,11 @@ try {
 
     $createPackage = $Full.IsPresent -or $Version -ne ''
     if ( $createPackage ) {
-        Write-Host '*** uBlock Plus+ MV3: Creating publishable package'
+        if ( $ExperimentalWebRequest ) {
+            Write-Host '*** uBlock Plus+ MV3: Creating experimental package'
+        } else {
+            Write-Host '*** uBlock Plus+ MV3: Creating publishable package'
+        }
         $packageDirectory = New-BuildTempDirectory
         $temporaryDirectories.Add($packageDirectory)
         Copy-TreeContents $outputDirectory $packageDirectory
@@ -556,7 +611,7 @@ try {
             Remove-Item -LiteralPath $logFile -Force
         }
 
-        $packageName = "uBlock-Plus_$packageVersion.$Platform.zip"
+        $packageName = "uBlock-Plus_$packageVersion$editionSuffix.$Platform.zip"
         $packagePath = Join-Path $buildRoot $packageName
         if ( Test-Path -LiteralPath $packagePath ) {
             Remove-Item -LiteralPath $packagePath -Force

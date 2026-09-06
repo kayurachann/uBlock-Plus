@@ -23,6 +23,17 @@ const ACTIVATION = 'test.compiled.pending';
 const STAGING = 'test.compiled.staging';
 const IMPORTED = 'https://filters.example/list.txt';
 
+function mutationMonitor() {
+    return {
+        pending: 0,
+        beginMutation() { this.pending++; },
+        endMutation() {
+            assert.ok(this.pending > 0);
+            this.pending--;
+        },
+    };
+}
+
 function fixture() {
     const values = new Map();
     const events = [];
@@ -313,8 +324,10 @@ let failAdminRulesets = false;
 const initialization = new Promise(resolve => { initialized = resolve; });
 const policyGate = new Promise(resolve => { releasePolicy = resolve; });
 const popupGate = new Promise(resolve => { releasePopup = resolve; });
+const adminSupplement = mutationMonitor();
 const adminContext = vm.createContext({
     pendingFilteringMutation: Promise.resolve(),
+    webRequestFirewall: adminSupplement,
     isFullyInitialized: initialization,
     rulesetConfig: { enabledRulesets: [ 'stock-a' ], popupBlockMode: true, strictBlockMode: true, showBlockedCount: true },
     self: { setTimeout: fn => { adminTimers.push(fn); return adminTimers.length; } },
@@ -354,6 +367,7 @@ policies.change('rulesets', [ '+stock-b' ]);
 policies.change('popupBlockMode', false);
 await runAdminTimer();
 assert.deepEqual(adminEvents, [], 'managed mutation must wait for service-worker initialization before entering the filtering queue');
+assert.equal(adminSupplement.pending, 0);
 initialized();
 await turn();
 assert.equal(adminEvents.includes('rulesets:start'), true);
@@ -362,6 +376,7 @@ policies.change('popupBlockMode', true);
 await runAdminTimer();
 releasePolicy();
 await turn();
+assert.equal(adminSupplement.pending, 2, 'overlapping policy batches hold two supplement suspension leases');
 assert.equal(adminEvents.includes('popup:start:false'), true);
 assert.equal(adminEvents.includes('popup:start:true'), false,
     'a later batch must wait for the first native policy API, not only its storage write');
@@ -386,6 +401,7 @@ failAdminRulesets = false;
 policies.change('strictBlockMode', false);
 await runAdminTimer();
 assert.equal(adminEvents.includes('strict:false'), true, 'one rejected batch cannot poison later managed changes');
+assert.equal(adminSupplement.pending, 0, 'successful and rejected managed mutations release their leases');
 
 // Execute the real message case bodies and worker queue together. A global
 // popup toggle used to re-register the old active generation while a new
@@ -404,8 +420,10 @@ let rejectStrict = false;
 const activationGate = new Promise(resolve => { releaseActivation = resolve; });
 const strictGate = new Promise(resolve => { releaseStrict = resolve; });
 const settingState = { active: 'old', registered: 'old', strict: true, excluded: [] };
+const settingsSupplement = mutationMonitor();
 const settings = vm.createContext({
     pendingFilteringMutation: Promise.resolve(),
+    webRequestFirewall: settingsSupplement,
     rulesetConfig: { popupBlockMode: true, strictBlockMode: true },
     setPopupBlockMode: async ( ) => { settingEvents.push('popup-state'); },
     registerContentScripts: async ( ) => {
@@ -444,6 +462,7 @@ const exclusion = settings.dispatchSetting({ what: 'excludeFromStrictBlock', hos
 await turn();
 assert.deepEqual(settingEvents, [ 'new-registration' ],
     'all three settings must wait for the whole filtering transaction, including native activation and pointer commit');
+assert.equal(settingsSupplement.pending, 4, 'all enqueued mutations suspend the supplement immediately');
 releaseActivation();
 await activating;
 await popupSetting;
@@ -451,6 +470,7 @@ await turn();
 assert.equal(settingState.registered, 'new', 'popup re-registration must use the committed new generation');
 assert.equal(settingEvents.includes('strict:start'), true);
 assert.equal(settingEvents.includes('exclude'), false, 'strict exception mutation must wait for the native strict update');
+assert.equal(settingsSupplement.pending, 2, 'completion of earlier settings cannot release later suspension leases');
 releaseStrict();
 await Promise.all([ strictSetting, exclusion ]);
 assert.equal(settingState.strict, false, 'the later setting must survive an earlier transaction rollback');
@@ -461,5 +481,6 @@ await assert.rejects(settings.dispatchSetting({ what: 'setStrictBlockMode', stat
 await settings.dispatchSetting({ what: 'excludeFromStrictBlock', hostname: 'after-error.example', permanent: false });
 assert.equal(settingState.excluded.at(-1).hostname, 'after-error.example',
     'rejected native settings cannot poison later queued changes');
+assert.equal(settingsSupplement.pending, 0);
 
 console.log('Cross-source background lifecycle: stock-only activation, transactions, rollback/recovery, startup ordering, managed policies and settings serialization passed.');

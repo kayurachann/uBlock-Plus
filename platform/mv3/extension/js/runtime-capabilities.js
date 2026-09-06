@@ -22,6 +22,7 @@
 import { browser, runtime } from './ext.js';
 import { classifyRuntimeCapabilities } from './runtime-capabilities-core.js';
 import { dnr } from './ext-compat.js';
+import { getWebRequestFirewallStatus } from './webrequest-firewall.js';
 
 /******************************************************************************/
 
@@ -91,6 +92,7 @@ export async function getRuntimeCapabilities() {
         manifestPermissions: manifest.permissions,
         optionalPermissions: manifest.optional_permissions,
         grantedPermissions,
+        webRequestFirewall: getWebRequestFirewallStatus(),
         api: {
             declarativeNetRequest:
                 typeof dnr.updateDynamicRules === 'function',

@@ -4,6 +4,8 @@
 
 Ký hiệu: **Có** = bản hiện tại có đường triển khai hữu ích; **Một phần** = semantics/quota khác MV2; **Không** = chưa có trong bản hiện tại; **R&D** = hướng mở rộng cần artifact và đánh giá riêng. “Không” không khẳng định mọi API hoặc cách triển khai khác đều bất khả thi.
 
+Gói [Experimental WebRequest](EXPERIMENTAL-WEBREQUEST.md) hiện có **lớp bổ sung chặn firewall đồng bộ**, với launcher/profile riêng và kiểm tra quyền thực cấp. Nó dùng cùng quy tắc firewall, giữ DNR/Off/allow/noop và không tăng quota hay khôi phục toàn bộ engine static uBO. Bảng dưới mô tả bản DNR tiêu chuẩn trừ khi ghi rõ khác.
+
 Theo [Chrome DNR API](https://developer.chrome.com/docs/extensions/reference/api/declarativeNetRequest), static ruleset được đóng gói và có ngân sách riêng với dynamic/session. Từ Chrome 120/121, giới hạn **số rule** dynamic và session được tách, nhưng [Chromium CL ngày 2023-10-18](https://chromium.googlesource.com/chromium/src/+/eab7fc99e59b69e929d02e43bdcf8bbd75333869%5E%21/) xác nhận quota **regex dynamic + session vẫn dùng chung một pool tối đa 1.000**; enabled static rulesets có aggregate pool tối đa 1.000 regex riêng. Con số cụ thể thay đổi theo browser/version, nên đây là mô hình budget chứ không phải bảo đảm mọi máy có cùng capacity.
 
 | Capability | uBO MV2 | Power Edition MV3 | Tầng tùy chọn tương lai | Ghi chú trung thực |
@@ -33,7 +35,7 @@ Theo [Chrome DNR API](https://developer.chrome.com/docs/extensions/reference/api
 - quota static/dynamic/session/regex do Chrome áp đặt; static không thể được “mượn” để tăng pool regex dynamic + session;
 - extension service worker thường bị dừng sau idle và có thể bị chấm dứt ngoài dự kiến; state quan trọng không được chỉ giữ trong global variables;
 - API DNR chỉ biểu diễn được một tập con semantics của engine MV2;
-- extension MV3 bình thường không được dùng blocking `webRequest`; capability policy-installed chỉ có hiệu lực khi trình duyệt thực sự quản lý extension bằng enterprise policy;
+- extension MV3 bình thường không được dùng blocking `webRequest`; Chrome hỗ trợ chính thức quyền này cho policy-installed. Gói thử nghiệm còn kiểm chứng tham số allowlist trên Chrome 152, nhưng quyền đó không làm bản cài thành policy-installed và không mở toàn bộ API;
 - JavaScript/Wasm từ xa không được thực thi. Filter/catalog tải qua HTTPS chỉ là dữ liệu hostile đi qua parser hữu hạn; không được biến thành remote scriptlet/module.
 
 Quota thay đổi theo phiên bản Chrome, vì vậy compiler phải đọc capability/quota khi có API và CI phải kiểm tra trên browser được hỗ trợ. Nguồn tham khảo: [Chrome DNR API](https://developer.chrome.com/docs/extensions/reference/api/declarativeNetRequest), [blocking webRequest migration](https://developer.chrome.com/docs/extensions/develop/migrate/blocking-web-requests), [service-worker lifecycle](https://developer.chrome.com/docs/extensions/develop/concepts/service-workers/lifecycle), [MV3 remote hosted code](https://developer.chrome.com/docs/extensions/develop/migrate/remote-hosted-code), [uAssets #30545 về regex MV3](https://github.com/uBlockOrigin/uAssets/issues/30545) và [COMMUNITY-RESEARCH.md](COMMUNITY-RESEARCH.md).

@@ -46,6 +46,22 @@ export function classifyRuntimeCapabilities(input = {}) {
     const policyPermissionsGranted =
         grantedPermissions.has('webRequest') &&
         grantedPermissions.has('webRequestBlocking');
+    const webRequestFirewall = input.webRequestFirewall instanceof Object
+        ? { ...input.webRequestFirewall }
+        : { implemented: false, declared: false, ready: false, state: 'not-configured' };
+    const blockingPermission = policyPermissionsDeclared &&
+        policyPermissionsGranted && api.webRequest === true;
+    const webRequestFirewallActive = blockingPermission &&
+        webRequestFirewall.implemented === true &&
+        webRequestFirewall.listenerRegistered === true &&
+        webRequestFirewall.ready === true && webRequestFirewall.state === 'active';
+    // A registration can silently succeed without Chrome granting blocking.
+    // Never report a stale snapshot as active after a permission loss.
+    if ( webRequestFirewall.declared && blockingPermission === false ) {
+        webRequestFirewall.ready = false;
+        webRequestFirewall.permissionGranted = false;
+        webRequestFirewall.state = 'permission-required';
+    }
     const managedWebRequestEligible =
         managedInstall &&
         policyPermissionsDeclared &&
@@ -64,16 +80,24 @@ export function classifyRuntimeCapabilities(input = {}) {
     if ( managedWebRequestEligible ) {
         eligibleNetworkEngines.push('managed-webrequest');
     }
+    if ( blockingPermission && webRequestFirewall.implemented === true ) {
+        eligibleNetworkEngines.push('webrequest-firewall');
+    }
 
     return {
-        productEdition: 'power',
+        productEdition: policyPermissionsDeclared ? 'experimental-webrequest' : 'power',
         installType,
         managedInstall,
-        activeNetworkEngine: dnrAvailable ? 'dnr' : 'unavailable',
+        activeNetworkEngine: dnrAvailable
+            ? webRequestFirewallActive ? 'dnr+webrequest-firewall' : 'dnr'
+            : 'unavailable',
         eligibleNetworkEngines,
         managedWebRequestEligible,
         // Eligibility describes browser policy, not an implemented alternate engine.
         managedWebRequestImplemented: false,
+        webRequestBlockingGranted: blockingPermission,
+        webRequestFirewallActive: dnrAvailable && webRequestFirewallActive,
+        webRequestFirewall,
         networkObservation: observationDeclared && observationGranted && api.webRequest === true,
         networkObservationRequestable: optionalPermissions.has('webRequest'),
         networkObservationPermissionGranted: observationGranted,

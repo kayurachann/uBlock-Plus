@@ -26,6 +26,7 @@ This directory contains the user, architecture, security and community documenta
 | --- | --- |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | MV3 pipeline, compiled popup routes, durable state, memory profiles and capability layers. |
 | [FEATURE-MATRIX.md](FEATURE-MATRIX.md) | Honest comparison between original MV2 behavior and current MV3 support. |
+| [EXPERIMENTAL-WEBREQUEST.md](EXPERIMENTAL-WEBREQUEST.md) | Optional synchronous firewall, separate Chrome launcher/profile, actual permission detection and DNR fallback. |
 | [BRANDING.md](BRANDING.md) | Yellow-plus logo, source SVG, icon states and rendering. |
 | [USERSCRIPTS-AND-MV3-2026-09-06.md](USERSCRIPTS-AND-MV3-2026-09-06.md) | Userscript boundaries, managed-engine research, upstream issues and new regression evidence. |
 | [MV3-CAPABILITY-AUDIT-2026-09-06.md](MV3-CAPABILITY-AUDIT-2026-09-06.md) | Vietnamese audit against full uBlock Origin, reproduced defects and improvements informed by AdGuard/Brave. |

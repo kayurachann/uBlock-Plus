@@ -34,6 +34,15 @@ Validate an assembled extension with:
 node tools/validate-mv3.mjs dist/build/uBlockPlus.chromium
 ```
 
+## Optional Experimental WebRequest package (Windows)
+
+```powershell
+.\tools\make-mv3.ps1 -Platform chromium -Version 1.0.0 -ExperimentalWebRequest
+node tools/validate-mv3.mjs dist/build/uBlockPlus.experimental.chromium --release --experimental-webrequest
+```
+
+The separate `uBlockPlus.experimental.chromium` output and `uBlock-Plus_1.0.0.experimental.chromium.zip` include a dedicated-profile Chrome launcher. They supplement DNR with synchronous firewall blocking when the browser grants `webRequestBlocking`; they do not replace the complete static engine or remove quotas. See the [setup and fallback guide](https://github.com/kayurachann/uBlock-Plus/blob/main/docs/EXPERIMENTAL-WEBREQUEST.md). The standard build never requests the blocking permission.
+
 The build compiles supported uBO/ABP network filters into DNR rules and prepares declarative cosmetic/scriptlet resources. Filter lists are live external inputs, the cache contains a generated secret, and development versions can be date-generated; independent builds are therefore not expected to be byte-for-byte identical.
 
 This is an independent fork. See the project [README](https://github.com/kayurachann/uBlock-Plus#readme), [compatibility matrix](https://github.com/kayurachann/uBlock-Plus/blob/main/docs/FEATURE-MATRIX.md) and [attribution notice](https://github.com/kayurachann/uBlock-Plus/blob/main/NOTICE.md).

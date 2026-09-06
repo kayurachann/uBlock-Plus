@@ -24,7 +24,8 @@ The extension may open GitHub or filter-list support pages when the user explici
 
 - `declarativeNetRequest`: blocks, allows, redirects, or modifies requests using Chrome's declarative engine.
 - `declarativeNetRequestFeedback`: native matched-rule diagnostics when Chrome and the installation type support it. The legacy developer buffer is limited to 256 events while Developer mode is enabled; the separate opt-in logger has its own 512-record capture lifecycle. Neither is transmitted by the project.
-- Optional `webRequest`: requested only when the user clicks **Start capture** in the logger. It observes requests for explicitly captured tabs; it does not grant synchronous request blocking. Refusing permission leaves the other available diagnostic sources usable. Observers are removed when capture stops.
+- Optional `webRequest` in the standard edition: requested only when the user clicks **Start capture** in the logger. It observes requests for explicitly captured tabs; it does not grant synchronous request blocking. Refusing permission leaves the other available diagnostic sources usable. Observers are removed when capture stops.
+- Required `webRequest` and `webRequestBlocking` in the separate [Experimental WebRequest edition](EXPERIMENTAL-WEBREQUEST.md): evaluate saved firewall block rules synchronously when Chrome grants access. The supplementary listener keeps bounded tab context in memory, respects Off and skips uncertain contexts. Request logging remains opt-in. The launcher uses a separate local Chrome profile and does not edit enterprise policy, registry entries or the existing personal profile. It installs no native service and sends no telemetry. The stable manifest public key identifies the variant; it is not a signing secret.
 - `scripting`, `activeTab`, and host access: apply cosmetic filtering, packaged scriptlets and user-invoked element tools.
 - `storage` and `unlimitedStorage`: persist settings and compiled filter data.
 - `alarms`: schedule filter-list maintenance without a permanent background page.
@@ -35,7 +36,7 @@ The extension may open GitHub or filter-list support pages when the user explici
 
 ## Managed settings and future capability layers
 
-The current package reads supported settings from Chrome managed storage when an administrator supplies them. The UI distinguishes managed values from user settings. This configuration does not activate a separate blocking engine; filtering still uses DNR. A managed blocking adapter is a future capability requiring its own implementation and review. Enterprise diagnostics remain local unless an administrator separately configures an organizational system.
+The standard package reads supported settings from Chrome managed storage when an administrator supplies them. The UI distinguishes managed values from user settings. Those settings do not activate another engine. The experimental package separately implements a supplementary blocking firewall, gated on an actual browser permission grant; the complete managed uBO static network engine remains unimplemented. Enterprise diagnostics remain local unless an administrator separately configures an organizational system.
 
 A future native companion would be installed separately and require explicit user/admin consent. Its privacy policy, IPC schema, log retention, network behavior, uninstall path and update verification must be documented and reviewed before release. The browser extension must not silently install or activate it.
 

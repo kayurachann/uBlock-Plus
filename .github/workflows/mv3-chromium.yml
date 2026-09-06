@@ -44,9 +44,11 @@ jobs:
         run: npm run lint
 
       - name: Build MV3 Chromium package
+        id: chromium
         shell: pwsh
         run: |
           $version = (Get-Content -Raw package.json | ConvertFrom-Json).version
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
           ./tools/make-mv3.ps1 -Platform chromium -Version $version
 
       - name: Validate MV3 Chromium artifact
@@ -59,5 +61,22 @@ jobs:
           if-no-files-found: error
           path: |
             dist/build/uBlockPlus.chromium/
-            dist/build/uBlock-Plus_*.chromium.zip
-            dist/build/uBlock-Plus_*.chromium.zip.sha256
+            dist/build/uBlock-Plus_${{ steps.chromium.outputs.version }}.chromium.zip
+            dist/build/uBlock-Plus_${{ steps.chromium.outputs.version }}.chromium.zip.sha256
+
+      - name: Build experimental WebRequest package
+        shell: pwsh
+        run: ./tools/make-mv3.ps1 -Platform chromium -Version '${{ steps.chromium.outputs.version }}' -ExperimentalWebRequest
+
+      - name: Validate experimental WebRequest artifact
+        run: node tools/validate-mv3.mjs dist/build/uBlockPlus.experimental.chromium --release --experimental-webrequest
+
+      - name: Upload experimental extension and launcher
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: uBlock-Plus-experimental-webrequest-${{ github.sha }}
+          if-no-files-found: error
+          path: |
+            dist/build/uBlockPlus.experimental.chromium/
+            dist/build/uBlock-Plus_${{ steps.chromium.outputs.version }}.experimental.chromium.zip
+            dist/build/uBlock-Plus_${{ steps.chromium.outputs.version }}.experimental.chromium.zip.sha256

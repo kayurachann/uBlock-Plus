@@ -166,6 +166,7 @@ import {
     isLoggerCapturing,
     recordCSSInsertion,
     recordContentDiagnostic,
+    recordLoggerEvent,
 } from './logger.js';
 
 import {
@@ -185,6 +186,7 @@ import { POPUP_RUNTIME_ROUTE_CODE } from './compiled-popup-matcher.js';
 import { capturePopupFrameContext } from './popup-frame-context.js';
 import { createFirewallManager } from './firewall-manager.js';
 import { createPopupBlocker } from './popup-blocker.js';
+import { createWebRequestFirewall } from './webrequest-firewall.js';
 import { dnr } from './ext-compat.js';
 import { getRuntimeCapabilities } from './runtime-capabilities.js';
 import psl from '../lib/publicsuffixlist.js';
@@ -335,10 +337,34 @@ const popupBlocker = createPopupBlocker({
     log: message => ublockPlusLog(message),
 });
 
-function enqueueFilteringMutation(task) {
-    const result = pendingFilteringMutation.then(task);
+function enqueueFilteringMutation(task, suspendWebRequest = true) {
+    // Domain learning refines native partitions without changing policy. Keep
+    // the synchronous supplement usable while that slower native update runs.
+    if ( suspendWebRequest ) { webRequestFirewall.beginMutation(); }
+    const result = pendingFilteringMutation.then(task).finally(() => {
+        if ( suspendWebRequest ) { return webRequestFirewall.endMutation(); }
+    });
     pendingFilteringMutation = result.catch(( ) => { });
     return result;
+}
+
+let firewallDomainResolverPromise;
+function loadFirewallDomainResolver() {
+    return firewallDomainResolverPromise ??= (async () => {
+        const response = await fetch(runtime.getURL('firewall-public-suffix.json'));
+        if ( response.ok !== true ) { throw new Error('Public Suffix List unavailable'); }
+        const { text } = await response.json();
+        if ( typeof text !== 'string' || text.includes('BEGIN ICANN DOMAINS') === false ) {
+            throw new Error('Invalid packaged Public Suffix List');
+        }
+        psl.parse(text, hostname => new URL(`https://${hostname}`).hostname);
+        return hostname => hostname.startsWith('[') ||
+            /^\d+(?:\.\d+){3}$/.test(hostname) || hostname.includes('.') === false
+            ? hostname : psl.getDomain(hostname);
+    })().catch(reason => {
+        firewallDomainResolverPromise = undefined;
+        throw reason;
+    });
 }
 
 const firewall = createFirewallManager({
@@ -347,15 +373,24 @@ const firewall = createFirewallManager({
     getModes: () => getFilteringModeDetails(true),
     getTabs: () => browser.tabs.query({}),
     log: ublockPlusErr,
-    loadDomainResolver: async () => {
-        const response = await fetch(runtime.getURL('firewall-public-suffix.json'));
-        if ( response.ok !== true ) { throw new Error('Public Suffix List unavailable'); }
-        const { text } = await response.json();
-        if ( typeof text !== 'string' || text.includes('BEGIN ICANN DOMAINS') === false ) {
-            throw new Error('Invalid packaged Public Suffix List');
-        }
-        psl.parse(text, hostname => new URL(`https://${hostname}`).hostname);
-        return hostname => psl.getDomain(hostname);
+    loadDomainResolver: loadFirewallDomainResolver,
+});
+
+const webRequestFirewall = createWebRequestFirewall({
+    manifest: runtime.getManifest(),
+    permissions: browser.permissions,
+    webRequest: browser.webRequest,
+    getTabs: () => browser.tabs.query({}),
+    getFrames: tabId => browser.webNavigation.getAllFrames({ tabId }),
+    record: recordLoggerEvent,
+    getSnapshot: async () => {
+        const state = firewall.getState();
+        return {
+            text: state.sessionText,
+            error: state.error,
+            modes: await getFilteringModeDetails(true),
+            domainFromHostname: await loadFirewallDomainResolver(),
+        };
     },
 });
 
@@ -1786,8 +1821,10 @@ async function start() {
 
     await popupBlocker.resume();
     await firewall.initialize().catch(reason => {
+        webRequestFirewall.fail(reason);
         ublockPlusErr(`Firewall startup/${reason}`);
     });
+    await webRequestFirewall.initialize();
     toggleDeveloperMode(rulesetConfig.developerMode);
 }
 
@@ -1800,6 +1837,7 @@ const isFullyInitialized = start().then(( ) => {
     localRemove('goodStart');
     return false;
 }).catch(reason => {
+    webRequestFirewall.fail(reason);
     ublockPlusErr(reason);
     if ( process.wakeupRun ) { return; }
     return localRead('goodStart').then(goodStart => {
@@ -1849,6 +1887,7 @@ if ( supportsUserScripts() && runtime.onUserScriptMessage ) {
 }
 
 browser.permissions.onRemoved.addListener((...args) => {
+    webRequestFirewall.permissionsChanged();
     isFullyInitialized.then(( ) => {
         return onPermissionsChanged('removed', ...args);
     }).catch(reason => {
@@ -1857,6 +1896,7 @@ browser.permissions.onRemoved.addListener((...args) => {
 });
 
 browser.permissions.onAdded.addListener((...args) => {
+    webRequestFirewall.permissionsChanged();
     isFullyInitialized.then(( ) => {
         return onPermissionsChanged('added', ...args);
     }).catch(reason => {
@@ -1889,7 +1929,7 @@ browser.tabs.onCreated.addListener(tab => {
 browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if ( typeof changeInfo.url === 'string' ) {
         isFullyInitialized.then(() => enqueueFilteringMutation(() =>
-            firewall.observe(changeInfo.url)
+            firewall.observe(changeInfo.url), false
         )).catch(reason => ublockPlusErr(`Firewall navigation/${reason}`));
     }
     isFullyInitialized.then(( ) => {
@@ -1900,13 +1940,19 @@ browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 });
 
 browser.webNavigation?.onBeforeNavigate?.addListener(details => {
+    webRequestFirewall.observeNavigation(details);
     if ( details.frameId !== 0 ) { return; }
     isFullyInitialized.then(() => enqueueFilteringMutation(() =>
-        firewall.observe(details.url)
+        firewall.observe(details.url), false
     )).catch(reason => ublockPlusErr(`Firewall navigation/${reason}`));
 });
 
+browser.webNavigation?.onCommitted?.addListener(details => {
+    webRequestFirewall.observeNavigation(details, true);
+});
+
 browser.tabs.onRemoved.addListener(tabId => {
+    webRequestFirewall.forgetTab(tabId);
     popupBlocker.onTabRemoved(tabId).catch(reason => {
         ublockPlusErr(`popupTabRemoved/${reason}`);
     });

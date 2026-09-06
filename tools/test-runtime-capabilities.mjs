@@ -19,9 +19,8 @@
     Home: https://github.com/kayurachann/uBlock-Plus
 */
 
+import { capabilityDetailsRows, webRequestFirewallStatusText } from '../platform/mv3/extension/js/runtime-capabilities-ui.js';
 import assert from 'node:assert/strict';
-
-import { capabilityDetailsRows } from '../platform/mv3/extension/js/runtime-capabilities-ui.js';
 import { classifyRuntimeCapabilities } from '../platform/mv3/extension/js/runtime-capabilities-core.js';
 
 const standard = classifyRuntimeCapabilities({
@@ -130,5 +129,39 @@ for ( const result of [ standard, managed, granted, unavailable ] ) {
 assert.match(capabilityDetailsRows(ungranted, 'en')[0][1], /Optional permission not granted/);
 assert.match(capabilityDetailsRows(granted, 'vi-VN')[0][1], /chỉ thu thập sau/);
 assert.match(capabilityDetailsRows(managed, 'en').at(-1)[1], /Not implemented/);
+
+const experimentalInput = {
+    installType: 'development',
+    manifestPermissions: [ 'declarativeNetRequest', 'webRequest', 'webRequestBlocking' ],
+    grantedPermissions: [ 'webRequest', 'webRequestBlocking' ],
+    api: { declarativeNetRequest: true, webRequest: true },
+    webRequestFirewall: { implemented: true, declared: true, permissionGranted: true,
+        listenerRegistered: true, ready: true, state: 'active', ruleCount: 1 },
+};
+const experimental = classifyRuntimeCapabilities(experimentalInput);
+assert.equal(experimental.managedInstall, false, 'a switch grant is not a policy install');
+assert.equal(experimental.managedWebRequestEligible, false);
+assert.equal(experimental.managedWebRequestImplemented, false, 'supplement is not the full engine');
+assert.equal(experimental.activeNetworkEngine, 'dnr+webrequest-firewall');
+assert.equal(experimental.productEdition, 'experimental-webrequest');
+assert.equal(experimental.webRequestFirewallActive, true);
+assert.match(webRequestFirewallStatusText(experimental, 'vi'), /Đang hoạt động/);
+for ( const missing of [
+    { grantedPermissions: [ 'webRequest' ] },
+    { webRequestFirewall: { ...experimentalInput.webRequestFirewall, ready: false, state: 'suspended' } },
+    { webRequestFirewall: { ...experimentalInput.webRequestFirewall, listenerRegistered: false } },
+    { webRequestFirewall: { ...experimentalInput.webRequestFirewall, state: 'error' } },
+] ) {
+    const result = classifyRuntimeCapabilities({ ...experimentalInput, ...missing });
+    assert.equal(result.activeNetworkEngine, 'dnr');
+    assert.equal(result.webRequestFirewallActive, false);
+}
+const lostPermission = classifyRuntimeCapabilities({ ...experimentalInput, grantedPermissions: [] });
+assert.equal(lostPermission.webRequestFirewall.state, 'permission-required');
+assert.equal(lostPermission.webRequestFirewall.ready, false);
+assert.match(webRequestFirewallStatusText(lostPermission, 'en'), /Permission required/);
+assert.equal(experimentalInput.webRequestFirewall.ready, true, 'capability read must not mutate live state');
+assert.match(webRequestFirewallStatusText(standard, 'en'), /separate Experimental/);
+assert.match(webRequestFirewallStatusText({ webRequestFirewall: { state: 'error' } }, 'vi'), /chỉ áp dụng DNR/);
 
 console.log('Runtime capability negotiation tests passed.');

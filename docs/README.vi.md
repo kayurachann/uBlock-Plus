@@ -49,7 +49,9 @@ uBlock Plus+ chặn các yêu cầu mạng và thành phần trang không mong m
 | Ngoại lệ bộ lọc | Ngoại lệ scriptlet giữa các nguồn, `$badfilter` chính xác cho imported/personal và hủy stock theo ánh xạ nguồn, gồm dựng lại phần còn lại của nhóm hostname đã chứng minh được ngữ nghĩa. |
 | Chẩn đoán | Chủ động ghi network, DNR native, cosmetic, DOM và scriptlet; có tìm kiếm, export che dữ liệu và lịch sử cục bộ giới hạn. |
 
-Xem [hướng dẫn firewall, logger và ngoại lệ](MV3-PARITY-IMPLEMENTATION-2026-09-06.md) để biết cách dùng, chuyển đổi dữ liệu và giới hạn còn lại. Quyền `webRequest` là tùy chọn, chỉ được yêu cầu khi bấm bắt đầu ghi logger; chặn mạng vẫn dùng DNR.
+Xem [hướng dẫn firewall, logger và ngoại lệ](MV3-PARITY-IMPLEMENTATION-2026-09-06.md) để biết cách dùng, chuyển đổi dữ liệu và giới hạn còn lại. Trong bản tiêu chuẩn, quyền `webRequest` là tùy chọn, chỉ được yêu cầu khi bấm bắt đầu ghi logger; chặn mạng dùng DNR.
+
+Gói [Experimental WebRequest](EXPERIMENTAL-WEBREQUEST.md) tùy chọn bổ sung chặn firewall đồng bộ, kèm launcher và profile Chrome riêng. Dashboard kiểm tra quyền thực tế và hiển thị trạng thái hoạt động. Gói này giữ DNR cùng hành vi Off/allow/noop; không gỡ quota hoặc khôi phục toàn bộ engine uBO.
 
 Các ảnh dưới đây chụp **tiện ích thực tế được nạp dạng unpacked trong Google Chrome 152.0.7977.76 trên Windows** vào ngày 6 tháng 9 năm 2026. Ảnh sử dụng hồ sơ thử nghiệm riêng và trang minh họa; đây không phải bản thiết kế mô phỏng. Ngôn ngữ giao diện trong ảnh là tiếng Anh. [Thông tin nguồn ảnh](assets/readme/README.md).
 

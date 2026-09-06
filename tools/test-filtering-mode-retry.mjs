@@ -31,9 +31,17 @@ let firewallCalls = 0;
 let failStock = true;
 let userGate;
 let customFilterCount = 0;
+let supplementalMutations = 0;
 const context = vm.createContext({
     AggregateError, Promise,
     pendingFilteringMutation: Promise.resolve(),
+    webRequestFirewall: {
+        beginMutation: () => { supplementalMutations++; },
+        endMutation: () => {
+            assert.ok(supplementalMutations > 0);
+            supplementalMutations--;
+        },
+    },
     isFullyInitialized: Promise.resolve(),
     firewall: { refresh: async () => { firewallCalls++; } },
     UBLOCK_PLUS_ORIGIN: 'chrome-extension://test',
@@ -80,8 +88,10 @@ const checked = assert.rejects(failed, /registration failed/).then(() => { settl
 await new Promise(resolve => setImmediate(resolve));
 assert.equal(mode, 1);
 assert.equal(settled, false, 'Do not leave the queue while user registration is pending');
+assert.equal(supplementalMutations, 1, 'blocking supplement stays suspended while native registration is pending');
 release();
 await checked;
+assert.equal(supplementalMutations, 0, 'rejected mutations also release their suspension lease');
 userGate = undefined;
 failStock = false;
 assert.equal(await send({ what: 'setFilteringMode', hostname: 'site.test', level: 1 }), 1);
@@ -95,6 +105,7 @@ assert.equal(await send({ what: 'setDefaultFilteringMode', level: 3 }), 3);
 assert.equal(stockCalls, 4);
 assert.equal(userCalls, 4);
 assert.equal(firewallCalls, 4, 'Mode changes and retries also repair native firewall scope');
+assert.equal(supplementalMutations, 0);
 for ( const count of [ 0, 1, 3 ] ) {
     customFilterCount = count;
     const data = await send({ what: 'popupPanelData', hostname: 'site.test' });

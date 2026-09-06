@@ -29,6 +29,7 @@ import {
     STOCK_POPUP_DEFERRED_ROUTE_CODE,
     STOCK_POPUP_SOURCE_KIND_PRECISION,
 } from '../platform/mv3/popup-corpus.js';
+import { experimentalManifestErrors, experimentalName } from './experimental-build-config.mjs';
 import { Buffer } from 'node:buffer';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
@@ -40,10 +41,13 @@ import process from 'node:process';
 /******************************************************************************/
 
 const releaseMode = process.argv.includes('--release');
+const experimentalMode = process.argv.includes('--experimental-webrequest');
 const extensionArgument = process.argv.slice(2)
-    .find(argument => argument !== '--release');
+    .find(argument => argument.startsWith('--') === false);
 const extensionDir = path.resolve(
-    extensionArgument || 'dist/build/uBlockPlus.chromium'
+    extensionArgument || (experimentalMode
+        ? 'dist/build/uBlockPlus.experimental.chromium'
+        : 'dist/build/uBlockPlus.chromium')
 );
 const errors = [];
 let jsonFileCount = 0;
@@ -515,6 +519,28 @@ if ( rootStat?.isDirectory() !== true ) {
 const manifestPath = path.join(extensionDir, 'manifest.json');
 const manifest = await fs.readFile(manifestPath, { encoding: 'utf8' })
     .then(text => JSON.parse(text));
+const experimentalMetadata = await fs.readFile(
+    path.join(extensionDir, 'experimental-webrequest.json'), 'utf8'
+).then(text => JSON.parse(text)).catch(reason => {
+    if ( reason.code !== 'ENOENT' ) {
+        reportError('Experimental build metadata cannot be read as JSON');
+    }
+});
+for ( const error of experimentalManifestErrors(
+    manifest, experimentalMetadata, experimentalMode
+) ) {
+    reportError(error);
+}
+if ( experimentalMode ) {
+    for ( const requiredPath of [
+        'experimental-webrequest.json',
+        'start-experimental-chrome.ps1',
+        'start-experimental-chrome.cmd',
+        'js/webrequest-firewall.js',
+    ] ) {
+        await validateFileReference(requiredPath, 'Required experimental component');
+    }
+}
 
 if ( manifest.manifest_version !== 3 ) {
     reportError('manifest.json must declare manifest_version 3');
@@ -527,7 +553,7 @@ if ( Number.parseInt(manifest.minimum_chrome_version, 10) < 130 ) {
         'minimum_chrome_version must be 130+ for memory-safe storage cleanup'
     );
 }
-if ( manifest.name !== '__MSG_extName__' ||
+if ( manifest.name !== (experimentalMode ? experimentalName : '__MSG_extName__') ||
     manifest.short_name !== 'uBlock Plus+' ) {
     reportError('manifest.json does not use the uBlock Plus+ product identity');
 }
@@ -565,7 +591,8 @@ if ( manifest.permissions?.includes('userScripts') !== true ) {
 if ( manifest.permissions?.includes('webNavigation') !== true ) {
     reportError('Power builds must request webNavigation for smart popup context');
 }
-if ( manifest.permissions?.includes('webRequestBlocking') ) {
+if ( experimentalMode === false &&
+    manifest.permissions?.includes('webRequestBlocking') ) {
     reportError(
         'The unpacked Power build must not request the policy-only ' +
         'webRequestBlocking permission'

@@ -366,6 +366,39 @@ function renderCapabilities(capabilities) {
         [ message('diagnosticsSessionRules'), formatQuota(quotas.sessionRules) ],
         [ message('diagnosticsRegexRules'), formatQuota(quotas.regexRules) ],
     ]);
+    renderWebRequestSetup(capabilities);
+}
+
+function renderWebRequestSetup(capabilities) {
+    let panel = qs$('#webRequestSetup');
+    if ( panel === null ) {
+        panel = document.createElement('div');
+        panel.id = 'webRequestSetup';
+        panel.className = 'powerPanel';
+        qs$('section[data-pane="diagnostics"]').append(panel);
+    }
+    const vi = (i18n.getUILanguage?.() || navigator.language).startsWith('vi');
+    const experimental = capabilities.productEdition === 'experimental-webrequest';
+    const title = document.createElement('h3');
+    title.textContent = vi ? 'Firewall mạng thử nghiệm' : 'Experimental network firewall';
+    const description = document.createElement('p');
+    description.textContent = experimental
+        ? vi
+            ? 'Mở Chrome bằng start-experimental-chrome.cmd trong thư mục extension. Lần đầu, nạp thư mục này qua Load unpacked. Launcher dùng profile riêng; quay lại đây và bấm Làm mới để kiểm tra quyền.'
+            : 'Open Chrome using start-experimental-chrome.cmd in the extension folder. On first use, load that folder with Load unpacked. The launcher uses a separate profile; return here and Refresh to check access.'
+        : vi
+            ? 'Gói Experimental WebRequest bổ sung quyết định chặn firewall trực tiếp, kể cả trên miền mới. Cần cài gói riêng và mở Chrome bằng launcher đi kèm.'
+            : 'The Experimental WebRequest package adds direct firewall blocking, including newly visited domains. Install the separate package and open Chrome with its included launcher.';
+    const limits = document.createElement('p');
+    limits.textContent = vi
+        ? 'Bộ lọc DNR, allow và noop vẫn được áp dụng. Tính năng này không gỡ quota hoặc khôi phục toàn bộ engine uBO; extension không tự thay đổi tham số Chrome.'
+        : 'DNR filtering, allow and noop still apply. This feature does not remove quotas or restore the full uBO engine; the extension cannot change Chrome launch arguments itself.';
+    const guide = document.createElement('a');
+    guide.href = 'https://github.com/kayurachann/uBlock-Plus/blob/main/docs/EXPERIMENTAL-WEBREQUEST.md';
+    guide.textContent = vi ? 'Hướng dẫn cài đặt, kiểm tra và gỡ bỏ' : 'Installation, verification and removal guide';
+    guide.target = '_blank';
+    guide.rel = 'noopener';
+    panel.replaceChildren(title, description, limits, guide);
 }
 
 function renderPerformance(profile) {

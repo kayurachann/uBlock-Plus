@@ -51,3 +51,10 @@ The matching package hash and final test records are documented in the [implemen
 `hero.png`, `feature-map.svg` and `install-flow.svg` are earlier illustrative assets. `filter-store.png` and `memory-settings.png` are earlier interface captures. They remain here for older translated documents and should not be used as evidence for the current Chrome retest. The current English and Vietnamese README screenshot set is listed above.
 
 The extension UI and project artwork retain their existing copyright and license notices; see the repository [license](../../../LICENSE.txt) and third-party notices.
+# Experimental WebRequest captures — 6 September 2026
+
+`experimental-webrequest-diagnostics.png` and `experimental-webrequest-logger.png` show the actual optional package in installed Google Chrome 152.0.7977.76. They were captured by `tools/test-webrequest-firewall-chrome.mjs` and visually inspected. Their local source report is `tmp/managed-native-2026-09-06/2026-09-06T15-11-10-717Z/report.json`.
+
+Experimental ZIP SHA-256: `46f50d8cab4eb2a7d52f4c65d5ae44ba27e384aae0c60d48855c7fcae7d3b3bc`. Loaded tree: `f1e2d8ac8f142546228c723667bc5450a27f3006bc1e6d52712e292fc5df173e`, including build-only `log.txt`. All 1,117 ZIP entries were compared with the loaded copy.
+
+Diagnostics displays the granted blocking permission, active supplemental firewall, remaining limits and `.cmd` launcher instructions. Logger shows synthetic localhost traffic and native `browser.webRequest (firewall supplement)` decisions. The logger image is from an explicit API-isolation case that temporarily removes only firewall-owned DNR rules, then restores them. It is not an image of standard DNR-only operation. Chrome used isolated short temporary paths, the normal sandbox and popup protection; User Scripts was not enabled in this network suite. See [the setup and verification guide](../../EXPERIMENTAL-WEBREQUEST.md).
