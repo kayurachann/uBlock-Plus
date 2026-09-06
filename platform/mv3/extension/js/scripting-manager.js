@@ -31,6 +31,7 @@ import {
 } from './ext.js';
 
 import { registerJob, removeJob } from './alarms.js';
+import { registerUserScripts, restoreUserScripts } from './compiled-filters.js';
 
 import { fetchJSON } from './fetch.js';
 import { getEnabledRulesetsDetails } from './ruleset-manager.js';
@@ -258,6 +259,11 @@ export async function registerCosmetic(context) {
 
 export function registerScriptlet(context, scriptletDetails) {
     const { filteringModeDetails, rulesetsDetails } = context;
+    if ( Array.isArray(context.nativeStockScriptlets) ) {
+        context.toAdd.push(...context.nativeStockScriptlets);
+        return;
+    }
+    if ( context.stockScriptlets === true ) { return; }
 
     const hasBroadHostPermission =
         filteringModeDetails.optimal.has('all-urls') ||
@@ -279,6 +285,9 @@ export function registerScriptlet(context, scriptletDetails) {
 
             const matches = [];
             const excludeMatches = permissionRevokedMatches.slice();
+            const exceptionHostnames = context.nativeScriptletExclusions?.get(rulesetId) || [];
+            if ( exceptionHostnames.includes('*') ) { continue; }
+            excludeMatches.push(...ut.matchesFromHostnames(exceptionHostnames));
             const hostnames = worlds[world];
             let targetHostnames = [];
             if ( hasBroadHostPermission ) {
@@ -291,6 +300,9 @@ export function registerScriptlet(context, scriptletDetails) {
                         hostnames,
                         permissionGrantedHostnames
                     );
+                    targetHostnames.push(...ut.intersectHostnameIters(
+                        permissionGrantedHostnames, hostnames
+                    ));
                 }
             }
             if ( targetHostnames.length === 0 ) { continue; }
@@ -382,9 +394,13 @@ async function restoreRegisteredContentScripts(snapshot) {
 
 export async function restoreContentScripts(snapshot) {
     if ( browser.scripting === undefined ) { return false; }
-    return enqueueContentScriptOperation(( ) =>
-        restoreRegisteredContentScripts(snapshot)
-    );
+    return enqueueContentScriptOperation(async ( ) => {
+        const restored = await restoreRegisteredContentScripts(snapshot);
+        if ( snapshot?.previousUserRegistration ) {
+            await restoreUserScripts(snapshot.previousUserRegistration);
+        }
+        return restored;
+    });
 }
 
 registerContentScripts.register = async function register() {
@@ -404,54 +420,63 @@ registerContentScripts.register = async function register() {
         rulesetsDetails,
         toAdd,
     };
+    const previousUserRegistration = await registerUserScripts();
+    context.stockScriptlets = previousUserRegistration?.stockScriptlets === true;
+    context.nativeScriptletExclusions = previousUserRegistration?.nativeScriptletExclusions;
+    context.nativeStockScriptlets = previousUserRegistration?.nativeStockScriptlets;
 
-    if ( memoryProfile.retainScriptingMetadata ) {
-        const [ scriptletDetails, genericDetails ] = await Promise.all([
-            getScriptletDetails(),
-            getGenericDetails(),
-        ]);
-        registerScriptlet(context, scriptletDetails);
-        registerGeneric(context, genericDetails);
-    } else {
-        registerScriptlet(context, await getScriptletDetails());
-        resourceDetailPromises.delete('scriptlet');
-        registerGeneric(context, await getGenericDetails());
-        resourceDetailPromises.delete('generic');
-    }
-
-    await Promise.all([
-        registerCosmetic(context),
-        registerCustomFilters(context),
-        registerPreventPopup(context),
-        registerToolbarIconToggler(context),
-    ]);
-
-    const previousRegistration = await replaceRegisteredContentScripts(toAdd);
-
-    const pruneMinutes = memoryProfile.cssCachePruneMinutes;
     try {
-        await Promise.all([
-            resetCSSCache(),
-            pruneMinutes !== 0
-                ? registerJob(
-                    'pruneCSSCache',
-                    Date.now() + pruneMinutes * 60 * 1000
-                )
-                : removeJob('pruneCSSCache'),
-        ]);
-    } catch ( reason ) {
-        try {
-            await restoreRegisteredContentScripts(previousRegistration);
-        } catch ( rollbackReason ) {
-            throw new Error(
-                `Content-script cache reset failed (${reason}); ` +
-                `registration rollback also failed (${rollbackReason})`
-            );
+        if ( memoryProfile.retainScriptingMetadata ) {
+            const [ scriptletDetails, genericDetails ] = await Promise.all([
+                getScriptletDetails(),
+                getGenericDetails(),
+            ]);
+            registerScriptlet(context, scriptletDetails);
+            registerGeneric(context, genericDetails);
+        } else {
+            registerScriptlet(context, await getScriptletDetails());
+            resourceDetailPromises.delete('scriptlet');
+            registerGeneric(context, await getGenericDetails());
+            resourceDetailPromises.delete('generic');
         }
+
+        await Promise.all([
+            registerCosmetic(context),
+            registerCustomFilters(context),
+            registerPreventPopup(context),
+            registerToolbarIconToggler(context),
+        ]);
+
+        const previousRegistration = await replaceRegisteredContentScripts(toAdd);
+
+        const pruneMinutes = memoryProfile.cssCachePruneMinutes;
+        try {
+            await Promise.all([
+                resetCSSCache(),
+                pruneMinutes !== 0
+                    ? registerJob(
+                        'pruneCSSCache',
+                        Date.now() + pruneMinutes * 60 * 1000
+                    )
+                    : removeJob('pruneCSSCache'),
+            ]);
+        } catch ( reason ) {
+            try {
+                await restoreRegisteredContentScripts(previousRegistration);
+            } catch ( rollbackReason ) {
+                throw new Error(
+                    `Content-script cache reset failed (${reason}); ` +
+                    `registration rollback also failed (${rollbackReason})`
+                );
+            }
+            throw reason;
+        }
+
+        return { ...previousRegistration, previousUserRegistration };
+    } catch ( reason ) {
+        await restoreUserScripts(previousUserRegistration);
         throw reason;
     }
-
-    return previousRegistration;
 };
 
 /******************************************************************************/

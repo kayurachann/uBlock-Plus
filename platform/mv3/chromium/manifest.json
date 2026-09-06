@@ -54,7 +54,8 @@
     "webNavigation"
   ],
   "optional_permissions": [
-    "privacy"
+    "privacy",
+    "webRequest"
   ],
   "short_name": "uBlock Plus+",
   "storage": {

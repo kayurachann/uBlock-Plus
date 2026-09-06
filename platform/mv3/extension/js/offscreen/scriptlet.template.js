@@ -42,6 +42,7 @@ const $hasHostnames$ = self.$hasHostnames$;
 const $hasEntities$ = self.$hasEntities$;
 const $hasAncestors$ = self.$hasAncestors$;
 const $hasRegexes$ = self.$hasRegexes$;
+const sharedExceptions = /* $scriptletExceptionData$ */ null;
 
 /******************************************************************************/
 
@@ -52,11 +53,9 @@ const entries = (( ) => {
         origins.push(...docloc.ancestorOrigins);
     }
     return origins.map((origin, i) => {
-        const beg = origin.indexOf('://');
-        if ( beg === -1 ) { return; }
-        const hn1 = origin.slice(beg+3)
-        const end = hn1.indexOf(':');
-        const hn2 = end === -1 ? hn1 : hn1.slice(0, end);
+        let hn2;
+        try { hn2 = new URL(origin).hostname; }
+        catch { return; }
         if ( hn2.length === 0 ) { return; }
         const hns = [ hn2 ];
         for ( let pos = 0; ; ) {
@@ -85,6 +84,47 @@ const entries = (( ) => {
     }).filter(a => a);
 })();
 if ( entries.length === 0 ) { return; }
+
+// The worker binds this JSON before registration, so exceptions are available
+// synchronously at document_start in both worlds. No page-owned event bridge,
+// remote executable code, or asynchronous race with the page is involved.
+const isSharedException = (() => {
+    if ( sharedExceptions === null ) { return () => false; }
+    const current = entries[0].hns[0];
+    const domainMatches = (hn, hostname) => hn === '*' || hn === 'all-urls' ||
+        hn === hostname || hostname.endsWith(`.${hn}`);
+    const advanced = sharedExceptions.advanced;
+    const advancedEnabled = advanced.included.some(hn => domainMatches(hn, current)) &&
+        advanced.excluded.some(hn => domainMatches(hn, current)) === false;
+    const hostnameMatches = pattern => {
+        const ancestor = pattern.endsWith('>>');
+        if ( ancestor ) { pattern = pattern.slice(0, -2); }
+        const candidates = ancestor ? entries.slice(1) : entries.slice(0, 1);
+        return candidates.some(entry => {
+            if ( pattern.startsWith('/') && pattern.endsWith('/') ) {
+                try {
+                    const re = new RegExp(pattern.slice(1, -1));
+                    return entry.hns.some(hn => re.test(hn));
+                } catch { return true; }
+            }
+            if ( pattern.endsWith('.*') ) {
+                const entity = pattern.slice(0, -2);
+                return entry.hns.some(hn => hn.startsWith(`${entity}.`));
+            }
+            // Unsupported path predicates defer execution, preserving an
+            // exception instead of guessing that it does not match.
+            if ( pattern.includes('/') ) { return true; }
+            return domainMatches(pattern, entry.hns[0]);
+        });
+    };
+    const exceptions = sharedExceptions.exceptions.filter(entry =>
+        (entry.source === 'sandbox' || advancedEnabled) &&
+        entry.hostnames.some(hostnameMatches)
+    );
+    const broad = exceptions.some(entry => entry.args.length === 0);
+    const exact = new Set(exceptions.map(entry => JSON.stringify(entry.args)));
+    return args => broad || exact.has(JSON.stringify(args));
+})();
 
 const todo = new Set();
 
@@ -170,12 +210,15 @@ if ( todo.size && todo.has(0) === false ) {
     const $scriptletArglists$ = self.$scriptletArglists$;
     const arglists = $scriptletArglists$.split(';');
     const args = $scriptletArgs$;
+    const tokens = self.$scriptletTokens$;
     for ( const ref of todo ) {
         if ( ref < 0 ) { continue; }
         if ( todo.has(~ref) ) { continue; }
         const arglist = JSON.parse(`[${arglists[ref]}]`);
         const fn = $scriptletFunctions$[arglist[0]];
-        try { fn(...arglist.slice(1).map(a => args[a])); }
+        const values = arglist.slice(1).map(a => args[a]);
+        if ( isSharedException([ tokens[arglist[0]], ...values ]) ) { continue; }
+        try { fn(...values); }
         catch { }
     }
 }

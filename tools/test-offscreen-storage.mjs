@@ -62,6 +62,7 @@ try {
         '||popup.example^$popup',
     ].join('\n');
     const lists = [ { id: sourceURL, enabled: true } ];
+    let sandboxText = '||sandbox.example^$image';
     const persisted = new Map([
         [ 'compiledFilters.activeGeneration', 'b'.repeat(32) ],
         [ `compiledFilters.g.${'b'.repeat(32)}.importedFilters.dnrRules`,
@@ -104,7 +105,7 @@ try {
             case 'compileFilters:getMemoryProfile':
                 return { importCompileConcurrency: 1 };
             case 'compileFilters:getUserList':
-                return '||sandbox.example^$image';
+                return sandboxText;
             case 'compileFilters:getEnabledImportedLists':
                 return lists;
             case 'compileFilters:storage':
@@ -180,6 +181,31 @@ try {
     assert.equal(fetchCount, 1);
     assert.equal(warm.importedListUpdates[0].metadataToken,
         result.importedListUpdates[0].metadataToken);
+
+    // Personal cancellation must resolve against unmerged source units in a
+    // warm imported cache, including the separate popup observer corpus.
+    sandboxText += '\n||ads.example^$badfilter,script\n||popup.example^$popup,badfilter';
+    generation = '3'.repeat(32);
+    const cancelled = await run();
+    assert.equal(cancelled.persisted, true, JSON.stringify(cancelled.errors));
+    assert.equal(fetchCount, 1);
+    assert.equal(persisted.has(
+        `compiledFilters.g.${generation}.importedFilters.dnrRules`
+    ), false);
+    assert.equal(persisted.has(
+        `compiledFilters.g.${generation}.importedFilters.popupFilters`
+    ), false);
+    sandboxText = '||sandbox.example^$image';
+    generation = '4'.repeat(32);
+    const restored = await run();
+    assert.equal(restored.persisted, true, JSON.stringify(restored.errors));
+    assert.equal(fetchCount, 1);
+    assert.equal(persisted.get(
+        `compiledFilters.g.${generation}.importedFilters.dnrRules`
+    ).length, 1);
+    assert.equal(persisted.get(
+        `compiledFilters.g.${generation}.importedFilters.popupFilters`
+    ).filters.length, 1);
 
     const cacheKey = `rulesets.imported.compiled.${sourceURL}`;
     // An intact cache from an older compiler must rebuild from source, so a

@@ -47,6 +47,8 @@ import {
 } from './config.js';
 import { ublockPlusErr, ublockPlusLog } from './debug.js';
 
+import { createRulesetNativeState } from './ruleset-native-state.js';
+import { createStockBadfilterManager } from './stock-badfilter.js';
 import { dnr } from './ext-compat.js';
 import { fetchJSON } from './fetch.js';
 import { getAdminRulesets } from './admin.js';
@@ -61,6 +63,9 @@ const USER_RULES_PRIORITY = 1000000;
 const TRUSTED_DIRECTIVE_BASE_RULE_ID = 8000000;
 const TRUSTED_DIRECTIVE_PRIORITY = USER_RULES_PRIORITY + 1000000;
 const STRICTBLOCK_PRIORITY = 29;
+const stockBadfilterManager = createStockBadfilterManager({
+    dnr, read: localRead, write: localWrite, remove: localRemove, fetchJSON,
+});
 let pendingDNRMutation = Promise.resolve();
 
 function enqueueDNRMutation(task) {
@@ -109,6 +114,38 @@ const isStrictBlockRule = rule => {
     return false;
 };
 
+const nativeRulesetState = createRulesetNativeState({
+    dnr, read: localRead, write: localWrite, remove: localRemove,
+    ownsSession: isStrictBlockRule,
+    getPackageState: async ( ) => {
+        const manifest = runtime.getManifest();
+        const index = await fetchJSON('/rulesets/badfilter-details');
+        const resources = manifest.declarative_net_request.rule_resources.map(({ id, path }) => {
+            const digest = index?.rulesets?.[id]?.digest;
+            if ( typeof digest !== 'string' || /^[a-f0-9]{64}$/.test(digest) === false ) {
+                throw new Error(`Missing packaged recovery digest: ${id}`);
+            }
+            return { id, path, digest };
+        }).sort((a, b) => a.id.localeCompare(b.id));
+        return { version: manifest.version, resources };
+    },
+});
+
+export function snapshotNativeRulesetState() {
+    return enqueueDNRMutation(async ( ) => {
+        await stockBadfilterManager.recover();
+        return nativeRulesetState.snapshot();
+    });
+}
+
+export function restoreNativeRulesetState(state) {
+    return enqueueDNRMutation(( ) => nativeRulesetState.restore(state));
+}
+
+export function finalizeNativeRulesetRecovery() {
+    return enqueueDNRMutation(( ) => nativeRulesetState.finalize());
+}
+
 /******************************************************************************/
 
 export function getRulesetDetails() {
@@ -127,12 +164,12 @@ export function getRulesetDetails() {
 /******************************************************************************/
 
 async function pruneInvalidRegexRules(realm, rulesIn, rejected = []) {
-    const validateRegex = regex => {
-        return dnr.isRegexSupported({ regex, isCaseSensitive: false }).then(result => {
-            pruneInvalidRegexRules.validated.set(regex,
+    const validateRegex = (options, key) => {
+        return dnr.isRegexSupported(options).then(result => {
+            pruneInvalidRegexRules.validated.set(key,
                 result?.isSupported === true ? true : result?.reason || 'unsupported');
             if ( result.isSupported ) { return true; }
-            rejected.push({ regex, reason: result?.reason });
+            rejected.push({ regex: options.regex, reason: result?.reason });
             return false;
         });
     };
@@ -145,14 +182,18 @@ async function pruneInvalidRegexRules(realm, rulesIn, rejected = []) {
             continue;
         }
         const { regexFilter } = rule.condition;
-        const reason = pruneInvalidRegexRules.validated.get(regexFilter);
+        const options = { regex: regexFilter,
+            isCaseSensitive: rule.condition.isUrlFilterCaseSensitive === true,
+            requireCapturing: rule.action?.redirect?.regexSubstitution !== undefined };
+        const key = JSON.stringify(options);
+        const reason = pruneInvalidRegexRules.validated.get(key);
         if ( reason !== undefined ) {
             toCheck.push(reason === true);
             if ( reason === true  ) { continue; }
             rejected.push({ regex: regexFilter, reason });
             continue;
         }
-        toCheck.push(validateRegex(regexFilter));
+        toCheck.push(validateRegex(options, key));
     }
 
     // Collate results
@@ -165,8 +206,11 @@ async function pruneInvalidRegexRules(realm, rulesIn, rejected = []) {
             rule.action?.type !== 'allowAllRequests' ) { continue; }
         // An unsupported exception can protect a block from any list in the
         // replacement. Dropping it would silently broaden that block.
+        const regex = rule.condition.regexFilter;
+        const reason = rejected.find(entry => entry.regex === regex)?.reason || 'unsupported';
         throw new Error(
-            'An allow exception uses an unsupported regex; ' +
+            `An allow exception uses an unsupported regex (${realm}, rule ${rule.id ?? '?'}, ${reason}): ` +
+            `${regex.slice(0, 160)}${regex.length > 160 ? '…' : ''}; ` +
             'the previous rules remain active'
         );
     }
@@ -895,7 +939,7 @@ async function getEffectiveUserRules() {
     return userRules;
 }
 
-async function updateUserRulesNow(generation) {
+async function updateUserRulesNow(generation, stockResidualRules = []) {
     // Keep only ids from the existing dynamic rules before loading compiled
     // filter arrays. Holding all three large representations at once causes a
     // pronounced peak in a MV3 service worker on low-memory devices.
@@ -965,6 +1009,10 @@ async function updateUserRulesNow(generation) {
         }
     }
     const rejectedRegexes = [];
+    // These are exact original stock predicates reconstructed from packaged
+    // source-domain provenance. Keep stock priority and include every residual
+    // in the same atomic native update: a quota rejection retains last-good.
+    for ( const rule of stockResidualRules ) { rules.push(structuredClone(rule)); }
     let addRules;
     try {
         addRules = await pruneInvalidRegexRules('user', rules, rejectedRegexes);
@@ -1102,8 +1150,47 @@ async function updateUserRulesNow(generation) {
     return out;
 }
 
+async function updateUserRulesWithStockNow(generation) {
+    let plan;
+    try {
+        await stockBadfilterManager.recover();
+        const effectiveGeneration = generation === undefined
+            ? await localRead(ACTIVE_COMPILED_GENERATION_KEY) || '' : generation;
+        const keys = [];
+        for ( const realm of [ 'sandbox', 'imported' ] ) {
+            const values = await localRead(compiledStorageKey(effectiveGeneration,
+                `${realm}Filters.badfilterKeys`));
+            if ( Array.isArray(values) ) { keys.push(...values); }
+        }
+        plan = await stockBadfilterManager.prepare(keys);
+        if ( plan.changed ) { await stockBadfilterManager.begin(plan); }
+        const result = await updateUserRulesNow(generation, plan.residualRules);
+        if ( result.fatalError ) { throw new Error(result.fatalError); }
+        if ( plan.changed ) {
+            await stockBadfilterManager.apply(plan);
+            await stockBadfilterManager.commit(plan);
+        }
+        try { await stockBadfilterManager.report(plan); } catch { }
+        if ( plan.status.deferredSourceCount ) {
+            result.errors.push(`$badfilter: ${plan.status.deferredSourceCount} packaged source(s) ` +
+                'deferred because exact residual or secondary-corpus cancellation is required');
+        }
+        return result;
+    } catch ( reason ) {
+        let message = reason?.message ?? `${reason}`;
+        try { await stockBadfilterManager.recover(); } catch ( rollbackReason ) {
+            message += `; stock badfilter recovery pending: ${rollbackReason?.message ?? rollbackReason}`;
+        }
+        return { added: 0, removed: 0, errors: [ message ], fatalError: message };
+    }
+}
+
+function recoverStockBadfilters() {
+    return enqueueDNRMutation(( ) => stockBadfilterManager.recover());
+}
+
 function updateUserRules(generation) {
-    return enqueueDNRMutation(( ) => updateUserRulesNow(generation));
+    return enqueueDNRMutation(( ) => updateUserRulesWithStockNow(generation));
 }
 
 /******************************************************************************/
@@ -1114,6 +1201,7 @@ export {
     filteringModesToDNR,
     getEffectiveUserRules,
     getEnabledRulesetsDetails,
+    recoverStockBadfilters,
     setStrictBlockMode,
     updateSessionRules,
     updateUserRules,

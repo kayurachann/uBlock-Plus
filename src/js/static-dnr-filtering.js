@@ -317,7 +317,32 @@ function addToDNR(context, list) {
         }
         if ( parser.isNetworkFilter() === false ) { continue; }
 
-        if ( compiler.compile(parser, writer) ) { continue; }
+        const sourceStart = writer.blocks.get('NETWORK_FILTERS:GOOD')?.length ?? 0;
+        if ( compiler.compile(parser, writer) ) {
+            if ( typeof context.networkSourceIdentity === 'function' ) {
+                context.networkSources ??= new Map();
+                const identities = context.networkSourceIdentity(parser);
+                if ( parser.getNodeTypes().includes(sfp.NODE_TYPE_NET_OPTION_NAME_BADFILTER) ) {
+                    context.networkBadfilterKeys ??= new Set();
+                    for ( const identity of identities ) {
+                        context.networkBadfilterKeys.add(identity.rawKey ?? identity.key);
+                    }
+                }
+                const lines = writer.blocks.get('NETWORK_FILTERS:GOOD') ?? [];
+                for ( let i = sourceStart; i < lines.length; i++ ) {
+                    const compiledLine = lines[i];
+                    const fragment = JSON.parse(compiledLine)[2];
+                    const keys = identities.filter(identity =>
+                        identity.hostname === undefined ||
+                        identity.hostname === fragment
+                    ).map(identity => identity.key);
+                    const previous = context.networkSources.get(compiledLine) ?? [];
+                    context.networkSources.set(compiledLine,
+                        Array.from(new Set([ ...previous, ...keys ])));
+                }
+            }
+            continue;
+        }
 
         if ( compiler.error !== undefined ) {
             context.invalid.add(compiler.error);
@@ -475,6 +500,7 @@ async function dnrRulesetFromRawLists(lists, options = {}) {
     const result = {
         network: staticNetFilteringEngine.dnrFromCompiled('end', context),
         networkBad: context.bad,
+        networkBadfilterKeys: Array.from(context.networkBadfilterKeys ?? []),
         genericCosmeticFilters: context.genericCosmeticFilters,
         genericCosmeticExceptions: context.genericCosmeticExceptions,
         specificCosmetic: context.specificCosmeticFilters,

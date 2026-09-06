@@ -156,6 +156,20 @@ function mergeDomains(rules, includeProp, excludeProp) {
         rule.id = undefined;
         const hash = JSON.stringify(rule, propertySorter);
         const details = distinctRules.get(hash) || { id };
+        if ( rule._sourceKeys ) {
+            details.sourceKeys ??= [];
+            for ( const key of rule._sourceKeys ) { details.sourceKeys.push(key); }
+            details.sourceIncomplete ||= rule._sourceIncomplete;
+        } else {
+            details.sourceIncomplete = true;
+        }
+        if ( rule._sourceResidualGroups ) {
+            details.residualGroups ??= [];
+            for ( const group of rule._sourceResidualGroups ) { details.residualGroups.push(group); }
+            details.residualIncomplete ||= rule._sourceResidualIncomplete;
+        } else {
+            details.residualIncomplete = true;
+        }
         if ( details.initialized !== true ) {
             details.initialized = true;
             distinctRules.set(hash, details);
@@ -182,6 +196,14 @@ function mergeDomains(rules, includeProp, excludeProp) {
     for ( const [ hash, details ] of distinctRules ) {
         const rule = JSON.parse(hash);
         rule.id = details.id;
+        if ( details.sourceKeys ) {
+            rule._sourceKeys = Array.from(new Set(details.sourceKeys));
+            rule._sourceIncomplete = details.sourceIncomplete;
+        }
+        if ( details.residualGroups ) {
+            rule._sourceResidualGroups = details.residualGroups;
+            rule._sourceResidualIncomplete = details.residualIncomplete;
+        }
         if ( details.includes?.length ) {
             rule.condition[includeProp] = Array.from(new Set(details.includes)).sort();
         }
@@ -216,6 +238,20 @@ function mergeArrays(rules, propertyPath, emptyIsAll = false) {
         rule.id = undefined;
         const hash = JSON.stringify(rule, propertySorter);
         const details = distinctRules.get(hash) || { id };
+        if ( rule._sourceKeys ) {
+            details.sourceKeys ??= [];
+            for ( const key of rule._sourceKeys ) { details.sourceKeys.push(key); }
+            details.sourceIncomplete ||= rule._sourceIncomplete;
+        } else {
+            details.sourceIncomplete = true;
+        }
+        if ( rule._sourceResidualGroups ) {
+            details.residualGroups ??= [];
+            for ( const group of rule._sourceResidualGroups ) { details.residualGroups.push(group); }
+            details.residualIncomplete ||= rule._sourceResidualIncomplete;
+        } else {
+            details.residualIncomplete = true;
+        }
         if ( details.initialized !== true ) {
             details.initialized = true;
             distinctRules.set(hash, details);
@@ -230,10 +266,18 @@ function mergeArrays(rules, propertyPath, emptyIsAll = false) {
             }
         }
     }
-    for ( const [ hash, { id, collection } ] of distinctRules ) {
+    for ( const [ hash, { id, collection, sourceKeys, sourceIncomplete, residualGroups, residualIncomplete } ] of distinctRules ) {
         const rule = JSON.parse(hash);
         if ( id ) {
             rule.id = id;
+        }
+        if ( sourceKeys ) {
+            rule._sourceKeys = Array.from(new Set(sourceKeys));
+            rule._sourceIncomplete = sourceIncomplete;
+        }
+        if ( residualGroups ) {
+            rule._sourceResidualGroups = residualGroups;
+            rule._sourceResidualIncomplete = residualIncomplete;
         }
         if ( collection?.length ) {
             const { owner, prop } = ownerFromPropertyPath(rule, propertyPath);
@@ -288,11 +332,15 @@ export function minimizeRules(rules) {
             if ( hostnames === undefined ) { continue; }
             if ( hostnames.length === 1 ) { continue; }
             const hnSet = new Set(hostnames);
-            for ( let hn of hnSet ) {
+            for ( const hostname of hnSet ) {
+                let hn = hostname;
                 for (;;) {
                     const hnup = toSuperDomain(hn);
                     if ( hnup === undefined ) { break; }
-                    if ( hnSet.has(hnup) ) { hnSet.delete(hn); }
+                    if ( hnSet.has(hnup) ) {
+                        hnSet.delete(hostname);
+                        break;
+                    }
                     hn = hnup;
                 }
             }
@@ -315,6 +363,57 @@ function dropEntities(rule, prop) {
         return 0;
     }
     condition[prop] = sanitized;
+}
+
+// Preserve the native template of each early hostname bucket before later
+// type/domain minimization. A residual must rebuild these original predicates;
+// subtracting a hostname from the final merged rule is not generally exact.
+export function attachStockBadfilterResiduals(rules) {
+    const safeProperties = new Set([ 'requestDomains', 'initiatorDomains',
+        'urlFilter', 'resourceTypes', 'excludedResourceTypes',
+        'domainType', 'isUrlFilterCaseSensitive' ]);
+    for ( const rule of rules ) {
+        const units = rule._sourceDomainUnits;
+        if ( rule._sourceIncomplete || rule.action?.type !== 'block' ||
+            units?.length === undefined || units.length === 0 ||
+            Object.keys(rule.condition).some(key =>
+                rule.condition[key] !== undefined && safeProperties.has(key) === false) ) {
+            continue;
+        }
+        const property = units[0].property;
+        const actual = rule.condition[property];
+        if ( Array.isArray(actual) === false || units.some(unit =>
+            unit.property !== property || /^[a-z0-9][a-z0-9.-]*$/.test(unit.hostname) === false) ) {
+            continue;
+        }
+        const domains = new Map();
+        const keys = new Set();
+        for ( const unit of units ) {
+            if ( domains.has(unit.hostname) === false ) { domains.set(unit.hostname, new Set()); }
+            const values = domains.get(unit.hostname);
+            for ( const key of unit.keys ) { values.add(key); keys.add(key); }
+        }
+        if ( rule._sourceKeys.some(key => keys.has(key) === false) ||
+            actual.some(hostname => domains.has(hostname) === false) ) { continue; }
+        const effective = new Set(actual);
+        const covered = hostname => {
+            for (;;) {
+                if ( effective.has(hostname) ) { return true; }
+                const dot = hostname.indexOf('.');
+                if ( dot === -1 ) { return false; }
+                hostname = hostname.slice(dot + 1);
+            }
+        };
+        if ( Array.from(domains.keys()).some(hostname => covered(hostname) === false) ) { continue; }
+        const condition = { ...rule.condition };
+        delete condition[property];
+        rule._sourceResidualGroups = [ {
+            property,
+            template: { action: structuredClone(rule.action), priority: rule.priority ?? 1,
+                condition: structuredClone(condition) },
+            domains: Array.from(domains, ([ hostname, values ]) => [ hostname, Array.from(values) ]),
+        } ];
+    }
 }
 
 /******************************************************************************/
@@ -467,6 +566,11 @@ export function parseNetworkFilter(parser, details = {}, out = []) {
         return reject('not-network-filter');
     }
     if ( parser.hasError() ) { return reject(parserErrorReason(parser)); }
+    // Cancellation is resolved against source identities before minimization.
+    // It never emits a broad allow rule or a replacement blocking rule.
+    if ( parser.getNodeTypes().includes(sfp.NODE_TYPE_NET_OPTION_NAME_BADFILTER) ) {
+        return networkFilterResult('accepted', details, undefined, 'badfilter');
+    }
 
     const validResourceTypes = details.resourceTypes ?? safeResourceTypes;
     const rule = {
@@ -540,8 +644,6 @@ export function parseNetworkFilter(parser, details = {}, out = []) {
             return reject('unsupported-strict-first-party');
         case sfp.NODE_TYPE_NET_OPTION_NAME_STRICT3P:
             return reject('unsupported-strict-third-party');
-        case sfp.NODE_TYPE_NET_OPTION_NAME_BADFILTER:
-            return reject('unsupported-badfilter');
         case sfp.NODE_TYPE_NET_OPTION_NAME_CNAME:
             return reject('unsupported-cname');
         case sfp.NODE_TYPE_NET_OPTION_NAME_EHIDE:
@@ -993,12 +1095,97 @@ export function parseNetworkFilter(parser, details = {}, out = []) {
 
 /******************************************************************************/
 
+const identityOptionTypes = new Set(Object.entries(sfp)
+    .filter(([ name ]) => name.startsWith('NODE_TYPE_NET_OPTION_NAME_'))
+    .map(([ , value ]) => value));
+
+// Source identities deliberately precede lossy DNR conversion: two different
+// uBO filters can otherwise collapse to the same DNR condition. Parser option
+// types canonicalize aliases, and sorted domain sets ignore spelling order.
+export function networkFilterIdentities(parser) {
+    const nodeTypes = parser.getNodeTypes();
+    const options = [];
+    let fromDomains;
+    for ( let type of nodeTypes ) {
+        if ( identityOptionTypes.has(type) === false ) { continue; }
+        if ( type === sfp.NODE_TYPE_NET_OPTION_NAME_BADFILTER ||
+            type === sfp.NODE_TYPE_NET_OPTION_NAME_NOOP ||
+            type === sfp.NODE_TYPE_NET_OPTION_NAME_NOT ) { continue; }
+        let not = parser.isNegatedOption(type);
+        let value = parser.getNetOptionValue(type);
+        if ( type === sfp.NODE_TYPE_NET_OPTION_NAME_1P ) {
+            type = sfp.NODE_TYPE_NET_OPTION_NAME_3P;
+            not = not === false;
+        }
+        let domains;
+        if ( type === sfp.NODE_TYPE_NET_OPTION_NAME_FROM ) {
+            domains = Array.from(parser.getNetFilterFromOptionIterator(), a => ({ ...a }));
+            fromDomains = domains;
+        } else if ( type === sfp.NODE_TYPE_NET_OPTION_NAME_TO ) {
+            domains = Array.from(parser.getNetFilterToOptionIterator(), a => ({ ...a }));
+        } else if ( type === sfp.NODE_TYPE_NET_OPTION_NAME_TOP ) {
+            domains = Array.from(parser.getNetFilterTopOptionIterator(), a => ({ ...a }));
+        } else if ( type === sfp.NODE_TYPE_NET_OPTION_NAME_DENYALLOW ) {
+            domains = Array.from(parser.getNetFilterDenyallowOptionIterator(), a => ({ ...a }));
+        }
+        if ( domains ) {
+            value = Array.from(new Set(domains.map(({ hn, not }) =>
+                `${not ? '~' : ''}${hn}`
+            ))).sort().join('|');
+        } else if ( type === sfp.NODE_TYPE_NET_OPTION_NAME_METHOD ) {
+            value = Array.from(new Set(value.split('|'))).sort().join('|');
+        }
+        options.push([ type, not, value ]);
+    }
+    options.sort((a, b) => a[0] - b[0]);
+    const pattern = parser.getNetPattern();
+    const identity = [
+        parser.isException(), pattern, parser.isRegexPattern(),
+        parser.isHostnamePattern(), parser.isLeftHnAnchored(),
+        parser.isLeftAnchored(), parser.isRightAnchored(), options,
+    ];
+    // Full uBO decomposes these positive domain lists into independent units.
+    // Restrict splitting to its documented forms; never subtract domains from
+    // an arbitrary merged rule whose original source cannot be recovered.
+    const splitDomains = fromDomains?.length &&
+        fromDomains.every(a => a.not === false && a.bad === false) &&
+        (parser.isAnyPattern() || (parser.isLeftAnchored() &&
+            parser.isRightAnchored() === false &&
+            (pattern === 'http://' || pattern === 'https://'))) &&
+        nodeTypes.includes(sfp.NODE_TYPE_NET_OPTION_NAME_CSP) === false &&
+        nodeTypes.includes(sfp.NODE_TYPE_NET_OPTION_NAME_REDIRECT) === false;
+    if ( splitDomains ) {
+        const option = options.find(a => a[0] === sfp.NODE_TYPE_NET_OPTION_NAME_FROM);
+        return Array.from(new Set(fromDomains.map(a => a.hn))).sort().map(hn => {
+            option[2] = hn;
+            return { key: JSON.stringify(identity), hostname: hn };
+        });
+    }
+    return [ { key: JSON.stringify(identity) } ];
+}
+
+export function resolveNetworkBadfilters(compiledSources) {
+    const sources = compiledSources.filter(Boolean);
+    const disabled = new Set(sources.flatMap(source => source.badfilterKeys ?? []));
+    for ( const source of sources ) {
+        if ( Array.isArray(source.networkUnits) === false ) { continue; }
+        const units = source.networkUnits.filter(unit => disabled.has(unit.key) === false);
+        // Minimizers mutate their inputs. Keep the cached source units intact
+        // so removing a badfilter restores exactly the previous contribution.
+        source.dnrRules = structuredClone(units.flatMap(unit => unit.dnrRules));
+        source.popupFilters = structuredClone(units.flatMap(unit => unit.popupFilters));
+        source.badfilterCancelledCount = source.networkUnits.length - units.length;
+    }
+}
+
 export class NetworkFilterCompiler {
     constructor(details = {}) {
         this.details = { ...details };
         this.dnrRules = [];
         this.popupFilters = [];
         this.rejections = [];
+        this.networkUnits = [];
+        this.badfilterKeys = [];
         this.filterStats = {
             total: 0,
             accepted: 0,
@@ -1011,16 +1198,41 @@ export class NetworkFilterCompiler {
     add(parser, lineNumber) {
         this.filterStats.total += 1;
         const lineRules = [];
+        const linePopupFilters = [];
         const result = parseNetworkFilter(parser, {
             ...this.details,
             lineNumber,
-            popupFilters: this.popupFilters,
+            popupFilters: linePopupFilters,
         }, lineRules);
         if ( result.status === 'rejected' ) {
             this.filterStats.rejected += 1;
             this.rejections.push(result);
             return result;
         }
+        const identities = networkFilterIdentities(parser);
+        if ( result.classification === 'badfilter' ) {
+            this.badfilterKeys.push(...identities.map(a => a.key));
+            this.filterStats.accepted += 1;
+            return result;
+        }
+        for ( const { key, hostname } of identities ) {
+            const rules = structuredClone(lineRules);
+            const popupFilters = structuredClone(linePopupFilters);
+            if ( hostname !== undefined ) {
+                for ( const item of [ ...rules, ...popupFilters ] ) {
+                    if ( item.condition.initiatorDomains ) {
+                        item.condition.initiatorDomains = [ hostname ];
+                    } else if ( item.condition.requestDomains &&
+                        parser.getNodeTypes().includes(sfp.NODE_TYPE_NET_OPTION_NAME_REMOVEPARAM) &&
+                        item.condition.resourceTypes?.length === 1 &&
+                        item.condition.resourceTypes[0] === 'main_frame' ) {
+                        item.condition.requestDomains = [ hostname ];
+                    }
+                }
+            }
+            this.networkUnits.push({ key, dnrRules: rules, popupFilters });
+        }
+        this.popupFilters.push(...linePopupFilters);
         if ( result.classification === 'popup-runtime' ||
             result.classification === POPUP_DEFERRED_ROUTE_CODE ) {
             this.filterStats.routed += 1;
@@ -1039,6 +1251,7 @@ export class NetworkFilterCompiler {
     }
 
     finish() {
+        resolveNetworkBadfilters([ this ]);
         let dnrRules = minimizeRuleset(this.dnrRules);
         dnrRules = minimizeRules(dnrRules);
         const finalRejections = [];
@@ -1056,6 +1269,9 @@ export class NetworkFilterCompiler {
             dnrRules: validatedRules,
             popupFilters: this.popupFilters,
             rejections: this.rejections,
+            networkUnits: this.networkUnits,
+            badfilterKeys: this.badfilterKeys,
+            badfilterCancelledCount: this.badfilterCancelledCount,
         };
     }
 }

@@ -32,6 +32,7 @@ import {
     NetworkFilterCompiler,
     minimizeRules,
     minimizeRuleset,
+    resolveNetworkBadfilters,
     validateRules,
 } from '../ubo-parser.js';
 
@@ -294,6 +295,8 @@ export function compileFilters(listid, text, context = {}) {
         dnrRules: minimizedRules,
         popupFilters: networkCompiled.popupFilters,
         rejections: networkCompiled.rejections,
+        networkUnits: networkCompiled.networkUnits,
+        badfilterKeys: networkCompiled.badfilterKeys,
         specificCosmeticDetails,
         scriptletDetails,
     };
@@ -373,7 +376,10 @@ export async function toMv3Data(rulesetid, compiledData) {
         }
     }
 
-    const output = {}
+    const output = {
+        badfilterKeys: compiledData.badfilterKeys ?? [],
+        scriptletExceptions: makeScriptlets.exceptionDetails(compiledData.scriptletDetails),
+    };
     if ( compiledData.dnrRules.length ) {
         output.dnrRules = minimizeRuleset(compiledData.dnrRules);
         output.dnrRules = minimizeRules(output.dnrRules);
@@ -659,6 +665,12 @@ async function getCompiledListData(list) {
 /******************************************************************************/
 
 function mergeCompiledData(to, from) {
+    if ( from.networkUnits ) {
+        to.networkUnits = [ ...(to.networkUnits ?? []), ...from.networkUnits ];
+    }
+    if ( from.badfilterKeys ) {
+        to.badfilterKeys = [ ...(to.badfilterKeys ?? []), ...from.badfilterKeys ];
+    }
     if ( from.dnrRules ) {
         if ( to.dnrRules ) {
             for ( const rule of from.dnrRules ) {
@@ -819,6 +831,26 @@ async function runCompiler() {
         ]);
     }
     reportProgress('source-compilation-complete');
+    const stockIds = await browser.runtime.sendMessage({
+        what: 'compileFilters:getEnabledStockRulesets',
+    });
+    const stockBadfilterKeys = [];
+    if ( stockIds?.length ) {
+        const response = await fetch('/rulesets/badfilter-details.json');
+        const index = await response.json();
+        if ( response.ok === false || index?.schemaVersion !== 1 ) {
+            throw new Error('Missing stock badfilter index');
+        }
+        for ( const id of stockIds ) {
+            const keys = index.rulesets?.[id]?.badfilterKeys;
+            if ( Array.isArray(keys) === false ) {
+                throw new Error(`Invalid stock badfilter metadata: ${id}`);
+            }
+            stockBadfilterKeys.push(...keys);
+        }
+    }
+    resolveNetworkBadfilters([ sandboxResult, importedResult,
+        { badfilterKeys: stockBadfilterKeys } ]);
     const sandboxCompiled = await toMv3Data('sandbox', sandboxResult) ?? {};
     reportProgress('sandbox-conversion-complete');
     const importedCompiled = await toMv3Data('imported', importedResult) ?? {};
@@ -832,12 +864,28 @@ async function runCompiler() {
         });
         return;
     }
-    const values = {};
+    const values = {
+        [compiledStorageKey(compiledGeneration, 'scriptletExceptions.schema')]: 1,
+    };
     const toRemove = [];
     for ( const [ id, compiled ] of [
         [ 'sandbox', sandboxCompiled ],
         [ 'imported', importedCompiled ],
     ] ) {
+        const badfilterKey = compiledStorageKey(compiledGeneration, `${id}Filters.badfilterKeys`);
+        if ( compiled.badfilterKeys?.length ) {
+            values[badfilterKey] = compiled.badfilterKeys;
+        } else {
+            toRemove.push(badfilterKey);
+        }
+        const exceptionsKey = compiledStorageKey(
+            compiledGeneration, `${id}Filters.scriptletExceptions`
+        );
+        if ( compiled.scriptletExceptions?.length ) {
+            values[exceptionsKey] = compiled.scriptletExceptions;
+        } else {
+            toRemove.push(exceptionsKey);
+        }
         const dnrKey = compiledStorageKey(
             compiledGeneration,
             `${id}Filters.dnrRules`

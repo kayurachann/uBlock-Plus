@@ -2,7 +2,7 @@
 
 The September 2026 screenshots below show the actual uBlock Plus+ extension running in **Google Chrome 152.0.7977.76 (Official Build, 64-bit)** on Windows 11. They are direct browser captures, with no compositing, retouching or generated UI.
 
-## Current screenshots
+## Popup and dashboard captures
 
 | File | What it shows | Pixel dimensions |
 | --- | --- | --- |
@@ -16,7 +16,7 @@ The September 2026 screenshots below show the actual uBlock Plus+ extension runn
 
 Captured on **2026-09-06**, using English interface text and isolated test profiles. The popup images were copied byte-for-byte from the release retest captures; the dashboard images were captured for this README. Dark theme in the popup was selected using Chrome's emulated color-scheme preference. The popup captures reflect Windows display scaling; the native Comfortable layout is 340 CSS pixels wide.
 
-All current screenshots use the **1.0.0 Chromium MV3** package validated for commit [`2316c69`](https://github.com/kayurachann/uBlock-Plus/commit/2316c69cddaae3eb190bedb1bba798fe48f730e9). Release ZIP SHA-256:
+The seven screenshots listed above use the **1.0.0 Chromium MV3** package validated for commit [`2316c69`](https://github.com/kayurachann/uBlock-Plus/commit/2316c69cddaae3eb190bedb1bba798fe48f730e9). Release ZIP SHA-256:
 
 ```text
 3093c34afffad538d25de74ec7a027ef3c39a0183f4792a8bf437d87f630a3be
@@ -32,6 +32,17 @@ Local capture records, retained outside Git under `tmp/google-chrome-retest/`, a
 - Capture script: `readme-capture.mjs`.
 
 To refresh these images, build and validate the Chromium package, load it in an isolated Google Chrome profile, reproduce the documented settings through the interface and capture the visible view directly. Keep the example domains and record the new browser version, package hash and capture date. Do not substitute a mockup for a product screenshot.
+
+## Firewall and unified logger captures
+
+| File | What it shows | Pixel dimensions |
+| --- | --- | --- |
+| [dynamic-firewall.png](dynamic-firewall.png) | Actual Site rules firewall panel with the temporary rule `* b.localhost * noop`; zero native rules is valid for noop because static filtering still applies. | 1190 × 580 |
+| [unified-logger.png](unified-logger.png) | Actual logger capturing controlled network requests, an EasyList native rule body, a firewall session match and CSS/DOM diagnostics. | 1565 × 1874 |
+
+Captured on **2026-09-06** in English using the same installed Chrome 152 build. These captures keep Chrome's sandbox, web security and built-in popup blocker enabled. The harness uses an isolated profile and the supported CDP `Extensions.loadUnpacked` API; it does not use the personal browser profile. The images are direct captures copied byte-for-byte. Example domains and the `private=secret` query shown in the logger are synthetic fixture data; the separate export test verifies URL redaction. The screenshot itself displays the in-memory capture before export.
+
+The matching package hash and final test records are documented in the [implementation and verification guide](../../MV3-PARITY-IMPLEMENTATION-2026-09-06.md#xác-minh). Capture harness: `tmp/parity-remediation-2026-09-06/chrome-firewall-logger.mjs`; raw records are retained locally outside Git. These are UI examples, not evidence of complete MV2 compatibility or a performance benchmark.
 
 ## Earlier assets
 

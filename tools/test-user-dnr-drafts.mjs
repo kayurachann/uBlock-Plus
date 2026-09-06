@@ -39,6 +39,7 @@ let sessionUpdates;
 globalThis.self = globalThis;
 globalThis.chrome = {
     declarativeNetRequest: {
+        async getEnabledRulesets() { return []; },
         MAX_NUMBER_OF_REGEX_RULES: 1000,
         RuleConditionKeys: { TOP_DOMAINS: true },
         async getDynamicRules() { return structuredClone(dynamicRules); },

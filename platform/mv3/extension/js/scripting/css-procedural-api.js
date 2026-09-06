@@ -681,6 +681,13 @@ class ProceduralFilterer {
             t0 = t1;
             if ( nodes.length === 0 ) { continue; }
             this.processNodes(nodes, pselector.action);
+            if ( typeof self.ublockPlusLogger === 'function' ) {
+                try {
+                    self.ublockPlusLogger(pselector.raw, nodes.length, pselector.action?.[0]);
+                } catch {
+                    // Diagnostics must never interrupt filtering or unstyling.
+                }
+            }
         }
 
         this.unprocessNodes(toUnstyle);

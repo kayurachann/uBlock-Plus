@@ -36,6 +36,7 @@ import {
     subtractHostnameIters,
 } from './utils.js';
 
+import { recordCSSInsertion } from './logger.js';
 import { ublockPlusErr } from './debug.js';
 
 /******************************************************************************/
@@ -162,11 +163,14 @@ export async function injectCustomFilters(tabId, frameId, hostname) {
     const promises = [];
     const plainSelectors = selectors.filter(a => isCSS(a));
     if ( plainSelectors.length !== 0 ) {
+        const css = `${plainSelectors.join(',\n')}{display:none!important;}`;
         promises.push(
             browser.scripting.insertCSS({
-                css: `${plainSelectors.join(',\n')}{display:none!important;}`,
+                css,
                 origin: 'USER',
                 target: { tabId, frameIds: [ frameId ] },
+            }).then(( ) => {
+                recordCSSInsertion(css, { id: browser.runtime.id, tab: { id: tabId }, frameId });
             }).catch(reason => {
                 ublockPlusErr(`injectCustomFilters/insertCSS/${reason}`);
             })

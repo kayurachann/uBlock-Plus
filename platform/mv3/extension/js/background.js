@@ -70,6 +70,7 @@ import {
     adminReadEx,
     getAdminRulesets,
     loadAdminConfig,
+    setAdminMutationScheduler,
 } from './admin.js';
 
 import {
@@ -115,6 +116,7 @@ import {
 import {
     enableRulesets,
     excludeFromStrictBlock,
+    finalizeNativeRulesetRecovery,
     getDefaultRulesetsFromEnv,
     getEffectiveUserRules,
     getEnabledRulesets,
@@ -122,7 +124,10 @@ import {
     getRulesetDetails,
     getRulesetRules,
     patchDefaultRulesets,
+    recoverStockBadfilters,
+    restoreNativeRulesetState,
     setStrictBlockMode,
+    snapshotNativeRulesetState,
     updateDynamicAndSessionRules,
     updateSessionRules,
     updateUserRules,
@@ -158,6 +163,12 @@ import {
 } from './ext-utils.js';
 
 import {
+    isLoggerCapturing,
+    recordCSSInsertion,
+    recordContentDiagnostic,
+} from './logger.js';
+
+import {
     popupPageContext,
     reloadPopupTab,
 } from './popup-panel-core.js';
@@ -172,9 +183,11 @@ import {
 import { COMPILED_FILTERS_REVISION } from './compiled-cache.js';
 import { POPUP_RUNTIME_ROUTE_CODE } from './compiled-popup-matcher.js';
 import { capturePopupFrameContext } from './popup-frame-context.js';
+import { createFirewallManager } from './firewall-manager.js';
 import { createPopupBlocker } from './popup-blocker.js';
 import { dnr } from './ext-compat.js';
 import { getRuntimeCapabilities } from './runtime-capabilities.js';
+import psl from '../lib/publicsuffixlist.js';
 import { setPopupBlockMode } from './prevent-popup.js';
 import { toggleToolbarIcon } from './action.js';
 
@@ -328,11 +341,32 @@ function enqueueFilteringMutation(task) {
     return result;
 }
 
+const firewall = createFirewallManager({
+    dnr, localRead, localWrite, sessionRead, sessionWrite,
+    sessionRemove: key => browser.storage.session.remove(key),
+    getModes: () => getFilteringModeDetails(true),
+    getTabs: () => browser.tabs.query({}),
+    log: ublockPlusErr,
+    loadDomainResolver: async () => {
+        const response = await fetch(runtime.getURL('firewall-public-suffix.json'));
+        if ( response.ok !== true ) { throw new Error('Public Suffix List unavailable'); }
+        const { text } = await response.json();
+        if ( typeof text !== 'string' || text.includes('BEGIN ICANN DOMAINS') === false ) {
+            throw new Error('Invalid packaged Public Suffix List');
+        }
+        psl.parse(text, hostname => new URL(`https://${hostname}`).hostname);
+        return hostname => psl.getDomain(hostname);
+    },
+});
+
 async function refreshFilteringScripts() {
-    // Keep the filtering queue occupied until both registrations settle. A
-    // rejected branch must not overlap the next mode change or its rollback.
+    // The content registration transaction owns both native and user scripts.
+    // Running a separate user registration beside it can overwrite a newer
+    // generation with the content transaction's earlier native snapshot.
+    // Keep the queue occupied until independent firewall work settles too.
     const results = await Promise.allSettled([
-        registerContentScripts(), registerUserScripts(),
+        registerContentScripts(),
+        firewall.refresh(),
     ]);
     const errors = results.filter(result => result.status === 'rejected')
         .map(result => result.reason);
@@ -340,6 +374,10 @@ async function refreshFilteringScripts() {
         throw new AggregateError(errors, errors.map(String).join('; '));
     }
 }
+
+setAdminMutationScheduler(task => isFullyInitialized.then(( ) =>
+    enqueueFilteringMutation(task)
+), { applyRulesets: applyRulesetsNow, refreshScripts: refreshFilteringScripts });
 
 let pendingPermissionRequest;
 
@@ -644,14 +682,16 @@ async function recoverPendingCompiledActivation(options = {}) {
 /******************************************************************************/
 
 async function snapshotRulesetTransaction() {
-    const [ previousRulesets, previousImportedLists, previousGeneration ] =
+    const [ previousRulesets, previousImportedLists, previousGeneration, nativeState ] =
         await Promise.all([
             getEnabledRulesets(),
             getImportedLists(),
             getActiveCompiledGeneration(),
+            snapshotNativeRulesetState(),
         ]);
     return {
-        schemaVersion: 1,
+        schemaVersion: 2,
+        nativeState,
         previousRulesets,
         previousImportedLists: structuredClone(previousImportedLists),
         previousConfigEnabledRulesets:
@@ -661,6 +701,37 @@ async function snapshotRulesetTransaction() {
 }
 
 async function rollbackRulesetTransaction(transaction) {
+    if ( transaction.schemaVersion === 2 ) {
+        // Recompiling the old stock corpus can fail a newer native regex check
+        // even though its previously installed subset was valid. Restore the
+        // durable API snapshot without parsing or weakening any exception.
+        await restoreNativeRulesetState(transaction.nativeState);
+        await replaceImportedLists(transaction.previousImportedLists || []);
+        const pendingActivation = await localRead(PENDING_COMPILED_ACTIVATION_KEY);
+        const currentGeneration = await getActiveCompiledGeneration();
+        const previousGeneration = typeof transaction.previousGeneration === 'string'
+            ? transaction.previousGeneration : '';
+        await registerUserScripts(previousGeneration);
+        await commitCompiledGeneration(previousGeneration);
+        rulesetConfig.enabledRulesets = Array.isArray(transaction.previousConfigEnabledRulesets)
+            ? transaction.previousConfigEnabledRulesets.slice()
+            : transaction.previousRulesets.slice();
+        await saveRulesetConfig();
+        await registerContentScripts();
+        await finalizeNativeRulesetRecovery();
+        await localRemove(PENDING_COMPILED_ACTIVATION_KEY);
+        await localRemove(RULESET_TRANSACTION_KEY);
+        for ( const generation of new Set([ currentGeneration, pendingActivation?.generation ]) ) {
+            if ( typeof generation !== 'string' || generation === previousGeneration ) { continue; }
+            await removeCompiledGeneration(generation).catch(reason => {
+                ublockPlusErr(`cleanupRolledBackGeneration/${reason}`);
+            });
+        }
+        broadcastMessage({ enabledRulesets: rulesetConfig.enabledRulesets });
+        return;
+    }
+    // Journals created before native snapshots retain the guarded legacy path.
+    // There is no safe historical native rule set to invent for them.
     await replaceImportedLists(transaction.previousImportedLists || []);
 
     const pendingActivation = await localRead(PENDING_COMPILED_ACTIVATION_KEY);
@@ -719,7 +790,7 @@ async function applyRulesetsNow(rulesets, options = {}) {
             rulesetConfig.enabledRulesets = result.enabledRulesets;
             await saveRulesetConfig();
         }
-        if ( importedUpdated || options.forceCompiledActivation === true ) {
+        if ( stockUpdated || importedUpdated || options.forceCompiledActivation === true ) {
             activationResult = await activateCompiledFilterRulesNow({
                 deferImportedListFinalization: true,
                 retainPreviousGeneration: true,
@@ -1001,6 +1072,12 @@ async function onMessage(request, sender) {
 
     switch ( request.what ) {
 
+    case 'getLoggerCapture':
+        return isLoggerCapturing(sender?.tab?.id);
+
+    case 'recordContentDiagnostic':
+        return recordContentDiagnostic(request, sender);
+
     case 'insertCSS':
         if ( frameId === false ) { return false; }
         // https://bugs.webkit.org/show_bug.cgi?id=262491
@@ -1009,6 +1086,8 @@ async function onMessage(request, sender) {
             css: request.css,
             origin: 'USER',
             target: { tabId, frameIds: [ frameId ] },
+        }).then(() => {
+            recordCSSInsertion(request.css, sender);
         }).catch(reason => {
             ublockPlusErr(`insertCSS/${reason}`);
         });
@@ -1082,8 +1161,23 @@ async function onMessage(request, sender) {
     const isTrustedOrigin = sender?.origin === undefined ||
         sender.origin.toLowerCase() === UBLOCK_PLUS_ORIGIN;
     if ( isTrustedOrigin === false ) { return; }
+    if ( [ 'getFirewallState', 'previewFirewallRules', 'applyFirewallRules' ].includes(request.what) ) {
+        if ( sender?.id !== runtime.id ||
+            sender?.url?.toLowerCase().startsWith(`${UBLOCK_PLUS_ORIGIN}/`) !== true ) {
+            return;
+        }
+    }
 
     switch ( request.what ) {
+
+    case 'getFirewallState':
+        return firewall.getState();
+
+    case 'previewFirewallRules':
+        return enqueueFilteringMutation(() => firewall.preview(request.text));
+
+    case 'applyFirewallRules':
+        return enqueueFilteringMutation(() => firewall.apply(request.text, request.permanent));
 
     case 'applyRulesets': {
         return applyRulesets(request.enabledRulesets, {
@@ -1235,15 +1329,17 @@ async function onMessage(request, sender) {
         return;
 
     case 'setStrictBlockMode':
-        await setStrictBlockMode(request.state);
-        broadcastMessage({ strictBlockMode: rulesetConfig.strictBlockMode });
-        return;
+        return enqueueFilteringMutation(async ( ) => {
+            await setStrictBlockMode(request.state);
+            broadcastMessage({ strictBlockMode: rulesetConfig.strictBlockMode });
+        });
 
     case 'setPopupBlockMode':
-        await setPopupBlockMode(request.state);
-        await registerContentScripts();
-        broadcastMessage({ popupBlockMode: rulesetConfig.popupBlockMode });
-        return;
+        return enqueueFilteringMutation(async ( ) => {
+            await setPopupBlockMode(request.state);
+            await registerContentScripts();
+            broadcastMessage({ popupBlockMode: rulesetConfig.popupBlockMode });
+        });
 
     case 'setDeveloperMode':
         return setDeveloperMode(request.state);
@@ -1334,7 +1430,9 @@ async function onMessage(request, sender) {
     }
 
     case 'excludeFromStrictBlock':
-        return excludeFromStrictBlock(request.hostname, request.permanent);
+        return enqueueFilteringMutation(( ) =>
+            excludeFromStrictBlock(request.hostname, request.permanent)
+        );
 
     case 'getMatchedRules':
         return getMatchedRules(request.tabId);
@@ -1591,21 +1689,19 @@ async function startSession() {
     // "When an extension updates, content scripts are cleared"
     // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/userScripts#extension_updates
     // "User scripts are cleared when an extension updates"
-    const promises = [];
     const shouldInject = isNewVersion || permissionsUpdated ||
         isSideloaded && rulesetConfig.developerMode;
-    if ( shouldInject || stockUpdated ) {
-        promises.push(registerContentScripts());
-    }
-    if ( importedUpdated ) {
-        promises.push(activateCompiledFilterRules());
+    // Activate the new shared exception/cancellation generation before a full
+    // native registration takes its snapshot. Both paths own stock scriptlets.
+    if ( stockUpdated || importedUpdated ) {
+        await activateCompiledFilterRules();
     } else if ( shouldInject ) {
-        promises.push(registerUserScripts(), updateUserRules());
-    } else if ( userScriptsChanged ) {
-        promises.push(registerUserScripts());
+        await updateUserRules();
     }
-    if ( promises.length ) {
-        await Promise.all(promises);
+    if ( shouldInject || stockUpdated ) {
+        await registerContentScripts();
+    } else if ( userScriptsChanged && importedUpdated !== true ) {
+        await registerUserScripts();
     }
 
     // Cosmetic filtering-related content scripts cache fitlering data in
@@ -1653,10 +1749,15 @@ async function start() {
     ]);
 
     const pendingRuleset = await localRead(RULESET_TRANSACTION_KEY);
-    if ( pendingRuleset instanceof Object ) {
+    if ( pendingRuleset?.schemaVersion === 2 ) {
         await rollbackRulesetTransaction(pendingRuleset);
     } else {
-        await recoverPendingCompiledActivation();
+        await recoverStockBadfilters();
+        if ( pendingRuleset instanceof Object ) {
+            await rollbackRulesetTransaction(pendingRuleset);
+        } else {
+            await recoverPendingCompiledActivation();
+        }
     }
     // A service-worker termination during offscreen compilation can leave an
     // offscreen document and generation alive. Stop it, delete its four
@@ -1684,6 +1785,9 @@ async function start() {
     }
 
     await popupBlocker.resume();
+    await firewall.initialize().catch(reason => {
+        ublockPlusErr(`Firewall startup/${reason}`);
+    });
     toggleDeveloperMode(rulesetConfig.developerMode);
 }
 
@@ -1783,11 +1887,23 @@ browser.tabs.onCreated.addListener(tab => {
 });
 
 browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    if ( typeof changeInfo.url === 'string' ) {
+        isFullyInitialized.then(() => enqueueFilteringMutation(() =>
+            firewall.observe(changeInfo.url)
+        )).catch(reason => ublockPlusErr(`Firewall navigation/${reason}`));
+    }
     isFullyInitialized.then(( ) => {
         return popupBlocker.onTabUpdated(tabId, changeInfo, tab);
     }).catch(reason => {
         ublockPlusErr(`popupTabUpdated/${reason}`);
     });
+});
+
+browser.webNavigation?.onBeforeNavigate?.addListener(details => {
+    if ( details.frameId !== 0 ) { return; }
+    isFullyInitialized.then(() => enqueueFilteringMutation(() =>
+        firewall.observe(details.url)
+    )).catch(reason => ublockPlusErr(`Firewall navigation/${reason}`));
 });
 
 browser.tabs.onRemoved.addListener(tabId => {

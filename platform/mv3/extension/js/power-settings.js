@@ -20,6 +20,7 @@ import {
     getPowerUISettings,
     setPowerUISettings,
 } from './power-ui.js';
+import { capabilityDetailsRows } from './runtime-capabilities-ui.js';
 
 let operationTimer;
 let profileState;
@@ -359,6 +360,7 @@ function renderCapabilities(capabilities) {
         [ message('diagnosticsPopupObservation'), availability(capabilities.smartPopupObservation) ],
         [ message('diagnosticsUserScripts'), availability(capabilities.userScripts) ],
         [ message('diagnosticsOffscreenCompiler'), availability(capabilities.offscreenCompilation) ],
+        ...capabilityDetailsRows(capabilities, i18n.getUILanguage?.() || navigator.language),
         [ message('diagnosticsStaticRules'), formatQuota(quotas.availableStaticRules) ],
         [ message('diagnosticsDynamicRules'), formatQuota(quotas.dynamicRules) ],
         [ message('diagnosticsSessionRules'), formatQuota(quotas.sessionRules) ],

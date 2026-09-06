@@ -36,6 +36,8 @@ import { isVerifiedSourceKey } from '../platform/mv3/extension/js/verified-sourc
 function newCompiledListData() {
     return {
         dnrRules: [],
+        networkUnits: [],
+        badfilterKeys: [],
         specificCosmeticDetails: new Map(),
         scriptletDetails: new Map(),
         filterStats: {
@@ -109,6 +111,9 @@ for ( const invalid of [
     null,
     {},
     { ...newCompiledListData(), dnrRules: {} },
+    { ...newCompiledListData(), networkUnits: undefined },
+    { ...newCompiledListData(), badfilterKeys: [ null ] },
+    { ...newCompiledListData(), networkUnits: [ { key: 'x', dnrRules: [ null ], popupFilters: [] } ] },
     { ...newCompiledListData(), specificCosmeticDetails: [] },
     { ...newCompiledListData(), scriptletDetails: {} },
     {

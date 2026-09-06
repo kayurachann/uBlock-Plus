@@ -256,6 +256,18 @@ assert.equal(manualList.requireHTTPSSource, true);
 const rulesetManager = await import(pathToFileURL(
     path.join(extensionJS, 'ruleset-manager.js')
 ));
+// This suite exercises dynamic/session durability. Packaged provenance has no
+// badfilter directives here; stock cancellation and recovery have their own
+// native-API mock suite with nonempty, verified source metadata.
+const durabilityFetch = globalThis.fetch;
+globalThis.fetch = async (url, ...args) => {
+    if ( url === '/rulesets/badfilter-details.json' ) {
+        return { async json() { return { schemaVersion: 1, rulesets: {
+            'stock-regex': { badfilterKeys: [], digest: 'a'.repeat(64) },
+        } }; } };
+    }
+    return durabilityFetch(url, ...args);
+};
 
 const makeRule = id => ({
     id,
@@ -374,6 +386,9 @@ let stockRegexRules = [ 101, 102 ].map(id => ({
 }));
 globalThis.fetch = async url => ({
     async json() {
+        if ( url === '/rulesets/badfilter-details.json' ) {
+            return (await originalFetch(url)).json();
+        }
         if ( url === '/rulesets/ruleset-details.json' ) {
             return [ {
                 id: 'stock-regex',
@@ -643,6 +658,8 @@ for ( const realm of [ 'sandbox', 'imported' ] ) {
         );
         const result = await rulesetManager.updateUserRules(generation);
         assert.match(result.fatalError, /allow exception.*unsupported regex/i);
+        assert.match(result.fatalError, /syntaxError/);
+        assert.match(result.fatalError, /rule 2/);
         assert.equal(result.added, 0);
         assert.deepEqual(currentDynamicRules, previous);
     }
@@ -661,6 +678,45 @@ assert.equal(afterRejectedAllow.fatalError, '');
 assert.equal(afterRejectedAllow.added, 1);
 assert.match(afterRejectedAllow.errors.join('\n'), /syntaxError/);
 assert.equal(currentDynamicRules[0].condition.urlFilter, '||example3.test^');
+dnr.isRegexSupported = originalRegexProbe;
+
+// Chrome compiles with the rule's actual matching and capture flags. A cached
+// result from another mode must neither reject a supported rule nor approve an
+// unsupported exception/redirect.
+const actualRegexOptions = [];
+dnr.isRegexSupported = async options => {
+    actualRegexOptions.push(options);
+    return { isSupported: options.isCaseSensitive && !options.requireCapturing,
+        reason: 'memoryLimitExceeded' };
+};
+for ( const [ generation, caseSensitive, capturing, accepted ] of [
+    [ 'sensitive-regex', true, false, true ],
+    [ 'insensitive-regex', false, false, false ],
+    [ 'capture-regex', true, true, false ],
+] ) {
+    local.values.set(`compiledFilters.g.${generation}.sandboxFilters.dnrRules`, [ {
+        id: 1, priority: 30,
+        action: capturing ? { type: 'redirect', redirect: { regexSubstitution: '\\1' } }
+            : { type: 'allow' },
+        condition: { regexFilter: '(exact-flags)', isUrlFilterCaseSensitive: caseSensitive },
+    } ]);
+    const before = structuredClone(currentDynamicRules);
+    const result = await rulesetManager.updateUserRules(generation);
+    if ( accepted ) {
+        assert.equal(result.fatalError, '');
+        assert.equal(result.added, 1);
+    } else if ( capturing ) {
+        assert.equal(result.added, 0);
+        assert.match(result.errors.join('\n'), /memoryLimitExceeded/);
+    } else {
+        assert.match(result.fatalError, /allow exception.*unsupported regex/i);
+        assert.match(result.fatalError, /memoryLimitExceeded/);
+        assert.deepEqual(currentDynamicRules, before);
+    }
+}
+assert.deepEqual(actualRegexOptions.map(options =>
+    [ options.isCaseSensitive, options.requireCapturing ]),
+[ [ true, false ], [ false, false ], [ true, true ] ]);
 dnr.isRegexSupported = originalRegexProbe;
 
 console.log('Runtime durability checks passed.');

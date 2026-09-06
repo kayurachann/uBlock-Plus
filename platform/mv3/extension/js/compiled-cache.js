@@ -19,7 +19,7 @@ import {
 
 // Increment when compiler semantics change; older envelopes must be rebuilt
 // from source instead of reusing output which lost exceptions or metadata.
-export const COMPILED_FILTERS_REVISION = 1;
+export const COMPILED_FILTERS_REVISION = 2;
 
 function isStats(value, fields) {
     if ( typeof value !== 'object' || value === null ) { return false; }
@@ -69,6 +69,19 @@ function isPopupFilter(value) {
 export function isCompiledListData(value) {
     if ( typeof value !== 'object' || value === null ) { return false; }
     if ( Array.isArray(value.dnrRules) === false ) { return false; }
+    if ( Array.isArray(value.networkUnits) === false ||
+        value.networkUnits.every(unit =>
+            typeof unit?.key === 'string' &&
+            Array.isArray(unit.dnrRules) &&
+            unit.dnrRules.every(rule => typeof rule?.action === 'object' &&
+                typeof rule?.condition === 'object') &&
+            Array.isArray(unit.popupFilters) &&
+            unit.popupFilters.every(isPopupFilter)
+        ) === false ||
+        Array.isArray(value.badfilterKeys) === false ||
+        value.badfilterKeys.every(key => typeof key === 'string') === false ) {
+        return false;
+    }
     if ( value.specificCosmeticDetails instanceof Map === false ) {
         return false;
     }

@@ -21,8 +21,13 @@ export const COMPILED_GENERATION_PREFIX = 'compiledFilters.g.';
 export const COMPILED_LOGICAL_KEYS = Object.freeze([
     'sandboxFilters.dnrRules',
     'importedFilters.dnrRules',
+    'sandboxFilters.badfilterKeys',
+    'importedFilters.badfilterKeys',
     'sandboxFilters.userScripts',
     'importedFilters.userScripts',
+    'sandboxFilters.scriptletExceptions',
+    'importedFilters.scriptletExceptions',
+    'scriptletExceptions.schema',
     'sandboxFilters.popupFilters',
     'importedFilters.popupFilters',
 ]);

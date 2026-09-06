@@ -43,7 +43,11 @@ uBlock Plus+ chặn các yêu cầu mạng và thành phần trang không mong m
 | Công cụ phần tử | Picker tạo bộ lọc giao diện lâu dài, zapper xóa tạm thời và unpicker gỡ bộ lọc cá nhân đã lưu phù hợp với phần tử được chọn. |
 | Quản lý bộ lọc | Danh sách tích hợp, nhập qua HTTPS, các gói Filter Store và catalog cộng đồng tương thích. |
 | Cài đặt | Cấu hình bảo vệ có sẵn, giao diện, mật độ hiển thị, cấu hình bộ nhớ, tùy chọn riêng tư của trình duyệt và sao lưu/khôi phục. |
-| Chẩn đoán | Chẩn đoán cục bộ với dung lượng giới hạn và các ràng buộc của MV3; không phải nhật ký đầy đủ của mọi yêu cầu mạng theo thời gian thực. |
+| Firewall động | Quy tắc nguồn/đích/loại với block, allow và noop đúng nghĩa; hỗ trợ tên miền, địa chỉ IPv4 và IPv6 trong ngoặc vuông; bản tạm/lâu dài, kiểm tra và khôi phục. Cần Chrome 145+. |
+| Ngoại lệ bộ lọc | Ngoại lệ scriptlet giữa các nguồn, `$badfilter` chính xác cho imported/personal và hủy stock theo ánh xạ nguồn, gồm dựng lại phần còn lại của nhóm hostname đã chứng minh được ngữ nghĩa. |
+| Chẩn đoán | Chủ động ghi network, DNR native, cosmetic, DOM và scriptlet; có tìm kiếm, export che dữ liệu và lịch sử cục bộ giới hạn. |
+
+Xem [hướng dẫn firewall, logger và ngoại lệ](MV3-PARITY-IMPLEMENTATION-2026-09-06.md) để biết cách dùng, chuyển đổi dữ liệu và giới hạn còn lại. Quyền `webRequest` là tùy chọn, chỉ được yêu cầu khi bấm bắt đầu ghi logger; chặn mạng vẫn dùng DNR.
 
 Các ảnh dưới đây chụp **tiện ích thực tế được nạp dạng unpacked trong Google Chrome 152.0.7977.76 trên Windows** vào ngày 6 tháng 9 năm 2026. Ảnh sử dụng hồ sơ thử nghiệm riêng và trang minh họa; đây không phải bản thiết kế mô phỏng. Ngôn ngữ giao diện trong ảnh là tiếng Anh. [Thông tin nguồn ảnh](assets/readme/README.md).
 
@@ -59,6 +63,19 @@ Các ảnh dưới đây chụp **tiện ích thực tế được nạp dạng 
 <img src="assets/readme/popup-compact.png" width="340" alt="Popup thực tế trên Chrome với giao diện tối và phần chi tiết được thu gọn">
 <br><strong>Thu gọn chi tiết</strong><br>Giao diện tối với phần chi tiết thu gọn. More/Less thay đổi lượng thông tin hiển thị; mật độ hiển thị là một cài đặt giao diện riêng.
 </p>
+
+</details>
+
+<details>
+<summary><strong>Xem firewall động và logger hợp nhất</strong></summary>
+
+<img src="assets/readme/dynamic-firewall.png" width="960" alt="Editor firewall động trên Chrome với quy tắc noop tạm thời và các nút kiểm tra, áp dụng, lưu">
+
+**Firewall động:** nhập quy tắc theo cú pháp uBO, kiểm tra bản nháp, rồi áp dụng trong phiên hoặc lưu lâu dài. Quy tắc noop có thể không tạo rule native mà vẫn giữ bộ lọc tĩnh hoạt động.
+
+<img src="assets/readme/unified-logger.png" width="960" alt="Logger hợp nhất trên Chrome hiển thị request mạng, rule EasyList đóng gói, rule session của firewall và bản ghi cosmetic DOM">
+
+**Logger hợp nhất:** chủ động ghi cho một tab, phân biệt hoạt động mạng quan sát được, native rule đã match và chẩn đoán DOM. URL và giá trị query trong ảnh là dữ liệu kiểm thử giả lập; URL trong file export được che dữ liệu.
 
 </details>
 
@@ -203,9 +220,10 @@ Việc lọc và lưu trữ dữ liệu chẩn đoán diễn ra cục bộ. Ti�
 | `alarms`, `offscreen` | Lên lịch bảo trì và thực hiện tác vụ biên dịch nền tạm thời. |
 | `userScripts` | Đăng ký bộ lọc người dùng/nhập vào được hỗ trợ bằng mã đóng gói sẵn, tùy thuộc công tắc riêng của Chrome. |
 | `webNavigation` | Liên kết thông tin điều hướng với ngữ cảnh popup. |
+| `webRequest` tùy chọn | Quan sát request của tab được chủ động chọn ghi nhật ký; không thêm engine chặn mạng. |
 | `privacy` tùy chọn | Thay đổi một số cài đặt riêng tư của Chrome sau khi người dùng bật các tùy chọn đó; khi tắt một mục, tiện ích xóa thiết lập ghi đè của mình. |
 
-Các bản unpacked hiện tại, kể cả gói có số phiên bản, đều khai báo `declarativeNetRequestFeedback`. Chẩn đoán quy tắc đã khớp còn yêu cầu bật **Developer mode** riêng của tiện ích và có hỗ trợ từ trình duyệt; thiết lập này khác với Developer mode của Chrome dùng khi cài đặt. Bản build có số phiên bản bỏ các tài nguyên ánh xạ gỡ lỗi chi tiết, nên mức độ chi tiết của chẩn đoán có thể khác bản build dành cho phát triển. Nút xem quy tắc đã khớp không khả dụng không có nghĩa là lọc đã tắt. Chẩn đoán popup được giới hạn dung lượng và lược bỏ phần chi tiết của URL. Xem [quyền riêng tư và thời gian lưu dữ liệu](PRIVACY.md) cùng [mô hình mối đe dọa](THREAT-MODEL.md).
+Các bản unpacked hiện tại, kể cả gói có số phiên bản, đều khai báo `declarativeNetRequestFeedback`. Logger hợp nhất hoạt động độc lập với **Developer mode** riêng của tiện ích; nguồn sự kiện DNR native vẫn phụ thuộc API Chrome và loại bản cài đặt. Bấm bắt đầu trước khi tái hiện lỗi. Quy tắc stock có thể tra về DNR đóng gói, còn dynamic/session được đọc qua API riêng, không nguyên tử với sự kiện; dữ liệu này không tái tạo đầy đủ mọi biểu thức bộ lọc gốc. Thiếu phản hồi không có nghĩa là lọc đã tắt. Chẩn đoán popup được giới hạn dung lượng và lược bỏ phần chi tiết của URL. Xem [quyền riêng tư và thời gian lưu dữ liệu](PRIVACY.md) cùng [mô hình mối đe dọa](THREAT-MODEL.md).
 
 ## Những gì MV3 làm được và chưa làm được
 
@@ -214,9 +232,12 @@ Các bản unpacked hiện tại, kể cả gói có số phiên bản, đều k
 | Chặn mạng và ngoại lệ | Thực hiện qua DNR, trong phạm vi điều kiện và hạn mức Chrome hỗ trợ. |
 | Bộ lọc giao diện và scriptlet | Hỗ trợ một tập con; mã scriptlet và tài nguyên chuyển hướng phải được đóng gói cùng tiện ích. |
 | Bộ lọc popup/popunder | Tập quy tắc `$popup` đóng gói sẵn (stock) được hỗ trợ và tập con `$popup`/`$popunder` từ danh sách nhập vào chạy qua bộ quan sát theo ngữ cảnh. `$popunder` đóng gói sẵn được ghi rõ là bỏ qua khi quá trình xuất làm mất loại gốc của quy tắc. |
-| Tường lửa động và nhật ký yêu cầu mạng | Không tái tạo đầy đủ tường lửa đồng bộ của MV2 hoặc nhật ký trực tiếp không giới hạn. |
+| Tường lửa động và nhật ký yêu cầu mạng | Firewall network native với noop đúng nghĩa trên Chrome 145+; logger giới hạn và chỉ ghi khi bật. Trang mới có thể cần cập nhật scope party bất đồng bộ; main-frame/inline-script và toàn bộ request browser chưa được bao phủ. |
+| `$badfilter` và ngoại lệ scriptlet | Hủy chính xác trước khi gộp imported/personal; stock hỗ trợ hủy cả rule hoặc dựng lại nhóm hostname chặn đã chứng minh được phần còn lại. Đóng góp chưa đủ bằng chứng hoặc thuộc corpus phụ vẫn hoạt động kèm cảnh báo. Ngoại lệ scriptlet dùng chung, có fallback thận trọng khi userScripts không mang được dữ liệu cần thiết. |
 | Viết lại nội dung phản hồi, kiểm tra DNS/CNAME, chặn chính xác theo kích thước phản hồi | Không có cách triển khai tương đương bằng các API MV3 công khai thông thường mà bản build này sử dụng. |
-| Khả năng managed/native | Thuộc nghiên cứu và lộ trình; không có ứng dụng native companion được đóng gói hoặc âm thầm cài đặt. |
+| Cài đặt managed và engine bổ sung | Đã hỗ trợ một số cài đặt do quản trị viên cung cấp; adapter chặn managed và native companion vẫn thuộc nghiên cứu. Không đóng gói hoặc âm thầm cài native companion. |
+
+Chrome có thể từ chối một regex ngoại lệ cho phép khi chương trình RE2 sau biên dịch vượt giới hạn của trình duyệt. Một số danh sách đóng gói có những biểu thức này, nên thay đổi lựa chọn danh sách có thể bị từ chối ngay cả khi số rule vẫn nằm trong quota. Tiện ích khôi phục cấu hình và quy tắc trước đó thay vì bỏ qua ngoại lệ. Xem [giới hạn regex native và cơ chế khôi phục](MV3-PARITY-IMPLEMENTATION-2026-09-06.md).
 
 **Fail-open là lựa chọn có chủ đích.** Nếu quyết định xử lý popup cần ngữ cảnh còn thiếu, không thể biểu diễn ngoại lệ an toàn hoặc đã dùng hết hạn mức đối chiếu, quyết định liên quan sẽ được hoãn thay vì chặn gần đúng. Điều kiện cho phép chưa thể xử lý có thể buộc hoãn quyết định; chúng không được tạo ra quyết định cho phép/chặn gần đúng. Quy tắc hạn chế chưa được hỗ trợ không bị mở rộng bằng cách bỏ bớt điều kiện. Cách xử lý này giảm chặn nhầm, đồng thời có nghĩa là một số popup không mong muốn vẫn có thể lọt qua.
 
@@ -265,6 +286,8 @@ Có thể dùng `make mv3-chromium` để tạo thư mục unpacked. Truyền s�
 
 ### Những gì đã được kiểm thử
 
+Đợt [xác minh firewall, logger và ngoại lệ mới nhất](MV3-PARITY-IMPLEMENTATION-2026-09-06.md#xác-minh) đã đạt **41 chương trình kiểm thử mã nguồn**, lint, build và kiểm tra gói phát hành, cùng **53 tình huống trên Google Chrome 152 cài đặt thật**, giữ sandbox và trình chặn popup tích hợp. Ngữ nghĩa firewall được đối chiếu **10.500 trường hợp với engine uBO đầy đủ**. ZIP cuối chứa **1.113 file đã đối chiếu**; hướng dẫn ghi checksum và giới hạn regex native còn lại. Từ chối an toàn và khôi phục là kết quả được kiểm thử, không có nghĩa Chrome đã nhận ngoại lệ không được hỗ trợ.
+
 Đợt [kiểm tra phát hành cục bộ ngày 6 tháng 9 năm 2026](MV3-CHROME-RETEST-2026-09-06.md) ghi nhận:
 
 - **31 chương trình kiểm thử mã nguồn**, lint, build có phiên bản và kiểm tra gói đầu ra đều đạt.
@@ -272,7 +295,7 @@ Có thể dùng `make mv3-chromium` để tạo thư mục unpacked. Truyền s�
 - **7 tình huống Chrome bổ sung** với sandbox và trình chặn popup tích hợp được bật, bao gồm chặn/chuyển hướng thực tế trên trang công khai.
 - **976 mục trong ZIP** khớp với thư mục build; 55 ruleset và 70.163 quy tắc DNR trong đúng gói được kiểm tra đó.
 
-Đây là kết quả cục bộ có thời điểm cụ thể cho bản build được ghi nhận, không khẳng định gói ZIP cũ đã phát hành hoặc mọi commit sau này đều vượt qua các bước này. Thao tác từ chối hộp thoại quyền tùy chọn của trình duyệt chưa được thử vì bản cài kiểm thử đã có `<all_urls>`. Các tình huống được dựng để kiểm thử cùng một phép thử trên trang công khai không bảo đảm kết quả cho mọi website, trình duyệt hoặc công nghệ hỗ trợ. Xem riêng [các lần chạy Actions](https://github.com/kayurachann/uBlock-Plus/actions/workflows/mv3-chromium.yml) để biết trạng thái CI.
+Đây là kết quả cục bộ có thời điểm cụ thể cho từng bản build được ghi nhận, không khẳng định gói ZIP cũ đã phát hành hoặc mọi commit sau này đều vượt qua các bước này. Ca từ chối quyền host trước đây chưa được thử trên hộp thoại native vì bản cài đó đã có `<all_urls>`. Đợt logger mới đã thử cấp quyền `webRequest` tùy chọn; nhánh từ chối được kiểm tra bằng test mã nguồn, chưa có lần đóng hộp thoại từ chối native được ghi nhận. Các tình huống dựng sẵn và phép thử trên trang công khai không bảo đảm kết quả cho mọi website, trình duyệt hoặc công nghệ hỗ trợ. Xem riêng [các lần chạy Actions](https://github.com/kayurachann/uBlock-Plus/actions/workflows/mv3-chromium.yml) để biết trạng thái CI.
 
 Đợt [rà soát tiếp theo với uBO đầy đủ](MV3-CAPABILITY-AUDIT-2026-09-06.md) mở rộng lên **35 chương trình kiểm thử mã nguồn**, sửa thêm lỗi ngoại lệ, phạm vi lọc, editor, nhật ký và cache compiler. Báo cáo ghi riêng artifact và kết quả Chrome của đợt này.
 
@@ -287,7 +310,7 @@ Có thể dùng `make mv3-chromium` để tạo thư mục unpacked. Truyền s�
 | Không nhập được danh sách | Kiểm tra URL HTTPS trực tiếp, định dạng, kích thước, khả năng của trình duyệt và hạn mức DNR còn lại. Đọc thông báo lỗi trước khi thử lại. |
 | Thiết lập cho trang con bị từ chối | Kiểm tra phạm vi trang cha trong Site rules; tiện ích từ chối thiết lập ghi đè chưa được hỗ trợ thay vì mở rộng tác động của nó. |
 | `Internal error while updating dynamic rules` khi kiểm thử trên Windows | Thử lại trong hồ sơ riêng có đường dẫn ngắn. Sự cố môi trường này đã tái hiện trong đợt kiểm thử Chrome thực tế; không xóa hồ sơ cá nhân để xử lý lỗi. |
-| Không có chẩn đoán quy tắc đã khớp | Kiểm tra Developer mode riêng của tiện ích và khả năng hỗ trợ API gỡ lỗi của trình duyệt. Các thiết lập này khác công tắc cài đặt của Chrome; bộ lọc vẫn có thể đang hoạt động. |
+| Nhật ký chưa có sự kiện | Chọn tab website và bắt đầu ghi trước khi tái hiện request. Quyền quan sát mạng và DNR feedback là hai khả năng riêng; xem trạng thái nhật ký và bảng khả năng trong Settings. |
 | Popup vẫn có giao diện cũ sau cập nhật | Kiểm tra thư mục được nạp và phiên bản, tải lại tiện ích, rồi đóng và mở lại popup. Không mặc định rằng ZIP đã phát hành trước đó chứa các bản sửa mã nguồn mới hơn. |
 
 Khi báo lỗi, ghi rõ bản build/commit của tiện ích, phiên bản trình duyệt và hệ điều hành, URL liên quan cùng các bước tái hiện, mức lọc, danh sách tùy chỉnh đang bật, kết quả mong đợi/thực tế và ảnh chụp đã che thông tin riêng tư nếu hữu ích. Thử trong hồ sơ riêng với các tiện ích chặn khác tắt để loại trừ ảnh hưởng chéo. Không đăng URL riêng tư, dữ liệu tài khoản hoặc bản sao lưu chưa được rà soát.

@@ -54,6 +54,10 @@ const selectRules = (rules, options) => structuredClone(options?.ruleIds
 async function dispatch(request) {
     messages.push(structuredClone(request));
     switch ( request.what ) {
+    case 'previewFirewallRules': return { ruleCount: 0 };
+    case 'applyFirewallRules':
+        local.values.set('firewall.permanent', request.text);
+        return { sessionText: request.text };
     case 'getDefaultConfig': return structuredClone(defaults);
     case 'getSandboxFilters': return filters.getSandboxFilters();
     case 'getMemoryProfile': return { selected: 'auto' };
@@ -97,6 +101,7 @@ globalThis.self = globalThis;
 globalThis.BroadcastChannel = class { postMessage() {} };
 globalThis.chrome = {
     declarativeNetRequest: {
+        async getEnabledRulesets() { return []; },
         MAX_NUMBER_OF_REGEX_RULES: 1000,
         async getDynamicRules(options) { return selectRules(dynamicRules, options); },
         async getSessionRules(options) { return selectRules(sessionRules, options); },

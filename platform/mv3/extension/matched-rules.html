@@ -1,33 +1,49 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
-<meta name="color-scheme" content="light dark" />
-<title>Matched rules</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>uBlock Plus+ — Logger</title>
 <link rel="stylesheet" href="css/default.css">
 <link rel="stylesheet" href="css/common.css">
-<link rel="stylesheet" href="css/fa-icons.css">
 <link rel="stylesheet" href="css/matched-rules.css">
-
-<link rel="shortcut icon" type="image/png" href="img/icon_64.png"/>
+<link rel="shortcut icon" type="image/png" href="img/icon_64.png">
 </head>
-
 <body>
-
-<div id="matchedEntries">
-</div>
-
-<template id="matchInfo">
-    <div class="matchInfo">
-        <span class="requestInfo"></span>
-        <span class="ruleInfo"></span>
+<header>
+    <h1>Logger</h1>
+    <p id="intro">Capture diagnostics for one tab. Records stay in this extension session and are erased when its last logger closes. No upload or browsing-history storage.</p>
+    <div class="controls">
+        <label><span id="tabLabel">Tab</span> <select id="tab" aria-label="Browser tab"></select></label>
+        <button id="start" type="button">Start capture</button>
+        <button id="stop" type="button" disabled>Pause</button>
+        <button id="clear" type="button">Clear</button>
+        <button id="export" type="button">Export redacted JSON</button>
     </div>
-</template>
-
+    <div class="controls">
+        <label><span id="searchLabel">Search</span> <input id="search" type="search" placeholder="URL, rule ID, selector or source"></label>
+        <label><span id="kindLabel">Kind</span> <select id="kind"><option value="">All events</option><option value="network">Network</option><option value="dnr">Native DNR matches</option><option value="cosmetic">Cosmetic</option><option value="dom">DOM</option><option value="scriptlet">Scriptlets</option><option value="system">System</option></select></label>
+    </div>
+    <p id="status" role="status" aria-live="polite">Capture is off. Choose a tab and start.</p>
+    <p id="scriptletWarnings" role="status" hidden></p>
+    <details>
+        <summary>What this logger can prove</summary>
+        <p><strong>Network</strong> is a read-only browser observation, including requests that completed. An error alone does not identify a blocking extension. Browser-hidden requests and some requests intercepted before observation may be absent.</p>
+        <p><strong>Native DNR match</strong> identifies this extension’s rule selected by Chrome. Rule-body lookup is separate and not atomic. Availability depends on Chrome’s feedback API and installation type.</p>
+        <p><strong>Cosmetic</strong> means a stylesheet was inserted; it does not prove that a node was hidden. <strong>DOM</strong> distinguishes actual procedural application from a plain CSS selector-present snapshot. Snapshots test at most 32 selectors in a stylesheet and do not prove visibility or media activation. Reports are limited to 32 per second per frame; effects before the observer loads are not covered.</p>
+        <p><strong>Scriptlet</strong> reports cover registration and exception/fallback handling. This build does not emit execution-attempt reports or confirm individual scriptlet effects. Page messages are not trusted evidence of MAIN-world execution. Global registration events use tab −1.</p>
+        <p>Capture requests the optional network-observation permission. Refusing it still permits available DNR and content diagnostics. At most 512 records are retained across up to four logger windows. Closing the tab or pausing stops collection; closing the logger clears its unshared records. Chrome may suspend the worker and clear this temporary history.</p>
+        <p>Live URLs can contain private query strings. Export removes credentials, query strings, fragments and diagnostic free text; URL paths can still contain personal identifiers. Review exported files before sharing.</p>
+    </details>
+</header>
+<main>
+    <p id="empty">No events yet. Start capture, then reload the selected page or use its controls.</p>
+    <div class="tableWrap">
+        <table id="events"><thead><tr><th>Time</th><th>Kind / phase</th><th>Evidence source</th><th>Request / diagnostic</th></tr></thead><tbody id="matchedEntries"></tbody></table>
+    </div>
+</main>
 <script src="js/theme.js" type="module"></script>
-<script src="js/fa-icons.js" type="module"></script>
-<script src="js/i18n.js" type="module"></script>
 <script src="js/matched-rules.js" type="module"></script>
 </body>
 </html>

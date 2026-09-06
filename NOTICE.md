@@ -9,4 +9,6 @@ uBlock Plus+ is a derivative work based on [uBlock Origin](https://github.com/go
 
 The full upstream Git history is retained. Existing source headers, third-party license files, author records and attribution links are intentionally preserved.
 
+The firewall packages Raymond Hill's `publicsuffixlist.js` (GPLv3/APLv2 choice, original header retained) and a Public Suffix List data snapshot retrieved on 2026-09-06 from <https://publicsuffix.org/list/public_suffix_list.dat>. The data retains its Mozilla Public License 2.0 notice inside `firewall-public-suffix.json`. It is used locally to classify registrable domains; there is no runtime DNS/DoH lookup service.
+
 This fork is independent. It is not an official uBlock Origin or uBO Lite release, is not endorsed by Raymond Hill, and must not use official extension store identities, signing keys or release channels.

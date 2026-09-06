@@ -89,12 +89,15 @@ export async function getRuntimeCapabilities() {
     return classifyRuntimeCapabilities({
         installType,
         manifestPermissions: manifest.permissions,
+        optionalPermissions: manifest.optional_permissions,
         grantedPermissions,
         api: {
             declarativeNetRequest:
                 typeof dnr.updateDynamicRules === 'function',
+            nativeMatchFeedback: typeof dnr.onRuleMatchedDebug?.addListener === 'function',
             offscreen: browser.offscreen instanceof Object,
             tabs: browser.tabs instanceof Object,
+            topDomainConditions: Object.values(dnr.RuleConditionKeys || {}).includes('topDomains'),
             userScripts: userScriptsUsable,
             webNavigation: browser.webNavigation instanceof Object,
             webRequest: browser.webRequest?.onBeforeRequest instanceof Object,

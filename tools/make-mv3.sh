@@ -134,6 +134,7 @@ cp platform/mv3/extension/lib/s14e-serializer/LICENSE \
     "$OUTPUT_DIR"/lib/s14e-serializer.LICENSE
 
 echo "*** uBlock Plus+ MV3: Generating rulesets"
+cp "$UBO_DIR"/src/lib/publicsuffixlist/publicsuffixlist.js "$OUTPUT_DIR"/lib/
 RULESET_BUILD_DIR=$(mktemp -d)
 mkdir -p "$RULESET_BUILD_DIR"
 ./tools/make-nodejs.sh "$RULESET_BUILD_DIR"

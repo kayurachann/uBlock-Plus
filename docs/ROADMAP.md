@@ -15,11 +15,13 @@ Thứ tự ưu tiên được cập nhật ngày 2026-09-06 qua [rà soát với
 - Compiled popup observer cho corpus stock `$popup` đóng gói và subset sandbox/imported `$popup`/`$popunder` đã classifier chấp nhận. Supported popup-only là accepted+routed dù không có DNR; unsupported condition giữ typed route `popup-compiler-required` với status `deferred`. Deferred allow có guard superset fail-open để không làm mất exception; context/budget không đầy đủ cũng fail open. Stock `$popunder` vẫn được ghi `omitted` vì DNR export không bảo toàn kind.
 - Budget static riêng với runtime DNR; regex dynamic + session dùng pool chung. Đã có test browser/service-worker restart, immutable generation và quota failure; benchmark trên máy `<= 4 GiB` còn ở Next.
 
+Các bổ sung ngày 6/9/2026: [firewall network với noop đúng nghĩa, logger hợp nhất và ngoại lệ giữa các nguồn](MV3-PARITY-IMPLEMENTATION-2026-09-06.md). `$badfilter` imported/personal đã hủy trước khi gộp; stock hỗ trợ hủy toàn rule và dựng lại phần còn lại của nhóm hostname chặn có đủ ánh xạ nguồn. Phép gộp chưa đủ bằng chứng và secondary corpus vẫn ở Next.
+
 ## Next — chất lượng và trải nghiệm cộng đồng
 
-- Chẩn đoán ánh xạ từ DNR về list/dòng nguồn, mở rộng matched-rule view hiện có; phân biệt kết quả browser xác nhận với mô phỏng, có redaction và export do người dùng chủ động.
+- Mở rộng logger hiện có bằng ánh xạ đầy đủ từ DNR về list/dòng nguồn; tiếp tục giữ ranh giới giữa match native, insertion, execution-attempt và effect.
 - Quota preview đối chiếu browser trước khi bật/cập nhật list: static, dynamic, session và shared dynamic+session regex; phân biệt estimate/compiled/active và giữ last-known-good khi cập nhật bị từ chối.
-- `$badfilter` chính xác qua source map, kể cả rule gộp và nhiều list; không vô hiệu hóa phần không liên quan để thay cho việc chưa hỗ trợ.
+- Mở rộng `$badfilter` stock cho phần còn lại của các phép gộp phức tạp chưa đủ ánh xạ, regex, strict-block và corpus popup; không vô hiệu hóa phần không liên quan để thay cho việc chưa hỗ trợ.
 - Ngoại lệ tạm theo URL/resource type/tab bằng session DNR, có preview/Undo và dọn metadata khi đóng tab hoặc kết thúc phiên; không dùng allow rộng thay ngữ nghĩa `noop` của uBO.
 - Semantic-safe dedupe/merge/sharding với equivalence test và rollback.
 - Filter Store diff review, lịch sử/độ mới nguồn, automation và quarantine workflow.

@@ -30,6 +30,7 @@ const resourceDetails = new Map();
 const resourceAliases = new Map();
 const worldTemplate = {
     scriptletFunctions: new Map(),
+    scriptletTokens: new Map(),
     allFunctions: new Map(),
     args: new Map(),
     arglists: new Map([['',0]]),
@@ -76,6 +77,8 @@ function compileBroadExclusion(details) {
                 refs.add(0);
                 continue;
             }
+            worldDetails.hasEntities ||= hn.endsWith('.*') || hn.endsWith('.*>>');
+            worldDetails.hasAncestors ||= hn.endsWith('>>');
             const refs = worldDetails.hostnames.get(hn) ?? new Set();
             if ( refs.size === 0 ) {
                 worldDetails.hostnames.set(hn, refs);
@@ -90,6 +93,35 @@ function compileBroadExclusion(details) {
 export function reset() {
     worlds.ISOLATED = structuredClone(worldTemplate);
     worlds.MAIN = structuredClone(worldTemplate);
+}
+
+/******************************************************************************/
+
+export function normalizeScriptletArgs(args) {
+    if ( args.length === 0 ) { return []; }
+    const token = args[0].endsWith('.js') ? args[0] : `${args[0]}.js`;
+    return [ resourceAliases.get(token) ?? token, ...args.slice(1) ];
+}
+
+export function exceptionDetails(details) {
+    return Array.from(details.values())
+        .filter(entry => entry.excludeMatches?.length)
+        .map(entry => ({
+            args: normalizeScriptletArgs(entry.args),
+            hostnames: Array.from(new Set(entry.excludeMatches)),
+        }));
+}
+
+export function invocationTokens(details) {
+    return Array.from(new Set(Array.from(details.values())
+        .filter(entry => entry.matches?.length)
+        .map(entry => JSON.stringify(normalizeScriptletArgs(entry.args)))));
+}
+
+export function originOnlyCode(code) {
+    return `(function uBlockPlus_originScriptlets() {\n` +
+        `if ( /^(?:https?|file):$/.test(document.location.protocol) ) { return; }\n` +
+        `${code}\n})();\n`;
 }
 
 /******************************************************************************/
@@ -115,6 +147,7 @@ export function compile(rulesetId, details) {
     const { scriptletFunctions } = worldDetails;
     if ( scriptletFunctions.has(resourceEntry.name) === false ) {
         scriptletFunctions.set(resourceEntry.name, scriptletFunctions.size);
+        worldDetails.scriptletTokens.set(resourceEntry.name, scriptletToken);
         createScriptletCoreCode(worldDetails, resourceEntry);
     }
     // Convert args to arg indices
@@ -227,6 +260,10 @@ export function commit(rulesetId, template) {
         content = safeReplace(content,
             'self.$scriptletFunctions$',
             `/* ${scriptletFunctions.size} */\n[${Array.from(scriptletFunctions.keys()).join(',')}]`
+        );
+        content = safeReplace(content,
+            'self.$scriptletTokens$',
+            JSON.stringify(Array.from(worldDetails.scriptletTokens.values()))
         );
         content = safeReplace(content,
             'self.$scriptletCode$',

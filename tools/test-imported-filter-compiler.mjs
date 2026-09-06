@@ -12,9 +12,11 @@
 
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { selectStockBadfilterRules } from '../platform/mv3/extension/js/stock-badfilter.js';
 
 const projectRoot = fileURLToPath(new URL('../', import.meta.url));
 const temporaryRoot = await fs.mkdtemp(
@@ -64,6 +66,11 @@ try {
     ));
     const {
         NetworkFilterCompiler,
+        attachStockBadfilterResiduals,
+        minimizeRules,
+        minimizeRuleset,
+        networkFilterIdentities,
+        resolveNetworkBadfilters,
         validateRule,
         validateRules,
     } = parserModule;
@@ -78,6 +85,21 @@ try {
         prop,
         `entity-only-${prop.replace(/[A-Z]/g, c => `-${c.toLowerCase()}`)}`,
     ]));
+
+    // Native DNR domain matching covers every descendant, including a
+    // grandchild whose immediate parent is absent from the hostname list.
+    for ( const prop of hostnameProperties ) {
+        for ( const hostnames of [
+            [ 'js.users.example.test', 'example.test', 'other.test' ],
+            [ 'other.test', 'example.test', 'js.users.example.test' ],
+        ] ) {
+            const rules = [ { action: { type: 'block' }, condition: { [prop]: hostnames } } ];
+            minimizeRules(rules);
+            assert.deepEqual(rules[0].condition[prop], [ 'example.test', 'other.test' ]);
+            assert.deepEqual(minimizeRules(structuredClone(rules)), rules,
+                'Hostname normalization must be idempotent for source residual validation');
+        }
+    }
 
     // Mixed entity/hostname lists must sanitize exactly the requested field.
     for ( const prop of hostnameProperties ) {
@@ -179,8 +201,151 @@ try {
         return { ...compiler.finish(), results };
     };
 
+    // Exact cancellation runs before merging, independent of line/list order.
+    for ( const reverse of [ false, true ] ) {
+        const lines = [
+            '||one.example^$script', '||two.example^$script',
+            '||one.example^$script,badfilter',
+        ];
+        const result = compile(reverse ? lines.reverse() : lines);
+        assert.deepEqual(result.dnrRules.map(a => a.condition.requestDomains),
+            [ [ 'two.example' ] ]);
+        assert.equal(result.filterStats.rejected, 0);
+        assert.equal(result.badfilterCancelledCount, 1);
+        assert.equal(result.dnrRules.some(a => a.action.type === 'allow'), false);
+    }
+    // Aliases, option/domain ordering and first-party negation canonicalize.
+    const canonical = compile([
+        '||cdn.example^$stylesheet,domain=b.example|a.example,1p',
+        '||cdn.example^$badfilter,~third-party,from=a.example|b.example,css',
+    ]);
+    assert.equal(canonical.dnrRules.length, 0, JSON.stringify([canonical.networkUnits, canonical.badfilterKeys]));
+    const distinguish = compile([
+        '||cdn.example^$image', '||cdn.example^$script,important',
+        '||cdn.example^$script,badfilter',
+    ]);
+    assert.equal(distinguish.dnrRules.length, 2,
+        'Different resource types and important rules must remain active');
+    const exception = compile([
+        '||cdn.example^$script', '@@||cdn.example^$script',
+        '@@||cdn.example^$script,badfilter',
+    ]);
+    assert.equal(exception.dnrRules.length, 1);
+    assert.equal(exception.dnrRules[0].action.type, 'block');
+    const popup = compile([
+        '||pop.example^$popup,popunder,script',
+        '||pop.example^$script,popunder,popup,badfilter',
+    ]);
+    assert.equal(popup.dnrRules.length, 0);
+    assert.equal(popup.popupFilters.length, 0);
+    const partial = compile([
+        '*$script,domain=a.example|b.example',
+        '*$script,domain=a.example,badfilter',
+    ]);
+    assert.deepEqual(partial.dnrRules[0].condition.initiatorDomains, [ 'b.example' ]);
+    const noPartial = compile([
+        '||ads.example^$script,domain=a.example|b.example',
+        '||ads.example^$script,domain=a.example,badfilter',
+    ]);
+    assert.deepEqual(noPartial.dnrRules[0].condition.initiatorDomains,
+        [ 'a.example', 'b.example' ], 'Arbitrary domain lists are indivisible');
+    const negatives = compile([
+        '*$script,domain=a.example|~b.example',
+        '*$script,domain=a.example,badfilter',
+    ]);
+    assert.equal(negatives.dnrRules.length, 1);
+    assert.deepEqual(negatives.dnrRules[0].condition.excludedInitiatorDomains,
+        [ 'b.example' ]);
+    const imported = compile([ '||first.example^$image', '||second.example^$image' ]);
+    const personal = compile([ '||first.example^$image,badfilter' ]);
+    resolveNetworkBadfilters([ imported, personal ]);
+    assert.deepEqual(imported.dnrRules.map(a => a.condition.requestDomains),
+        [ [ 'second.example' ] ], 'A personal badfilter only removes its imported source');
+    resolveNetworkBadfilters([ imported ]);
+    assert.equal(imported.dnrRules.length, 2,
+        'Removing a personal badfilter restores intact cached source units');
+    const importedDisable = compile([ '||mine.example^$script,badfilter' ]);
+    const myRules = compile([ '||mine.example^$script' ]);
+    resolveNetworkBadfilters([ importedDisable, myRules ]);
+    assert.equal(myRules.dnrRules.length, 0, 'Cross-source cancellation works both ways');
+    const mergedFilters = compile([
+        '||cdn.example^$script,domain=a.example',
+        '||cdn.example^$script,domain=b.example',
+    ]);
+    resolveNetworkBadfilters([ mergedFilters,
+        compile([ '||cdn.example^$script,domain=a.example,badfilter' ]) ]);
+    assert.deepEqual(mergedFilters.dnrRules[0].condition.initiatorDomains, [ 'b.example' ]);
+    // Similar DNR projections must not erase distinct source predicates.
+    const lossy = compile([
+        '||ads.example^$script,domain=a.example|tracker.*',
+        '||ads.example^$script,domain=a.example,badfilter',
+    ]);
+    assert.equal(lossy.dnrRules.length, 1);
+    const regex = compile([
+        '/badfilter,ad[0-9]+/$script',
+        '/badfilter,ad[0-9]+/$script,badfilter',
+    ]);
+    assert.equal(regex.dnrRules.length, 0,
+        'The badfilter token is read from the AST, never stripped from regex text');
+
+    // Exercise the full upstream stock compiler, which merges hostnames before
+    // the MV3 minimizer. Both stages must retain every original identity.
+    const stockCompiler = await import(pathToFileURL(
+        path.join(projectRoot, 'src/js/static-dnr-filtering.js')
+    ));
+    const stockLines = [ '||source-one.test^$script', '||source-two.test^$script' ];
+    const stock = await stockCompiler.dnrRulesetFromRawLists([
+        { name: 'provenance', text: stockLines.join('\n') },
+    ], { networkSourceIdentity: networkFilterIdentities });
+    const stockRules = minimizeRuleset(stock.network.ruleset);
+    assert.equal(stockRules.length, 1);
+    assert.deepEqual(stockRules[0]._sourceKeys.slice().sort(),
+        compile(stockLines).networkUnits.map(unit => unit.key).sort());
+    assert.equal(stockRules[0]._sourceIncomplete, undefined);
+    const stockCancellation = await stockCompiler.dnrRulesetFromRawLists([
+        { name: 'provenance', text: [ ...stockLines,
+            '||source-one.test^$script,badfilter' ].join('\n') },
+    ], { networkSourceIdentity: networkFilterIdentities });
+    assert.deepEqual(stockCancellation.network.ruleset[0].condition.requestDomains,
+        [ 'source-two.test' ]);
+    assert.deepEqual(stockCancellation.networkBadfilterKeys,
+        compile([ '||source-one.test^$script,badfilter' ]).badfilterKeys);
+    const stockDomains = await stockCompiler.dnrRulesetFromRawLists([
+        { name: 'domains', text: '*$script,domain=a.example|b.example' },
+    ], { networkSourceIdentity: networkFilterIdentities });
+    assert.deepEqual(stockDomains.network.ruleset[0]._sourceKeys.slice().sort(),
+        compile([ '*$script,domain=a.example|b.example' ]).networkUnits
+            .map(unit => unit.key).sort());
+    const nativeRule = structuredClone(stockRules[0]);
+    delete nativeRule._sourceKeys;
+    delete nativeRule._sourceIncomplete;
+    nativeRule.condition.requestDomains = [ 'native.test' ];
+    const mixedProvenance = minimizeRuleset([
+        ...structuredClone(stockRules), nativeRule,
+    ]);
+    assert.equal(mixedProvenance[0]._sourceIncomplete, true,
+        'Unmapped native DNR contributions make the entire merged rule ineligible');
+    const residualLines = [ '||residual-a.test^$script', '||residual-b.test^$script',
+        '||residual-a.test^$image' ];
+    const digest = text => createHash('sha256').update(text).digest('hex');
+    const residualStock = await stockCompiler.dnrRulesetFromRawLists([
+        { name: 'residual', text: residualLines.join('\n') },
+    ], { networkSourceIdentity: parser => networkFilterIdentities(parser)
+        .map(identity => ({ ...identity, key: digest(identity.key) })) });
+    attachStockBadfilterResiduals(residualStock.network.ruleset);
+    const residualNative = minimizeRuleset(residualStock.network.ruleset);
+    const residualPlan = selectStockBadfilterRules([ {
+        id: 'stock', digest: digest('stock'), deferredKeys: [],
+        rules: residualNative.map((rule, i) => ({ id: i + 1, complete: !rule._sourceIncomplete,
+            keys: rule._sourceKeys, residual: rule._sourceResidualGroups })),
+    } ], new Set([ digest(compile([ residualLines[0] ]).networkUnits[0].key) ]));
+    assert.equal(residualPlan.status.deferredSourceCount, 0);
+    assert.equal(residualPlan.selected.stock.ids.length, 1);
+    assert.equal(residualPlan.residualRules.length, 1);
+    assert.deepEqual(residualPlan.residualRules[0].condition.requestDomains, [ 'residual-b.test' ]);
+    assert.deepEqual(residualPlan.residualRules[0].condition.resourceTypes, [ 'script' ]);
+
     const unsupported = [
-        [ '||one.example^$badfilter', 'unsupported-badfilter' ],
         [ '@@||two.example^$cname', 'unsupported-cname' ],
         [ '||three.example^$replace=/old/new/', 'unsupported-replace' ],
         [

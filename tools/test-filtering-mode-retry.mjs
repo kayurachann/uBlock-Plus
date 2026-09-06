@@ -27,6 +27,7 @@ let mode = 2;
 let defaultMode = 2;
 let stockCalls = 0;
 let userCalls = 0;
+let firewallCalls = 0;
 let failStock = true;
 let userGate;
 let customFilterCount = 0;
@@ -34,6 +35,7 @@ const context = vm.createContext({
     AggregateError, Promise,
     pendingFilteringMutation: Promise.resolve(),
     isFullyInitialized: Promise.resolve(),
+    firewall: { refresh: async () => { firewallCalls++; } },
     UBLOCK_PLUS_ORIGIN: 'chrome-extension://test',
     hasBroadHostPermissions: async () => true,
     adminReadEx: async () => [],
@@ -52,6 +54,9 @@ const context = vm.createContext({
     setDefaultFilteringMode: async level => { defaultMode = level; return level; },
     registerContentScripts: async () => {
         stockCalls += 1;
+        // The actual content manager now owns shared user/native scriptlet
+        // registration; the background must not run a duplicate beside it.
+        await context.registerUserScripts();
         if ( failStock ) { throw new Error('registration failed'); }
     },
     registerUserScripts: async () => {
@@ -60,7 +65,9 @@ const context = vm.createContext({
     },
 });
 const queueStart = source.indexOf('function enqueueFilteringMutation(');
-vm.runInContext(source.slice(queueStart, refreshEnd) + '\n' +
+const queueEnd = source.indexOf('\n}\n', queueStart) + 3;
+vm.runInContext(source.slice(queueStart, queueEnd) + '\n' +
+    source.slice(refreshStart, refreshEnd) + '\n' +
     functionSource('onMessage', 'onCommand'), context);
 const send = request => context.onMessage(request, {
     origin: 'chrome-extension://test',
@@ -87,6 +94,7 @@ failStock = false;
 assert.equal(await send({ what: 'setDefaultFilteringMode', level: 3 }), 3);
 assert.equal(stockCalls, 4);
 assert.equal(userCalls, 4);
+assert.equal(firewallCalls, 4, 'Mode changes and retries also repair native firewall scope');
 for ( const count of [ 0, 1, 3 ] ) {
     customFilterCount = count;
     const data = await send({ what: 'popupPanelData', hostname: 'site.test' });

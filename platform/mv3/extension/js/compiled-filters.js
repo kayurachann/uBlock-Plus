@@ -35,6 +35,12 @@ import {
 } from './compile-timeout.js';
 
 import {
+    SCRIPTLET_EXCEPTION_SLOT,
+    SCRIPTLET_WARNINGS_KEY,
+    bindScriptletExceptions,
+} from './scriptlet-exceptions.js';
+
+import {
     browser,
     localRead,
     localRemove,
@@ -66,11 +72,20 @@ import {
     matchesFromHostnames,
 } from './utils.js';
 
+import {
+    prepareNativeStockScriptlets,
+    removeNativeStockScriptlets,
+    restoreNativeStockScriptlets,
+    sharedScriptletContext,
+    stockScriptletSources,
+} from './scriptlet-registration.js';
+
 import { createCompilerStorageHandler } from './offscreen-storage.js';
 import { dnr } from './ext-compat.js';
 import { getEnabledImportedLists } from './imported-lists.js';
 import { getFilteringModeDetails } from './mode-manager.js';
 import { getMemoryProfileConfig } from './memory-manager.js';
+import { recordLoggerEvent } from './logger.js';
 import { ublockPlusLog } from './debug.js';
 
 /******************************************************************************/
@@ -161,6 +176,9 @@ async function parseRawFilters() {
         case 'compileFilters:getResourceTypes':
             callback(Object.values(dnr.ResourceType));
             break;
+        case 'compileFilters:getEnabledStockRulesets':
+            dnr.getEnabledRulesets().then(callback);
+            return true;
         case 'compileFilters:getUserList':
             getUserList().then(text => {
                 if ( text ) { ublockPlusLog(`Compiling user filters`); }
@@ -321,6 +339,45 @@ function prepareUserScripts(id, modes, result) {
 /******************************************************************************/
 
 async function register(generation) {
+    const modes = await getFilteringModeDetails();
+    const shared = await sharedScriptletContext(generation, modes);
+    let legacyDeferred = shared.schema !== 1 && (generation !== '' ||
+        Boolean(await getUserList()) || (await getEnabledImportedLists()).length !== 0);
+    const legacyWarning = 'Scriptlet execution is temporarily deferred because the active ' +
+        'compiled generation predates shared exceptions. Network rules and cached sources ' +
+        'are retained; the normal compiler retry will restore scriptlets after rebuilding.';
+    const fallback = async ( ) => {
+        if ( legacyDeferred ) {
+            for ( const { id } of shared.stock ) { shared.nativeExclusions.set(id, [ '*' ]); }
+        }
+        const affected = Array.from(shared.nativeExclusions)
+            .filter(([, hostnames]) => hostnames.length !== 0).map(([ id ]) => id);
+        const warnings = legacyDeferred ? [ legacyWarning ] : affected.length ? [
+            'Allow User Scripts is unavailable. Scriptlet exceptions are preserved by ' +
+            'suspending affected packaged scriptlet files on their exception scopes; ' +
+            'unrelated scriptlets in the same files may also be skipped. Enable ' +
+            'Allow User Scripts and reload the extension for exact exceptions.',
+        ] : [];
+        await localWrite(SCRIPTLET_WARNINGS_KEY, warnings);
+        const nativeStockScriptlets = prepareNativeStockScriptlets(shared, modes);
+        const previousNativeScripts = await removeNativeStockScriptlets();
+        try {
+            if ( nativeStockScriptlets.length && browser.scripting ) {
+                await browser.scripting.registerContentScripts(nativeStockScriptlets);
+            }
+        } catch ( reason ) {
+            await removeNativeStockScriptlets();
+            await restoreNativeStockScriptlets(previousNativeScripts);
+            throw reason;
+        }
+        if ( warnings.length ) {
+            recordLoggerEvent({ kind: 'scriptlet', phase: 'exception-applied',
+                source: 'stock', detail: warnings[0] });
+        }
+        return { previousNativeScripts, stockScriptlets: false,
+            nativeScriptletExclusions: shared.nativeExclusions,
+            nativeStockScriptlets, warnings };
+    };
     if ( supportsUserScripts() ) {
         let previousScripts;
         try {
@@ -329,37 +386,64 @@ async function register(generation) {
             // Chrome exposes the namespace even when the user-controlled
             // User Scripts toggle is off. In that state there is nothing we
             // can safely replace, so leave any browser-managed state alone.
-            return false;
+            return fallback();
         }
 
-        const modes = await getFilteringModeDetails();
         const toAdd = [];
-        for ( const id of [ 'sandbox', 'imported' ] ) {
-            const stored = await localRead(compiledStorageKey(
-                generation,
-                `${id}Filters.userScripts`
-            )) || {};
+        for ( const id of [ 'sandbox', 'imported', 'stock' ] ) {
+            const stored = id === 'stock' ? await stockScriptletSources(shared)
+                : await localRead(compiledStorageKey(
+                    generation,
+                    `${id}Filters.userScripts`
+                )) || {};
+            for ( const scripts of Object.values(stored) ) {
+                for ( const script of scripts ) {
+                    if ( script.id.endsWith('-scriptlets') === false ) { continue; }
+                    if ( script.code.includes(SCRIPTLET_EXCEPTION_SLOT) === false ) {
+                        legacyDeferred = true;
+                        continue;
+                    }
+                    script.code = bindScriptletExceptions(script.code, shared.payload);
+                }
+            }
             toAdd.push(...prepareUserScripts(id, modes, stored));
         }
+        if ( legacyDeferred ) {
+            for ( let i = toAdd.length - 1; i >= 0; i-- ) {
+                if ( toAdd[i].id.endsWith('-scriptlets') ) { toAdd.splice(i, 1); }
+            }
+        }
 
-        let unregistered = false;
+        const nativeStockScriptlets = legacyDeferred ? []
+            : prepareNativeStockScriptlets(shared, modes, true);
+        let replacementStarted = false;
+        const previousNativeScripts = await removeNativeStockScriptlets();
         try {
+            // Configure on every successful API probe: toggling Allow User
+            // Scripts does not emit a permissions event in Chromium.
+            await browser.userScripts.configureWorld({ messaging: true });
             if ( previousScripts.length !== 0 ) {
                 await browser.userScripts.unregister();
-                unregistered = true;
+                replacementStarted = true;
                 ublockPlusLog(`Unregistered userscript ${previousScripts.map(a => a.id).join()}`);
             }
             if ( toAdd.length !== 0 ) {
+                replacementStarted = true;
                 await browser.userScripts.register(toAdd);
                 ublockPlusLog(`Registered userscript ${toAdd.map(v => v.id)}`);
             }
+            if ( nativeStockScriptlets.length && browser.scripting ) {
+                await browser.scripting.registerContentScripts(nativeStockScriptlets);
+            }
         } catch ( reason ) {
-            if ( unregistered && previousScripts.length !== 0 ) {
+            if ( replacementStarted ) {
                 try {
                     // Clear any partially registered replacement before
                     // restoring the last known-good set.
                     await browser.userScripts.unregister();
-                    await browser.userScripts.register(previousScripts);
+                    if ( previousScripts.length !== 0 ) {
+                        await browser.userScripts.register(previousScripts);
+                    }
                 } catch ( rollbackReason ) {
                     throw new Error(
                         `Unable to register user scripts (${reason}); ` +
@@ -367,18 +451,41 @@ async function register(generation) {
                     );
                 }
             }
+            await restoreNativeStockScriptlets(previousNativeScripts);
             throw reason;
         }
-        return { previousScripts };
+        const originDeferred = Array.from(shared.nativeExclusions.values()).some(hns => hns.length);
+        const warnings = legacyDeferred ? [ legacyWarning ] : originDeferred ? [
+            'Shared scriptlet exceptions apply exactly in matching web frames. In ' +
+            'about:blank, srcdoc, data and blob frames, Chrome cannot bind dynamic ' +
+            'user-script data at document_start; affected packaged files are ' +
+            'conservatively skipped on exception scopes to preserve fail-open behavior.',
+        ] : [];
+        await localWrite(SCRIPTLET_WARNINGS_KEY, warnings).catch(reason => {
+            ublockPlusLog(`Unable to clear scriptlet warnings: ${reason}`);
+        });
+        for ( const [ prefix, source ] of [
+            [ 'stock-', 'stock' ], [ 'imported-', 'imported' ], [ 'sandbox-', 'personal' ],
+        ] ) {
+            const count = toAdd.filter(script => script.id.startsWith(prefix) &&
+                script.id.endsWith('-scriptlets')).length;
+            recordLoggerEvent({ kind: 'scriptlet', phase: 'registered', source,
+                detail: `${count} scriptlet program(s) registered with shared exceptions; execution/effect is not inferred.` });
+        }
+        return { previousScripts, previousNativeScripts, stockScriptlets: true,
+            nativeStockScriptlets, nativeScriptletExclusions: shared.nativeExclusions };
     }
-    return false;
+    return fallback();
 }
 
 /******************************************************************************/
 
 async function restore(previousRegistration) {
     const previousScripts = previousRegistration?.previousScripts;
-    if ( Array.isArray(previousScripts) === false ) { return false; }
+    if ( Array.isArray(previousScripts) === false ) {
+        await restoreNativeStockScriptlets(previousRegistration?.previousNativeScripts);
+        return false;
+    }
     const currentScripts = await browser.userScripts.getScripts();
     if ( currentScripts.length !== 0 ) {
         await browser.userScripts.unregister();
@@ -386,6 +493,7 @@ async function restore(previousRegistration) {
     if ( previousScripts.length !== 0 ) {
         await browser.userScripts.register(previousScripts);
     }
+    await restoreNativeStockScriptlets(previousRegistration?.previousNativeScripts);
     ublockPlusLog(`Restored ${previousScripts.length} previous userscript(s)`);
     return true;
 }
@@ -415,9 +523,12 @@ async function update() {
         }
         return result;
     }
+    const generation = newCompiledGeneration();
+    await localWrite(STAGING_COMPILED_GENERATION_KEY, generation);
+    await localWrite(compiledStorageKey(generation, 'scriptletExceptions.schema'), 1);
     return {
         persisted: true,
-        generation: newCompiledGeneration(),
+        generation,
         compiledIntegrityUpdates: [],
         importedListUpdates: [],
     };
@@ -439,10 +550,9 @@ export async function updateCompiledFilters() {
 
 export async function registerUserScripts(generation) {
     if ( supportsOffscreenDocument !== true ) { return false; }
-    const effectiveGeneration = generation === undefined
+    return enqueue(async ( ) => register(generation === undefined
         ? await getActiveCompiledGeneration()
-        : generation;
-    return enqueue(( ) => register(effectiveGeneration));
+        : generation));
 }
 
 /******************************************************************************/

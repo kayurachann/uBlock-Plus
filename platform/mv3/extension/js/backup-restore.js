@@ -106,6 +106,10 @@ export async function backupToObject(currentConfig) {
         out.sandboxFilters = sandboxFilters.split('\n');
     }
     const dnrRules = await localRead('userDnrRules');
+    const firewallRules = await localRead('firewall.permanent');
+    if ( typeof firewallRules === 'string' && firewallRules !== '' ) {
+        out.firewallRules = firewallRules.split('\n');
+    }
     if ( typeof dnrRules === 'string' && dnrRules.length !== 0 ) {
         out.dnrRules = dnrRules.split(/\n+/);
     }
@@ -131,6 +135,9 @@ export async function restoreFromObject(targetConfig) {
     // Validate and clone every field before the first mutation. A malformed
     // backup must fail closed instead of partially resetting live settings.
     targetConfig = normalizeBackupObject(targetConfig);
+    if ( targetConfig.firewallRules?.length ) {
+        await sendMessage({ what: 'previewFirewallRules', text: targetConfig.firewallRules.join('\n') });
+    }
     const defaultConfig = await sendMessage({ what: 'getDefaultConfig' });
 
     await sendMessage({
@@ -328,4 +335,9 @@ export async function restoreFromObject(targetConfig) {
         throw reason;
     }
 
+    await sendMessage({
+        what: 'applyFirewallRules',
+        text: targetConfig.firewallRules?.join('\n') ?? '',
+        permanent: true,
+    });
 }

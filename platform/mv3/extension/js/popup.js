@@ -141,8 +141,7 @@ function render() {
         qs$(`#${id}`).disabled = canUse === false;
         dom.cl.toggle(`#${id}`, 'enabled', canUse);
     }
-    const canInspect = ready && popupPanelData.isSideloaded === true &&
-        popupPanelData.developerMode === true && Number.isInteger(currentTab.id);
+    const canInspect = ready && pageContext.canFilter && Number.isInteger(currentTab.id);
     dom.cl.toggle('#gotoMatchedRules', 'enabled', canInspect);
     qs$('#gotoMatchedRules').disabled = canInspect === false;
     const canReport = state.available && forbidden('report') === false;
@@ -353,8 +352,8 @@ dom.on('#refresh', 'click', ev => {
 });
 
 dom.on('#gotoMatchedRules', 'click', ev => {
-    if ( actionAllowed(ev) === false ||
-        popupPanelData.isSideloaded !== true || popupPanelData.developerMode !== true ) {
+    if ( actionAllowed(ev) === false || pageContext.canFilter === false ||
+        Number.isInteger(currentTab.id) === false ) {
         return;
     }
     return runAction(( ) => sendMessage({

@@ -36,6 +36,12 @@ import {
     makeStockPopupCorpus,
 } from './popup-corpus.js';
 import {
+    attachStockBadfilterResiduals,
+    expandRemoveparamsRule,
+    minimizeRuleset,
+    networkFilterIdentities,
+} from './js/ubo-parser.js';
+import {
     createHash,
     randomBytes,
 } from 'crypto';
@@ -43,10 +49,6 @@ import {
     dnrRulesetFromRawLists,
     mergeRules,
 } from './js/static-dnr-filtering.js';
-import {
-    expandRemoveparamsRule,
-    minimizeRuleset,
-} from './js/ubo-parser.js';
 
 import { execSync } from 'node:child_process';
 import { fetchList } from './js/offscreen/fetch-list.js';
@@ -83,6 +85,7 @@ const outputDir = commandLineArgs.get('output') || '.';
 const cacheDir = `${outputDir}/../mv3-data`;
 const rulesetDir = `${outputDir}/rulesets`;
 const scriptletDir = `${rulesetDir}/scripting`;
+const badfilterDetails = {};
 const rePatternIsHostname = /^\|\|[^*/?|^]+\^$/;
 const envExtra = (( ) => {
     const env = commandLineArgs.get('env');
@@ -204,6 +207,7 @@ const writeOps = [];
 const ruleResources = [];
 const rulesetDetails = [];
 const scriptletStats = new Map();
+const scriptletExceptionStats = new Map();
 const genericDetails = new Map();
 const requiredRedirectResources = new Set();
 let networkBad = new Set();
@@ -612,6 +616,7 @@ async function processDnrRules(assetDetails, network, dnrRules) {
     }
 
     // Minimize rulesets
+    attachStockBadfilterResiduals(staticRules);
     const minimizedStaticRuleset = minimizeRuleset(staticRules);
     log(`\tStatic rules (raw/minimized): ${staticRules.length}/${minimizedStaticRuleset.length}`);
 
@@ -662,9 +667,32 @@ async function processDnrRules(assetDetails, network, dnrRules) {
     log(`\tUnsupported: ${bad.length}`);
     log(bad.map(rule => rule._error.map(v => `\t\t${v}`)).join('\n'), true);
 
-    writeFile(`${rulesetDir}/main/${assetDetails.id}.json`,
-        toJSONRuleset(minimizedStaticRuleset)
-    );
+    const staticJSON = toJSONRuleset(minimizedStaticRuleset);
+    writeFile(`${rulesetDir}/main/${assetDetails.id}.json`, staticJSON);
+    badfilterDetails[assetDetails.id] = {
+        badfilterKeys: assetDetails.badfilterKeys ?? [],
+        digest: createHash('sha256').update(staticJSON).digest('hex'),
+    };
+    const deferredSourceKeys = new Set([
+        ...(assetDetails.badfilterDeferredKeys ?? []),
+        ...regexRules.flatMap(rule => rule._sourceKeys ?? []),
+        ...dnrRules.filter(rule => isGood(rule) === false || isURLSkip(rule))
+            .flatMap(rule => rule._sourceKeys ?? []),
+    ]);
+    writeFile(`${rulesetDir}/badfilter/${assetDetails.id}.json`, JSON.stringify({
+        schemaVersion: 1,
+        digest: badfilterDetails[assetDetails.id].digest,
+        badfilterKeys: assetDetails.badfilterKeys ?? [],
+        deferredKeys: Array.from(deferredSourceKeys),
+        rules: minimizedStaticRuleset.filter(rule => rule._sourceKeys?.length)
+            .map(rule => ({
+                id: rule.id,
+                keys: Array.from(new Set(rule._sourceKeys)),
+                complete: rule._sourceIncomplete !== true,
+                residual: rule._sourceResidualIncomplete === true
+                    ? undefined : rule._sourceResidualGroups,
+            })),
+    }));
 
     if ( minimizedRegexRuleset.length !== 0 ) {
         writeFile(`${rulesetDir}/regex/${assetDetails.id}.json`,
@@ -871,6 +899,10 @@ async function processScriptletFilters(assetDetails, mapin) {
     if ( mapin.size === 0 ) { return 0; }
 
     const { id } = assetDetails;
+    scriptletExceptionStats.set(id, {
+        exceptions: makeScriptlets.exceptionDetails(mapin),
+        tokens: makeScriptlets.invocationTokens(mapin),
+    });
     for ( const details of mapin.values() ) {
         makeScriptlets.compile(id, details);
     }
@@ -882,11 +914,15 @@ async function processScriptletFilters(assetDetails, mapin) {
     let count = 0;
     if ( result.MAIN ) {
         writeFile(`${scriptletDir}/scriptlet/main/${id}.js`, result.MAIN.code);
+        writeFile(`${scriptletDir}/scriptlet/origin/main/${id}.js`,
+            makeScriptlets.originOnlyCode(result.MAIN.code));
         stats.MAIN = result.MAIN.hostnames;
         count += result.MAIN.hostnames.length;
     }
     if ( result.ISOLATED ) {
         writeFile(`${scriptletDir}/scriptlet/isolated/${id}.js`, result.ISOLATED.code);
+        writeFile(`${scriptletDir}/scriptlet/origin/isolated/${id}.js`,
+            makeScriptlets.originOnlyCode(result.ISOLATED.code));
         stats.ISOLATED = result.ISOLATED.hostnames;
         count += result.ISOLATED.hostnames.length;
     }
@@ -1081,7 +1117,14 @@ async function rulesetFromURLs(assetDetails) {
 
     const results = await dnrRulesetFromRawLists(
         [ { name: assetDetails.id, text: assetDetails.text } ],
-        { env, extensionPaths, secret, networkBad }
+        { env, extensionPaths, secret, networkBad,
+            networkSourceIdentity: parser => networkFilterIdentities(parser)
+                .map(identity => ({
+                    ...identity,
+                    rawKey: identity.key,
+                    key: createHash('sha256').update(identity.key).digest('hex'),
+                })),
+        }
     );
     networkBad = results.networkBad;
 
@@ -1092,6 +1135,9 @@ async function rulesetFromURLs(assetDetails) {
         JSON.stringify(results.network.ruleset, null, 2)
     );
     const { dnrRules, sbRules, popupRules } = splitDnrRules(results.network.ruleset)
+    assetDetails.badfilterKeys = results.networkBadfilterKeys;
+    assetDetails.badfilterDeferredKeys = [ ...sbRules, ...popupRules ]
+        .flatMap(rule => rule._sourceKeys ?? []);
     writeFile(`${rulesetDir}/debug/${assetDetails.id}.plain.json`,
         JSON.stringify(dnrRules, null, 2)
     );
@@ -1250,6 +1296,12 @@ async function main() {
 
     writeFile(`${rulesetDir}/scriptlet-details.json`,
         `${JSON.stringify(scriptletStats, jsonSetMapReplacer, 1)}\n`
+    );
+    writeFile(`${rulesetDir}/badfilter-details.json`, JSON.stringify({
+        schemaVersion: 1, rulesets: badfilterDetails,
+    }));
+    writeFile(`${rulesetDir}/scriptlet-exceptions.json`,
+        `${JSON.stringify(scriptletExceptionStats, jsonSetMapReplacer)}\n`
     );
 
     writeFile(`${rulesetDir}/generic-details.json`,

@@ -2,7 +2,7 @@
 
 Đây là bản đồ capability, **không phải lời hứa parity 100%**. Chrome MV3 buộc extension công khai dùng Declarative Net Request cho phần lớn tác vụ chặn; sideload không gỡ quota DNR và không biến service worker thành background page MV2.
 
-Ký hiệu: **Có** = MV3 có đường triển khai tương đương hữu ích; **Một phần** = semantics/quota khác MV2; **Không** = Chrome MV3 không có API tương đương; **R&D** = chỉ xem xét ở một tầng tùy chọn có artifact và threat model riêng.
+Ký hiệu: **Có** = bản hiện tại có đường triển khai hữu ích; **Một phần** = semantics/quota khác MV2; **Không** = chưa có trong bản hiện tại; **R&D** = hướng mở rộng cần artifact và đánh giá riêng. “Không” không khẳng định mọi API hoặc cách triển khai khác đều bất khả thi.
 
 Theo [Chrome DNR API](https://developer.chrome.com/docs/extensions/reference/api/declarativeNetRequest), static ruleset được đóng gói và có ngân sách riêng với dynamic/session. Từ Chrome 120/121, giới hạn **số rule** dynamic và session được tách, nhưng [Chromium CL ngày 2023-10-18](https://chromium.googlesource.com/chromium/src/+/eab7fc99e59b69e929d02e43bdcf8bbd75333869%5E%21/) xác nhận quota **regex dynamic + session vẫn dùng chung một pool tối đa 1.000**; enabled static rulesets có aggregate pool tối đa 1.000 regex riêng. Con số cụ thể thay đổi theo browser/version, nên đây là mô hình budget chứ không phải bảo đảm mọi máy có cùng capacity.
 
@@ -11,7 +11,7 @@ Theo [Chrome DNR API](https://developer.chrome.com/docs/extensions/reference/api
 | Static network blocking | Có | **Có**, packaged static DNR | Không cần | Chrome hiện cho khai báo tối đa 100 static ruleset, bật 50 và bảo đảm tối thiểu 30.000 static rules trên tập đang bật; phần vượt mức phụ thuộc `getAvailableStaticRuleCount()`. |
 | Custom/imported network lists | Có | **Có**, dynamic DNR trong subset hỗ trợ | Có thể bổ sung compiler native | Dynamic/session có rule-count budget riêng nhưng chia sẻ regex pool; filter không biểu diễn được phải được báo, không cắt im lặng. |
 | Per-site filtering mode | Có | **Có** | Không cần | Persist setting và sinh rule theo namespace. |
-| Dynamic firewall matrix | Có, quyết định runtime | **Một phần** | Managed adapter có thể mở rộng | MV3 cần khai báo rule trước request; không có quyết định đồng bộ tùy ý như MV2. |
+| Dynamic firewall matrix | Có, quyết định runtime | **Một phần**, native network cells với block/allow/noop, bản tạm/lâu dài | Managed adapter có thể mở rộng | Chrome 145+ dùng topDomains; party theo trang cấp cao nhất và PSL. Trang mới có thể cần cập nhật bất đồng bộ. Chưa có full popup matrix, inline-script hoặc main-frame firewall. [Chi tiết](MV3-PARITY-IMPLEMENTATION-2026-09-06.md). |
 | Cosmetic filtering | Có | **Có** | Không cần | CSS/content script đăng ký theo site/ruleset. |
 | Procedural cosmetic filter | Có | **Một phần** | Native không giúp DOM trực tiếp | Chỉ hỗ trợ operator an toàn có trong packaged code. |
 | Scriptlets | Có | **Một phần** | Không tải scriptlet qua companion | Chỉ scriptlet đóng gói/allowlist; cấm remote executable code. |
@@ -19,12 +19,12 @@ Theo [Chrome DNR API](https://developer.chrome.com/docs/extensions/reference/api
 | Strict/popup blocking | Có | **Có/Một phần** | Có thể bổ sung policy | Smart policy vẫn xử lý opener/target/gesture. Observer thực thi corpus stock `$popup` đóng gói và subset `$popup`/`$popunder` của sandbox/imported: URL/regex đã kiểm tra cùng include/exclude request, initiator và top domains. Stock DNR export chưa giữ kind `$popunder`, nên metadata ghi `omitted` thay vì giả lập. Condition như `domainType`, method, resource type hoặc response header được giữ ở typed route `popup-compiler-required` với status `deferred`; deferred allow còn tạo guard superset chỉ có quyền buộc fail-open, không được tự allow/block. Thiếu context hoặc hết work budget cũng phải fail open. |
 | Redirect resource | Có | **Một phần** | Không cần | Chỉ redirect tới resource đóng gói/được manifest cho phép. |
 | Request/response header rules | Có | **Một phần** | Managed mode có thể mở rộng | DNR `modifyHeaders` không tương đương mọi thao tác `webRequestBlocking`. |
-| Full live request logger | Có | **Một phần** | **R&D** qua managed/native diagnostics | DNR feedback bị giới hạn; không được bật giám sát rộng mặc định. |
-| Response body/HTML rewriting | Có trên engine hỗ trợ | **Không** | **R&D** qua local proxy, rủi ro cao | DNR không sửa arbitrary response body. Managed `webRequestBlocking` cũng không tự cung cấp body rewrite. |
-| CNAME uncloaking/DNS resolution | Có trên engine hỗ trợ | **Không** | **R&D** qua DNS-aware companion | Chrome extension không có đường DNS tương đương. |
-| Chặn media theo kích thước response | Có | **Không tương đương chính xác** | **R&D** qua proxy | DNR quyết định trước khi có đủ thông tin response. |
+| Full live request logger | Có | **Một phần**, logger hợp nhất opt-in | **R&D** qua managed/native diagnostics | Quan sát network với quyền tùy chọn, native DNR, CSS/DOM và chẩn đoán scriptlet; 512 bản ghi, có search/export. Không thấy mọi request browser hoặc bảo đảm đầy đủ hiệu ứng MAIN world. |
+| Response body/HTML rewriting | Có trên engine hỗ trợ | **Không** | **R&D** qua debugger/Fetch theo tab hoặc local proxy | DNR và managed `webRequestBlocking` không cung cấp body rewrite. Debugger có Fetch nhưng cần quyền không thể xin tùy chọn, quản lý request tạm dừng và target riêng. [Phân tích API](MV3-PARITY-IMPLEMENTATION-2026-09-06.md). |
+| CNAME uncloaking/DNS resolution | Có trên engine hỗ trợ | **Không** | **R&D** qua DNS-aware companion | `chrome.dns` hiện chỉ dành cho Dev channel, trả IP chứ không chuỗi CNAME; chưa giải quyết Chrome Stable. |
+| Chặn media theo kích thước response | Có | **Không tương đương chính xác** | **R&D** qua debugger/proxy | Header nếu có chưa bảo đảm kích thước body thực tế; bản hiện tại không triển khai bộ lọc kích thước đầy đủ. |
 | Backup/restore | Có | **Có** | Có thể export policy riêng | Không bao gồm secret/native config nếu chưa có schema mã hóa. |
-| Internationalization | Có | **Có** | Không cần | 10 locale ưu tiên có toàn bộ chuỗi Power; 61 locale còn lại dùng English fallback build-time thay cho control trống. |
+| Internationalization | Có | **Có/Một phần** | Không cần | 10 locale ưu tiên có bộ chuỗi Power trước đây; 61 locale dùng English fallback build-time. Firewall/logger/capability mới có EN/VI, các ngôn ngữ khác tạm dùng English. |
 | Filter Store/catalog | Không phải core store | **MVP có** | Không cần | Catalog đóng gói và tối đa 8 catalog HTTPS do người dùng thêm; filter là dữ liệu, không phải plugin/code store. |
 | Low-memory profile | Tối ưu runtime MV2 | **MVP có** | Companion có budget riêng | Compile tuần tự, cache có ngân sách và số liệu storage cục bộ; chưa có benchmark heap/RSS trên máy 2–4 GiB. |
 

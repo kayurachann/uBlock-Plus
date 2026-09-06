@@ -1,5 +1,7 @@
 # Rà soát chức năng so với uBlock Origin đầy đủ
 
+> Cập nhật tiếp theo: [firewall, logger và ngoại lệ đã triển khai](MV3-PARITY-IMPLEMENTATION-2026-09-06.md). Các khoảng trống dưới đây là snapshot trước đợt triển khai đó; xem tài liệu mới để biết chức năng và giới hạn hiện tại.
+
 Ngày kiểm tra: **6 tháng 9 năm 2026**. Mốc mã trước rà soát: `140ccdb9dcd8fcc3677d6cf2de65de15e97e60e1`.
 
 Theo yêu cầu của người dùng, đợt này lấy **uBlock Origin đầy đủ** làm mốc chức năng và tham khảo **AdGuard** cùng **Brave**. Không dùng uBlock Origin Lite làm chuẩn so sánh. Các tài liệu kiểm thử lịch sử vẫn giữ nguồn và kết quả tại thời điểm thực hiện.

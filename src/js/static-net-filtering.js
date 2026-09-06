@@ -4672,6 +4672,20 @@ StaticNetFilteringEngine.prototype.dnrFromCompiled = function(op, context, ...ar
     const { good, bad } = context;
     const unserialize = CompiledListReader.unserialize;
     const buckets = new Map();
+    const attachSources = (rule, line, property, hostname) => {
+        if ( context.networkSources === undefined ) { return; }
+        const keys = context.networkSources.get(line);
+        rule._sourceKeys ??= [];
+        if ( keys?.length ) {
+            rule._sourceKeys.push(...keys);
+            if ( property !== undefined ) {
+                rule._sourceDomainUnits ??= [];
+                rule._sourceDomainUnits.push({ property, hostname, keys: keys.slice() });
+            }
+        } else {
+            rule._sourceIncomplete = true;
+        }
+    };
 
     for ( const line of good ) {
         if ( bad.has(line) ) {
@@ -4701,6 +4715,7 @@ StaticNetFilteringEngine.prototype.dnrFromCompiled = function(op, context, ...ar
             }
             const rule = bucket.get(DOT_TOKEN_HASH)[0];
             rule.condition.requestDomains.push(fdata);
+            attachSources(rule, line, 'requestDomains', fdata);
             break;
         }
         case ANY_TOKEN_HASH: {
@@ -4713,6 +4728,7 @@ StaticNetFilteringEngine.prototype.dnrFromCompiled = function(op, context, ...ar
             }
             const rule = bucket.get(ANY_TOKEN_HASH)[0];
             rule.condition.initiatorDomains.push(fdata);
+            attachSources(rule, line, 'initiatorDomains', fdata);
             break;
         }
         case ANY_HTTPS_TOKEN_HASH: {
@@ -4726,6 +4742,7 @@ StaticNetFilteringEngine.prototype.dnrFromCompiled = function(op, context, ...ar
             }
             const rule = bucket.get(ANY_HTTPS_TOKEN_HASH)[0];
             rule.condition.initiatorDomains.push(fdata);
+            attachSources(rule, line, 'initiatorDomains', fdata);
             break;
         }
         case ANY_HTTP_TOKEN_HASH: {
@@ -4739,6 +4756,7 @@ StaticNetFilteringEngine.prototype.dnrFromCompiled = function(op, context, ...ar
             }
             const rule = bucket.get(ANY_HTTP_TOKEN_HASH)[0];
             rule.condition.initiatorDomains.push(fdata);
+            attachSources(rule, line, 'initiatorDomains', fdata);
             break;
         }
         default: {
@@ -4747,6 +4765,7 @@ StaticNetFilteringEngine.prototype.dnrFromCompiled = function(op, context, ...ar
             }
             const rule = {};
             dnrRuleFromCompiled(fdata, rule);
+            attachSources(rule, line);
             bucket.get(EMPTY_TOKEN_HASH).push(rule);
             break;
         }

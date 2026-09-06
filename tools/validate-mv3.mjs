@@ -30,8 +30,11 @@ import {
     STOCK_POPUP_SOURCE_KIND_PRECISION,
 } from '../platform/mv3/popup-corpus.js';
 import { Buffer } from 'node:buffer';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
+import { hasExactResidual } from '../platform/mv3/extension/js/stock-badfilter.js';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import process from 'node:process';
 
 /******************************************************************************/
@@ -379,6 +382,131 @@ const validateStockPopupCorpora = async ruleResources => {
 
 /******************************************************************************/
 
+const validateStockBadfilterMetadata = async ruleResources => {
+    let minimizers;
+    const canonicalRule = rule => JSON.stringify(rule, (key, value) => {
+        if ( key === 'id' || key.startsWith('_') ) { return; }
+        if ( Array.isArray(value) ) { return value.slice().sort(); }
+        if ( value && typeof value === 'object' ) {
+            return Object.fromEntries(Object.entries(value).sort(([ a ], [ b ]) => a.localeCompare(b)));
+        }
+        return value;
+    });
+    const index = await fs.readFile(path.join(extensionDir,
+        'rulesets/badfilter-details.json'), 'utf8').then(JSON.parse).catch(( ) => undefined);
+    if ( index?.schemaVersion !== 1 || isPlainObject(index.rulesets) === false ) {
+        reportError('Stock badfilter source index is missing or invalid');
+        return;
+    }
+    const hashPattern = /^[a-f0-9]{64}$/;
+    for ( const resource of ruleResources ) {
+        const id = resource.id;
+        const entry = index.rulesets[id];
+        const metadata = await fs.readFile(path.join(extensionDir,
+            `rulesets/badfilter/${id}.json`), 'utf8').then(JSON.parse).catch(( ) => undefined);
+        const data = await fs.readFile(path.join(extensionDir,
+            resource.path.replace(/^\//, ''))).catch(( ) => undefined);
+        const digest = data && createHash('sha256').update(data).digest('hex');
+        if ( metadata?.schemaVersion !== 1 || entry?.digest !== digest ||
+            metadata?.digest !== digest || hashPattern.test(digest ?? '') === false ||
+            Array.isArray(entry?.badfilterKeys) === false ||
+            entry.badfilterKeys.every(key => typeof key === 'string') === false ||
+            JSON.stringify(metadata?.badfilterKeys) !== JSON.stringify(entry.badfilterKeys) ||
+            Array.isArray(metadata?.rules) === false ||
+            Array.isArray(metadata?.deferredKeys) === false ||
+            metadata.deferredKeys.every(key => hashPattern.test(key)) === false ) {
+            reportError(`Stock badfilter metadata does not match packaged ruleset ${id}`);
+            continue;
+        }
+        const rules = JSON.parse(data.toString('utf8'));
+        const ruleIds = new Set(rules.map(rule => rule.id));
+        const rulesById = new Map(rules.map(rule => [ rule.id, rule ]));
+        const seen = new Set();
+        for ( const row of metadata.rules ) {
+            if ( ruleIds.has(row.id) === false || seen.has(row.id) ||
+                typeof row.complete !== 'boolean' || Array.isArray(row.keys) === false ||
+                row.keys.length === 0 || row.keys.every(key => hashPattern.test(key)) === false ) {
+                reportError(`Invalid stock badfilter source mapping in ${id}: ${row.id}`);
+                continue;
+            }
+            seen.add(row.id);
+            if ( row.residual === undefined ) { continue; }
+            if ( hasExactResidual(row) === false ) {
+                reportError(`Invalid stock residual provenance in ${id}: ${row.id}`);
+                continue;
+            }
+            minimizers ??= await import(pathToFileURL(path.join(extensionDir, 'js/ubo-parser.js')).href);
+            const originalGroups = row.residual.map(group => {
+                const rule = structuredClone(group.template);
+                rule.condition[group.property] = group.domains.map(entry => entry[0]);
+                return rule;
+            });
+            const reconstructed = minimizers.minimizeRules(
+                minimizers.minimizeRuleset(originalGroups));
+            const original = minimizers.minimizeRules([ structuredClone(rulesById.get(row.id)) ]);
+            if ( reconstructed.length !== 1 || canonicalRule(reconstructed[0]) !== canonicalRule(original[0]) ) {
+                reportError(`Stock residual groups do not reconstruct native rule ${id}/${row.id}`);
+            }
+        }
+    }
+};
+
+const validateSharedScriptletData = async () => {
+    const readJSON = name => fs.readFile(path.join(extensionDir, `rulesets/${name}.json`), 'utf8')
+        .then(JSON.parse).catch(() => undefined);
+    const [ scripts, exceptions ] = await Promise.all([
+        readJSON('scriptlet-details'), readJSON('scriptlet-exceptions'),
+    ]);
+    const validEntries = entries => Array.isArray(entries) && entries.every(entry =>
+        Array.isArray(entry) && entry.length === 2 &&
+        typeof entry[0] === 'string' &&
+        /^[a-zA-Z0-9_-]+$/.test(entry[0]) && isPlainObject(entry[1])
+    ) && new Set(entries.map(entry => entry[0])).size === entries.length;
+    if ( validEntries(scripts) === false || validEntries(exceptions) === false ) {
+        reportError('Shared scriptlet metadata is missing or invalid');
+        return;
+    }
+    const exceptionMap = new Map(exceptions);
+    const strings = value => Array.isArray(value) && value.every(item => typeof item === 'string');
+    for ( const [ id, details ] of exceptions ) {
+        if ( Array.isArray(details.exceptions) === false || strings(details.tokens) === false ||
+            details.exceptions.some(entry => strings(entry?.args) === false ||
+                strings(entry?.hostnames) === false) ) {
+            reportError(`Invalid scriptlet exception data in ${id}`);
+        }
+        for ( const token of Array.isArray(details.tokens) ? details.tokens : [] ) {
+            try {
+                if ( strings(JSON.parse(token)) === false ) { throw new Error(); }
+            } catch { reportError(`Invalid scriptlet invocation token in ${id}`); }
+        }
+    }
+    for ( const [ id, worlds ] of scripts ) {
+        if ( exceptionMap.has(id) === false ) {
+            reportError(`Scriptlet exception metadata is absent for ${id}`);
+        }
+        for ( const [ world, hostnames ] of Object.entries(worlds) ) {
+            if ( [ 'MAIN', 'ISOLATED' ].includes(world) === false || strings(hostnames) === false ) {
+                reportError(`Invalid scriptlet world metadata for ${id}`);
+                continue;
+            }
+            const readCode = prefix => fs.readFile(path.join(extensionDir,
+                `rulesets/scripting/scriptlet/${prefix}${world.toLowerCase()}/${id}.js`), 'utf8')
+                .then(code => code.replace(/\r\n/g, '\n')).catch(() => '');
+            const [ code, origin ] = await Promise.all([ readCode(''), readCode('origin/') ]);
+            if ( code.includes('/* $scriptletExceptionData$ */ null') === false ||
+                /const tokens = \[/.test(code) === false ) {
+                reportError(`Packaged scriptlet ${id}/${world} lacks shared exception binding`);
+            }
+            const expectedOrigin = `(function uBlockPlus_originScriptlets() {\n` +
+                `if ( /^(?:https?|file):$/.test(document.location.protocol) ) { return; }\n` +
+                `${code}\n})();\n`;
+            if ( origin !== expectedOrigin ) {
+                reportError(`Packaged origin scriptlet ${id}/${world} is missing or has an unsafe guard`);
+            }
+        }
+    }
+};
+
 const rootStat = await fs.stat(extensionDir).catch(( ) => { });
 if ( rootStat?.isDirectory() !== true ) {
     throw new Error(`MV3 extension directory does not exist: ${extensionDir}`);
@@ -464,6 +592,8 @@ if ( Array.isArray(ruleResources) === false || ruleResources.length === 0 ) {
         await validateDnrRuleset(resource);
     }
     await validateStockPopupCorpora(ruleResources);
+    await validateStockBadfilterMetadata(ruleResources);
+    await validateSharedScriptletData();
 }
 
 await validateFileReference(manifest.action?.default_popup, 'Action popup');
@@ -550,6 +680,8 @@ for ( const requiredPath of [
     'js/power-ui.js',
     'js/runtime-capabilities-core.js',
     'js/runtime-capabilities.js',
+    'js/scriptlet-exceptions.js',
+    'js/scriptlet-registration.js',
     'js/scripting/popup-context.js',
     'lib/codemirror/cm6.bundle.ublock-plus.min.js',
 ] ) {

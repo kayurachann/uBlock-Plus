@@ -21,6 +21,7 @@
 
 import assert from 'node:assert/strict';
 
+import { capabilityDetailsRows } from '../platform/mv3/extension/js/runtime-capabilities-ui.js';
 import { classifyRuntimeCapabilities } from '../platform/mv3/extension/js/runtime-capabilities-core.js';
 
 const standard = classifyRuntimeCapabilities({
@@ -101,5 +102,33 @@ assert.deepEqual(unavailable.eligibleNetworkEngines, []);
 assert.equal(unavailable.userScripts, false);
 assert.equal(unavailable.quotas.dynamicRules, undefined);
 assert.equal(unavailable.quotas.regexRules, undefined);
+
+const optional = {
+    installType: 'development',
+    manifestPermissions: [ 'declarativeNetRequest', 'declarativeNetRequestFeedback' ],
+    optionalPermissions: [ 'webRequest' ],
+    api: { declarativeNetRequest: true, webRequest: true, nativeMatchFeedback: true, topDomainConditions: true },
+};
+const ungranted = classifyRuntimeCapabilities(optional);
+assert.equal(ungranted.networkObservation, false, 'an exposed namespace is not an optional permission grant');
+assert.equal(ungranted.networkObservationRequestable, true);
+assert.equal(ungranted.topDomainFirewall, true);
+assert.equal(ungranted.nativeMatchFeedback, true);
+const granted = classifyRuntimeCapabilities({ ...optional, grantedPermissions: [ 'webRequest' ] });
+assert.equal(granted.networkObservation, true);
+assert.equal(granted.activeNetworkEngine, 'dnr', 'observation never changes the filtering engine');
+assert.equal(classifyRuntimeCapabilities({ ...optional, installType: 'normal' }).nativeMatchFeedback, false,
+    'having the feedback API cannot grant unpacked-only eligibility to a store installation');
+assert.equal(classifyRuntimeCapabilities({ ...optional, installType: 'unknown' }).nativeMatchFeedbackUnconfirmed, true);
+assert.equal(classifyRuntimeCapabilities({ ...optional, api: { declarativeNetRequest: true } }).topDomainFirewall, false);
+for ( const result of [ standard, managed, granted, unavailable ] ) {
+    assert.equal(result.responseBodyFiltering, false);
+    assert.equal(result.dnsCnameUncloaking, false);
+    assert.equal(result.inlineScriptFirewall, false);
+    assert.equal(result.managedWebRequestImplemented, false);
+}
+assert.match(capabilityDetailsRows(ungranted, 'en')[0][1], /Optional permission not granted/);
+assert.match(capabilityDetailsRows(granted, 'vi-VN')[0][1], /chỉ thu thập sau/);
+assert.match(capabilityDetailsRows(managed, 'en').at(-1)[1], /Not implemented/);
 
 console.log('Runtime capability negotiation tests passed.');

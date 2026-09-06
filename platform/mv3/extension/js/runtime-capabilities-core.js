@@ -29,6 +29,7 @@ const finiteQuota = value => Number.isSafeInteger(value) && value >= 0
 
 export function classifyRuntimeCapabilities(input = {}) {
     const manifestPermissions = toSet(input.manifestPermissions);
+    const optionalPermissions = toSet(input.optionalPermissions);
     const grantedPermissions = toSet(input.grantedPermissions);
     const api = input.api instanceof Object ? input.api : {};
     const quotas = input.quotas instanceof Object ? input.quotas : {};
@@ -50,6 +51,11 @@ export function classifyRuntimeCapabilities(input = {}) {
         policyPermissionsDeclared &&
         policyPermissionsGranted &&
         api.webRequest === true;
+    const observationDeclared = manifestPermissions.has('webRequest') ||
+        optionalPermissions.has('webRequest');
+    const observationGranted = grantedPermissions.has('webRequest');
+    const matchFeedbackAPI = manifestPermissions.has('declarativeNetRequestFeedback') &&
+        api.nativeMatchFeedback === true;
 
     const eligibleNetworkEngines = [];
     if ( dnrAvailable ) {
@@ -66,6 +72,19 @@ export function classifyRuntimeCapabilities(input = {}) {
         activeNetworkEngine: dnrAvailable ? 'dnr' : 'unavailable',
         eligibleNetworkEngines,
         managedWebRequestEligible,
+        // Eligibility describes browser policy, not an implemented alternate engine.
+        managedWebRequestImplemented: false,
+        networkObservation: observationDeclared && observationGranted && api.webRequest === true,
+        networkObservationRequestable: optionalPermissions.has('webRequest'),
+        networkObservationPermissionGranted: observationGranted,
+        nativeMatchFeedback: matchFeedbackAPI && installType === 'development',
+        nativeMatchFeedbackUnconfirmed: matchFeedbackAPI && installType === 'unknown',
+        topDomainFirewall: dnrAvailable && api.topDomainConditions === true,
+        // These are product implementation limits, not a claim that every
+        // browser or policy-installed extension has the same API surface.
+        responseBodyFiltering: false,
+        dnsCnameUncloaking: false,
+        inlineScriptFirewall: false,
         smartPopupObservation:
             api.tabs === true && api.webNavigation === true,
         userScripts: api.userScripts === true,

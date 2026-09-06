@@ -21,6 +21,7 @@
 
 /******************************************************************************/
 
+import { createHash } from 'node:crypto';
 import fs from 'fs/promises';
 import process from 'process';
 
@@ -53,6 +54,9 @@ if ( beforeDir === '' || afterDir === '' ) {
 /******************************************************************************/
 
 async function main() {
+    const badfilterIndexPath = `${afterDir}/rulesets/badfilter-details.json`;
+    const badfilterIndex = await fs.readFile(badfilterIndexPath, 'utf8')
+        .then(JSON.parse).catch(( ) => undefined);
     const folders = [
         'main',
         'modify-headers',
@@ -73,6 +77,7 @@ async function main() {
             let afterRules;
             try { afterRules = JSON.parse(raw); } catch { }
             if ( Array.isArray(afterRules) === false ) { continue; }
+            const originalIds = new Map(afterRules.map(rule => [ rule, rule.id ]));
             const beforeMap = new Map(beforeRules.map(a => {
                 const id = a.id;
                 a.id = 0;
@@ -103,12 +108,31 @@ async function main() {
             }
             const path = `${afterDir}/rulesets/${folder}/${file}`;
             console.log(`    Salvaged ${reusedIds.size} ids in ${folder}/${file}`);
+            const content = `[\n${lines.join(',\n')}\n]\n`;
+            if ( folder === 'main' && badfilterIndex ) {
+                const metadataPath = `${afterDir}/rulesets/badfilter/${file}`;
+                const metadata = await fs.readFile(metadataPath, 'utf8').then(JSON.parse);
+                const remapping = new Map(afterRules.map(rule => [ originalIds.get(rule), rule.id ]));
+                for ( const row of metadata.rules ) {
+                    if ( remapping.has(row.id) === false ) {
+                        throw new Error(`Missing badfilter provenance id in ${file}: ${row.id}`);
+                    }
+                    row.id = remapping.get(row.id);
+                }
+                metadata.digest = createHash('sha256').update(content).digest('hex');
+                const id = file.replace(/\.json$/, '');
+                badfilterIndex.rulesets[id].digest = metadata.digest;
+                writePromises.push(fs.writeFile(metadataPath, JSON.stringify(metadata)));
+            }
             writePromises.push(
-                fs.writeFile(path, `[\n${lines.join(',\n')}\n]\n`)
+                fs.writeFile(path, content)
             );
         }
     }
     await Promise.all(writePromises);
+    if ( badfilterIndex ) {
+        await fs.writeFile(badfilterIndexPath, JSON.stringify(badfilterIndex));
+    }
 }
 
 main();

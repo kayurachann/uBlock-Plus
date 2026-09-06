@@ -337,6 +337,8 @@ try {
         (Join-Path $outputDirectory 'js/resources')
     Copy-RequiredFile (Join-Path $uboRoot 'src/lib/punycode.js') `
         (Join-Path $outputDirectory 'js/punycode.js')
+    Copy-RequiredFile (Join-Path $uboRoot 'src/lib/publicsuffixlist/publicsuffixlist.js') `
+        (Join-Path $outputDirectory 'lib/publicsuffixlist.js')
     Copy-TreeContents (Join-Path $uboRoot 'src/lib/regexanalyzer') `
         (Join-Path $outputDirectory 'lib/regexanalyzer')
     Copy-TreeContents (Join-Path $uboRoot 'src/img/flags-of-the-world') `

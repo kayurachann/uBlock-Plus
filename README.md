@@ -43,7 +43,11 @@ uBlock Plus+ blocks unwanted network requests and page elements using Chromium's
 | Element tools | Picker for persistent cosmetic filters, zapper for temporary removal and unpicker for saved matching filters. |
 | Filter management | Built-in lists, HTTPS imports, Filter Store bundles and compatible community catalogs. |
 | Settings | Protection presets, themes, density, memory profiles, optional browser privacy controls and backup/restore. |
-| Diagnostics | Local, bounded diagnostics with MV3-specific limits; no claim of a complete live request logger. |
+| Dynamic firewall | Source/destination/type rules with block, allow and true noop; DNS hostnames, IPv4 and bracketed IPv6 addresses; temporary/permanent rules, validation and recovery. Requires Chrome 145+. |
+| Filter exceptions | Cross-source scriptlet exceptions, exact imported/personal `$badfilter`, and source-mapped stock cancellation including proven hostname residual rules. |
+| Diagnostics | Opt-in network, native DNR, cosmetic, DOM and scriptlet diagnostics with search and redacted export; bounded local history. |
+
+See the [firewall, logger and exception guide](docs/MV3-PARITY-IMPLEMENTATION-2026-09-06.md) for usage, upgrade behavior and the remaining limits. The optional `webRequest` permission is requested only when you start logger capture; network blocking still uses DNR.
 
 The screenshots below show the **actual unpacked extension in Google Chrome 152.0.7977.76 on Windows**, captured on 6 September 2026. They use isolated profiles and demonstration pages; they are not concept mockups. UI language in the screenshots is English. [Image provenance](docs/assets/readme/README.md).
 
@@ -59,6 +63,19 @@ The screenshots below show the **actual unpacked extension in Google Chrome 152.
 <img src="docs/assets/readme/popup-compact.png" width="340" alt="Actual Chrome popup in a dark theme with details collapsed">
 <br><strong>Fewer details</strong><br>Dark theme with details collapsed. More/Less changes the amount of information; density is a separate appearance setting.
 </p>
+
+</details>
+
+<details>
+<summary><strong>View the dynamic firewall and unified logger</strong></summary>
+
+<img src="docs/assets/readme/dynamic-firewall.png" width="960" alt="Dynamic firewall editor in Chrome showing a temporary noop rule and validation, apply and save controls">
+
+**Dynamic firewall:** edit uBO-style rules, validate the draft, then apply for this session or save permanently. A noop rule can generate no native rule while leaving static filtering active.
+
+<img src="docs/assets/readme/unified-logger.png" width="960" alt="Unified logger in Chrome showing observed network requests, a packaged EasyList match, a firewall session match and cosmetic DOM records">
+
+**Unified logger:** start capture for a selected tab and distinguish observed network activity, native rule matches and DOM diagnostics. The example URLs and query values are synthetic test data; exported URLs are redacted.
 
 </details>
 
@@ -201,9 +218,10 @@ Filtering and diagnostic storage are local. The extension includes no project an
 | `alarms`, `offscreen` | Schedule maintenance and perform temporary background compilation. |
 | `userScripts` | Register supported user/imported filters using packaged code, subject to Chrome's separate switch. |
 | `webNavigation` | Correlate navigation and popup context. |
+| Optional `webRequest` | Observe requests for explicitly captured logger tabs; it does not add a blocking engine. |
 | Optional `privacy` | Change selected Chrome privacy settings after the user enables those controls; disabling a control clears the extension's override. |
 
-Current unpacked builds, including versioned packages, declare `declarativeNetRequestFeedback`. Matched-rule diagnostics also require the extension's own **Developer mode** and browser support; this is separate from Chrome's Developer mode used for installation. Versioned builds omit detailed debug mapping assets, so diagnostic detail can differ from a development build. An unavailable matched-rules control is not evidence that filtering is off. Popup diagnostics remain bounded and redact detailed URLs. See [privacy and retention](docs/PRIVACY.md) and the [threat model](docs/THREAT-MODEL.md).
+Current unpacked builds, including versioned packages, declare `declarativeNetRequestFeedback`. The unified logger works independently of the extension's own **Developer mode**; its native rule-match feed still depends on Chrome's API and installation eligibility. Start capture before reproducing a problem. Stock matches can resolve to packaged native rules, while dynamic/session bodies are separate, non-atomic API lookups; neither reconstructs every original filter expression. Missing feedback does not mean filtering is off. Popup diagnostics remain bounded and redact detailed URLs. See [privacy and retention](docs/PRIVACY.md) and the [threat model](docs/THREAT-MODEL.md).
 
 ## What MV3 can and cannot do
 
@@ -212,9 +230,12 @@ Current unpacked builds, including versioned packages, declare `declarativeNetRe
 | Network blocking and exceptions | Available through DNR, within Chrome's supported conditions and quotas. |
 | Cosmetic filters and scriptlets | Supported subset; scriptlet code and redirect resources must be packaged with the extension. |
 | Popup/popunder filters | The supported stock `$popup` corpus and imported `$popup`/`$popunder` subset run through the contextual observer. Stock `$popunder` is explicitly omitted where export loses its original kind. |
-| Dynamic firewall and request logger | Do not reproduce the full synchronous MV2 firewall or unrestricted live logger. |
+| Dynamic firewall and request logger | Native network firewall with true noop on Chrome 145+; opt-in bounded logger. New-site party scope can require an asynchronous update; main-frame/inline-script rules and complete browser-wide logging remain outside this implementation. |
+| `$badfilter` and scriptlet exceptions | Exact cancellation before imported/personal rule merging; stock supports whole-rule cancellation and rebuilding proven hostname block groups after partial cancellation. Unproven or secondary-corpus contributions remain active with warnings. Shared scriptlet exceptions with a conservative fallback when userScripts cannot carry the required data. |
 | Response-body rewriting, DNS/CNAME inspection, exact response-size blocking | No equivalent implementation through this build's normal public MV3 APIs. |
-| Managed/native capabilities | Research and roadmap items; no native companion is shipped or silently installed. |
+| Managed settings and additional engines | Supported administrator settings are available; a managed blocking adapter and native companion remain research items. No native companion is shipped or silently installed. |
+
+Chrome can reject an allow-exception regex because its compiled RE2 program exceeds the browser's limit. Some packaged lists contain such expressions, so a list-selection change can be rejected even when its rule count fits the quota. The extension restores the previous configuration and rules instead of dropping the exception. See the [native regex limit and recovery details](docs/MV3-PARITY-IMPLEMENTATION-2026-09-06.md).
 
 **Fail-open is deliberate.** If a popup decision requires context that is missing, an exception cannot be represented safely, or the matching work budget is exhausted, the relevant decision defers instead of approximating a block. Deferred allow conditions can force deferral; they cannot manufacture an approximate allow/block decision. Unsupported restrictive rules are not broadened by stripping their conditions. This reduces false positives and also means some unwanted popups can pass.
 
@@ -263,6 +284,8 @@ node tools/validate-mv3.mjs dist/build/uBlockPlus.chromium --release
 
 ### What has been tested
 
+The latest [firewall, logger and exception validation](docs/MV3-PARITY-IMPLEMENTATION-2026-09-06.md#xác-minh) passed **41 source test programs**, lint, the release build and artifact validation, plus **53 scenarios on installed Google Chrome 152** with sandbox and built-in popup blocking enabled. Firewall semantics include **10,500 comparisons with the full uBO engine**. The final ZIP contains **1,113 verified files**; the guide records its hash and the remaining native regex limitations. Safe rejection and rollback are tested outcomes, not claims that Chrome accepted unsupported exceptions.
+
 The [6 September 2026 local release validation](docs/MV3-CHROME-RETEST-2026-09-06.md) recorded:
 
 - **31 source test programs**, lint, the versioned build and artifact validation passing.
@@ -272,7 +295,7 @@ The [6 September 2026 local release validation](docs/MV3-CHROME-RETEST-2026-09-0
 
 The subsequent [full-uBO capability audit](docs/MV3-CAPABILITY-AUDIT-2026-09-06.md) expanded the suite to **35 source test programs** and fixed further exception, scope, editor, diagnostics and compiler-cache defects. Its report records the separate artifact and Chrome results.
 
-These are dated local results for the recorded build, not a claim that the older published ZIP or every future commit passed those checks. The native optional-permission dismissal case was not exercised because the test installation already had `<all_urls>`. Fixtures and one public-site probe are not a guarantee for every website, browser or assistive technology. Consult the live [Actions runs](https://github.com/kayurachann/uBlock-Plus/actions/workflows/mv3-chromium.yml) separately for CI status.
+These are dated local results for the recorded builds, not a claim that the older published ZIP or every future commit passed those checks. The earlier native host-permission dismissal case was not exercised because that installation already had `<all_urls>`. The latest logger test exercised granting optional `webRequest`; declining that browser prompt is covered by source tests, not a recorded native prompt dismissal. Fixtures and one public-site probe are not a guarantee for every website, browser or assistive technology. Consult the live [Actions runs](https://github.com/kayurachann/uBlock-Plus/actions/workflows/mv3-chromium.yml) separately for CI status.
 
 ## Troubleshooting
 
@@ -285,7 +308,7 @@ These are dated local results for the recorded build, not a claim that the older
 | An imported list fails | Check its direct HTTPS URL, format, size, browser capability and available DNR budget. Read the error before retrying. |
 | A child-site setting is rejected | Inspect the parent scope in Site rules; the extension refuses unsupported overrides instead of broadening them. |
 | `Internal error while updating dynamic rules` in Windows testing | Retry in an isolated profile with a short path. This setup issue was reproduced during native Chrome validation; do not delete your personal profile to troubleshoot it. |
-| Matched-rules diagnostics are unavailable | Check the extension's own Developer mode and the browser's debug API support. These controls are separate from Chrome's installation switch; filtering can still be active. |
+| Logger has no events | Choose the website tab and start capture before reproducing the request. Optional network permission and native DNR feedback are separate capabilities; see the logger status and Settings capability panel. |
 | Old popup layout after updating | Confirm the loaded folder and version, reload the extension, then close and reopen the popup. Do not assume a previously published ZIP contains newer source fixes. |
 
 For a bug report, include the extension build/commit, browser and OS versions, relevant URL and reproduction steps, filtering level, enabled custom lists, expected/actual result and a redacted screenshot if useful. Test with other blockers disabled in a separate profile to isolate interference. Do not publish private URLs, account data or an unreviewed backup.

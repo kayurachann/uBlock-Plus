@@ -12,6 +12,7 @@
 */
 
 import { normalizePowerUISettings } from './power-ui-core.js';
+import { parseFirewall } from './firewall-core.js';
 import { validatePopupPolicies } from './popup-policy.js';
 
 const MAX_TEXT_CHARS = 20 * 1024 * 1024;
@@ -268,6 +269,13 @@ export function normalizeBackupObject(value) {
     }
     if ( value.popupPolicies !== undefined ) {
         out.popupPolicies = validatePopupPolicies(value.popupPolicies);
+    }
+    if ( value.firewallRules !== undefined ) {
+        const lines = stringArray(value.firewallRules, 'firewallRules', {
+            maxItems: 1024, maxChars: 131072,
+        });
+        const { text } = parseFirewall(lines.join('\n'));
+        out.firewallRules = text === '' ? [] : text.split('\n');
     }
     if ( value.powerUISettings !== undefined ) {
         out.powerUISettings = normalizePowerUISettings(

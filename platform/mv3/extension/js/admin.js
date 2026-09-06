@@ -62,12 +62,12 @@ export async function loadAdminConfig() {
         adminReadEx('showBlockedCount'),
         adminReadEx('strictBlockMode'),
     ]);
-    applyAdminConfig({ popupBlockMode, showBlockedCount, strictBlockMode });
+    await applyAdminConfig({ popupBlockMode, showBlockedCount, strictBlockMode });
 }
 
 /******************************************************************************/
 
-function applyAdminConfig(config, apply = false) {
+async function applyAdminConfig(config, apply = false) {
     const toApply = [];
     for ( const [ key, val ] of Object.entries(config) ) {
         if ( typeof val !== typeof rulesetConfig[key] ) { continue; }
@@ -76,22 +76,21 @@ function applyAdminConfig(config, apply = false) {
         toApply.push(key);
     }
     if ( toApply.length === 0 ) { return; }
-    saveRulesetConfig();
+    await saveRulesetConfig();
     if ( apply !== true ) { return; }
     while ( toApply.length !== 0 ) {
         const key = toApply.pop();
         switch ( key ) {
         case 'popupBlockMode': {
             const { popupBlockMode } = config;
-            setPopupBlockMode(popupBlockMode, true).then(( ) => {
-                broadcastMessage({ popupBlockMode });
-            });
+            await setPopupBlockMode(popupBlockMode, true);
+            broadcastMessage({ popupBlockMode });
             break;
         }
         case 'showBlockedCount': {
             if ( typeof dnr.setExtensionActionOptions !== 'function' ) { break; }
             const { showBlockedCount } = config;
-            dnr.setExtensionActionOptions({
+            await dnr.setExtensionActionOptions({
                 displayActionCountAsBadgeText: showBlockedCount,
             });
             broadcastMessage({ showBlockedCount });
@@ -99,9 +98,8 @@ function applyAdminConfig(config, apply = false) {
         }
         case 'strictBlockMode': {
             const { strictBlockMode } = config;
-            setStrictBlockMode(strictBlockMode, true).then(( ) => {
-                broadcastMessage({ strictBlockMode });
-            });
+            await setStrictBlockMode(strictBlockMode, true);
+            broadcastMessage({ strictBlockMode });
             break;
         }
         default:
@@ -112,6 +110,23 @@ function applyAdminConfig(config, apply = false) {
 
 /******************************************************************************/
 
+let scheduleAdminMutation = task => Promise.resolve().then(task);
+let refreshAdminScripts = registerContentScripts;
+let applyAdminRulesets = async rulesets => {
+    await enableRulesets(rulesets);
+    await refreshAdminScripts();
+};
+
+// Inject the worker's complete filtering transaction queue without creating a
+// dependency from managed settings back to the worker's startup promise.
+export function setAdminMutationScheduler(scheduler, adapters = {}) {
+    scheduleAdminMutation = scheduler;
+    refreshAdminScripts = adapters.refreshScripts ?? registerContentScripts;
+    if ( typeof adapters.applyRulesets === 'function' ) {
+        applyAdminRulesets = adapters.applyRulesets;
+    }
+}
+
 const adminSettings = {
     keys: new Map(),
     timer: undefined,
@@ -120,14 +135,19 @@ const adminSettings = {
         if ( this.timer !== undefined ) { return; }
         this.timer = self.setTimeout(( ) => {
             this.timer = undefined;
-            this.process();
+            const keys = new Map(this.keys);
+            this.keys.clear();
+            Promise.resolve().then(( ) => scheduleAdminMutation(( ) =>
+                this.process(keys)
+            )).catch(reason => {
+                ublockPlusLog(`Managed filtering update failed: ${reason}`);
+            });
         }, 127);
     },
-    async process() {
-        if ( this.keys.has('rulesets') ) {
+    async process(keys) {
+        if ( keys.has('rulesets') ) {
             ublockPlusLog('admin setting "rulesets" changed');
-            await enableRulesets(rulesetConfig.enabledRulesets);
-            await registerContentScripts();
+            await applyAdminRulesets(rulesetConfig.enabledRulesets);
             const results = await Promise.all([
                 getAdminRulesets(),
                 getEnabledRulesets(),
@@ -135,36 +155,35 @@ const adminSettings = {
             const [ adminRulesets, enabledRulesets ] = results;
             broadcastMessage({ adminRulesets, enabledRulesets });
         }
-        if ( this.keys.has('defaultFiltering') ) {
+        if ( keys.has('defaultFiltering') ) {
             ublockPlusLog('admin setting "defaultFiltering" changed');
             await readFilteringModeDetails(true);
-            await registerContentScripts();
+            await refreshAdminScripts();
             const defaultFilteringMode = await getDefaultFilteringMode();
             broadcastMessage({ defaultFilteringMode });
         }
-        if ( this.keys.has('noFiltering') ) {
+        if ( keys.has('noFiltering') ) {
             ublockPlusLog('admin setting "noFiltering" changed');
             const filteringModeDetails = await readFilteringModeDetails(true);
-            await registerContentScripts();
+            await refreshAdminScripts();
             broadcastMessage({ filteringModeDetails });
         }
-        if ( this.keys.has('popupBlockMode') ) {
+        if ( keys.has('popupBlockMode') ) {
             ublockPlusLog('admin setting "popupBlockMode" changed');
-            const popupBlockMode = this.keys.get('popupBlockMode');
-            applyAdminConfig({ popupBlockMode }, true);
-            await registerContentScripts();
+            const popupBlockMode = keys.get('popupBlockMode');
+            await applyAdminConfig({ popupBlockMode }, true);
+            await refreshAdminScripts();
         }
-        if ( this.keys.has('showBlockedCount') ) {
+        if ( keys.has('showBlockedCount') ) {
             ublockPlusLog('admin setting "showBlockedCount" changed');
-            const showBlockedCount = this.keys.get('showBlockedCount');
-            applyAdminConfig({ showBlockedCount }, true);
+            const showBlockedCount = keys.get('showBlockedCount');
+            await applyAdminConfig({ showBlockedCount }, true);
         }
-        if ( this.keys.has('strictBlockMode') ) {
+        if ( keys.has('strictBlockMode') ) {
             ublockPlusLog('admin setting "strictBlockMode" changed');
-            const strictBlockMode = this.keys.get('strictBlockMode');
-            applyAdminConfig({ strictBlockMode }, true);
+            const strictBlockMode = keys.get('strictBlockMode');
+            await applyAdminConfig({ strictBlockMode }, true);
         }
-        this.keys.clear();
     }
 };
 
