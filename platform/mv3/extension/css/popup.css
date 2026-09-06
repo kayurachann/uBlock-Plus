@@ -1,7 +1,9 @@
 /* A compact, keyboard-accessible popup built around uBO's familiar power control. */
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes busy { to { opacity: 0.7; } }
-:root { overflow: hidden; }
+/* Anchor Chrome's native popup sizing before its initial viewport is settled. */
+:root { --popup-width: 340px; overflow: hidden; width: var(--popup-width); }
+:root[data-density="compact"] { --popup-width: 320px; }
 :root body,
 :root.mobile body {
     --popup-gap: 14px;
@@ -12,9 +14,9 @@
     max-height: 600px;
     overflow: hidden;
     position: relative;
-    width: 340px;
+    width: var(--popup-width);
 }
-:root[data-density="compact"] body { --popup-gap: 10px; width: 320px; }
+:root[data-density="compact"] body { --popup-gap: 10px; }
 :root body.loading { visibility: hidden; }
 :focus-visible { outline: 2px solid var(--accent-surface-1); outline-offset: 2px; }
 button, select { font: inherit; }
@@ -101,4 +103,3 @@ body[data-forbid~="dashboard"] #gotoDashboardFooter,
 body[data-forbid~="dashboard"] .dashboardLinks { display: none; }
 :root[data-popup-layout="compact"] .powerDetails { display: none; }
 @media (prefers-reduced-motion: reduce) { .sitePower { transition: none; } }
-@media (max-width: 319px) { :root body, :root.mobile body { width: 100vw; } }
