@@ -168,8 +168,16 @@ for ( const entry of docsEntries ) {
 }
 for ( const relativePath of productFacingDocs ) {
     const text = await fs.readFile(path.join(root, relativePath), 'utf8');
+    // Documentation may credit the separate upstream project through its
+    // official link. This exception does not apply to our product title or UI.
+    const productTitle = text.match(/^# +.*$/m)?.[0] || '';
+    const productCopy = text.replace(
+        /\[([^\]\r\n]+)\]\(https:\/\/github\.com\/uBlockOrigin\/uBOL-home\)/g,
+        (_link, label) => label.replaceAll('uBlock Origin Lite', 'upstream project')
+    );
     assert(
-        legacyProductPattern.test(text) === false,
+        legacyProductPattern.test(productTitle) === false &&
+            legacyProductPattern.test(productCopy) === false,
         `${relativePath} contains retired product branding`
     );
 }

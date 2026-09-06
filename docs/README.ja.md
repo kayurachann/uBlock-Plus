@@ -1,3 +1,6 @@
+<!-- readme-refresh-pending -->
+> **翻訳の更新状況：** この旧版の翻訳は、2026年9月6日のドキュメント更新をまだ完全には反映していません。最新のChrome画面、インストール手順、テスト結果は [English](../README.md) または [Tiếng Việt](README.vi.md) を参照してください。公開済みプレビュー版は最新ソースより古い場合があります。
+
 <div align="center">
 
 <img src="assets/readme/hero.png" alt="Chromiumのページが読み込まれる前に、広告、トラッカー、Cookie、その他の不要なWebリクエストを盾がフィルタリングするイメージ" width="1100">

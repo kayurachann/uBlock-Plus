@@ -1,3 +1,6 @@
+<!-- readme-refresh-pending -->
+> **Estado de la traducción:** Esta versión anterior aún no incorpora toda la documentación del 6 de septiembre de 2026. Consulte [English](../README.md) o [Tiếng Việt](README.vi.md) para ver las capturas actuales de Chrome, las instrucciones de instalación y las pruebas. La versión preliminar publicada puede ser anterior al código actual.
+
 <div align="center">
 
 <img src="assets/readme/hero.png" alt="Ilustración de un escudo que filtra anuncios, rastreadores, cookies y otras solicitudes web no deseadas antes de que se carguen las páginas de Chromium" width="1100">

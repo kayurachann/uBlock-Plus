@@ -1,3 +1,6 @@
+<!-- readme-refresh-pending -->
+> **Übersetzungsstand:** Diese ältere Übersetzung wurde noch nicht vollständig an die Dokumentation vom 6. September 2026 angepasst. Aktuelle Chrome-Screenshots, Installationshinweise und Testergebnisse finden Sie in [English](../README.md) oder [Tiếng Việt](README.vi.md). Die veröffentlichte Vorschau kann älter sein als der aktuelle Quellcode.
+
 <div align="center">
 
 <img src="assets/readme/hero.png" alt="Illustration eines Schilds, das Werbung, Tracker, Cookies und andere unerwünschte Webanfragen filtert, bevor Chromium-Seiten geladen werden" width="1100">

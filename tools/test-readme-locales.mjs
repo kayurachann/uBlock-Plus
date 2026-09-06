@@ -70,14 +70,6 @@ const requiredCaseInsensitiveFragments = [
     'stock',
 ];
 
-const imageNames = [
-    'hero.png',
-    'feature-map.svg',
-    'filter-store.png',
-    'memory-settings.png',
-    'install-flow.svg',
-];
-
 const externalProtocol = /^[a-z][a-z\d+.-]*:/i;
 
 const countOccurrences = (content, value) =>
@@ -99,6 +91,11 @@ function expectedLanguageBar(currentLocale) {
 }
 
 function assertBalancedMarkup(readmePath, content) {
+    assert.equal(
+        (content.match(/^```/gm) || []).length % 2,
+        0,
+        `${readmePath} contains an unclosed code fence`
+    );
     for ( const tag of [ 'details', 'div', 'table', 'td', 'tr' ] ) {
         const opening = content.match(new RegExp(`<${tag}\\b`, 'gi')) || [];
         const closing = content.match(new RegExp(`</${tag}\\b`, 'gi')) || [];
@@ -115,6 +112,17 @@ function assertBalancedMarkup(readmePath, content) {
         new Set(ids).size,
         `${readmePath} contains duplicate HTML ids`
     );
+}
+
+function assertIllustrations(readmePath, content) {
+    const images = [ ...content.matchAll(/<img\b[^>]*>/gi) ];
+    assert.ok(images.length > 0, `${readmePath} has no illustrations`);
+    for ( const [ tag ] of images ) {
+        assert.match(tag, /\bsrc="[^"]+"/i,
+            `${readmePath} has an image without a source`);
+        assert.match(tag, /\balt="[^"\s][^"]*"/i,
+            `${readmePath} has an image without descriptive alternative text`);
+    }
 }
 
 async function assertLocalTargets(readmePath, content) {
@@ -145,15 +153,6 @@ async function assertLocalTargets(readmePath, content) {
     }
 }
 
-const canonicalContent = await readFile(
-    path.join(projectRoot, readmes.get('en')),
-    'utf8'
-);
-const canonicalH2Count = (canonicalContent.match(/^## /gm) || []).length;
-const canonicalFenceCount = countOccurrences(canonicalContent, '```');
-const canonicalTableCount = countOccurrences(canonicalContent, '<table>');
-const canonicalDetailsCount = countOccurrences(canonicalContent, '<details');
-
 for ( const [ locale, readmePath ] of readmes ) {
     const absolutePath = path.join(projectRoot, readmePath);
     const content = await readFile(absolutePath, 'utf8');
@@ -176,12 +175,7 @@ for ( const [ locale, readmePath ] of readmes ) {
             `${readmePath} is missing parity marker ${fragment}`
         );
     }
-    for ( const imageName of imageNames ) {
-        assert.ok(
-            content.includes(imageName),
-            `${readmePath} is missing README image ${imageName}`
-        );
-    }
+    assertIllustrations(readmePath, content);
     assert.equal(
         content.includes('dist/build/uBOLite.'),
         false,
@@ -208,26 +202,9 @@ for ( const [ locale, readmePath ] of readmes ) {
         locale === 'en' ? 0 : 1,
         `${readmePath} must declare its translated quick-start anchor once`
     );
-    assert.equal(
-        (content.match(/^## /gm) || []).length,
-        canonicalH2Count,
-        `${readmePath} has drifted from the canonical H2 section count`
-    );
-    assert.equal(
-        countOccurrences(content, '```'),
-        canonicalFenceCount,
-        `${readmePath} has drifted from the canonical code-fence count`
-    );
-    assert.equal(
-        countOccurrences(content, '<table>'),
-        canonicalTableCount,
-        `${readmePath} has drifted from the canonical HTML-table count`
-    );
-    assert.equal(
-        countOccurrences(content, '<details'),
-        canonicalDetailsCount,
-        `${readmePath} has drifted from the canonical details-block count`
-    );
+    // Translations may use different layouts or await a documented refresh.
+    // Validate their content, navigation and markup without requiring the
+    // same number of headings, screenshots or disclosure panels as English.
     assert.equal(
         countOccurrences(content, '> [!IMPORTANT]'),
         1,

@@ -1,3 +1,6 @@
+<!-- readme-refresh-pending -->
+> **État de la traduction :** Cette ancienne traduction n’intègre pas encore toute la documentation du 6 septembre 2026. Consultez [English](../README.md) ou [Tiếng Việt](README.vi.md) pour les captures Chrome actuelles, l’installation et les résultats des tests. La préversion publiée peut être antérieure au code source actuel.
+
 <div align="center">
 
 <img src="assets/readme/hero.png" alt="Illustration d'un bouclier filtrant les publicités, les traqueurs, les cookies et d'autres requêtes web indésirables avant le chargement des pages Chromium" width="1100">

@@ -1,3 +1,6 @@
+<!-- readme-refresh-pending -->
+> **翻譯更新說明：** 此舊版譯文尚未完整同步 2026 年 9 月 6 日的文件更新。最新 Chrome 截圖、安裝說明及測試結果請參閱 [English](../README.md) 或 [Tiếng Việt](README.vi.md)。已發布的預覽版可能早於目前原始碼。
+
 <div align="center">
 
 <img src="assets/readme/hero.png" alt="盾牌在 Chromium 頁面載入前篩選廣告、追蹤器、Cookie 和其他不需要的網路請求的插圖" width="1100">

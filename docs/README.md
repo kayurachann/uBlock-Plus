@@ -3,20 +3,20 @@
 This directory contains the user, architecture, security and community documentation for the uBlock Plus+ fork. The canonical project README is [English](../README.md); translated README files live beside this index.
 
 > [!NOTE]
-> The project README is maintained in the 10 languages below. Deeper architecture, security and governance documents are not yet translated into every language; their current English or Vietnamese text remains canonical until a reviewed translation is added.
+> The detailed English and Vietnamese guides were refreshed on 6 September 2026 with actual Chrome screenshots and current installation/testing guidance. The eight other README translations retain their earlier content and link to the current guides while awaiting a full refresh. Deeper architecture, security and governance documents are not translated into every language. README freshness and extension UI translation coverage are separate.
 
 ## README languages
 
 | Language | File |
 | --- | --- |
-| English | [README.md](../README.md) |
+| English | [README.md](../README.md) — current detailed guide |
 | Deutsch | [README.de.md](README.de.md) |
 | Español | [README.es.md](README.es.md) |
 | Français | [README.fr.md](README.fr.md) |
 | 日本語 | [README.ja.md](README.ja.md) |
 | 한국어 | [README.ko.md](README.ko.md) |
 | Русский | [README.ru.md](README.ru.md) |
-| Tiếng Việt | [README.vi.md](README.vi.md) |
+| Tiếng Việt | [README.vi.md](README.vi.md) — hướng dẫn chi tiết hiện tại |
 | 简体中文 | [README.zh_CN.md](README.zh_CN.md) |
 | 繁體中文 | [README.zh_TW.md](README.zh_TW.md) |
 
@@ -26,6 +26,10 @@ This directory contains the user, architecture, security and community documenta
 | --- | --- |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | MV3 pipeline, compiled popup routes, durable state, memory profiles and capability layers. |
 | [FEATURE-MATRIX.md](FEATURE-MATRIX.md) | Honest comparison between original MV2 behavior and current MV3 support. |
+| [MV3-POPUP-PARITY.md](MV3-POPUP-PARITY.md) | Site power, filtering levels, popup policy and scope/recovery guarantees. |
+| [MV3-CHROME-RETEST-2026-09-06.md](MV3-CHROME-RETEST-2026-09-06.md) | Dated local release validation and 28 + 7 scenarios on installed Google Chrome. |
+| [MV3-RETEST-2026-09-05.md](MV3-RETEST-2026-09-05.md) | Upstream issue comparisons and durability/fail-open regression coverage. |
+| [README screenshot provenance](assets/readme/README.md) | Actual Chrome image sources, build hashes, capture settings and older illustrations. |
 | [POWER-RUNTIME.md](POWER-RUNTIME.md) | DNR quota accounting, service-worker lifecycle, popup runtime and optional-tier boundaries. |
 | [FILTER-STORE.md](FILTER-STORE.md) | Catalog schema, repositories, trust tiers and review workflow. |
 | [PRIVACY.md](PRIVACY.md) | Local data, network access, permissions and retention. |

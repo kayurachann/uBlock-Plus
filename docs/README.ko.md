@@ -1,3 +1,6 @@
+<!-- readme-refresh-pending -->
+> **번역 업데이트 안내:** 이 이전 번역에는 2026년 9월 6일 문서 변경 사항이 아직 모두 반영되지 않았습니다. 최신 Chrome 화면, 설치 안내 및 테스트 결과는 [English](../README.md) 또는 [Tiếng Việt](README.vi.md)를 확인하세요. 공개된 미리 보기 버전은 최신 소스 코드보다 오래되었을 수 있습니다.
+
 <div align="center">
 
 <img src="assets/readme/hero.png" alt="Chromium 페이지가 로드되기 전에 방패가 광고, 추적기, 쿠키와 그 밖의 원치 않는 웹 요청을 필터링하는 그림" width="1100">
