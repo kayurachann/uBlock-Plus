@@ -2,6 +2,8 @@
 
 The September 2026 screenshots below show the actual uBlock Plus+ extension running in **Google Chrome 152.0.7977.76 (Official Build, 64-bit)** on Windows 11. They are direct browser captures, with no compositing, retouching or generated UI.
 
+The yellow-plus [branding update](../../BRANDING.md) follows these captures. Historical screenshots retain the logo of their recorded build; the README heading and current extension icons use the updated SVG artwork.
+
 ## Popup and dashboard captures
 
 | File | What it shows | Pixel dimensions |

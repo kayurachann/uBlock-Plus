@@ -226,6 +226,79 @@ try {
     ]);
     assert.equal(distinguish.dnrRules.length, 2,
         'Different resource types and important rules must remain active');
+    // AdGuard #3428: omitting one denyallow domain must not cancel a rule
+    // whose destination exclusions differ, even when every other option is
+    // identical. Exercise native output and cached cross-source restoration.
+    // https://github.com/AdguardTeam/AdguardBrowserExtension/issues/3428
+    {
+        const predicates = rules => rules.map(({ action, condition, priority }) =>
+            structuredClone({ action, condition, priority }));
+        const original = '$script,third-party,' +
+            'denyallow=jsdelivr.net|cloudflare.com|unpkg.com|vikingfile.com,' +
+            'domain=vik1ngfile.site';
+        const different = '$script,third-party,' +
+            'denyallow=jsdelivr.net|cloudflare.com|vikingfile.com,' +
+            'domain=vik1ngfile.site,badfilter';
+        const exact = '$badfilter,domain=vik1ngfile.site,' +
+            'denyallow=vikingfile.com|unpkg.com|cloudflare.com|jsdelivr.net,' +
+            'third-party,script';
+        const baseline = compile([ original ]);
+        assert.equal(baseline.filterStats.rejected, 0);
+        assert.equal(baseline.dnrRules.length, 1);
+        const rule = baseline.dnrRules[0];
+        assert.equal(rule.action.type, 'block');
+        assert.deepEqual(rule.condition.resourceTypes, [ 'script' ]);
+        assert.equal(rule.condition.domainType, 'thirdParty');
+        assert.deepEqual(rule.condition.initiatorDomains, [ 'vik1ngfile.site' ]);
+        assert.deepEqual(rule.condition.excludedRequestDomains.slice().sort(),
+            [ 'cloudflare.com', 'jsdelivr.net', 'unpkg.com', 'vikingfile.com' ]);
+        for ( const reverse of [ false, true ] ) {
+            const lines = [ original, different ];
+            const mismatch = compile(reverse ? lines.reverse() : lines);
+            assert.equal(mismatch.filterStats.rejected, 0);
+            assert.deepEqual(mismatch.dnrRules, baseline.dnrRules,
+                'A different denyallow set must preserve the complete blocking predicate');
+            assert.equal(mismatch.badfilterCancelledCount, 0);
+            const exactLines = [ original, exact ];
+            assert.equal(compile(reverse ? exactLines.reverse() : exactLines).dnrRules.length, 0,
+                'The same denyallow set cancels despite option and hostname ordering');
+
+            const cached = compile([ original ]);
+            const nativeBefore = predicates(cached.dnrRules);
+            const resolveWith = directive => resolveNetworkBadfilters(reverse
+                ? [ directive, cached ] : [ cached, directive ]);
+            resolveWith(compile([ different ]));
+            assert.deepEqual(predicates(cached.dnrRules), nativeBefore);
+            resolveWith(compile([ exact ]));
+            assert.equal(cached.dnrRules.length, 0,
+                'Exact denyallow cancellation works across personal/imported source order');
+            resolveNetworkBadfilters([ cached ]);
+            assert.deepEqual(predicates(cached.dnrRules), nativeBefore,
+                'Removing badfilter restores all cached destination and initiator predicates');
+        }
+        // Parent, descendant and sibling destinations are distinct source
+        // predicates. Overlapping DNR hostname scopes do not make them equal.
+        for ( const [ target, other ] of [
+            [ 'assets.cdn.example', 'cdn.example' ],
+            [ 'cdn.example', 'assets.cdn.example' ],
+            [ 'assets.cdn.example', 'images.cdn.example' ],
+        ] ) {
+            const source = `$script,domain=publisher.example,denyallow=${target}`;
+            const cached = compile([ source ]);
+            const nativeBefore = predicates(cached.dnrRules);
+            assert.equal(nativeBefore.length, 1);
+            assert.deepEqual(nativeBefore[0].condition.excludedRequestDomains, [ target ]);
+            resolveNetworkBadfilters([ cached, compile([
+                `$script,domain=publisher.example,denyallow=${other},badfilter`,
+            ]) ]);
+            assert.deepEqual(predicates(cached.dnrRules), nativeBefore,
+                `${other} must not cancel destination exclusions for ${target}`);
+            resolveNetworkBadfilters([ cached, compile([ `${source},badfilter` ]) ]);
+            assert.equal(cached.dnrRules.length, 0);
+            resolveNetworkBadfilters([ cached ]);
+            assert.deepEqual(predicates(cached.dnrRules), nativeBefore);
+        }
+    }
     const exception = compile([
         '||cdn.example^$script', '@@||cdn.example^$script',
         '@@||cdn.example^$script,badfilter',

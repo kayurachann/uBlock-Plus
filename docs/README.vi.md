@@ -16,6 +16,8 @@
 
 uBlock Plus+ chặn các yêu cầu mạng và thành phần trang không mong muốn bằng cơ chế lọc khai báo của Chromium, bộ lọc giao diện và các scriptlet đóng gói sẵn. Dự án phát triển từ bộ lọc và các thành phần MV3 của [uBlock Origin](https://github.com/gorhill/uBlock), bổ sung nút bật/tắt quen thuộc cho từng trang, bộ lọc cá nhân, Filter Store cộng đồng và khả năng sao lưu/khôi phục cục bộ.
 
+**Dấu cộng vàng** là nhận diện của bản fork cộng đồng này. Khi tắt bảo vệ, khiên chuyển xám và dấu cộng vẫn màu vàng. [Nguồn logo và cách xuất icon](BRANDING.md).
+
 > [!IMPORTANT]
 > Đây là một bản fork cộng đồng độc lập, không phải bản phát hành chính thức của uBlock Origin hay [uBlock Origin Lite](https://github.com/uBlockOrigin/uBOL-home) và không được Raymond Hill bảo trợ. Dự án hiện được phân phối dưới dạng **bản thử nghiệm cài đặt thủ công**. MV3 chịu các giới hạn của trình duyệt; dự án không tuyên bố tương đương hoàn toàn với MV2. Bản thử nghiệm đã phát hành có thể khác mã nguồn mới nhất—xem [nên cài bản nào](#nên-cài-bản-nào).
 
@@ -226,6 +228,8 @@ Việc lọc và lưu trữ dữ liệu chẩn đoán diễn ra cục bộ. Ti�
 Các bản unpacked hiện tại, kể cả gói có số phiên bản, đều khai báo `declarativeNetRequestFeedback`. Logger hợp nhất hoạt động độc lập với **Developer mode** riêng của tiện ích; nguồn sự kiện DNR native vẫn phụ thuộc API Chrome và loại bản cài đặt. Bấm bắt đầu trước khi tái hiện lỗi. Quy tắc stock có thể tra về DNR đóng gói, còn dynamic/session được đọc qua API riêng, không nguyên tử với sự kiện; dữ liệu này không tái tạo đầy đủ mọi biểu thức bộ lọc gốc. Thiếu phản hồi không có nghĩa là lọc đã tắt. Chẩn đoán popup được giới hạn dung lượng và lược bỏ phần chi tiết của URL. Xem [quyền riêng tư và thời gian lưu dữ liệu](PRIVACY.md) cùng [mô hình mối đe dọa](THREAT-MODEL.md).
 
 ## Những gì MV3 làm được và chưa làm được
+
+Userscript có thể mở rộng xử lý DOM và JavaScript trong trang, nhưng không cấp thêm đặc quyền mạng của trình duyệt hoặc gỡ quota DNR. Bản hiện tại đã dùng `chrome.userScripts`. Xem [nghiên cứu userscript và issue upstream](USERSCRIPTS-AND-MV3-2026-09-06.md) để biết các nâng cấp cụ thể, ca hồi quy và hướng engine managed riêng.
 
 | Khả năng | Giới hạn hiện tại |
 | --- | --- |

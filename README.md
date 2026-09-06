@@ -16,6 +16,8 @@
 
 uBlock Plus+ blocks unwanted network requests and page elements using Chromium's declarative filtering engine, cosmetic filters and packaged scriptlets. It builds on the filtering and MV3 components of [uBlock Origin](https://github.com/gorhill/uBlock), with a familiar site power button, custom filters, a community Filter Store and local backup/restore.
 
+The **yellow plus** identifies this community fork. The shield turns gray when protection is off; the plus remains yellow. [Logo sources and rendering](docs/BRANDING.md).
+
 > [!IMPORTANT]
 > This is an independent community fork, not an official uBlock Origin or [uBlock Origin Lite](https://github.com/uBlockOrigin/uBOL-home) release, and it is not endorsed by Raymond Hill. Distribution is currently a **manually installed pre-release**. MV3 imposes browser limits; this project does not claim complete MV2 parity. The published preview and the latest source can differ—see [which build to install](#which-build-to-install).
 
@@ -224,6 +226,8 @@ Filtering and diagnostic storage are local. The extension includes no project an
 Current unpacked builds, including versioned packages, declare `declarativeNetRequestFeedback`. The unified logger works independently of the extension's own **Developer mode**; its native rule-match feed still depends on Chrome's API and installation eligibility. Start capture before reproducing a problem. Stock matches can resolve to packaged native rules, while dynamic/session bodies are separate, non-atomic API lookups; neither reconstructs every original filter expression. Missing feedback does not mean filtering is off. Popup diagnostics remain bounded and redact detailed URLs. See [privacy and retention](docs/PRIVACY.md) and the [threat model](docs/THREAT-MODEL.md).
 
 ## What MV3 can and cannot do
+
+Userscripts can extend DOM and page-level JavaScript filtering, but do not grant browser network privileges or remove DNR quotas. This fork already uses `chrome.userScripts`. See the [userscript research and upstream issue review](docs/USERSCRIPTS-AND-MV3-2026-09-06.md) for specific improvements, regression coverage and the separate managed-engine option.
 
 | Capability | Current boundary |
 | --- | --- |

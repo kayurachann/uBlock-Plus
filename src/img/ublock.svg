@@ -10,6 +10,8 @@
    viewBox="0 0 128 128"
    height="128"
    width="128">
+  <title>uBlock Plus+</title>
+  <desc>uO shield with a yellow plus marking the community fork.</desc>
   <g
      style="display:inline;opacity:1">
     <g
@@ -41,4 +43,11 @@
          style="fill:#ffffff;stroke:#ffffff;stroke-width:0;stroke-linecap:square;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;" />
     </g>
   </g>
+  <path
+     id="community-plus"
+     d="M 99,4 H 111 V 16 H 123 V 28 H 111 V 40 H 99 V 28 H 87 V 16 H 99 Z"
+     fill="#ffd43b"
+     stroke="#574000"
+     stroke-width="2.5"
+     stroke-linejoin="round" />
 </svg>
