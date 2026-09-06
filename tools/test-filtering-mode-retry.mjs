@@ -9,9 +9,11 @@ import vm from 'node:vm';
 
 // Exercise the actual handler with browser effects replaced by controllable
 // adapters, without starting a service worker or the unrelated list compiler.
-const source = await fs.readFile(new URL(
+// Git may check out JavaScript with CRLF on Windows; normalize before slicing
+// function boundaries so the same handlers are exercised on every platform.
+const source = (await fs.readFile(new URL(
     '../platform/mv3/extension/js/background.js', import.meta.url
-), 'utf8');
+), 'utf8')).replace(/\r\n/g, '\n');
 const functionSource = (name, nextName) => {
     const start = source.indexOf(`async function ${name}(`);
     const end = source.indexOf(`function ${nextName}(`, start);
