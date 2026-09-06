@@ -47,6 +47,7 @@ assert.equal(lowProfile.retainScriptingMetadata, false);
 
 function makeStorageArea(initial = {}) {
     const values = new Map(Object.entries(initial));
+    const calls = { get: 0, set: 0 };
     const select = keys => {
         if ( keys === null || keys === undefined ) {
             return Object.fromEntries(values);
@@ -59,10 +60,15 @@ function makeStorageArea(initial = {}) {
     };
     return {
         values,
+        calls,
+        beforeSet: undefined,
         async get(keys) {
+            calls.get += 1;
             return select(keys);
         },
         async set(entries) {
+            calls.set += 1;
+            await this.beforeSet?.(entries);
             for ( const [ key, value ] of Object.entries(entries) ) {
                 values.set(key, value);
             }
@@ -133,6 +139,81 @@ const explicit = await managerModule.setMemoryProfile(
 );
 assert.equal(explicit.effective, MEMORY_PROFILE_BALANCED);
 assert.equal(local.values.get('memoryProfile'), MEMORY_PROFILE_BALANCED);
+
+// Repeated and concurrent hot-path reads do not cross the storage boundary.
+const beforeReads = { local: { ...local.calls }, session: { ...session.calls } };
+for ( let i = 0; i < 100; i++ ) {
+    assert.equal(await managerModule.getMemoryProfileConfig(2), explicit);
+}
+assert.ok((await Promise.all(Array.from({ length: 100 }, ( ) =>
+    managerModule.getMemoryProfileConfig()
+))).every(profile => profile === explicit));
+assert.deepEqual({ local: local.calls, session: session.calls }, beforeReads);
+
+// A fresh worker shares one cold initialization even for concurrent requests.
+const restarted = await import(pathToFileURL(
+    path.join(extensionJS, 'memory-manager.js')
+).href + '?restart');
+const coldReads = local.calls.get;
+const coldWrites = session.calls.set;
+const cold = await Promise.all(Array.from({ length: 20 }, ( ) =>
+    restarted.getMemoryProfileConfig()
+));
+assert.ok(cold.every(profile => profile === cold[0]));
+assert.equal(cold[0].deviceMemoryGiB, 2);
+assert.equal(cold[0].effective, MEMORY_PROFILE_BALANCED);
+assert.equal(local.calls.get - coldReads, 2);
+assert.equal(session.calls.set - coldWrites, 1);
+
+local.beforeSet = async entries => {
+    if ( 'memoryProfile' in entries ) { throw new Error('profile write failed'); }
+};
+await assert.rejects(managerModule.setMemoryProfile(MEMORY_PROFILE_LOW, 2),
+    /profile write failed/);
+assert.equal(await managerModule.getMemoryProfileConfig(), explicit);
+assert.equal(local.values.get('memoryProfile'), MEMORY_PROFILE_BALANCED);
+local.beforeSet = undefined;
+
+// A settings change must finish durably before a following read or change.
+let releaseWrite;
+const heldWrite = new Promise(resolve => { releaseWrite = resolve; });
+let notifyWrite;
+const writeStarted = new Promise(resolve => { notifyWrite = resolve; });
+local.beforeSet = async entries => {
+    if ( entries.memoryProfile !== MEMORY_PROFILE_LOW ) { return; }
+    notifyWrite();
+    await heldWrite;
+};
+const firstChange = managerModule.setMemoryProfile(MEMORY_PROFILE_LOW, 2);
+await writeStarted;
+const interveningRead = managerModule.getMemoryProfileConfig();
+const secondChange = managerModule.setMemoryProfile(MEMORY_PROFILE_AUTO, 8);
+releaseWrite();
+assert.equal((await firstChange).effective, MEMORY_PROFILE_LOW);
+assert.equal((await interveningRead).effective, MEMORY_PROFILE_LOW);
+assert.equal((await secondChange).effective, MEMORY_PROFILE_BALANCED);
+assert.equal(session.values.get('memoryProfile.runtime').deviceMemoryGiB, 8);
+local.beforeSet = undefined;
+
+// Session publication failure is retryable; never cache an unpublished result.
+session.beforeSet = async ( ) => { throw new Error('session write failed'); };
+await assert.rejects(managerModule.setMemoryProfile(MEMORY_PROFILE_LOW, 2),
+    /session write failed/);
+session.beforeSet = undefined;
+assert.equal((await managerModule.getMemoryProfileConfig()).effective,
+    MEMORY_PROFILE_LOW);
+assert.equal(session.values.get('memoryProfile.runtime').effective, MEMORY_PROFILE_LOW);
+
+// New coarse hints remain observable, including Auto after an explicit profile.
+await managerModule.setMemoryProfile(MEMORY_PROFILE_AUTO, 2);
+assert.equal((await managerModule.getMemoryProfileConfig(8)).effective,
+    MEMORY_PROFILE_BALANCED);
+assert.equal((await managerModule.getMemoryProfileConfig(2)).effective, MEMORY_PROFILE_LOW);
+session.beforeSet = async ( ) => { throw new Error('hint publication failed'); };
+await assert.rejects(managerModule.getMemoryProfileConfig(8), /hint publication failed/);
+session.beforeSet = undefined;
+assert.equal((await managerModule.getMemoryProfileConfig()).deviceMemoryGiB, 8);
+assert.equal(session.values.get('memoryProfile.runtime').effective, MEMORY_PROFILE_BALANCED);
 
 const telemetry = await managerModule.runMemoryCleanup({
     deviceMemoryGiB: 2,

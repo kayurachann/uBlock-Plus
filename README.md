@@ -197,11 +197,13 @@ This is an illustrative rule, not a list recommendation. Use the picker to choos
 | --- | --- | --- |
 | Protection preset | Baseline, Balanced, Maximum, Low memory | Apply a group of filtering and runtime preferences. Review the selected settings after switching. |
 | Filtering level | Basic, Optimal, Complete; Off for exceptions | Choose what filtering applies globally or to a site. |
-| Memory profile | Auto, Balanced, Low-memory | Control compilation concurrency, cache budgets and cleanup. |
+| Memory profile | Auto, Balanced, Low-memory | Control compilation and per-frame cosmetic loading concurrency, cache budgets and cleanup. |
 | Appearance | Theme, accent, density, popup details | Adjust presentation without changing the matching rules. |
 
 > [!NOTE]
-> Storage diagnostics measure extension storage/cache usage, **not live RAM or process memory**. Low-memory mode uses bounded caches and sequential compilation; no claim of a measured percentage reduction or a low-end-device benchmark is made.
+> Storage diagnostics measure extension storage/cache usage, **not live RAM or process memory**. Low-memory limits each frame to one cosmetic dictionary read at a time; Balanced allows two. Enabled filters and exceptions stay active. An uncached cosmetic lookup can take longer with smaller batches.
+
+For a machine with limited memory, select **Settings → Memory profile → Auto** (uses Low-memory for a browser memory hint of 4 GiB or less) or choose **Low-memory** explicitly. This resource setting keeps your protection level and selected lists. See the [performance review and reproducible Chrome measurements](docs/PERFORMANCE-2026-09-06.md), informed by full uBO, AdGuard and Ghostery. Physical 2–4 GiB hardware and whole-browser RAM savings remain unmeasured.
 
 Use **Dashboard → Settings** to export a backup before changing builds or resetting the extension. Restore validates supported configuration and includes filtering settings, remembered site levels, popup policies, personal filters and list/catalog configuration. Keep backup files private: they can reveal site names, custom rules and subscription URLs.
 

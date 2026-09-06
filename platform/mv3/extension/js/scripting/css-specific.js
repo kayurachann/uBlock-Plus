@@ -83,7 +83,7 @@ const selectorsFromHostnames = (haystack, needles, data) => {
 
 const selectorsFromRuleset = async (rulesetId, result) => {
     const data = await localRead(`css.specific.${rulesetId}`);
-    if ( typeof data !== 'object' || data === null ) { return; }
+    if ( typeof data !== 'object' || data === null ) { return false; }
     data.result = result;
     const { hostnames, regexes } = data;
     if ( hostnames.length ) {
@@ -100,26 +100,53 @@ const selectorsFromRuleset = async (rulesetId, result) => {
         if ( regexes[i+1].test(thisHostname) === false ) { continue; }
         selectorsFromListIndex(data, regexes[i+2]);
     }
+    return true;
 };
 
 const fillCache = async function(rulesetIds) {
     const selectors = new Set();
     const exceptions = new Set();
     const result = { selectors, exceptions };
-    const [ filteringModeDetails ] = await Promise.all([
+    const [ filteringModeDetails, memoryProfile ] = await Promise.all([
         localRead('filteringModeDetails'),
-        ...rulesetIds.map(a => selectorsFromRuleset(a, result)),
+        sessionRead('memoryProfile.runtime'),
     ]);
-    const skip = filteringModeDetails?.none.some(a => {
+    // Without the current Off scopes, applying even valid cached list data
+    // could filter a page which the user has explicitly trusted.
+    if ( Array.isArray(filteringModeDetails?.none) === false ) { return; }
+    if ( filteringModeDetails.none.some(a => typeof a !== 'string') ) { return; }
+    const skip = filteringModeDetails.none.some(a => {
         if ( topHostname.endsWith(a) === false ) { return false; }
         const n = a.length;
         return topHostname.length === n || topHostname.at(-n-1) === '.';
     });
+    if ( skip ) {
+        cacheEntry.s = [];
+        cacheEntry.p = [];
+        return cacheEntry;
+    }
+    const modeSnapshot = JSON.stringify(filteringModeDetails);
+    // Each storage read deserializes an entire packaged dictionary into this
+    // frame. Bound cold-cache work as well as compilation, without dropping
+    // any list or applying selectors before later-list exceptions arrive.
+    // A missing session profile can occur during startup: use one reader.
+    const concurrency = memoryProfile?.importCompileConcurrency === 2 ? 2 : 1;
+    for ( let i = 0; i < rulesetIds.length; i += concurrency ) {
+        const loaded = await Promise.all(rulesetIds.slice(i, i + concurrency).map(a =>
+            selectorsFromRuleset(a, result)
+        )).catch(( ) => undefined);
+        // An unavailable dictionary may contain exceptions to another list.
+        // Leave the page unchanged and the cache empty so a later navigation
+        // can retry, rather than publishing a partial filtering result.
+        if ( loaded?.every(success => success === true) !== true ) { return; }
+    }
+    // Loading several dictionaries can span a user changing site modes.
+    // Discard that obsolete result before it can repopulate the cleared cache
+    // or hide elements on a newly trusted page.
+    const currentModes = await localRead('filteringModeDetails');
+    if ( JSON.stringify(currentModes) !== modeSnapshot ) { return; }
     for ( const selector of exceptions ) {
         selectors.delete(selector);
-    }
-    if ( skip ) {
-        selectors.clear();
     }
     cacheEntry.s = [];
     cacheEntry.p = [];
@@ -142,6 +169,7 @@ let cacheEntry = await sessionRead(cacheKey) ?? { t: 0 };
 const cacheMiss = cacheEntry.t === 0;
 if ( cacheMiss ) {
     cacheEntry = await fillCache(specificImports);
+    if ( cacheEntry === undefined ) { return; }
 }
 const now = Math.round(Date.now() / (5 * 60000));
 const since = now - cacheEntry.t;

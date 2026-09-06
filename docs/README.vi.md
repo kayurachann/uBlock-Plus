@@ -199,11 +199,13 @@ example.com##.sponsored-card
 | --- | --- | --- |
 | Cấu hình bảo vệ | Baseline, Balanced, Maximum, Low memory | Áp dụng một nhóm tùy chọn lọc và hoạt động. Xem lại các thiết lập sau khi đổi cấu hình. |
 | Mức lọc | Basic, Optimal, Complete; Off cho ngoại lệ | Chọn cách lọc mặc định hoặc cho một trang. |
-| Cấu hình bộ nhớ | Auto, Balanced, Low-memory | Điều khiển số tác vụ biên dịch đồng thời, hạn mức cache và dọn dẹp. |
+| Cấu hình bộ nhớ | Auto, Balanced, Low-memory | Giới hạn biên dịch, nạp dữ liệu cosmetic đồng thời trong từng frame, cache và dọn dẹp. |
 | Giao diện | Chủ đề, màu nhấn, mật độ, chi tiết popup | Điều chỉnh cách hiển thị mà không đổi quy tắc đối chiếu bộ lọc. |
 
 > [!NOTE]
-> Số liệu lưu trữ đo dung lượng storage/cache của tiện ích, **không phải RAM đang dùng hoặc bộ nhớ tiến trình**. Chế độ Low-memory dùng cache có giới hạn và biên dịch tuần tự; dự án không tuyên bố một tỷ lệ giảm đã đo được hay kết quả benchmark trên thiết bị cấu hình thấp.
+> Số liệu lưu trữ đo dung lượng storage/cache của tiện ích, **không phải RAM đang dùng hoặc bộ nhớ tiến trình**. Low-memory chỉ nạp một dictionary cosmetic mỗi lần trong từng frame; Balanced nạp tối đa hai. Bộ lọc và ngoại lệ đã bật vẫn được giữ. Lượt lọc chưa có cache có thể chậm hơn khi giảm số tác vụ đồng thời.
+
+Với máy ít bộ nhớ, chọn **Cài đặt → Cấu hình bộ nhớ → Auto** (dùng Low-memory khi trình duyệt cung cấp mức bộ nhớ từ 4 GiB trở xuống), hoặc chọn **Low-memory** trực tiếp. Thiết lập này giữ nguyên mức bảo vệ và danh sách đang chọn. Xem [nghiên cứu hiệu suất và phép đo có thể chạy lại trên Chrome](PERFORMANCE-2026-09-06.md), tham khảo full uBO, AdGuard và Ghostery. Chưa đo trên máy vật lý 2–4 GiB hoặc chứng minh tỷ lệ giảm RAM toàn trình duyệt.
 
 Vào **Dashboard/Bảng điều khiển → Settings/Cài đặt** để xuất bản sao lưu trước khi đổi bản cài hoặc đặt lại tiện ích. Khi khôi phục, tiện ích kiểm tra cấu hình được hỗ trợ, bao gồm thiết lập lọc, mức lọc đã nhớ theo trang, chính sách popup, bộ lọc cá nhân và cấu hình danh sách/catalog. Giữ file sao lưu riêng tư: chúng có thể chứa tên trang, quy tắc cá nhân và URL nguồn đăng ký.
 

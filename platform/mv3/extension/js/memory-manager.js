@@ -56,6 +56,15 @@ const IMPORT_CACHE_PREFIX = 'rulesets.imported.compiled.';
 
 let selectedProfilePromise;
 let runtimeProfile;
+let profileOperation = Promise.resolve();
+
+// Serialize cold reads, hint changes and settings writes. Concurrent content
+// script notifications share the published profile without storage round trips.
+function enqueueProfileOperation(task) {
+    const result = profileOperation.then(task);
+    profileOperation = result.catch(( ) => { });
+    return result;
+}
 
 /******************************************************************************/
 
@@ -74,6 +83,12 @@ async function persistRuntimeProfile(deviceMemoryGiB) {
         DEFAULT_MEMORY_PROFILE,
         deviceMemoryGiB
     ).deviceMemoryGiB;
+    if (
+        runtimeProfile?.selected === selected &&
+        (memoryHint === null || memoryHint === runtimeProfile.deviceMemoryGiB)
+    ) {
+        return runtimeProfile;
+    }
     if ( memoryHint === null ) {
         memoryHint = await localRead(DEVICE_MEMORY_KEY);
     } else if ( memoryHint !== await localRead(DEVICE_MEMORY_KEY) ) {
@@ -89,29 +104,38 @@ async function persistRuntimeProfile(deviceMemoryGiB) {
     ) {
         return runtimeProfile;
     }
-    runtimeProfile = resolved;
+    // The durable hint may already have changed. If session publication fails,
+    // a later hintless read must retry it rather than return the old profile.
+    runtimeProfile = undefined;
     await sessionWrite(RUNTIME_KEY, resolved);
+    runtimeProfile = resolved;
     return resolved;
 }
 
-export async function initializeMemoryProfile(deviceMemoryGiB) {
-    const selected = await readSelectedProfile();
-    if ( await localRead(PROFILE_KEY) !== selected ) {
+export function initializeMemoryProfile(deviceMemoryGiB) {
+    return enqueueProfileOperation(async ( ) => {
+        const selected = await readSelectedProfile();
+        if ( await localRead(PROFILE_KEY) !== selected ) {
+            await localWrite(PROFILE_KEY, selected);
+        }
+        return persistRuntimeProfile(deviceMemoryGiB);
+    });
+}
+
+export function getMemoryProfileConfig(deviceMemoryGiB) {
+    return enqueueProfileOperation(( ) => persistRuntimeProfile(deviceMemoryGiB));
+}
+
+export function setMemoryProfile(value, deviceMemoryGiB) {
+    return enqueueProfileOperation(async ( ) => {
+        const selected = normalizeMemoryProfile(value);
+        // Publish only a durable selection. A rejected write must leave the
+        // previous profile usable, and must not poison later queued changes.
         await localWrite(PROFILE_KEY, selected);
-    }
-    return persistRuntimeProfile(deviceMemoryGiB);
-}
-
-export async function getMemoryProfileConfig(deviceMemoryGiB) {
-    return persistRuntimeProfile(deviceMemoryGiB);
-}
-
-export async function setMemoryProfile(value, deviceMemoryGiB) {
-    const selected = normalizeMemoryProfile(value);
-    selectedProfilePromise = Promise.resolve(selected);
-    runtimeProfile = undefined;
-    await localWrite(PROFILE_KEY, selected);
-    return persistRuntimeProfile(deviceMemoryGiB);
+        selectedProfilePromise = Promise.resolve(selected);
+        runtimeProfile = undefined;
+        return persistRuntimeProfile(deviceMemoryGiB);
+    });
 }
 
 /******************************************************************************/

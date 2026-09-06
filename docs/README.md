@@ -25,6 +25,7 @@ This directory contains the user, architecture, security and community documenta
 | Document | Scope |
 | --- | --- |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | MV3 pipeline, compiled popup routes, durable state, memory profiles and capability layers. |
+| [PERFORMANCE-2026-09-06.md](PERFORMANCE-2026-09-06.md) | Full uBO/AdGuard/Ghostery research, memory profiles, native Chrome before/after measurements, correctness and tradeoffs. |
 | [FEATURE-MATRIX.md](FEATURE-MATRIX.md) | Honest comparison between original MV2 behavior and current MV3 support. |
 | [EXPERIMENTAL-WEBREQUEST.md](EXPERIMENTAL-WEBREQUEST.md) | Optional synchronous firewall, separate Chrome launcher/profile, actual permission detection and DNR fallback. |
 | [BRANDING.md](BRANDING.md) | Yellow-plus logo, source SVG, icon states and rendering. |
