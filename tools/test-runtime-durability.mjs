@@ -617,4 +617,50 @@ assert.equal(
     true
 );
 
+// Chrome may reject an otherwise valid uBO regex (for example lookahead).
+// Omitting an allow would broaden sibling blocks, so retain the whole active
+// generation, including when the regex rejection is already cached.
+const originalRegexProbe = dnr.isRegexSupported;
+dnr.isRegexSupported = async ({ regex }) => regex.includes('(?=')
+    ? { isSupported: false, reason: 'syntaxError' }
+    : { isSupported: true };
+for ( const realm of [ 'sandbox', 'imported' ] ) {
+    for ( const type of [ 'allow', 'allowAllRequests' ] ) {
+        const previous = [ {
+            id: 9000000, priority: 30,
+            action: { type: 'allow' },
+            condition: { urlFilter: 'previous-safe-exception' },
+        } ];
+        currentDynamicRules = structuredClone(previous);
+        currentSessionRules = [];
+        const generation = `invalid-${realm}-${type}`;
+        local.values.set(
+            `compiledFilters.g.${generation}.${realm}Filters.dnrRules`,
+            [ makeRule(1), {
+                id: 2, priority: 30, action: { type },
+                condition: { regexFilter: 'ads(?=allowed)' },
+            } ]
+        );
+        const result = await rulesetManager.updateUserRules(generation);
+        assert.match(result.fatalError, /allow exception.*unsupported regex/i);
+        assert.equal(result.added, 0);
+        assert.deepEqual(currentDynamicRules, previous);
+    }
+}
+
+// Unsupported restrictive rules can be omitted without widening their scope;
+// an earlier rejected allow must not poison later safe replacements.
+local.values.set('compiledFilters.g.invalid-block.importedFilters.dnrRules', [
+    makeRule(3), {
+        id: 4, priority: 10, action: { type: 'block' },
+        condition: { regexFilter: 'ads(?=allowed)' },
+    },
+]);
+const afterRejectedAllow = await rulesetManager.updateUserRules('invalid-block');
+assert.equal(afterRejectedAllow.fatalError, '');
+assert.equal(afterRejectedAllow.added, 1);
+assert.match(afterRejectedAllow.errors.join('\n'), /syntaxError/);
+assert.equal(currentDynamicRules[0].condition.urlFilter, '||example3.test^');
+dnr.isRegexSupported = originalRegexProbe;
+
 console.log('Runtime durability checks passed.');

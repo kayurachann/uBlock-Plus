@@ -464,7 +464,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "Основная сетевая фильтрация по выбранным спискам фильтров.\n\nНе требует разрешения на чтение и изменение данных на веб-сайтах.",
+    "message": "Основная сетевая фильтрация по выбранным спискам фильтров.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {
@@ -772,7 +772,7 @@
     "message": "Базовый"
   },
   "protectionProfileBaselineDescription": {
-    "message": "Сетевая фильтрация без широкого доступа к сайтам; защита от всплывающих окон включена."
+    "message": "Базовая сетевая фильтрация; защита от всплывающих окон остаётся включённой."
   },
   "protectionProfileBalanced": {
     "message": "Сбалансированный"

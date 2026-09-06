@@ -464,7 +464,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "來自選定過濾條件清單的基礎網路過濾功能。\n\n不需要讀取與變更網站資料的權限。",
+    "message": "來自選定過濾條件清單的基礎網路過濾功能。",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {
@@ -772,7 +772,7 @@
     "message": "基礎"
   },
   "protectionProfileBaselineDescription": {
-    "message": "不需廣泛網站存取權的網路篩選；彈出視窗防護保持啟用。"
+    "message": "基本網路過濾；彈出視窗防護保持啟用。"
   },
   "protectionProfileBalanced": {
     "message": "平衡"

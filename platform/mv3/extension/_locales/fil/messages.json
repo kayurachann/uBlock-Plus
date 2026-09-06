@@ -240,7 +240,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "Basic na network filtering mula sa mga napiling listahan ng mga filter.\n\nHindi kailangan ng pahintulot na basahin at baguhin ang mga data ng website.",
+    "message": "Basic na network filtering mula sa mga napiling listahan ng mga filter.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {

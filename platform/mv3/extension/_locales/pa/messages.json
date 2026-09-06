@@ -240,7 +240,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "ਚੁਣੀਆਂ ਫਿਲਟਰ ਸੂਚੀਆਂ ਤੋਂ ਮੁੱਢਲਾ ਨੈੱਟਵਰਕ ਫਿਲਟਰ ਕਰਨਾ।\n\nਵੈੱਬਸਾਈਟਾਂ ਤੋਂ ਡਾਟਾ ਪੜ੍ਹਨ ਅਤੇ ਸੋਧਣ ਲਈ ਮਨਜ਼ੂਰੀ ਨਹੀਂ ਚਾਹੀਦੀ ਹੈ।",
+    "message": "ਚੁਣੀਆਂ ਫਿਲਟਰ ਸੂਚੀਆਂ ਤੋਂ ਮੁੱਢਲਾ ਨੈੱਟਵਰਕ ਫਿਲਟਰ ਕਰਨਾ।",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {

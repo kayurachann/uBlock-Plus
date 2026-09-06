@@ -240,7 +240,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "Interneti üldine filtreerimine valitud filtreerimisloenditega.\n\nPole vaja veebilehtede andmete lugemise ja muutmise luba.",
+    "message": "Interneti üldine filtreerimine valitud filtreerimisloenditega.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {

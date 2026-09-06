@@ -408,7 +408,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "Einfaches Netzwerkfiltern durch ausgewählte Filterlisten.\n\nErfordert keine Berechtigung zum Lesen und Ändern von Daten auf Websites.",
+    "message": "Einfaches Netzwerkfiltern durch ausgewählte Filterlisten.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {
@@ -706,7 +706,7 @@
     "message": "Basis"
   },
   "protectionProfileBaselineDescription": {
-    "message": "Netzwerkfilterung ohne umfassenden Website-Zugriff; der Popup-Schutz bleibt aktiviert."
+    "message": "Grundlegende Netzwerkfilterung; der Popup-Schutz bleibt aktiviert."
   },
   "protectionProfileBalanced": {
     "message": "Ausgewogen"

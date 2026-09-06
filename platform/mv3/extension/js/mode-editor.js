@@ -43,7 +43,9 @@ export class ModeEditor {
             const message = ev.data;
             if ( message instanceof Object === false ) { return; }
             if ( message.filteringModeDetails === undefined ) { return; }
-            // TODO: merge with ongoing edits?
+            // A background commit may be followed by a script-registration
+            // failure. Keep an edited draft until its own save succeeds.
+            if ( this.editor.editorTextChanged() ) { return; }
             const text = textFromModes(message.filteringModeDetails);
             this.editor.setEditorText(text, true);
         };
@@ -52,6 +54,7 @@ export class ModeEditor {
     off() {
         if ( this.bc === null ) { return; }
         this.bc.onmessage = null;
+        this.bc.close();
         this.bc = null;
     }
 
@@ -61,20 +64,28 @@ export class ModeEditor {
     }
 
     async saveEditorText(editor) {
-        const { modes } = modesFromText(editor.getEditorText());
-        if ( modes instanceof Object === false ) { return; }
+        const draft = editor.getEditorText();
+        const { modes } = modesFromText(draft);
+        if ( modes instanceof Object === false ) {
+            this.updateView(editor);
+            return false;
+        }
         const modesAfter = await sendMessage({ what: 'setFilteringModeDetails', modes });
+        if ( editor.getEditorText() !== draft ) { return false; }
         const text = textFromModes(modesAfter);
         editor.setEditorText(text);
         return true;
     }
 
-    updateView(editor, firstLine, lastLine) {
+    updateView(editor) {
         const { doc } = editor.view.state;
-        const text = doc.sliceString(firstLine.from, lastLine.to);
+        // Parse the whole draft: a changed hostname line still needs its mode
+        // header, and default/duplicate errors can affect another line.
+        const text = editor.getEditorText();
         const { bad } = modesFromText(text, true);
+        self.cm6.lineErrorClear(editor.view, 1, doc.lines);
         if ( Array.isArray(bad) && bad.length !== 0 ) {
-            self.cm6.lineErrorAdd(editor.view, bad.map(i => i + firstLine.number));
+            self.cm6.lineErrorAdd(editor.view, bad.map(i => i + 1));
         }
     }
 

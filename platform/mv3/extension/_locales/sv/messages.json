@@ -240,7 +240,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "Grundläggande nätverksfiltrering från valda filterlistor.\n\nKräver ingen behörighet för att läsa och ändra data på webbplatser.",
+    "message": "Grundläggande nätverksfiltrering från valda filterlistor.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {

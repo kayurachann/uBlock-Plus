@@ -240,7 +240,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "Pagrindinis tinklo filtravimas pagal pasirinktus filtrų sąrašus.\n\nNereikalauja leidimo skaityti ir keisti duomenis svetainėse.",
+    "message": "Pagrindinis tinklo filtravimas pagal pasirinktus filtrų sąrašus.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {

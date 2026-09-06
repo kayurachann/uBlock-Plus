@@ -240,7 +240,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "Filtrare de rețea de bază de la liste de filtre selectate.\n\nNu necesită permisiune pentru a citi și vedea date pe site-uri web.",
+    "message": "Filtrare de rețea de bază de la liste de filtre selectate.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {

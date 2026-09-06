@@ -61,6 +61,7 @@ import {
 } from './filter-manager.js';
 
 import {
+    intersectHostnameIters,
     isScriptlet,
     matchesFromHostnames,
 } from './utils.js';
@@ -253,23 +254,42 @@ async function parseRawFilters() {
 
 /******************************************************************************/
 
-function prepareUserScripts(id, none, result) {
+function prepareUserScripts(id, modes, result) {
     const out = [];
-    const excludeHostnames = none.has('all-urls') === false
-        ? [ ...none ]
-        : [];
+    const included = [ ...modes.optimal, ...modes.complete ];
+    const excluded = [ ...modes.none ];
+    if ( id === 'sandbox' ) {
+        included.push(...modes.basic);
+    } else {
+        excluded.push(...modes.basic);
+    }
+    const includeEverywhere = included.includes('all-urls');
+    const excludeHostnames = excluded.filter(hn => hn !== 'all-urls');
     const excludeMatches = excludeHostnames.length !== 0
         ? matchesFromHostnames(excludeHostnames)
         : [];
+    const matchesFor = hostnames => {
+        const targets = typeof hostnames === 'string' ? [ hostnames ] : hostnames;
+        // Either the filter scope or the enabled site can be more specific.
+        // Keep their intersection; a global disabled-mode marker is not an
+        // instruction to remove all explicit child exclusions.
+        const scoped = includeEverywhere ? targets : [
+            ...intersectHostnameIters(targets, included),
+            ...intersectHostnameIters(included, targets),
+        ];
+        return matchesFromHostnames(new Set(scoped));
+    };
     if ( result?.ISOLATED?.length ) {
         for ( const script of result.ISOLATED ) {
+            const matches = matchesFor(script.hostnames);
+            if ( matches.length === 0 ) { continue; }
             const directive = {
                 id: script.id,
                 world: 'USER_SCRIPT',
                 allFrames: true,
                 js: [ { code: script.code } ],
                 runAt: 'document_start',
-                matches: matchesFromHostnames(script.hostnames),
+                matches,
             };
             if ( excludeMatches.length !== 0 ) {
                 directive.excludeMatches = excludeMatches.slice();
@@ -279,13 +299,15 @@ function prepareUserScripts(id, none, result) {
     }
     if ( result?.MAIN?.length ) {
         for ( const script of result.MAIN ) {
+            const matches = matchesFor(script.hostnames);
+            if ( matches.length === 0 ) { continue; }
             const directive = {
                 id: script.id,
                 world: 'MAIN',
                 allFrames: true,
                 js: [ { code: script.code } ],
                 runAt: 'document_start',
-                matches: matchesFromHostnames(script.hostnames),
+                matches,
             };
             if ( excludeMatches.length !== 0 ) {
                 directive.excludeMatches = excludeMatches.slice();
@@ -310,18 +332,14 @@ async function register(generation) {
             return false;
         }
 
-        const { none, basic } = await getFilteringModeDetails();
-        const realms = [
-            [ 'sandbox', none ],
-            [ 'imported', new Set([ ...none, ...basic ]) ],
-        ];
+        const modes = await getFilteringModeDetails();
         const toAdd = [];
-        for ( const [ id, excluded ] of realms ) {
+        for ( const id of [ 'sandbox', 'imported' ] ) {
             const stored = await localRead(compiledStorageKey(
                 generation,
                 `${id}Filters.userScripts`
             )) || {};
-            toAdd.push(...prepareUserScripts(id, excluded, stored));
+            toAdd.push(...prepareUserScripts(id, modes, stored));
         }
 
         let unregistered = false;

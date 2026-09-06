@@ -240,7 +240,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "فیلتر کردن پایه شبکه از لیست‌های فیلتر انتخاب شده.\n\nنیازی به مجوز برای خواندن و تغییر داده‌ها در وب‌سایت‌ها ندارد.",
+    "message": "فیلتر کردن پایه شبکه از لیست‌های فیلتر انتخاب شده.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {

@@ -240,7 +240,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "تصفية الشبكة الأساسية من قوائم التصفية المحددة.\n\nلا يتطلب إذنًا لقراءة البيانات وتعديلها على مواقع الويب.",
+    "message": "تصفية الشبكة الأساسية من قوائم التصفية المحددة.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {

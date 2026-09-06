@@ -240,7 +240,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "ఎంచుకున్న ఫిల్టర్ జాబితాల నుండి ప్రాథమిక నెట్‌వర్క్ ఫిల్టరింగ్.\n\nవెబ్‌సైట్‌లలో డేటాను చదవడానికి మరియు సవరించడానికి అనుమతి అవసరం లేదు.",
+    "message": "ఎంచుకున్న ఫిల్టర్ జాబితాల నుండి ప్రాథమిక నెట్‌వర్క్ ఫిల్టరింగ్.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {

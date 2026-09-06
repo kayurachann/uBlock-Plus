@@ -240,7 +240,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "סינון רשת בסיסי מרשימות סינון נבחרות.\n\nאינו מצריך הרשאת קריאה ושינוי נתונים באתרי רשת.",
+    "message": "סינון רשת בסיסי מרשימות סינון נבחרות.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {

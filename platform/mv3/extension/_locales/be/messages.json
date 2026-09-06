@@ -240,7 +240,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "Базавае сеткавае фільтраванне па выбраных спісах фільтраў.\n\nНе патрабуе дазволу на чытанне і змяненне звестак на вэб-сайтах.",
+    "message": "Базавае сеткавае фільтраванне па выбраных спісах фільтраў.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {

@@ -240,7 +240,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "Perustason verkkosuodatus valituilla suodatinlistoilla.\n\nEi edellytä sivustojen tietojen luku- ja muokkausoikeutta.",
+    "message": "Perustason verkkosuodatus valituilla suodatinlistoilla.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {

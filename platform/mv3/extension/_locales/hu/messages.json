@@ -240,7 +240,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "Alapvető hálózati szűrés a kiválasztott szűrőlistákból.\n\nNem igényel engedélyt a webhelyeken található adatok olvasásához és módosításához.",
+    "message": "Alapvető hálózati szűrés a kiválasztott szűrőlistákból.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {

@@ -107,19 +107,35 @@ const bufferSize = isSideloaded ? 256 : 1;
 const matchedRules = new Array(bufferSize);
 matchedRules.fill(null);
 let writePtr = 0;
+let logGeneration = 0;
+let pendingRuntimeLookups = 0;
+const MAX_PENDING_RUNTIME_LOOKUPS = 32;
+
+const matchReference = ruleInfo => ({
+    request: ruleInfo.request,
+    rule: { id: `${ruleInfo.rule.rulesetId}/${ruleInfo.rule.ruleId}` },
+});
 
 const pruneLongLists = list => {
     if ( list.length <= 11 ) { return list; }
     return [ ...list.slice(0, 5), '...', ...list.slice(-5) ];
 };
 
-const getRuleset = async rulesetId => {
+const getRuleset = async (rulesetId, ruleId) => {
     if ( rulesets.has(rulesetId) ) { 
         return rulesets.get(rulesetId);
     }
     let rules;
-    if ( rulesetId === dnr.DYNAMIC_RULESET_ID ) {
-        rules = await dnr.getDynamicRules().catch(( ) => undefined);
+    const isDynamic = rulesetId === dnr.DYNAMIC_RULESET_ID;
+    const isSession = rulesetId === dnr.SESSION_RULESET_ID;
+    if ( isDynamic || isSession ) {
+        const method = isDynamic ? 'getDynamicRules' : 'getSessionRules';
+        try {
+            rules = normalizeDNRRules(
+                await dnr[method]({ ruleIds: [ ruleId ] }), [ ruleId ]
+            );
+        } catch {
+        }
     } else {
         const response = await fetch(`/rulesets/main/${rulesetId}.json`).catch(( ) => undefined);
         if ( response === undefined ) { return; }
@@ -145,15 +161,23 @@ const getRuleset = async rulesetId => {
         rule.id = `${rulesetId}/${ruleId}`;
         ruleset.set(ruleId, rule);
     }
-    rulesets.set(rulesetId, ruleset);
+    // Runtime IDs can be reused after a list update. Only packaged rulesets
+    // remain immutable for the lifetime of this service worker.
+    if ( isDynamic === false && isSession === false ) {
+        rulesets.set(rulesetId, ruleset);
+    }
     return ruleset;
 };
 
 const getRuleDetails = async ruleInfo => {
     const { rulesetId, ruleId } = ruleInfo.rule;
-    const ruleset = await getRuleset(rulesetId);
-    if ( ruleset === undefined ) { return; }
-    return { request: ruleInfo.request, rule: ruleset.get(ruleId) };
+    const ruleset = await getRuleset(rulesetId, ruleId);
+    // Keep the browser's match reference when a rule was removed or its
+    // details could not be read. Missing details must not erase the event.
+    return {
+        request: ruleInfo.request,
+        rule: ruleset?.get(ruleId) ?? { id: `${rulesetId}/${ruleId}` },
+    };
 };
 
 /******************************************************************************/
@@ -165,6 +189,7 @@ export const getMatchedRules = (( ) => {
 
     if ( isModern ) {
         return async tabId => {
+            const generation = logGeneration;
             const promises = [];
             for ( let i = 0; i < bufferSize; i++ ) {
                 const j = (writePtr + i) % bufferSize;
@@ -173,15 +198,15 @@ export const getMatchedRules = (( ) => {
                 if ( ruleInfo.request.tabId !== -1 ) {
                     if ( ruleInfo.request.tabId !== tabId ) { continue; }
                 }
-                const promise = getRuleDetails(ruleInfo);
-                if ( promise === undefined ) { continue; }
-                promises.unshift(promise);
+                promises.unshift(ruleInfo.details ??= getRuleDetails(ruleInfo));
             }
-            return Promise.all(promises);
+            const entries = await Promise.all(promises);
+            return generation === logGeneration ? entries : [];
         };
     }
 
     return async tabId => {
+        const generation = logGeneration;
         if ( typeof dnr.getMatchedRules !== 'function' ) { return []; }
         const matchedRules = await dnr.getMatchedRules({ tabId });
         if ( matchedRules instanceof Object === false ) { return []; }
@@ -189,14 +214,38 @@ export const getMatchedRules = (( ) => {
         for ( const { tabId, rule } of matchedRules.rulesMatchedInfo ) {
             promises.push(getRuleDetails({ request: { tabId }, rule }));
         }
-        return Promise.all(promises);
+        const entries = await Promise.all(promises);
+        return generation === logGeneration ? entries : [];
     };
 })();
 
 /******************************************************************************/
 
 const matchedRuleListener = ruleInfo => {
-    matchedRules[writePtr] = ruleInfo;
+    // Resolve mutable rules at event delivery, not when the log is opened.
+    // Retained history then keeps its resolved details across ID reuse. The
+    // browser does not provide an atomic rule-body snapshot with the event.
+    const { rulesetId } = ruleInfo.rule;
+    const isRuntime = rulesetId === dnr.DYNAMIC_RULESET_ID ||
+        rulesetId === dnr.SESSION_RULESET_ID;
+    let details;
+    if ( isRuntime ) {
+        details = matchReference(ruleInfo);
+        // The ring limits retained history, not unresolved API work. Never
+        // queue overflow for a later lookup: its ID could have been reused.
+        if ( pendingRuntimeLookups < MAX_PENDING_RUNTIME_LOOKUPS ) {
+            pendingRuntimeLookups += 1;
+            details = getRuleDetails(ruleInfo).catch(( ) =>
+                matchReference(ruleInfo)
+            ).finally(( ) => {
+                pendingRuntimeLookups -= 1;
+            });
+        }
+    }
+    matchedRules[writePtr] = {
+        ...ruleInfo,
+        details,
+    };
     writePtr = (writePtr + 1) % bufferSize;
 };
 
@@ -206,6 +255,7 @@ export const toggleDeveloperMode = state => {
     if ( state ) {
         dnr.onRuleMatchedDebug.addListener(matchedRuleListener);
     } else {
+        logGeneration += 1;
         dnr.onRuleMatchedDebug.removeListener(matchedRuleListener);
         rulesets.clear();
         matchedRules.fill(null);

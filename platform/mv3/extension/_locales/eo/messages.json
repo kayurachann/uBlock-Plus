@@ -240,7 +240,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "Simpla reta filtrado per elektitaj filtriloj.\n\nNe postulas la permeson legi kaj redakti datumojn de ĉiuj retejoj.",
+    "message": "Simpla reta filtrado per elektitaj filtriloj.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {

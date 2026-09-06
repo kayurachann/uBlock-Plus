@@ -240,7 +240,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "Shaandhayn shabakadeed oo aasaasi ah oo ka timid liisaska shaandhada ee la doortay.\n\nUma baahna ogolaansho si loo akhriyo oo loo beddelo xogta websaydhyada.",
+    "message": "Shaandhayn shabakadeed oo aasaasi ah oo ka timid liisaska shaandhada ee la doortay.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {

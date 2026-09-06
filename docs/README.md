@@ -26,6 +26,7 @@ This directory contains the user, architecture, security and community documenta
 | --- | --- |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | MV3 pipeline, compiled popup routes, durable state, memory profiles and capability layers. |
 | [FEATURE-MATRIX.md](FEATURE-MATRIX.md) | Honest comparison between original MV2 behavior and current MV3 support. |
+| [MV3-CAPABILITY-AUDIT-2026-09-06.md](MV3-CAPABILITY-AUDIT-2026-09-06.md) | Vietnamese audit against full uBlock Origin, reproduced defects and improvements informed by AdGuard/Brave. |
 | [MV3-POPUP-PARITY.md](MV3-POPUP-PARITY.md) | Site power, filtering levels, popup policy and scope/recovery guarantees. |
 | [MV3-CHROME-RETEST-2026-09-06.md](MV3-CHROME-RETEST-2026-09-06.md) | Dated local release validation and 28 + 7 scenarios on installed Google Chrome. |
 | [MV3-RETEST-2026-09-05.md](MV3-RETEST-2026-09-05.md) | Upstream issue comparisons and durability/fail-open regression coverage. |

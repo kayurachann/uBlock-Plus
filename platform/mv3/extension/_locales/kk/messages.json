@@ -240,7 +240,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "Таңдалған сүзгі тізімдерінен негізгі желілік сүзгілеу.\n\nВеб-сайттардағы деректерді оқу және өзгерту үшін рұқсатты талап етпейді.",
+    "message": "Таңдалған сүзгі тізімдерінен негізгі желілік сүзгілеу.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {

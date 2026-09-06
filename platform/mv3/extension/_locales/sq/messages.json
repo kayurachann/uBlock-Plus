@@ -240,7 +240,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "Filtrat kryesorë të rrjetit nga listat e përzgjedhura.\n\nNuk merret leje për leximin dhe modifikimin e të dhënave në uebsajte.",
+    "message": "Filtrat kryesorë të rrjetit nga listat e përzgjedhura.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {

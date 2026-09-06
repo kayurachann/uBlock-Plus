@@ -198,20 +198,22 @@ export async function registerCustomFilters(context) {
     if ( customFilters.size === 0 ) { return; }
 
     const { none } = context.filteringModeDetails;
-    let hostnames = Array.from(customFilters.keys());
-    let excludeHostnames = [];
+    // Select source keys before narrowing them to an enabled child hostname;
+    // that child need not have its own saved-filter record.
+    let hostnames = Array.from(customFilters.keys()).filter(hn =>
+        customFilters.get(hn).some(a => isCSS(a) || isProcedural(a))
+    );
+    const excludeHostnames = Array.from(none).filter(hn => hn !== 'all-urls');
     if ( none.has('all-urls') ) {
         const { basic, optimal, complete } = context.filteringModeDetails;
-        hostnames = intersectHostnameIters(hostnames, [
-            ...basic, ...optimal, ...complete
-        ]);
+        const included = [ ...basic, ...optimal, ...complete ];
+        hostnames = Array.from(new Set([
+            ...intersectHostnameIters(hostnames, included),
+            ...intersectHostnameIters(included, hostnames),
+        ]));
     } else if ( none.size !== 0 ) {
         hostnames = [ ...subtractHostnameIters(hostnames, none) ];
-        excludeHostnames = Array.from(none);
     }
-    hostnames = hostnames.filter(a =>
-        customFilters.get(a).some(a => isCSS(a) || isProcedural(a))
-    );
     if ( hostnames.length === 0 ) { return; }
 
     const directive = {

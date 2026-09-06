@@ -240,7 +240,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "Filter jaringan dasar dari daftar filter yang dipilih.\n\nTidak membutuhkan izin untuk membaca dan mengubah data pada situs web.",
+    "message": "Filter jaringan dasar dari daftar filter yang dipilih.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {

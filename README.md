@@ -110,7 +110,7 @@ Click the large power button to turn protection Off for the current site's suppo
 | Mode | Behavior |
 | --- | --- |
 | Off / None | Disable filtering for that site scope. Reload to remove effects already applied to the page. |
-| Basic | Network filtering; stock extended cosmetic/scriptlet registrations are not enabled at this level. |
+| Basic | Network filtering; extended cosmetic/scriptlet filtering from packaged and imported lists is disabled. Personally authored sandbox and saved picker filters still apply on enabled sites. |
 | Optimal | Network filtering plus site-specific cosmetic filtering and packaged scriptlets. |
 | Complete | Optimal filtering plus generic cosmetic filtering. |
 
@@ -270,6 +270,8 @@ The [6 September 2026 local release validation](docs/MV3-CHROME-RETEST-2026-09-0
 - **7 additional Chrome scenarios** with sandbox and built-in popup blocking enabled, including real public-site block/redirect behavior.
 - **976 ZIP entries** matching the unpacked build; 55 rulesets and 70,163 DNR rules in that specific artifact.
 
+The subsequent [full-uBO capability audit](docs/MV3-CAPABILITY-AUDIT-2026-09-06.md) expanded the suite to **35 source test programs** and fixed further exception, scope, editor, diagnostics and compiler-cache defects. Its report records the separate artifact and Chrome results.
+
 These are dated local results for the recorded build, not a claim that the older published ZIP or every future commit passed those checks. The native optional-permission dismissal case was not exercised because the test installation already had `<all_urls>`. Fixtures and one public-site probe are not a guarantee for every website, browser or assistive technology. Consult the live [Actions runs](https://github.com/kayurachann/uBlock-Plus/actions/workflows/mv3-chromium.yml) separately for CI status.
 
 ## Troubleshooting
@@ -296,6 +298,7 @@ The current detailed guides are maintained in [English](README.md) and [Vietname
 | --- | --- |
 | [Documentation index](docs/README.md) | User, developer and community documentation. |
 | [Feature matrix](docs/FEATURE-MATRIX.md) / [Popup controls](docs/MV3-POPUP-PARITY.md) | Supported behavior and compatibility limits. |
+| [Full-uBO capability audit](docs/MV3-CAPABILITY-AUDIT-2026-09-06.md) | Vietnamese report: reproduced bugs, fixes and improvement ideas from AdGuard/Brave. |
 | [Filter Store](docs/FILTER-STORE.md) | Catalog format, trust tiers and submission process. |
 | [Architecture](docs/ARCHITECTURE.md) / [Power Runtime](docs/POWER-RUNTIME.md) | Compilation, rule budgets, runtime and durable state. |
 | [Privacy](docs/PRIVACY.md) / [Threat model](docs/THREAT-MODEL.md) | Data, permissions and trust boundaries. |

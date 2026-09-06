@@ -240,7 +240,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "തിരഞ്ഞെടുത്ത ഫിൽട്ടർ ലിസ്റ്റുകളിൽ നിന്നുള്ള അടിസ്ഥാന നെറ്റ്‌വർക്ക് ഫിൽട്ടറിംഗ്.\n\nവെബ്‌സൈറ്റുകളിലെ ഡാറ്റ വായിക്കാനും പരിഷ്‌ക്കരിക്കാനും അനുമതി ആവശ്യമില്ല.",
+    "message": "തിരഞ്ഞെടുത്ത ഫിൽട്ടർ ലിസ്റ്റുകളിൽ നിന്നുള്ള അടിസ്ഥാന നെറ്റ്‌വർക്ക് ഫിൽട്ടറിംഗ്.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {

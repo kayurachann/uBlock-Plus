@@ -464,7 +464,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "Chế độ lọc mạng cơ bản từ các danh sách bộ lọc đã chọn.\n\nKhông yêu cầu quyền về đọc và thay đổi dữ liệu trên các trang web.",
+    "message": "Chế độ lọc mạng cơ bản từ các danh sách bộ lọc đã chọn.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {
@@ -772,7 +772,7 @@
     "message": "Cơ bản"
   },
   "protectionProfileBaselineDescription": {
-    "message": "Lọc mạng không cần quyền truy cập rộng; chống popup vẫn được bật."
+    "message": "Lọc mạng cơ bản; tính năng chống popup vẫn được bật."
   },
   "protectionProfileBalanced": {
     "message": "Cân bằng"

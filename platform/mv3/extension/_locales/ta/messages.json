@@ -240,7 +240,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "தேர்ந்தெடுக்கப்பட்ட வடிப்பான் பட்டியல்களில் இருந்து அடிப்படை பிணைய வடிகட்டல்.\n\nஇணையதளங்களில் தரவைப் படிக்கவும் மாற்றியமைக்கவும் அனுமதி தேவையில்லை.",
+    "message": "தேர்ந்தெடுக்கப்பட்ட வடிப்பான் பட்டியல்களில் இருந்து அடிப்படை பிணைய வடிகட்டல்.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {

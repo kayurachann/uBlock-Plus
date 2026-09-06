@@ -240,7 +240,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "પસંદ કરેલ ફિલ્ટર યાદીઓમાંથી મૂળભૂત નેટવર્ક ફિલ્ટરિંગ.\n\nવેબસાઇટ્સ પર ડેટા વાંચવા અને સંશોધિત કરવાની પરવાનગીની જરૂર નથી.",
+    "message": "પસંદ કરેલ ફિલ્ટર યાદીઓમાંથી મૂળભૂત નેટવર્ક ફિલ્ટરિંગ.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {

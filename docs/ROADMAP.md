@@ -2,28 +2,31 @@
 
 Roadmap dùng các nhóm **Now / Next / Later**, không hứa ngày phát hành. Mỗi mục chỉ chuyển trạng thái khi có owner, design, test và ngân sách hiệu năng.
 
-Thứ tự ưu tiên dựa trên snapshot bằng chứng ngày 2026-09-01 tại [COMMUNITY-RESEARCH.md](COMMUNITY-RESEARCH.md). Issue upstream là tín hiệu thiết kế, không tự động trở thành cam kết của fork.
+Thứ tự ưu tiên được cập nhật ngày 2026-09-06 qua [rà soát với uBlock Origin đầy đủ, AdGuard và Brave](MV3-CAPABILITY-AUDIT-2026-09-06.md), bổ sung hồ sơ [COMMUNITY-RESEARCH.md](COMMUNITY-RESEARCH.md). Issue upstream là tín hiệu thiết kế, không tự động trở thành cam kết của fork.
 
 ## Now — nền tảng Power Edition
 
 - Hoàn tất identity uBlock Plus+ và build sideload có checksum/provenance.
 - Giữ parity MV3 hiện có: DNR, cosmetic filtering, packaged scriptlets, per-site modes, picker/zapper, custom/imported lists và backup/restore.
-- Filter Store schema v1, catalog đóng gói, issue form, validator và trust badge `verified|community`.
+- Filter Store schema v1, catalog đóng gói, issue form, validator, trust badge `verified|community` và tìm kiếm/lọc category/language.
 - Memory profiles `auto|balanced|low-memory`, local telemetry và cleanup an toàn.
 - Compiler phát mã lý do ổn định và số dòng cho network filter import bị từ chối/deferred; dashboard chi tiết và export báo cáo vẫn cần hoàn thiện.
 - Smart Popup Blocker theo opener/target/trusted gesture/burst, policy exact-host `Allow|Smart|Strict`, chẩn đoán đã redaction và backup/restore policy.
 - Compiled popup observer cho corpus stock `$popup` đóng gói và subset sandbox/imported `$popup`/`$popunder` đã classifier chấp nhận. Supported popup-only là accepted+routed dù không có DNR; unsupported condition giữ typed route `popup-compiler-required` với status `deferred`. Deferred allow có guard superset fail-open để không làm mất exception; context/budget không đầy đủ cũng fail open. Stock `$popunder` vẫn được ghi `omitted` vì DNR export không bảo toàn kind.
-- Budget static riêng với runtime DNR; regex dynamic + session dùng pool chung. Test browser/service-worker restart, immutable generation, quota failure và máy `<= 4 GiB`.
+- Budget static riêng với runtime DNR; regex dynamic + session dùng pool chung. Đã có test browser/service-worker restart, immutable generation và quota failure; benchmark trên máy `<= 4 GiB` còn ở Next.
 
 ## Next — chất lượng và trải nghiệm cộng đồng
 
+- Chẩn đoán ánh xạ từ DNR về list/dòng nguồn, mở rộng matched-rule view hiện có; phân biệt kết quả browser xác nhận với mô phỏng, có redaction và export do người dùng chủ động.
+- Quota preview đối chiếu browser trước khi bật/cập nhật list: static, dynamic, session và shared dynamic+session regex; phân biệt estimate/compiled/active và giữ last-known-good khi cập nhật bị từ chối.
+- `$badfilter` chính xác qua source map, kể cả rule gộp và nhiều list; không vô hiệu hóa phần không liên quan để thay cho việc chưa hỗ trợ.
+- Ngoại lệ tạm theo URL/resource type/tab bằng session DNR, có preview/Undo và dọn metadata khi đóng tab hoặc kết thúc phiên; không dùng allow rộng thay ngữ nghĩa `noop` của uBO.
 - Semantic-safe dedupe/merge/sharding với equivalence test và rollback.
-- Filter Store search/category/language, diff review automation và quarantine workflow.
-- Diagnostics cục bộ có redaction, matched-rule view và export do người dùng chủ động.
+- Filter Store diff review, lịch sử/độ mới nguồn, automation và quarantine workflow.
 - Parse stock popup/popunder trực tiếp từ source compiler để bảo toàn kind `$popunder`, không phụ thuộc DNR export lossy.
 - Mở rộng popup condition subset chỉ sau equivalence/false-positive/performance test; thêm diagnostics cho initiator/top/target completeness, budget exhaustion và deferred reason theo source line.
-- Quota planner hiển thị riêng static, dynamic, session và shared dynamic+session regex budget; rollback last-known-good khi browser từ chối atomic update.
-- Benchmark dashboard trong CI: cold start, idle memory, list compile peak, CSS cache và p95 update time.
+- Benchmark dashboard trong CI: cold start, idle memory, list compile peak, CSS cache và p95 update time; bộ so sánh ngữ nghĩa với uBO/AdGuard/Brave trên tập cú pháp chung.
+- Khôi phục backup có journal/tiến độ cấp toàn profile; restore hiện tại vẫn tuần tự, chưa nguyên tử trên mọi thành phần.
 - Accessibility/i18n, import conflict UX và cảnh báo list không được chứng thực.
 - Upstream sync automation có human review cho compiler/security-sensitive conflicts.
 

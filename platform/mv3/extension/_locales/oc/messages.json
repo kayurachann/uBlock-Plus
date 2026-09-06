@@ -240,7 +240,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "Filtratge ret basic dempuèi las listas de filtres seleccionadas.\n\nRequire pas de permission per legir e modificar las donadas sus los sites web.",
+    "message": "Filtratge ret basic dempuèi las listas de filtres seleccionadas.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {

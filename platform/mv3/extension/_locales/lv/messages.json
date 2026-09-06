@@ -240,7 +240,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "Pamata tīkla aizturēšana, izmantojot atlasītos aizturēšanas sarakstus.\n\nNav nepieciešama atļauja lasīt un mainīt datus tīmekļa vietnēs.",
+    "message": "Pamata tīkla aizturēšana, izmantojot atlasītos aizturēšanas sarakstus.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {

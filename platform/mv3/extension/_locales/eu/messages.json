@@ -240,7 +240,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "Oinarrizko sarea iragaztea, hautatutako iragazkien zerrendetatik abiatuta.\n\nEz da baimenik behar webguneetan datuak irakurtzeko eta aldatzeko.",
+    "message": "Oinarrizko sarea iragaztea, hautatutako iragazkien zerrendetatik abiatuta.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {

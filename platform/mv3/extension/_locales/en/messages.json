@@ -464,7 +464,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "Basic network filtering from selected filter lists.\n\nDoes not require permission to read and modify data on websites.",
+    "message": "Basic network filtering from selected filter lists.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {
@@ -739,7 +739,7 @@
   "protectionProfilesTitle": { "message": "Protection profiles" },
   "protectionProfilesDescription": { "message": "Apply a complete, reversible baseline, or continue tuning every control below." },
   "protectionProfileBaseline": { "message": "Baseline" },
-  "protectionProfileBaselineDescription": { "message": "Network filtering without broad site access; popup protection stays enabled." },
+  "protectionProfileBaselineDescription": { "message": "Basic network filtering; popup protection stays enabled." },
   "protectionProfileBalanced": { "message": "Balanced" },
   "protectionProfileBalancedDescription": { "message": "Advanced filtering, strict navigation blocking and automatic memory selection." },
   "protectionProfileMaximum": { "message": "Maximum" },

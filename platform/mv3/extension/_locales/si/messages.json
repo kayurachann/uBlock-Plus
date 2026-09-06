@@ -240,7 +240,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "තෝරාගත් පෙරහන් ලැයිස්තු වලින් මූලික ජාල පෙරහන.\n\nවෙබ් අඩවි වල දත්ත කියවීමට සහ වෙනස් කිරීමට අවසර අවශ්‍ය නොවේ.",
+    "message": "තෝරාගත් පෙරහන් ලැයිස්තු වලින් මූලික ජාල පෙරහන.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {

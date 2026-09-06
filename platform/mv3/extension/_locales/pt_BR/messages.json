@@ -240,7 +240,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "Filtragem básica de rede por listas de filtros selecionadas.\n\nNão requer permissão para ler e modificar os dados nos sites.",
+    "message": "Filtragem básica de rede por listas de filtros selecionadas.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {

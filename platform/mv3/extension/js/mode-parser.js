@@ -22,6 +22,7 @@
 */
 
 import { i18n$ } from './i18n.js';
+import { normalizeModeHostname } from './backup-schema.js';
 import punycode from './punycode.js';
 
 /******************************************************************************/
@@ -94,17 +95,16 @@ const addHostnameToMode = (modes, mode, node) => {
     if ( node.list !== true ) { return node.val === '-'; }
     if ( node.key !== undefined ) { return false; }
     if ( node.val === undefined ) { return false; }
-    const hn = punycode.toASCII(node.val.toLowerCase());
-    if ( hn.length > 253 ) { return false; }
-    if ( hn.split('.').some(isInvalidLabel) ) { return false; }
-    modes[mode].push(hn);
-};
-
-const isInvalidLabel = label => {
-    if ( label.length === 0 ) { return true; }
-    if ( label.length > 63 ) { return true; }
-    if ( /^[^\da-z]|[^\da-z]$|[^\da-z-]/.test(label) ) { return true; }
-    return false;
+    // The editor inserts an empty list marker after Enter. It is an editing
+    // placeholder, just like a bare dash, and does not define a site scope.
+    if ( node.val === '' ) { return true; }
+    try {
+        node.hostname = normalizeModeHostname(node.val);
+    } catch {
+        return false;
+    }
+    modes[mode].push(node.hostname);
+    return true;
 };
 
 /******************************************************************************/
@@ -119,6 +119,10 @@ function depthFromIndent(line) {
 /******************************************************************************/
 
 function nodeFromLine(line) {
+    // A list value is a hostname, including bracketed IPv6 literals. Its
+    // colons must not be interpreted as keys in the surrounding mode syntax.
+    const list = /^\s*- (.*)$/.exec(line);
+    if ( list !== null ) { return { list: true, val: list[1].trim() }; }
     const match = reNodeParser.exec(line);
     const out = {};
     if ( match === null ) { return out; }
@@ -146,29 +150,18 @@ export function modesFromText(text, justbad = false) {
     const indices = [];
     for ( let i = 0; i < lines.length; i++ ) {
         const line = lines[i].trimEnd();
-        if ( line.trim().startsWith('#') ) { continue; }
+        if ( line.trim() === '' || line.trim().startsWith('#') ) { continue; }
         indices.push(i);
     }
-    // Discard leading empty lines
-    while ( indices.length !== 0 ) {
-        const s = lines[indices[0]].trim();
-        if ( s.length !== 0 ) { break; }
-        indices.shift();
-    }
-    // Discard trailing empty lines
-    while ( indices.length !== 0 ) {
-        const s = lines[indices.at(-1)].trim();
-        if ( s.length !== 0 ) { break; }
-        indices.pop();
-    }
     // Parse
-    const modes = {};
+    const modes = Object.fromEntries(validModes.map(mode => [ mode, [] ]));
     const bad = [];
     const scope = [];
+    const seen = new Map();
     for ( const i of indices ) {
         const line = lines[i];
         const depth = depthFromIndent(line);
-        if ( depth < 0 ) {
+        if ( depth < 0 || depth > 1 ) {
             bad.push(i);
             continue;
         }
@@ -177,35 +170,23 @@ export function modesFromText(text, justbad = false) {
         const result = selectParser(scope, modes, node);
         if ( result === false ) {
             bad.push(i);
-        }
-    }
-    if ( justbad ) {
-        return bad.length !== 0 ? { bad } : { };
-    }
-    // Ensure all modes are present, and that one mode is the default one
-    const seen = new Map();
-    let defaultMode = '';
-    for ( const mode of validModes ) {
-        modes[mode] = new Set(modes[mode]);
-        if ( modes[mode].has('all-urls') ) {
-            defaultMode = mode;
-        }
-        for ( const hn of modes[mode] ) {
-            if ( seen.has(hn) ) {
-                modes[seen.get(hn)].delete(hn);
+        } else if ( node.hostname !== undefined ) {
+            if ( seen.has(node.hostname) ) {
+                bad.push(seen.get(node.hostname), i);
             }
-            seen.set(hn, mode);
+            seen.set(node.hostname, i);
         }
     }
-    if ( defaultMode === '' ) {
-        defaultMode = 'optimal';
+    // Never infer a more restrictive default or discard invalid trusted-site
+    // entries. A save replaces the complete mode map, so partial parses must
+    // not escape as an actionable replacement.
+    if ( seen.has('all-urls') === false ) {
+        bad.push(indices[0] ?? 0);
     }
-    modes[defaultMode].clear();
-    modes[defaultMode].add('all-urls');
-    for ( const mode of validModes ) {
-        modes[mode] = Array.from(modes[mode]);
+    if ( bad.length !== 0 ) {
+        return { bad: Array.from(new Set(bad)).sort((a, b) => a - b) };
     }
-    return { modes };
+    return justbad ? {} : { modes };
 }
 
 /******************************************************************************/

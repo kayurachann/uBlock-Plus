@@ -240,7 +240,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "Hidlo rhwydwaith sylfaenol o restrau hidl a ddewiswyd.\n\nNid oes angen caniatâd i ddarllen ac addasu data ar wefannau.",
+    "message": "Hidlo rhwydwaith sylfaenol o restrau hidl a ddewiswyd.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {

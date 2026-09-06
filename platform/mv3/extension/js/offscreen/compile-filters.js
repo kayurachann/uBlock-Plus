@@ -24,6 +24,11 @@ import * as s14e from '../../lib/s14e-serializer.js';
 import * as sfp from '../static-filtering-parser.js';
 
 import {
+    COMPILED_FILTERS_REVISION,
+    deserializeCompiledListOr,
+} from '../compiled-cache.js';
+
+import {
     NetworkFilterCompiler,
     minimizeRules,
     minimizeRuleset,
@@ -39,7 +44,6 @@ import {
     newCompiledGeneration,
 } from '../compiled-storage.js';
 import { createCompilerStorageClient } from '../offscreen-storage.js';
-import { deserializeCompiledListOr } from '../compiled-cache.js';
 import { fetchList } from './fetch-list.js';
 import { isCredentialFreeHTTPS } from '../imported-fetch-policy.js';
 import { isVerifiedSourceKey } from '../verified-source-handoff.js';
@@ -105,11 +109,12 @@ function parseExpires(s) {
     if ( matches === null ) { return; }
     let updateAfter = parseInt(matches[1], 10);
     if ( updateAfter === 0 ) { return; }
-    if ( matches[2] === 'w' ) {
-        updateAfter *= 7 * 24;
-    } else if ( matches[2] === 'h' ) {
+    const unit = matches[2].toLowerCase();
+    if ( unit === 'w' ) {
+        updateAfter *= 7;
+    } else if ( unit === 'h' ) {
         updateAfter = Math.max(updateAfter, 4) / 24;
-    } else if ( matches[2] === 'm' ) {
+    } else if ( unit === 'm' ) {
         updateAfter = Math.max(updateAfter, 240) / 1440;
     }
     return updateAfter;
@@ -146,24 +151,31 @@ function extractMetadataFromList(content, fields) {
 /******************************************************************************/
 
 function compileScriptletFilter(parser, output) {
-    if ( parser.hasOptions() === false ) { return; }
     const exception = parser.isException();
+    if ( parser.hasOptions() === false && exception === false ) { return; }
     const args = parser.getScriptletArgs();
     const argsToken = JSON.stringify(args);
+    if ( parser.hasOptions() === false ) {
+        const details = output.get(argsToken) ?? { args };
+        details.excludeMatches ??= [];
+        details.excludeMatches.push('*');
+        output.set(argsToken, details);
+        return;
+    }
     for ( const { hn, not, bad } of parser.getExtFilterDomainIterator() ) {
         if ( bad ) { continue; }
-        if ( exception ) { continue; }
+        if ( exception && not ) { continue; }
         const details = output.get(argsToken) ?? {};
         if ( details.args === undefined ) {
             details.args = args;
-            details.trustedSource = parser.options.trustedSource;
             output.set(argsToken, details);
         }
-        if ( not ) {
+        if ( not || exception ) {
             details.excludeMatches ??= [];
             details.excludeMatches.push(hn);
             continue;
         }
+        details.trustedSource ||= parser.options.trustedSource;
         details.matches ??= [];
         if ( details.matches[0] === '*' ) { continue; }
         if ( hn !== '*' ) {
@@ -256,7 +268,6 @@ export function compileFilters(listid, text, context = {}) {
         }
         if ( parser.hasError() ) { continue; }
         if ( parser.isScriptletFilter() ) {
-            if ( parser.hasOptions() === false ) { continue; }
             compileScriptletFilter(parser, scriptletDetails);
             continue;
         }
@@ -580,6 +591,7 @@ async function updateList(list) {
     const metadataKey = pendingImportedMetadataKey(list.id);
     await compilerStorage.set({
         [cacheKey]: {
+            compilerRevision: COMPILED_FILTERS_REVISION,
             serialized: s14e.serialize(compiled, { compress: true }),
             sourceDigest: list.sourceIntegrity?.digest || '',
             sourceBytes: list.sourceIntegrity?.bytes ?? null,
@@ -607,6 +619,9 @@ async function getCompiledListData(list) {
     const metadataKey = pendingImportedMetadataKey(list.id);
     const bin = await compilerStorage.get(cacheKey);
     const cached = bin?.[cacheKey];
+    if ( cached?.compilerRevision !== COMPILED_FILTERS_REVISION ) {
+        return updateList(list);
+    }
     const serialized = typeof cached === 'string'
         ? cached
         : cached?.serialized;

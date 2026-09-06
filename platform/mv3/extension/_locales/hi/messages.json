@@ -240,7 +240,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "चयनित फ़िल्टर सूचियों में से बुनियादी नेटवर्क फ़िल्टरिंग.\n\nवेबसाइटों पर डेटा पढ़ने और बदलने के लिए अनुमति की आवश्यकता नहीं हौती है.",
+    "message": "चयनित फ़िल्टर सूचियों में से बुनियादी नेटवर्क फ़िल्टरिंग.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {

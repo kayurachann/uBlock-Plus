@@ -408,7 +408,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "特定のフィルターリストを使った基本ネットワークフィルタリングです。\n\nウェブサイトのデータの読み書き権限を必要としません。",
+    "message": "特定のフィルターリストを使った基本ネットワークフィルタリングです。",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {
@@ -706,7 +706,7 @@
     "message": "基本"
   },
   "protectionProfileBaselineDescription": {
-    "message": "広範なサイトアクセスを使わずにネットワークをフィルタリングします。ポップアップ保護は有効のままです。"
+    "message": "基本的なネットワークフィルタリングを行います。ポップアップ保護は有効のままです。"
   },
   "protectionProfileBalanced": {
     "message": "バランス"

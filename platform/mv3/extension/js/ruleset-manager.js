@@ -129,7 +129,8 @@ export function getRulesetDetails() {
 async function pruneInvalidRegexRules(realm, rulesIn, rejected = []) {
     const validateRegex = regex => {
         return dnr.isRegexSupported({ regex, isCaseSensitive: false }).then(result => {
-            pruneInvalidRegexRules.validated.set(regex, result?.reason || true);
+            pruneInvalidRegexRules.validated.set(regex,
+                result?.isSupported === true ? true : result?.reason || 'unsupported');
             if ( result.isSupported ) { return true; }
             rejected.push({ regex, reason: result?.reason });
             return false;
@@ -156,6 +157,19 @@ async function pruneInvalidRegexRules(realm, rulesIn, rejected = []) {
 
     // Collate results
     const isValid = await Promise.all(toCheck);
+
+    for ( let i = 0; i < rulesIn.length; i++ ) {
+        if ( isValid[i] ) { continue; }
+        const rule = rulesIn[i];
+        if ( rule.action?.type !== 'allow' &&
+            rule.action?.type !== 'allowAllRequests' ) { continue; }
+        // An unsupported exception can protect a block from any list in the
+        // replacement. Dropping it would silently broaden that block.
+        throw new Error(
+            'An allow exception uses an unsupported regex; ' +
+            'the previous rules remain active'
+        );
+    }
 
     if ( rejected.length !== 0 ) {
         ublockPlusLog(`${realm} realm: rejected regexes:\n`,
@@ -951,7 +965,14 @@ async function updateUserRulesNow(generation) {
         }
     }
     const rejectedRegexes = [];
-    const addRules = await pruneInvalidRegexRules('user', rules, rejectedRegexes);
+    let addRules;
+    try {
+        addRules = await pruneInvalidRegexRules('user', rules, rejectedRegexes);
+    } catch ( reason ) {
+        out.fatalError = reason?.message || `${reason}`;
+        out.errors.push(out.fatalError);
+        return out;
+    }
 
     if ( rejectedRegexes.length !== 0 ) {
         rejectedRegexes.forEach(e =>

@@ -240,7 +240,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "Silañ diazez ar rouedad diouzh ar rolloù siloù diuzet.\n\nN'eus ket ezhomm a aotre evit lenn hag aozañ roadennoù el lec'hiennoù.",
+    "message": "Silañ diazez ar rouedad diouzh ar rolloù siloù diuzet.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {

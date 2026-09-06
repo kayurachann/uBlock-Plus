@@ -240,7 +240,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "ქსელის ძირითადი ფილტრაცია შერჩეული სიებით.\n\nარ საჭიროებს საიტებზე მონაცემთა წაკითხვისა და ცვლილების ნებართვებს.",
+    "message": "ქსელის ძირითადი ფილტრაცია შერჩეული სიებით.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {

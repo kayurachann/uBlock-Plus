@@ -240,7 +240,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "Seçilen filtre listelerinden temel ağ filtrelemesi.\n\nWeb sitelerindeki verileri okumak ve değiştirmek için izin gerektirmez.",
+    "message": "Seçilen filtre listelerinden temel ağ filtrelemesi.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {

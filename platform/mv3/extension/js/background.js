@@ -169,6 +169,7 @@ import {
     resetJobsAlarm,
 } from './alarms.js';
 
+import { COMPILED_FILTERS_REVISION } from './compiled-cache.js';
 import { POPUP_RUNTIME_ROUTE_CODE } from './compiled-popup-matcher.js';
 import { capturePopupFrameContext } from './popup-frame-context.js';
 import { createPopupBlocker } from './popup-blocker.js';
@@ -182,6 +183,7 @@ import { toggleToolbarIcon } from './action.js';
 const UBLOCK_PLUS_ORIGIN = runtime.getURL('').replace(/\/$/, '').toLowerCase();
 const canShowBlockedCount = typeof dnr.setExtensionActionOptions === 'function';
 const COMPILED_FILTERS_DIRTY_KEY = 'compiledFilters.dirtySources';
+const COMPILED_FILTERS_REVISION_KEY = 'compiledFilters.compilerRevision';
 const COMPILED_FILTERS_RETRY_JOB = 'retryCompiledFilters';
 const COMPILED_FILTER_WARNINGS_KEY = 'compiledFilters.lastWarnings';
 const RULESET_TRANSACTION_KEY = 'rulesets.pendingTransaction';
@@ -534,8 +536,22 @@ async function markCompiledFilterSourcesDirty(flags) {
             flags.contentScripts === true || previous?.contentScripts === true,
         updatedAt: Date.now(),
     };
+    const compilerRevision = flags.compilerRevision ?? previous?.compilerRevision;
+    if ( Number.isSafeInteger(compilerRevision) ) {
+        marker.compilerRevision = compilerRevision;
+    }
     await localWrite(COMPILED_FILTERS_DIRTY_KEY, marker);
     return { marker, hadPending: previous instanceof Object };
+}
+
+async function ensureCompiledFilterRevision() {
+    const revision = await localRead(COMPILED_FILTERS_REVISION_KEY);
+    if ( revision === COMPILED_FILTERS_REVISION ) { return; }
+    await markCompiledFilterSourcesDirty({
+        compiled: true,
+        contentScripts: true,
+        compilerRevision: COMPILED_FILTERS_REVISION,
+    });
 }
 
 async function scheduleCompiledFilterRetry() {
@@ -553,6 +569,12 @@ async function flushDirtyCompiledFilterSourcesNow() {
     }
     if ( marker.contentScripts === true ) {
         await registerContentScripts();
+    }
+    // A compiler upgrade is complete only after both activated rules and
+    // content-script scopes have been refreshed. Failed upgrades keep the
+    // durable dirty marker and use the normal restart/alarm retry path.
+    if ( marker.compilerRevision === COMPILED_FILTERS_REVISION ) {
+        await localWrite(COMPILED_FILTERS_REVISION_KEY, COMPILED_FILTERS_REVISION);
     }
     await localRemove(COMPILED_FILTERS_DIRTY_KEY);
     await removeJob(COMPILED_FILTERS_RETRY_JOB);
@@ -1645,6 +1667,7 @@ async function start() {
         await removeCompiledGeneration(staleGeneration);
     }
     await localRemove(STAGING_COMPILED_GENERATION_KEY);
+    await ensureCompiledFilterRevision();
     await retryDirtyCompiledFilterSourcesNow();
 
     if ( process.wakeupRun === false ) {

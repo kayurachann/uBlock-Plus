@@ -408,7 +408,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "Du filtrage réseau basique issu de listes de filtres choisies.\n\nNe nécessite pas de permission pour lire et modifier les données sur les sites Web.",
+    "message": "Du filtrage réseau basique issu de listes de filtres choisies.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {
@@ -706,7 +706,7 @@
     "message": "Base"
   },
   "protectionProfileBaselineDescription": {
-    "message": "Filtrage réseau sans accès étendu aux sites ; la protection contre les fenêtres surgissantes reste activée."
+    "message": "Filtrage réseau de base ; la protection contre les fenêtres surgissantes reste activée."
   },
   "protectionProfileBalanced": {
     "message": "Équilibré"

@@ -240,7 +240,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "Penapisan rangkaian asas daripada senarai penapis yang dipilih.\n\nTidak memerlukan kebenaran untuk membaca dan mengubah suai data pada tapak web.",
+    "message": "Penapisan rangkaian asas daripada senarai penapis yang dipilih.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {

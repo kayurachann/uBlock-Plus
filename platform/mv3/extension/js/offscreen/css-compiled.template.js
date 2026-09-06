@@ -75,7 +75,7 @@ for ( let i = 0, n = regexes.length; i < n; i += 3 ) {
         regexes[i+1] = new RegExp(regexes[i+1]);
     }
     if ( regexes[i+1].test(thisHostname) === false ) { continue; }
-    selectorsFromListIndex(cssSpecificData, regexes[i+2]);
+    selectorsFromListIndex(regexes[i+2]);
 }
 
 const s = [];

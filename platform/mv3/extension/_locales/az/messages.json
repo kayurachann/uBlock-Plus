@@ -240,7 +240,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "Seçilmiş filtr siyahılarından əsas şəbəkə filtrlənməsi.\n\nVeb-saytlardakı məlumatları oxumaq və dəyişdirmək üçün icazə tələb etmir.",
+    "message": "Seçilmiş filtr siyahılarından əsas şəbəkə filtrlənməsi.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {

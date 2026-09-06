@@ -240,7 +240,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "Uchujaji wa mtandao wa msingi kutoka kwenye orodha za vichujio zilizochaguliwa.\n\nHaihitaji ruhusa ya kusoma na kurekebisha data kwenye tovuti.",
+    "message": "Uchujaji wa mtandao wa msingi kutoka kwenye orodha za vichujio zilizochaguliwa.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {

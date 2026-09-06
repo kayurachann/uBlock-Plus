@@ -240,7 +240,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "Ցանցային հիմնական զտում ըստ ընտրված զտիչների ցուցակների։\n\nԿայքերում տվյալները կարդալու և փոփոխելու թույլտվություն չի պահանջում։",
+    "message": "Ցանցային հիմնական զտում ըստ ընտրված զտիչների ցուցակների։",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {

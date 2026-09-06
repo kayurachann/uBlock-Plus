@@ -464,7 +464,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "用选定的过滤规则列表进行基本网页过滤。\n\n不需要读取或修改网页数据的权限。",
+    "message": "用选定的过滤规则列表进行基本网页过滤。",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {
@@ -772,7 +772,7 @@
     "message": "基础"
   },
   "protectionProfileBaselineDescription": {
-    "message": "无需广泛网站访问权限的网络过滤；弹窗防护保持启用。"
+    "message": "基本网络过滤；弹窗防护保持启用。"
   },
   "protectionProfileBalanced": {
     "message": "均衡"

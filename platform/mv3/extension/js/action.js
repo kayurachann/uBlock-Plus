@@ -77,7 +77,9 @@ export function toggleToolbarIcon(tabId) {
 
 export async function registerToolbarIconToggler(context) {
     const { none, basic, optimal, complete } = context.filteringModeDetails;
-    const reverseModeAfter = none.delete('all-urls');
+    // Other registrars consume this same snapshot after asynchronous reads.
+    // Inspect the default without removing it from their filtering scope.
+    const reverseModeAfter = none.has('all-urls');
     const toToggle = reverseModeAfter ?
         new Set([ ...basic, ...optimal, ...complete ])
         : none;

@@ -240,7 +240,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "ಆಯ್ಕೆಮಾಡಿದ ಶೋಧಕ ಪಟ್ಟಿಗಳಿಂದ ಮೂಲ ಜಾಲ ಶೋಧನೆ.\n\nವೆಬ್ಸೈಟ್ಗಳಲ್ಲಿ ದತ್ತಾಂಶವನ್ನು ಓದಲು ಮತ್ತು ಮಾರ್ಪಡಿಸಲು ಅನುಮತಿಯ ಅಗತ್ಯವಿಲ್ಲ.",
+    "message": "ಆಯ್ಕೆಮಾಡಿದ ಶೋಧಕ ಪಟ್ಟಿಗಳಿಂದ ಮೂಲ ಜಾಲ ಶೋಧನೆ.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {

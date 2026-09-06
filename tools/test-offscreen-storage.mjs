@@ -51,6 +51,9 @@ try {
         createCompilerStorageHandler,
     } = await import(pathToFileURL(path.join(temporaryRoot,
         'js/offscreen-storage.js')));
+    const { COMPILED_FILTERS_REVISION } = await import(pathToFileURL(
+        path.join(temporaryRoot, 'js/compiled-cache.js')
+    ));
     let generation = 'a'.repeat(32);
     const sourceURL = 'https://retest.invalid/fixture.txt';
     const sourceText = [
@@ -178,13 +181,30 @@ try {
     assert.equal(warm.importedListUpdates[0].metadataToken,
         result.importedListUpdates[0].metadataToken);
 
-    // A corrupt serialized cache is removed and fetched again through HTTPS.
     const cacheKey = `rulesets.imported.compiled.${sourceURL}`;
-    persisted.set(cacheKey, { serialized: 'corrupt payload' });
+    // An intact cache from an older compiler must rebuild from source, so a
+    // previously discarded exception cannot survive an extension update.
+    const legacyCache = structuredClone(persisted.get(cacheKey));
+    delete legacyCache.compilerRevision;
+    persisted.set(cacheKey, legacyCache);
+    generation = '2'.repeat(32);
+    const migrated = await run();
+    assert.equal(migrated.persisted, true, JSON.stringify(migrated.errors));
+    assert.equal(fetchCount, 2);
+    assert.equal(persisted.get(cacheKey).compilerRevision,
+        COMPILED_FILTERS_REVISION);
+    assert.notEqual(migrated.importedListUpdates[0].metadataToken,
+        warm.importedListUpdates[0].metadataToken);
+
+    // A corrupt current-revision cache is removed and fetched through HTTPS.
+    persisted.set(cacheKey, {
+        compilerRevision: COMPILED_FILTERS_REVISION,
+        serialized: 'corrupt payload',
+    });
     generation = 'd'.repeat(32);
     const repaired = await run();
     assert.equal(repaired.persisted, true, JSON.stringify(repaired.errors));
-    assert.equal(fetchCount, 2);
+    assert.equal(fetchCount, 3);
     assert.equal(operations.some(request => request.operation === 'remove' &&
         request.keys.includes(cacheKey)), true);
 
@@ -229,7 +249,7 @@ try {
     generation = '0'.repeat(32);
     const pinned = await run();
     assert.equal(pinned.persisted, true, JSON.stringify(pinned.errors));
-    assert.equal(fetchCount, 2);
+    assert.equal(fetchCount, 3);
     assert.equal(persisted.has(verifiedKey), false);
     assert.equal(pinned.compiledIntegrityUpdates[0].compiledIntegrity.digest,
         digest);

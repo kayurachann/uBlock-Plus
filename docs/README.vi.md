@@ -112,7 +112,7 @@ Bấm nút nguồn lớn để tắt bảo vệ cho phạm vi tên máy chủ đ
 | Chế độ | Hành vi |
 | --- | --- |
 | Off / None — Tắt / Không có bộ lọc | Tắt lọc cho phạm vi trang đó. Tải lại trang để loại bỏ những tác động đã được áp dụng. |
-| Basic — Cơ bản | Lọc mạng; ở mức này không đăng ký bộ lọc giao diện mở rộng/scriptlet từ các danh sách đóng gói sẵn. |
+| Basic — Cơ bản | Lọc mạng; tắt lọc giao diện mở rộng/scriptlet từ danh sách đóng gói và nhập thêm. Bộ lọc tự viết trong sandbox và bộ lọc lưu từ picker vẫn áp dụng trên trang đang bật. |
 | Optimal — Tối ưu | Lọc mạng cùng bộ lọc giao diện riêng cho từng trang và scriptlet đóng gói sẵn. |
 | Complete — Hoàn toàn | Chế độ Optimal cộng thêm bộ lọc giao diện dùng chung. |
 
@@ -274,6 +274,8 @@ Có thể dùng `make mv3-chromium` để tạo thư mục unpacked. Truyền s�
 
 Đây là kết quả cục bộ có thời điểm cụ thể cho bản build được ghi nhận, không khẳng định gói ZIP cũ đã phát hành hoặc mọi commit sau này đều vượt qua các bước này. Thao tác từ chối hộp thoại quyền tùy chọn của trình duyệt chưa được thử vì bản cài kiểm thử đã có `<all_urls>`. Các tình huống được dựng để kiểm thử cùng một phép thử trên trang công khai không bảo đảm kết quả cho mọi website, trình duyệt hoặc công nghệ hỗ trợ. Xem riêng [các lần chạy Actions](https://github.com/kayurachann/uBlock-Plus/actions/workflows/mv3-chromium.yml) để biết trạng thái CI.
 
+Đợt [rà soát tiếp theo với uBO đầy đủ](MV3-CAPABILITY-AUDIT-2026-09-06.md) mở rộng lên **35 chương trình kiểm thử mã nguồn**, sửa thêm lỗi ngoại lệ, phạm vi lọc, editor, nhật ký và cache compiler. Báo cáo ghi riêng artifact và kết quả Chrome của đợt này.
+
 ## Khắc phục sự cố
 
 | Triệu chứng | Cách kiểm tra |
@@ -298,6 +300,7 @@ Hướng dẫn chi tiết hiện tại được duy trì bằng [tiếng Anh](..
 | --- | --- |
 | [Mục lục tài liệu](README.md) | Tài liệu cho người dùng, nhà phát triển và cộng đồng. |
 | [Bảng tương thích](FEATURE-MATRIX.md) / [Điều khiển popup](MV3-POPUP-PARITY.md) | Hành vi được hỗ trợ và giới hạn tương thích. |
+| [Rà soát với uBO đầy đủ](MV3-CAPABILITY-AUDIT-2026-09-06.md) | Lỗi đã tái hiện, bản sửa và hướng nâng cấp tham khảo AdGuard/Brave. |
 | [Filter Store](FILTER-STORE.md) | Định dạng catalog, mức độ tin cậy và quy trình gửi đề xuất. |
 | [Kiến trúc](ARCHITECTURE.md) / [Power Runtime](POWER-RUNTIME.md) | Biên dịch, hạn mức quy tắc, hoạt động và trạng thái lưu bền vững. |
 | [Quyền riêng tư](PRIVACY.md) / [Mô hình mối đe dọa](THREAT-MODEL.md) | Dữ liệu, quyền truy cập và ranh giới tin cậy. |

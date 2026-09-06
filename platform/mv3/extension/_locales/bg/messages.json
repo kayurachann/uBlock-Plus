@@ -240,7 +240,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "Основно мрежово филтриране от избрани списъци с филтри.\n\nНе изисква разрешение за четене и промяна на данни в уебсайтове.",
+    "message": "Основно мрежово филтриране от избрани списъци с филтри.",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {

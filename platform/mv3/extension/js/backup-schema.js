@@ -142,7 +142,7 @@ function normalizeImportedLists(value) {
     });
 }
 
-function normalizeModeHostname(value) {
+export function normalizeModeHostname(value) {
     if ( typeof value !== 'string' || value === '' || value.length > 253 ) {
         throw new TypeError('Invalid filtering-mode hostname');
     }

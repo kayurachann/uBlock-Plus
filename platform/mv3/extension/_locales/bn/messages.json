@@ -240,7 +240,7 @@
     "description": "Name of blocking mode 3"
   },
   "basicFilteringModeDescription": {
-    "message": "নির্বাচিত ফিল্টার তালিকা থেকে মৌলিক নেটওয়ার্ক ফিল্টারিং।\n\nওয়েবসাইটগুলোতে ডেটা পড়তে এবং পরিবর্তন করার জন্য অনুমতির প্রয়োজন হয় না।",
+    "message": "নির্বাচিত ফিল্টার তালিকা থেকে মৌলিক নেটওয়ার্ক ফিল্টারিং।",
     "description": "This describes the 'basic' filtering mode"
   },
   "optimalFilteringModeDescription": {
