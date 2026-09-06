@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 /* uBlock Plus+ native draft-firewall UI regression. GPL-3.0-or-later. */
-/* global chrome */
 import { cp, mkdir, mkdtemp, readFile, readdir, writeFile } from 'node:fs/promises';
 import { isAbsolute, resolve } from 'node:path';
 import assert from 'node:assert/strict';
