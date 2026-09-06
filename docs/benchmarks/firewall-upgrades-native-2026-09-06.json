@@ -1,0 +1,320 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-09-06",
+  "tester": {
+    "started": "2026-09-06T15:50:50.350Z",
+    "loadedFiles": 1117,
+    "loadedTreeSHA256": "03969b45b649bb9e16333aec9d94a85745135ea035ccc525e551e03efb8d75b7",
+    "methodology": "Real Chrome loads the unmodified package. The actual dashboard sends draft requests to the actual worker. Only two race tests delay delivery of an already-computed native message response; they do not replace its result.",
+    "cases": [
+      {
+        "name": "third-party block",
+        "result": "Draft: block — the winning cell requests blocking.\nnews.example → ads.example.net\nThird party (3p)\n* * 3p-script block"
+      },
+      {
+        "name": "specific-source noop",
+        "result": "Draft: noop — bypass the firewall; filter lists may still block.\nnews.example → ads.example.net\nThird party (3p)\nnews.example * 3p-script noop"
+      },
+      {
+        "name": "destination allow precedence",
+        "result": "Draft: allow — the winning cell requests allowing.\nnews.example → ads.example.net\nThird party (3p)\n* ads.example.net * allow"
+      },
+      {
+        "name": "Off overrides draft",
+        "result": "Off applies to this page and takes precedence over the firewall draft.\noff.example → ads.example.net"
+      },
+      {
+        "name": "first-party script",
+        "result": "Draft: block — the winning cell requests blocking.\nwww.example.com → cdn.example.com\nFirst party (1p)\n* * 1p-script block"
+      },
+      {
+        "name": "PSL separates github.io tenants",
+        "result": "Draft: block — the winning cell requests blocking.\nalice.github.io → bob.github.io\nThird party (3p)\n* * 3p-script block"
+      },
+      {
+        "name": "PSL preserves tenant subdomain",
+        "result": "Draft: noop — bypass the firewall; filter lists may still block.\nalice.github.io → cdn.alice.github.io\nFirst party (1p)\n* * 1p-script noop"
+      },
+      {
+        "name": "one-character source precedence",
+        "result": "Draft: noop — bypass the firewall; filter lists may still block.\nn → ads.example.net\nThird party (3p)\nn * 3p-script noop"
+      },
+      {
+        "name": "image type",
+        "result": "Draft: block — the winning cell requests blocking.\nnews.example → ads.example.net\nThird party (3p)\n* * image block"
+      },
+      {
+        "name": "no matching cell",
+        "result": "No firewall cell matches; filter lists may still block.\nnews.example → ads.example.net\nThird party (3p)"
+      },
+      {
+        "name": "local HTTP URL is never fetched",
+        "result": "Draft: block — the winning cell requests blocking.\nnews.example → 127.0.0.1\nThird party (3p)\n* * 3p-script block"
+      },
+      {
+        "name": "reject URL credentials",
+        "result": "Remove credentials from the URL"
+      },
+      {
+        "name": "reject unsupported URL scheme",
+        "result": "Only HTTP(S) page and resource URLs are supported"
+      },
+      {
+        "name": "reject invalid draft",
+        "result": "Line 1: inline-script has no equivalent native network decision"
+      },
+      {
+        "name": "reject empty source",
+        "result": "Use a specific hostname"
+      },
+      {
+        "name": "stale success discarded",
+        "result": "Inputs changed; test again."
+      },
+      {
+        "name": "stale error discarded",
+        "result": "Inputs changed; test again."
+      },
+      {
+        "name": "revert setup",
+        "result": "Draft: block — the winning cell requests blocking.\nnews.example → ads.example.net\nThird party (3p)\n* * 3p-script block"
+      },
+      {
+        "name": "load permanent rules clears explanation",
+        "result": "cleared"
+      },
+      {
+        "name": "import setup",
+        "result": "Draft: block — the winning cell requests blocking.\nnews.example → ads.example.net\nThird party (3p)\n* * 3p-script block"
+      },
+      {
+        "name": "import clears explanation",
+        "result": "cleared"
+      },
+      {
+        "name": "screenshot example",
+        "result": "Draft: noop — bypass the firewall; filter lists may still block.\nnews.example → ads.example.net\nThird party (3p)\nnews.example * 3p-script noop"
+      },
+      {
+        "name": "all stored settings and native DNR unchanged",
+        "result": "all hashes identical"
+      },
+      {
+        "name": "diagnostic console contains no entered URL",
+        "result": "Existing error logging is separate from configuration; URL markers and credentials absent"
+      },
+      {
+        "name": "no request side effect",
+        "result": "0 local HTTP requests during draft tests"
+      },
+      {
+        "name": "HTTP counter positive control",
+        "result": "1 intentional request"
+      },
+      {
+        "name": "content-script sender cannot access tester",
+        "result": {
+          "rejected": true,
+          "responseType": "null"
+        }
+      }
+    ],
+    "requests": [
+      {
+        "phase": "positive-control",
+        "path": "/positive-control"
+      },
+      {
+        "phase": "authorization",
+        "path": "/authorization"
+      },
+      {
+        "phase": "authorization",
+        "path": "/favicon.ico"
+      }
+    ],
+    "browser": {
+      "protocolVersion": "1.3",
+      "product": "Chrome/152.0.7977.76",
+      "revision": "@0d89dfa2dd7c1ec4b8a14b9f303f887bb63b6174",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+      "jsVersion": "15.2.124.19"
+    },
+    "extensionId": "jnbipmknmeojnihncokfeclldahaicpk",
+    "before": {
+      "local": {
+        "bytes": 2159,
+        "sha256": "4714b3750e8694c2ad0849f73884fd4b3faf895b8c53489b144329ed9942bd34"
+      },
+      "session": {
+        "bytes": 995,
+        "sha256": "873173c1811bec026c3b201f54adc8105df766c99a8d1df840981d65fc819e25"
+      },
+      "diagnosticConsole": {
+        "bytes": 701,
+        "sha256": "84da9c37ae0d32dcec6a147f2e14bafbd412bb5b38e0496b60cab475e304fdf6"
+      },
+      "dynamicRules": {
+        "bytes": 150,
+        "sha256": "8ed9e79cbd50381af77c92c86d36f319ac2b7de3cb6ab46f6ee2ac8ab19db798"
+      },
+      "sessionRules": {
+        "bytes": 2462746,
+        "sha256": "9974a52d72cef329c703c9a02be052688a3540ece9ff9f664599dcbfa621faec"
+      },
+      "enabledRulesets": {
+        "bytes": 81,
+        "sha256": "61652e56be1f65161451edede0f97c8d65ce8405a40aae739df96a6e7f1784ef"
+      },
+      "permanentText": "live.example * 3p-script block",
+      "sessionText": "live.example * 3p-script block",
+      "nativeSessionRules": 1002
+    },
+    "after": {
+      "local": {
+        "bytes": 2159,
+        "sha256": "4714b3750e8694c2ad0849f73884fd4b3faf895b8c53489b144329ed9942bd34"
+      },
+      "session": {
+        "bytes": 995,
+        "sha256": "873173c1811bec026c3b201f54adc8105df766c99a8d1df840981d65fc819e25"
+      },
+      "diagnosticConsole": {
+        "bytes": 1185,
+        "sha256": "20f8c005af8ade72956d2559635894d21624a2e7cce284ba9d08ea5d894db49d"
+      },
+      "dynamicRules": {
+        "bytes": 150,
+        "sha256": "8ed9e79cbd50381af77c92c86d36f319ac2b7de3cb6ab46f6ee2ac8ab19db798"
+      },
+      "sessionRules": {
+        "bytes": 2462746,
+        "sha256": "9974a52d72cef329c703c9a02be052688a3540ece9ff9f664599dcbfa621faec"
+      },
+      "enabledRulesets": {
+        "bytes": 81,
+        "sha256": "61652e56be1f65161451edede0f97c8d65ce8405a40aae739df96a6e7f1784ef"
+      },
+      "permanentText": "live.example * 3p-script block",
+      "sessionText": "live.example * 3p-script block",
+      "nativeSessionRules": 1002
+    },
+    "authorization": {
+      "rejected": true,
+      "responseType": "null"
+    },
+    "passed": true,
+    "finished": "2026-09-06T15:50:56.390Z"
+  },
+  "network": {
+    "loadedTreeSHA256": "5cb703ab68d98651d128adf0bbf3e1adbb8d79d47d2e0899a56ce3c1ded42936",
+    "runs": [
+      {
+        "label": "no-switch",
+        "checks": [
+          {
+            "name": "actual-granted-permission-and-status",
+            "passed": true
+          },
+          {
+            "name": "unfiltered-real-network-baseline",
+            "passed": true
+          },
+          {
+            "name": "ordinary-dnr-firewall-remains-active",
+            "passed": true
+          },
+          {
+            "name": "isolated-supplement-network-coverage",
+            "passed": true
+          },
+          {
+            "name": "site-off-restores-network",
+            "passed": true
+          },
+          {
+            "name": "allow-overrides-broader-block",
+            "passed": true
+          },
+          {
+            "name": "noop-overrides-broader-block",
+            "passed": true
+          },
+          {
+            "name": "noop-retains-personal-static-network-rule",
+            "passed": true
+          },
+          {
+            "name": "new-top-domain-party-rule-and-first-post-navigation-request",
+            "passed": true
+          },
+          {
+            "name": "tabless-extension-fetch-is-fail-open",
+            "passed": true
+          },
+          {
+            "name": "worker-restart-preserves-temporary-noop",
+            "passed": true
+          },
+          {
+            "name": "worker-restart-rehydrates-existing-page-before-blocking",
+            "passed": true
+          }
+        ]
+      },
+      {
+        "label": "allowlisted",
+        "checks": [
+          {
+            "name": "actual-granted-permission-and-status",
+            "passed": true
+          },
+          {
+            "name": "unfiltered-real-network-baseline",
+            "passed": true
+          },
+          {
+            "name": "ordinary-dnr-firewall-remains-active",
+            "passed": true
+          },
+          {
+            "name": "isolated-supplement-network-coverage",
+            "passed": true
+          },
+          {
+            "name": "site-off-restores-network",
+            "passed": true
+          },
+          {
+            "name": "allow-overrides-broader-block",
+            "passed": true
+          },
+          {
+            "name": "noop-overrides-broader-block",
+            "passed": true
+          },
+          {
+            "name": "noop-retains-personal-static-network-rule",
+            "passed": true
+          },
+          {
+            "name": "new-top-domain-party-rule-and-first-post-navigation-request",
+            "passed": true
+          },
+          {
+            "name": "tabless-extension-fetch-is-fail-open",
+            "passed": true
+          },
+          {
+            "name": "worker-restart-preserves-temporary-noop",
+            "passed": true
+          },
+          {
+            "name": "worker-restart-rehydrates-existing-page-before-blocking",
+            "passed": true
+          }
+        ]
+      }
+    ]
+  }
+}

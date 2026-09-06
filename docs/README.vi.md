@@ -45,7 +45,7 @@ uBlock Plus+ chặn các yêu cầu mạng và thành phần trang không mong m
 | Công cụ phần tử | Picker tạo bộ lọc giao diện lâu dài, zapper xóa tạm thời và unpicker gỡ bộ lọc cá nhân đã lưu phù hợp với phần tử được chọn. |
 | Quản lý bộ lọc | Danh sách tích hợp, nhập qua HTTPS, các gói Filter Store và catalog cộng đồng tương thích. |
 | Cài đặt | Cấu hình bảo vệ có sẵn, giao diện, mật độ hiển thị, cấu hình bộ nhớ, tùy chọn riêng tư của trình duyệt và sao lưu/khôi phục. |
-| Firewall động | Quy tắc nguồn/đích/loại với block, allow và noop đúng nghĩa; hỗ trợ tên miền, địa chỉ IPv4 và IPv6 trong ngoặc vuông; bản tạm/lâu dài, kiểm tra và khôi phục. Cần Chrome 145+. |
+| Firewall động | Quy tắc nguồn/đích/loại với block, allow và noop đúng nghĩa; tên miền, IPv4 và IPv6; bản tạm/lâu dài, bảng tra nhanh và công cụ thử bản nháp khi cần. Chặn native cần Chrome 145+. |
 | Ngoại lệ bộ lọc | Ngoại lệ scriptlet giữa các nguồn, `$badfilter` chính xác cho imported/personal và hủy stock theo ánh xạ nguồn, gồm dựng lại phần còn lại của nhóm hostname đã chứng minh được ngữ nghĩa. |
 | Chẩn đoán | Chủ động ghi network, DNR native, cosmetic, DOM và scriptlet; có tìm kiếm, export che dữ liệu và lịch sử cục bộ giới hạn. |
 
@@ -76,6 +76,10 @@ Các ảnh dưới đây chụp **tiện ích thực tế được nạp dạng 
 <img src="assets/readme/dynamic-firewall.png" width="960" alt="Editor firewall động trên Chrome với quy tắc noop tạm thời và các nút kiểm tra, áp dụng, lưu">
 
 **Firewall động:** nhập quy tắc theo cú pháp uBO, kiểm tra bản nháp, rồi áp dụng trong phiên hoặc lưu lâu dài. Quy tắc noop có thể không tạo rule native mà vẫn giữ bộ lọc tĩnh hoạt động.
+
+<img src="assets/readme/firewall-tester.png" width="960" alt="Công cụ thử firewall thực tế trên Chrome hiển thị ô noop thắng và phân loại bên thứ ba mà không kích hoạt bản nháp">
+
+**Thử và giải thích quy tắc:** nhập trang cấp cao nhất, tài nguyên đích và loại request để xem ô thắng, 1p/3p và Off. Công cụ không gửi request hoặc đổi thiết lập bảo vệ. Đây là mô phỏng ô hostname, không phải toàn bộ bộ lọc tĩnh hay kết quả network native. Xem [nghiên cứu GitHub, số đo và các nâng cấp tiếp theo](GITHUB-UPGRADES-2026-09-06.md).
 
 <img src="assets/readme/unified-logger.png" width="960" alt="Logger hợp nhất trên Chrome hiển thị request mạng, rule EasyList đóng gói, rule session của firewall và bản ghi cosmetic DOM">
 
@@ -294,7 +298,7 @@ Có thể dùng `make mv3-chromium` để tạo thư mục unpacked. Truyền s�
 
 ### Những gì đã được kiểm thử
 
-Đợt [xác minh firewall, logger và ngoại lệ mới nhất](MV3-PARITY-IMPLEMENTATION-2026-09-06.md#xác-minh) đã đạt **41 chương trình kiểm thử mã nguồn**, lint, build và kiểm tra gói phát hành, cùng **53 tình huống trên Google Chrome 152 cài đặt thật**, giữ sandbox và trình chặn popup tích hợp. Ngữ nghĩa firewall được đối chiếu **10.500 trường hợp với engine uBO đầy đủ**. ZIP cuối chứa **1.113 file đã đối chiếu**; hướng dẫn ghi checksum và giới hạn regex native còn lại. Từ chối an toàn và khôi phục là kết quả được kiểm thử, không có nghĩa Chrome đã nhận ngoại lệ không được hỗ trợ.
+Đợt [xác minh bảng tra firewall và công cụ thử bản nháp mới nhất](GITHUB-UPGRADES-2026-09-06.md#measurements-and-verification) đạt **46 chương trình test**, lint, build và xác thực cả hai gói, **27 kiểm tra UI trên Chrome thật** cùng **24 kiểm tra network**. Bộ đối chiếu mới có **146.289 trường hợp so với ô thắng/hành động của full uBO**. ZIP Standard/Experimental chứa **1.116/1.119 mục đã đối chiếu**. Báo cáo [firewall, logger và ngoại lệ trước đó](MV3-PARITY-IMPLEMENTATION-2026-09-06.md#xác-minh) giữ riêng kết quả 41 chương trình, 53 tình huống và checksum của bản cũ.
 
 Đợt [kiểm tra phát hành cục bộ ngày 6 tháng 9 năm 2026](MV3-CHROME-RETEST-2026-09-06.md) ghi nhận:
 

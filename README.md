@@ -45,7 +45,7 @@ The **yellow plus** identifies this community fork. The shield turns gray when p
 | Element tools | Picker for persistent cosmetic filters, zapper for temporary removal and unpicker for saved matching filters. |
 | Filter management | Built-in lists, HTTPS imports, Filter Store bundles and compatible community catalogs. |
 | Settings | Protection presets, themes, density, memory profiles, optional browser privacy controls and backup/restore. |
-| Dynamic firewall | Source/destination/type rules with block, allow and true noop; DNS hostnames, IPv4 and bracketed IPv6 addresses; temporary/permanent rules, validation and recovery. Requires Chrome 145+. |
+| Dynamic firewall | Source/destination/type rules with block, allow and true noop; DNS hostnames, IPv4 and bracketed IPv6; temporary/permanent rules, indexed lookup and an on-demand draft tester. Native enforcement requires Chrome 145+. |
 | Filter exceptions | Cross-source scriptlet exceptions, exact imported/personal `$badfilter`, and source-mapped stock cancellation including proven hostname residual rules. |
 | Diagnostics | Opt-in network, native DNR, cosmetic, DOM and scriptlet diagnostics with search and redacted export; bounded local history. |
 
@@ -76,6 +76,10 @@ The screenshots below show the **actual unpacked extension in Google Chrome 152.
 <img src="docs/assets/readme/dynamic-firewall.png" width="960" alt="Dynamic firewall editor in Chrome showing a temporary noop rule and validation, apply and save controls">
 
 **Dynamic firewall:** edit uBO-style rules, validate the draft, then apply for this session or save permanently. A noop rule can generate no native rule while leaving static filtering active.
+
+<img src="docs/assets/readme/firewall-tester.png" width="960" alt="Actual Chrome draft tester showing the winning noop cell and third-party classification without activating the draft">
+
+**Test and explain a rule:** enter the top page, destination and request type to inspect the winning draft cell, 1p/3p relationship and Off override. Testing sends no request and changes no protection setting. It explains hostname-cell policy, not all static filters or a native network outcome. See the [GitHub upgrade review, measurements and future priorities](docs/GITHUB-UPGRADES-2026-09-06.md).
 
 <img src="docs/assets/readme/unified-logger.png" width="960" alt="Unified logger in Chrome showing observed network requests, a packaged EasyList match, a firewall session match and cosmetic DOM records">
 
@@ -292,7 +296,7 @@ node tools/validate-mv3.mjs dist/build/uBlockPlus.chromium --release
 
 ### What has been tested
 
-The latest [firewall, logger and exception validation](docs/MV3-PARITY-IMPLEMENTATION-2026-09-06.md#xác-minh) passed **41 source test programs**, lint, the release build and artifact validation, plus **53 scenarios on installed Google Chrome 152** with sandbox and built-in popup blocking enabled. Firewall semantics include **10,500 comparisons with the full uBO engine**. The final ZIP contains **1,113 verified files**; the guide records its hash and the remaining native regex limitations. Safe rejection and rollback are tested outcomes, not claims that Chrome accepted unsupported exceptions.
+The latest [indexed firewall and draft tester validation](docs/GITHUB-UPGRADES-2026-09-06.md#measurements-and-verification) passed **46 source test programs**, lint, both release builds and artifact validators, **27 native Chrome tester checks** and **24 native network checks**. The new matcher includes **146,289 full-uBO action/provenance comparisons**. Standard/Experimental ZIPs contain **1,116/1,119 verified entries**. The earlier [firewall, logger and exception validation](docs/MV3-PARITY-IMPLEMENTATION-2026-09-06.md#xác-minh) records its separate 41-program, 53-scenario run and original artifact hashes.
 
 The [6 September 2026 local release validation](docs/MV3-CHROME-RETEST-2026-09-06.md) recorded:
 

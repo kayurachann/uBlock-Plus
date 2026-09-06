@@ -4,13 +4,15 @@
     GPL-3.0-or-later; precedence follows src/js/dynamic-net-filtering.js.
 ******************************************************************************/
 
+import { createFirewallIndex } from './firewall-index.js';
+
 export const FIREWALL_RULE_BASE = 7000000;
 export const FIREWALL_RULE_LIMIT = 4096;
 export const FIREWALL_PRIORITY = 1500000;
 export const FIREWALL_TYPES = [
     '*', 'image', '1p-script', '3p', '3p-script', '3p-frame',
 ];
-const NETWORK_TYPES = [
+export const FIREWALL_REQUEST_TYPES = [
     'sub_frame', 'stylesheet', 'script', 'image', 'font', 'object',
     'xmlhttprequest', 'ping', 'csp_report', 'media', 'websocket',
     'webtransport', 'webbundle', 'other',
@@ -86,7 +88,8 @@ export function parseFirewall(text) {
 // A noop is a terminal decision. It never becomes a DNR allow rule.
 export function evaluateFirewall(rules, source, destination, type, thirdParty) {
     const candidates = rules.filter(rule => within(source, rule.source));
-    const bySource = (a, b) => b.source.length - a.source.length;
+    const bySource = (a, b) => (a.source === '*') - (b.source === '*') ||
+        b.source.length - a.source.length;
     const destinationRules = candidates.filter(rule =>
         rule.destination !== '*' && within(destination, rule.destination)
     ).sort((a, b) => b.destination.length - a.destination.length || bySource(a, b));
@@ -127,7 +130,7 @@ function cells(hostnames) {
     return hosts.map(host => ({ host, excluded: children.get(host) }));
 }
 
-function modeAt(modes, host) {
+export function modeAt(modes, host) {
     for ( const [ name, hosts ] of Object.entries(modes) ) {
         if ( hosts.includes(host) ) { return name; }
         if ( hosts.includes('all-urls') ) { continue; }
@@ -148,6 +151,7 @@ export function compileFirewall({ rules, modes, domains = [], domainFromHostname
         throw new Error('Firewall partition budget exceeded; simplify hostname cells');
     }
     const sources = cells(sourceHosts);
+    const index = createFirewallIndex(rules);
     const output = [];
     const provenance = {};
     let deferredCells = 0;
@@ -159,13 +163,13 @@ export function compileFirewall({ rules, modes, domains = [], domainFromHostname
         ]);
         for ( const destination of destinations ) {
             const groups = new Map();
-            for ( const type of NETWORK_TYPES ) {
+            for ( const type of FIREWALL_REQUEST_TYPES ) {
                 const thirdParty = partyDomain
                     ? within(destination.host, partyDomain) === false : true;
-                const decision = evaluateFirewall(rules, source.host,
+                const decision = index.evaluate(source.host,
                     destination.host, type, thirdParty);
                 if ( partyDomain === '' ) {
-                    const alternative = evaluateFirewall(rules, source.host,
+                    const alternative = index.evaluate(source.host,
                         destination.host, type, false);
                     if ( decision?.action !== alternative?.action ) {
                         deferredCells += 1;

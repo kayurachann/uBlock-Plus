@@ -46,6 +46,14 @@ Captured on **2026-09-06** in English using the same installed Chrome 152 build.
 
 The matching package hash and final test records are documented in the [implementation and verification guide](../../MV3-PARITY-IMPLEMENTATION-2026-09-06.md#xác-minh). Capture harness: `tmp/parity-remediation-2026-09-06/chrome-firewall-logger.mjs`; raw records are retained locally outside Git. These are UI examples, not evidence of complete MV2 compatibility or a performance benchmark.
 
+## Draft firewall tester capture
+
+`firewall-tester.png` is an unedited **953 × 889** capture from installed Google Chrome **152.0.7977.76** on 6 September 2026. `tools/test-firewall-tester-chrome.mjs` loaded a byte-verified copy of the standard candidate in an isolated profile with normal sandbox, web security and popup protection. The source capture/report is `tmp/github-upgrades-2026-09-06/native-tester/`; the image was visually inspected before inclusion.
+
+The example draft has `* * 3p-script block` and `news.example * 3p-script noop`. The tool explains that the specific source's noop wins for a script from `ads.example.net`; the draft is not activated and no request is sent to either example URL. The screenshot follows earlier draft import/revert tests, so the separate editor status retains the previous load action. All domains are synthetic.
+
+Standard ZIP SHA256: `54e885ceeec5664a3475bb64c188123f15690067c98d70893f97d048779849f4`. Loaded-tree SHA256: `03969b45b649bb9e16333aec9d94a85745135ea035ccc525e551e03efb8d75b7`, including the build-only `log.txt`; 1,116 ZIP entries were validated against the build. See [the upgrade and verification guide](../../GITHUB-UPGRADES-2026-09-06.md).
+
 ## Earlier assets
 
 `hero.png`, `feature-map.svg` and `install-flow.svg` are earlier illustrative assets. `filter-store.png` and `memory-settings.png` are earlier interface captures. They remain here for older translated documents and should not be used as evidence for the current Chrome retest. The current English and Vietnamese README screenshot set is listed above.

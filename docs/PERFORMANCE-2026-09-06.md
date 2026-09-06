@@ -111,7 +111,7 @@ Add `--verify-fail-open` when testing the candidate to run the native missing-di
 
 - Validate on physical machines with 2–4 GiB RAM, including longer browsing sessions and memory pressure from other applications.
 - Profile stock dictionary re-registration and CSS-cache pruning before changing their invalidation or scheduling behavior.
-- Evaluate an indexed Experimental firewall with differential precedence tests and a request workload; this is separate from the changes above.
+- The subsequent [GitHub upgrade pass](GITHUB-UPGRADES-2026-09-06.md) delivered indexed firewall matching and a draft tester, with separate differential/native tests and matcher microbenchmarks. Its results are separate from this earlier memory-profile report.
 - Expand automated browser coverage for scriptlet ordering and rapid cross-origin frame changes. Performance improvements do not establish full uBO compatibility.
 
 ## Tóm tắt tiếng Việt

@@ -10,6 +10,7 @@ Thứ tự ưu tiên được cập nhật ngày 2026-09-06 qua [rà soát với
 - Giữ parity MV3 hiện có: DNR, cosmetic filtering, packaged scriptlets, per-site modes, picker/zapper, custom/imported lists và backup/restore.
 - Filter Store schema v1, catalog đóng gói, issue form, validator, trust badge `verified|community` và tìm kiếm/lọc category/language.
 - Memory profiles `auto|balanced|low-memory`, local telemetry và cleanup an toàn.
+- [Bảng tra firewall và công cụ thử bản nháp](GITHUB-UPGRADES-2026-09-06.md): giải thích ô thắng, 1p/3p và Off theo yêu cầu; cùng evaluator cho compiler và lớp chặn tùy chọn. Không theo dõi nền hoặc gửi request thử ra mạng.
 - Compiler phát mã lý do ổn định và số dòng cho network filter import bị từ chối/deferred; dashboard chi tiết và export báo cáo vẫn cần hoàn thiện.
 - Smart Popup Blocker theo opener/target/trusted gesture/burst, policy exact-host `Allow|Smart|Strict`, chẩn đoán đã redaction và backup/restore policy.
 - Compiled popup observer cho corpus stock `$popup` đóng gói và subset sandbox/imported `$popup`/`$popunder` đã classifier chấp nhận. Supported popup-only là accepted+routed dù không có DNR; unsupported condition giữ typed route `popup-compiler-required` với status `deferred`. Deferred allow có guard superset fail-open để không làm mất exception; context/budget không đầy đủ cũng fail open. Stock `$popunder` vẫn được ghi `omitted` vì DNR export không bảo toàn kind.

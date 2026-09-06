@@ -3,7 +3,8 @@
     Copyright (C) 2026-present uBlock Plus+ contributors; GPL-3.0-or-later
 ******************************************************************************/
 
-import { evaluateFirewall, parseFirewall, within } from './firewall-core.js';
+import { parseFirewall, within } from './firewall-core.js';
+import { createFirewallIndex } from './firewall-index.js';
 
 const modeNames = [ 'none', 'basic', 'optimal', 'complete' ];
 const MAX_FRAMES_PER_TAB = 256;
@@ -98,7 +99,8 @@ export function createWebRequestFirewall(deps) {
             if ( typeof candidate.domainFromHostname !== 'function' ) {
                 throw new Error('Public Suffix List unavailable');
             }
-            snapshot = { rules, modes, domainFromHostname: candidate.domainFromHostname };
+            snapshot = { index: createFirewallIndex(rules), modes,
+                domainFromHostname: candidate.domainFromHostname };
             status.ruleCount = rules.length;
             status.error = '';
             status.ready = true;
@@ -263,7 +265,7 @@ export function createWebRequestFirewall(deps) {
             }
             const domain = snapshot.domainFromHostname(top.hostname);
             if ( typeof domain !== 'string' || domain === '' ) { return {}; }
-            const rule = evaluateFirewall(snapshot.rules, top.hostname, destination,
+            const rule = snapshot.index.evaluate(top.hostname, destination,
                 details.type, within(destination, domain) === false);
             if ( rule?.action !== 'block' ) { return {}; }
             try {

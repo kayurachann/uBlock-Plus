@@ -31,7 +31,7 @@ try {
     await Promise.all([
         ...[
             'mode-parser.js', 'mode-editor.js', 'backup-schema.js',
-            'power-ui-core.js', 'popup-policy.js', 'firewall-core.js',
+            'power-ui-core.js', 'popup-policy.js', 'firewall-core.js', 'firewall-index.js',
         ].map(name => fs.copyFile(
             path.join(root, 'platform/mv3/extension/js', name),
             path.join(staging, name)

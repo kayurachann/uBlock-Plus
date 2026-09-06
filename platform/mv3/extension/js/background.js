@@ -1196,7 +1196,8 @@ async function onMessage(request, sender) {
     const isTrustedOrigin = sender?.origin === undefined ||
         sender.origin.toLowerCase() === UBLOCK_PLUS_ORIGIN;
     if ( isTrustedOrigin === false ) { return; }
-    if ( [ 'getFirewallState', 'previewFirewallRules', 'applyFirewallRules' ].includes(request.what) ) {
+    if ( [ 'getFirewallState', 'previewFirewallRules', 'applyFirewallRules',
+        'testFirewallRequest' ].includes(request.what) ) {
         if ( sender?.id !== runtime.id ||
             sender?.url?.toLowerCase().startsWith(`${UBLOCK_PLUS_ORIGIN}/`) !== true ) {
             return;
@@ -1207,6 +1208,9 @@ async function onMessage(request, sender) {
 
     case 'getFirewallState':
         return firewall.getState();
+
+    case 'testFirewallRequest':
+        return firewall.testRequest(request);
 
     case 'previewFirewallRules':
         return enqueueFilteringMutation(() => firewall.preview(request.text));

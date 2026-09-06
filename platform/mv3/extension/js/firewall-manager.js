@@ -9,6 +9,7 @@ import {
     compileFirewall,
     parseFirewall,
 } from './firewall-core.js';
+import { explainFirewallRequest } from './firewall-tester.js';
 
 const PERMANENT = 'firewall.permanent';
 const SESSION = 'firewall.session';
@@ -98,6 +99,10 @@ export function createFirewallManager(deps) {
     };
     return {
         getState,
+        testRequest: input => enqueue(async () => {
+            await loadDomains();
+            return explainFirewallRequest(input, await getModes(), domainFromHostname);
+        }),
         initialize: () => enqueue(async () => {
             supported = Object.values(dnr.RuleConditionKeys || {}).includes('topDomains');
             const recovery = await sessionRead(PENDING);
