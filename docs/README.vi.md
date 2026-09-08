@@ -53,6 +53,8 @@ Xem [hướng dẫn firewall, logger và ngoại lệ](MV3-PARITY-IMPLEMENTATION
 
 Gói [Experimental WebRequest](EXPERIMENTAL-WEBREQUEST.md) tùy chọn bổ sung chặn firewall đồng bộ, kèm launcher và profile Chrome riêng. Dashboard kiểm tra quyền thực tế và hiển thị trạng thái hoạt động. Gói này giữ DNR cùng hành vi Off/allow/noop; không gỡ quota hoặc khôi phục toàn bộ engine uBO.
 
+**Tương thích anti-adblock:** v1.1.1 bổ sung sáu tên redirect tương thích AdGuard cho tài nguyên đã đóng gói, sửa nhánh điều kiện và ngoại lệ scriptlet theo entity/trang cha, đồng thời giữ cấu hình đang hoạt động nếu nguồn có nhánh mơ hồ. Bộ lọc riêng cho Samplette dừng vòng dò adblock nhưng vẫn giữ thao tác khám phá bài hát. Các cải tiến dùng tài nguyên uBO hiện có, không thêm bộ quét trang chạy nền. Xem [nghiên cứu, kiểm thử Chrome và đánh giá website thực tế](ANTI-ADBLOCK-2026-09-08.md) để biết kết quả đo và giới hạn còn lại.
+
 Các ảnh dưới đây chụp **tiện ích thực tế được nạp dạng unpacked trong Google Chrome 152.0.7977.76 trên Windows** vào ngày 6 tháng 9 năm 2026. Ảnh sử dụng hồ sơ thử nghiệm riêng và trang minh họa; đây không phải bản thiết kế mô phỏng. Ngôn ngữ giao diện trong ảnh là tiếng Anh. [Thông tin nguồn ảnh](assets/readme/README.md).
 
 <p align="center">
@@ -95,7 +97,7 @@ Các ảnh dưới đây chụp **tiện ích thực tế được nạp dạng 
 
 Manifest khai báo yêu cầu **Chromium 130 trở lên**. Lần kiểm thử trình duyệt thực tế gần nhất được ghi nhận dùng Google Chrome 152; kết quả đó không chứng nhận mọi biến thể hoặc phiên bản Chromium. Quy trình phát hành của repository này tạo gói Chromium MV3, không tạo gói Firefox hay Safari.
 
-Bản thử nghiệm **v1.1.0** bao gồm các bản sửa popup, logo dấu cộng vàng, công cụ thử quy tắc firewall, bộ tra cứu firewall dùng chỉ mục, ngoại lệ bộ lọc giữa các nguồn và cải tiến cấu hình bộ nhớ được mô tả trong README này. Tải gói thông thường `uBlock-Plus_1.1.0.chromium.zip` cùng checksum tại [GitHub Releases](https://github.com/kayurachann/uBlock-Plus/releases). Gói riêng `experimental.chromium.zip` cần làm theo [hướng dẫn Experimental WebRequest](EXPERIMENTAL-WEBREQUEST.md). Chọn bản thử nghiệm mới nhất trên trang Releases; đường dẫn `/releases/latest` của GitHub không bao gồm pre-release.
+Bản thử nghiệm **v1.1.1** bao gồm các bản sửa popup, logo dấu cộng vàng, công cụ thử quy tắc firewall, bộ tra cứu firewall dùng chỉ mục, ngoại lệ bộ lọc giữa các nguồn và cải tiến cấu hình bộ nhớ được mô tả trong README này. Tải gói thông thường `uBlock-Plus_1.1.1.chromium.zip` cùng checksum tại [GitHub Releases](https://github.com/kayurachann/uBlock-Plus/releases). Gói riêng `experimental.chromium.zip` cần làm theo [hướng dẫn Experimental WebRequest](EXPERIMENTAL-WEBREQUEST.md). Chọn bản thử nghiệm mới nhất trên trang Releases; đường dẫn `/releases/latest` của GitHub không bao gồm pre-release.
 
 Để lấy bản build CI, mở [MV3 Chromium Actions](https://github.com/kayurachann/uBlock-Plus/actions/workflows/mv3-chromium.yml), chọn lần chạy thành công ứng với commit muốn dùng và tải artifact `uBlock-Plus-chromium-<commit>`. GitHub có thể yêu cầu đăng nhập. Giải nén file artifact bên ngoài trước để lấy ZIP tiện ích và checksum tương ứng. Artifact CI là bản build thử nghiệm có thời gian lưu giới hạn; chúng không tự cập nhật bản Release công khai.
 
@@ -114,8 +116,8 @@ Bản thử nghiệm **v1.1.0** bao gồm các bản sửa popup, logo dấu c�
 Chạy các lệnh sau trong thư mục tải xuống, thay số phiên bản nếu cần:
 
 ```powershell
-(Get-FileHash .\uBlock-Plus_1.1.0.chromium.zip -Algorithm SHA256).Hash
-Get-Content .\uBlock-Plus_1.1.0.chromium.zip.sha256
+(Get-FileHash .\uBlock-Plus_1.1.1.chromium.zip -Algorithm SHA256).Hash
+Get-Content .\uBlock-Plus_1.1.1.chromium.zip.sha256
 ```
 
 Các giá trị thập lục phân phải trùng nhau; chữ hoa hay chữ thường không ảnh hưởng. Hãy đối chiếu với checksum đi kèm **đúng bản đóng gói đó**.
@@ -126,7 +128,7 @@ Các giá trị thập lục phân phải trùng nhau; chữ hoa hay chữ thư�
 
 Bản cài unpacked **không tự cập nhật** qua Chrome Web Store. Xuất bản sao lưu tại **Dashboard/Bảng điều khiển → Settings/Cài đặt**, đóng các tab liên quan nếu cần, kiểm tra và giải nén bản mới, rồi thay thế nội dung trong chính thư mục tiện ích đang dùng. Giữ nguyên đường dẫn thư mục và bấm **Reload/Tải lại** trên thẻ tiện ích. Tải lại các trang web để làm mới script và bộ lọc giao diện đã được áp dụng. Không đặt bản mới vào một thư mục con bên trong bản cũ.
 
-Sau khi cập nhật bản thử nghiệm này, mục **Details/Chi tiết** tại `chrome://extensions` phải hiển thị **1.1.0**. Nếu vẫn là 1.0.0, Chrome đang nạp thư mục cũ hoặc nội dung cũ trong thư mục đó. Push mã nguồn hay xuất bản GitHub Release không tự cập nhật bản unpacked đã cài.
+Sau khi cập nhật bản thử nghiệm này, mục **Details/Chi tiết** tại `chrome://extensions` phải hiển thị **1.1.1**. Nếu vẫn là 1.0.0, Chrome đang nạp thư mục cũ hoặc nội dung cũ trong thư mục đó. Push mã nguồn hay xuất bản GitHub Release không tự cập nhật bản unpacked đã cài.
 
 Để gỡ cài đặt, xuất bản sao lưu nếu muốn giữ cấu hình, rồi chọn **Remove/Xóa** trên trang quản lý tiện ích của trình duyệt. Chỉ xóa thư mục mã nguồn không gỡ tiện ích khỏi trình duyệt. Cài lại từ một thư mục khác có thể tạo mã định danh unpacked khác; hãy dùng bản sao lưu khi chuyển sang bản cài mới.
 
@@ -300,7 +302,9 @@ Có thể dùng `make mv3-chromium` để tạo thư mục unpacked. Truyền s�
 
 ### Những gì đã được kiểm thử
 
-Đợt [xác minh bảng tra firewall và công cụ thử bản nháp mới nhất](GITHUB-UPGRADES-2026-09-06.md#measurements-and-verification) đạt **46 chương trình test**, lint, build và xác thực cả hai gói, **27 kiểm tra UI trên Chrome thật** cùng **24 kiểm tra network**. Bộ đối chiếu mới có **146.289 trường hợp so với ô thắng/hành động của full uBO**. ZIP Standard/Experimental chứa **1.116/1.119 mục đã đối chiếu**. Báo cáo [firewall, logger và ngoại lệ trước đó](MV3-PARITY-IMPLEMENTATION-2026-09-06.md#xác-minh) giữ riêng kết quả 41 chương trình, 53 tình huống và checksum của bản cũ.
+Đợt [xác minh anti-adblock ngày 8 tháng 9](ANTI-ADBLOCK-2026-09-08.md) đạt **47 chương trình test**, lint, build và xác thực cả hai gói, **11 ca anti-adblock native**, **27 kiểm tra UI firewall** và **24 kiểm tra mạng** trên Chrome 152. Đúng ZIP Standard/Experimental chứa **1.117/1.120 mục đã đối chiếu**. Kiểm tra khởi tạo phát hiện sáu regex ngoại lệ quá lớn khiến nhóm dynamic stock rỗng; override có phạm vi đã khôi phục **172 quy tắc stock native**. Báo cáo ghi rõ việc nới độ dài token có chủ đích, kết quả quan sát website và giới hạn MV3 còn lại.
+
+Đợt [xác minh bảng tra firewall và công cụ thử bản nháp trước đó](GITHUB-UPGRADES-2026-09-06.md#measurements-and-verification) đạt 46 chương trình test và có **146.289 trường hợp so với ô thắng/hành động của full uBO**. Checksum và số lượng file của gói cũ được giữ riêng. Báo cáo [firewall, logger và ngoại lệ](MV3-PARITY-IMPLEMENTATION-2026-09-06.md#xác-minh) ghi lại đợt trước nữa với 41 chương trình và 53 tình huống.
 
 Đợt [kiểm tra phát hành cục bộ ngày 6 tháng 9 năm 2026](MV3-CHROME-RETEST-2026-09-06.md) ghi nhận:
 

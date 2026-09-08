@@ -11,6 +11,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import vm from 'node:vm';
 
 const root = path.resolve(import.meta.dirname, '..');
 const temporaryRoot = await fs.mkdtemp(
@@ -56,7 +57,7 @@ try {
     ));
     let generation = 'a'.repeat(32);
     const sourceURL = 'https://retest.invalid/fixture.txt';
-    const sourceText = [
+    let sourceText = [
         '! Title: Offscreen regression fixture',
         '||ads.example^$script',
         '||popup.example^$popup',
@@ -76,6 +77,7 @@ try {
     let failRead = false;
     let isCurrent = true;
     let fetchCount = 0;
+    const includedSources = new Map();
     const operations = [];
     const storage = {
         async get(keys) {
@@ -129,12 +131,16 @@ try {
     globalThis.self = { chrome: { runtime } };
     globalThis.chrome = globalThis.self.chrome;
     globalThis.fetch = async (url, options) => {
-        assert.equal(url, sourceURL);
+        if ( url === './scriptlet.template.js' ) {
+            return new Response(await fs.readFile(path.join(temporaryRoot,
+                'js/offscreen/scriptlet.template.js'), 'utf8'));
+        }
+        assert.ok(url === sourceURL || includedSources.has(url));
         assert.equal(options.credentials, 'omit');
         assert.equal(options.redirect, 'error');
         fetchCount += 1;
-        const response = new Response(sourceText);
-        Object.defineProperty(response, 'url', { value: sourceURL });
+        const response = new Response(includedSources.get(url) ?? sourceText);
+        Object.defineProperty(response, 'url', { value: url });
         return response;
     };
     let sequence = 0;
@@ -279,6 +285,233 @@ try {
     assert.equal(persisted.has(verifiedKey), false);
     assert.equal(pinned.compiledIntegrityUpdates[0].compiledIntegrity.digest,
         digest);
+
+    // Community anti-adblock filters use platform branches. Exercise all
+    // three real entry paths, including verified bytes before preprocessing.
+    sourceText = [
+        '! Title: Conditional anti-adblock regression',
+        '!#if env_mv3 && env_chromium',
+        '||anti.example^$script',
+        'page.example##+js(set, antiAdblockReady, true)',
+        '!#if env_firefox',
+        '@@||anti.example^$script',
+        'page.example#@#+js(set, antiAdblockReady, true)',
+        '!#endif',
+        '!#else',
+        '||wrong-platform.example^$image',
+        '!#endif',
+        '!#if !env_mv3',
+        '||anti.example^$script,badfilter',
+        'page.example#@#+js()',
+        '!#endif',
+        '!#if cap_html_filtering',
+        '||html-only.example^$script',
+        '!#endif',
+    ].join('\n');
+    const conditionalBytes = new TextEncoder().encode(sourceText);
+    const conditionalDigest = Array.from(new Uint8Array(
+        await crypto.subtle.digest('SHA-256', conditionalBytes)
+    ), byte => byte.toString(16).padStart(2, '0')).join('');
+    const outputs = [];
+    for ( const [ index, kind ] of [ 'fetched', 'pinned', 'personal' ].entries() ) {
+        generation = String(index + 5).repeat(32);
+        persisted.delete(cacheKey);
+        sandboxText = kind === 'personal' ? sourceText : '';
+        lists.length = 0;
+        if ( kind !== 'personal' ) {
+            lists.push({ id: sourceURL, enabled: true,
+                ...(kind === 'pinned' ? { sourceIntegrity: {
+                    algorithm: 'sha256', digest: conditionalDigest,
+                    bytes: conditionalBytes.length,
+                } } : {}),
+            });
+        }
+        const compiled = await run();
+        assert.equal(compiled.persisted, true, `${kind}: ${JSON.stringify(compiled.errors)}`);
+        const realm = kind === 'personal' ? 'sandbox' : 'imported';
+        const key = `compiledFilters.g.${generation}.${realm}Filters`;
+        const rules = persisted.get(`${key}.dnrRules`);
+        assert.equal(rules.length, 1, `${kind}: inactive block/allow/badfilter`);
+        assert.equal(rules[0].action.type, 'block');
+        assert.deepEqual(rules[0].condition.requestDomains, [ 'anti.example' ]);
+        assert.equal(persisted.has(`${key}.scriptletExceptions`), false,
+            `${kind}: inactive scriptlet exceptions cannot cancel an active fix`);
+        const scripts = persisted.get(`${key}.userScripts`);
+        assert.equal(scripts.MAIN.length, 1);
+        const page = vm.createContext({ URL, Request, EventTarget, console,
+            document: { location: { origin: 'https://page.example' },
+                readyState: 'complete', currentScript: {} } });
+        vm.runInContext('self = globalThis; window = globalThis;', page);
+        vm.runInContext(scripts.MAIN[0].code, page);
+        page.document.currentScript = {};
+        assert.equal(page.antiAdblockReady, true, `${kind}: compiled anti-adblock scriptlet executes`);
+        outputs.push(rules);
+        if ( kind === 'pinned' ) {
+            assert.equal(compiled.compiledIntegrityUpdates[0].compiledIntegrity.digest,
+                conditionalDigest, 'Integrity remains bound to original bytes');
+        }
+    }
+    assert.deepEqual(outputs[0], outputs[1]);
+    assert.deepEqual(outputs[1], outputs[2]);
+
+    // A condition whose meaning is unknown must not install both branches.
+    // Report the source line and leave the last active generation untouched.
+    generation = '8'.repeat(32);
+    sandboxText = '!#if unknown_platform\n||unknown.example^$script\n!#endif';
+    const unsupportedCondition = await run();
+    assert.equal(unsupportedCondition.persisted, false);
+    assert.match(unsupportedCondition.errors.at(-1).message,
+        /Unsupported filter condition at line 1/);
+    assert.equal(Array.from(persisted.keys()).some(key =>
+        key.startsWith(`compiledFilters.g.${generation}.`)
+    ), false);
+    for ( const [ key, value ] of originalActive ) {
+        assert.deepEqual(persisted.get(key), value);
+    }
+
+    let structuralGeneration = 256;
+    for ( const invalidText of [
+        '!#else\n||wrong.example^',
+        '!#endif\n||wrong.example^',
+        '!#if env_mv3\n||first.example^\n!#else\n' +
+            '||second.example^\n!#else\n||third.example^\n!#endif',
+        '!#if env_mv3\n||unterminated.example^',
+    ] ) {
+        sourceText = invalidText;
+        const bytes = new TextEncoder().encode(sourceText);
+        const digest = Array.from(new Uint8Array(
+            await crypto.subtle.digest('SHA-256', bytes)
+        ), byte => byte.toString(16).padStart(2, '0')).join('');
+        for ( const kind of [ 'fetched', 'pinned', 'personal' ] ) {
+            generation = (++structuralGeneration).toString(16).padStart(32, '0');
+            persisted.delete(cacheKey);
+            sandboxText = kind === 'personal' ? sourceText : '';
+            lists.length = 0;
+            if ( kind !== 'personal' ) {
+                lists.push({ id: sourceURL, enabled: true,
+                    ...(kind === 'pinned' ? { sourceIntegrity: {
+                        algorithm: 'sha256', digest, bytes: bytes.length,
+                    } } : {}),
+                });
+            }
+            const invalid = await run();
+            assert.equal(invalid.persisted, false, `${kind}: malformed structure`);
+            assert.match(invalid.errors.at(-1).message, /Invalid filter conditional structure at line/);
+            assert.equal(Array.from(persisted.keys()).some(key =>
+                key.startsWith(`compiledFilters.g.${generation}.`)
+            ), false);
+            for ( const [ key, value ] of originalActive ) {
+                assert.deepEqual(persisted.get(key), value,
+                    'Malformed sources never replace the active generation');
+            }
+        }
+    }
+
+    // Check unknown symbols before either fetch expansion or direct pruning
+    // can coerce the first operand into false and drop a protective exception.
+    const guardedCondition = expression => `!#if ${expression}\n` +
+        '@@||guarded.example^\n!#else\n||guarded.example^\n!#endif';
+    const unknownExpressions = [
+        'unknown_platform || env_firefox', 'env_firefox || unknown_platform',
+        'unknown_platform || env_mv3', 'env_mv3 || unknown_platform',
+        'unknown_platform && env_firefox', 'env_firefox && unknown_platform',
+        '(unknown_platform || env_firefox)',
+    ];
+    const conditionCases = [
+        ...unknownExpressions.map(expression => ({
+            text: guardedCondition(expression), accepted: false,
+        })),
+        { text: '!#if (env_mv3 && env_chromium)\n' +
+            `${guardedCondition(unknownExpressions[0])}\n!#endif`, accepted: false },
+        { text: '!#if env_firefox\n' +
+            `${guardedCondition(unknownExpressions[0])}\n!#else\n` +
+            '||kept.example^$script\n!#endif', accepted: true },
+        { text: '!#if env_mv3 || env_firefox\n||kept.example^$script\n!#else\n' +
+            `${guardedCondition(unknownExpressions[0])}\n!#endif`, accepted: true },
+        { text: '!#if cap_future_feature\n' +
+            `${guardedCondition(unknownExpressions[0])}\n!#else\n` +
+            '||kept.example^$script\n!#endif', accepted: true },
+    ];
+    for ( const { text, accepted } of conditionCases ) {
+        sourceText = text;
+        const bytes = new TextEncoder().encode(sourceText);
+        const digest = Array.from(new Uint8Array(
+            await crypto.subtle.digest('SHA-256', bytes)
+        ), byte => byte.toString(16).padStart(2, '0')).join('');
+        for ( const kind of [ 'fetched', 'pinned', 'personal' ] ) {
+            generation = (++structuralGeneration).toString(16).padStart(32, '0');
+            persisted.delete(cacheKey);
+            sandboxText = kind === 'personal' ? sourceText : '';
+            lists.length = 0;
+            if ( kind !== 'personal' ) {
+                lists.push({ id: sourceURL, enabled: true,
+                    ...(kind === 'pinned' ? { sourceIntegrity: {
+                        algorithm: 'sha256', digest, bytes: bytes.length,
+                    } } : {}),
+                });
+            }
+            const result = await run();
+            assert.equal(result.persisted, accepted, `${kind}: ${sourceText}`);
+            if ( accepted ) {
+                const realm = kind === 'personal' ? 'sandbox' : 'imported';
+                const rules = persisted.get(
+                    `compiledFilters.g.${generation}.${realm}Filters.dnrRules`
+                );
+                assert.equal(rules.length, 1);
+                assert.equal(rules[0].action.type, 'block');
+                assert.deepEqual(rules[0].condition.requestDomains, [ 'kept.example' ]);
+            } else {
+                assert.match(result.errors.at(-1).message,
+                    /Unsupported filter condition at line/);
+                assert.equal(Array.from(persisted.keys()).some(key =>
+                    key.startsWith(`compiledFilters.g.${generation}.`)
+                ), false, 'No generation containing an uncertain branch is staged');
+            }
+            for ( const [ key, value ] of originalActive ) {
+                assert.deepEqual(persisted.get(key), value,
+                    'Compiling or rejecting input never changes active protection');
+            }
+        }
+    }
+
+    // Included files are validated while their original delimiters still
+    // exist. Invalid content in an inactive include is never fetched.
+    const includeURL = new URL('child.txt', sourceURL).href;
+    for ( const [ includeText, expectedError ] of [
+        [ '!#if env_mv3\n||first.example^\n!#else\n!#else\n!#endif',
+            /Invalid filter conditional structure at line 4: duplicate !#else/ ],
+        [ guardedCondition(unknownExpressions[0]),
+            /Unsupported filter condition at line 1/ ],
+    ] ) {
+        includedSources.set(includeURL, includeText);
+        for ( const active of [ false, true ] ) {
+            generation = (++structuralGeneration).toString(16).padStart(32, '0');
+            sourceText = `!#if ${active ? 'env_mv3' : 'env_firefox'}\n` +
+                '!#include child.txt\n!#endif\n||included.example^$script';
+            lists.length = 0;
+            lists.push({ id: sourceURL, enabled: true });
+            sandboxText = '';
+            persisted.delete(cacheKey);
+            const beforeFetches = fetchCount;
+            const included = await run();
+            assert.equal(included.persisted, !active);
+            assert.equal(fetchCount - beforeFetches, active ? 2 : 1);
+            if ( active ) {
+                assert.match(included.errors.at(-1).message, expectedError);
+            } else {
+                assert.equal(persisted.get(
+                    `compiledFilters.g.${generation}.importedFilters.dnrRules`
+                ).length, 1);
+            }
+        }
+    }
+
+    // Restore a selected source for the messaging boundary checks below.
+    lists.length = 0;
+    lists.push({ id: sourceURL, enabled: true });
+    handleStorage = createCompilerStorageHandler({
+        generation, lists, storage, isCurrent: ( ) => isCurrent,
+    });
 
     const client = createCompilerStorageClient(runtime, generation);
     for ( const request of [

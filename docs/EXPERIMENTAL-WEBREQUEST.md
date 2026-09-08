@@ -41,14 +41,14 @@ From the repository root, with Node.js 22 and npm 11:
 npm ci
 npm test
 npm run lint
-.\tools\make-mv3.ps1 -Platform chromium -Version 1.1.0 -ExperimentalWebRequest
+.\tools\make-mv3.ps1 -Platform chromium -Version 1.1.1 -ExperimentalWebRequest
 node tools/validate-mv3.mjs dist/build/uBlockPlus.experimental.chromium --release --experimental-webrequest
 ```
 
 Outputs:
 
 - Unpacked: `dist/build/uBlockPlus.experimental.chromium`
-- ZIP: `dist/build/uBlock-Plus_1.1.0.experimental.chromium.zip`
+- ZIP: `dist/build/uBlock-Plus_1.1.1.experimental.chromium.zip`
 - Checksum: the ZIP path plus `.sha256`
 
 The build transforms the generated manifest only for this variant: required `webRequest`/`webRequestBlocking`, a stable public key/ID and a distinctive name. Only the public identity is stored; it is not a signing credential or authenticity guarantee. The ordinary source manifest still excludes `webRequestBlocking`. The validator rejects privileged packages by default and requires the explicit variant option, matching identity/metadata and required implementation files. Standard and experimental outputs are separate.

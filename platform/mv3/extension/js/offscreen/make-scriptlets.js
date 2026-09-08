@@ -36,6 +36,8 @@ const worldTemplate = {
     arglists: new Map([['',0]]),
     hostnames: new Map(),
     regexesOrPaths: new Map(),
+    // Registration scope comes only from positive filters. Exceptions may
+    // enable runtime entity/ancestor lookup without broadening injection.
     matches: new Set(),
     hasEntities: false,
     hasAncestors: false,
@@ -192,8 +194,6 @@ export function compile(rulesetId, details) {
             }
             worldDetails.hostnames.get(hn).add(arglistIndex);
         }
-    } else {
-        worldDetails.matches.add('*');
     }
     if ( details.excludeMatches ) {
         for ( const hn of details.excludeMatches ) {
@@ -204,6 +204,10 @@ export function compile(rulesetId, details) {
                 worldDetails.regexesOrPaths.get(hn).add(~arglistIndex);
                 continue;
             }
+            // A hostname-scoped invocation may have an entity or ancestor
+            // exception even when no positive filter uses either feature.
+            worldDetails.hasEntities ||= hn.endsWith('.*') || hn.endsWith('.*>>');
+            worldDetails.hasAncestors ||= hn.endsWith('>>');
             if ( worldDetails.hostnames.has(hn) === false ) {
                 worldDetails.hostnames.set(hn, new Set());
             }

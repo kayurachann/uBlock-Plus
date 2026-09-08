@@ -10,7 +10,7 @@ Requirements: Chrome/Chromium or Edge 130+, PowerShell 5.1 or newer, Node.js 22 
 .\tools\make-mv3.ps1 -Platform chromium
 ```
 
-Add `-Full` to create a zip or `-Version 1.1.0` to create a release-style package with that Chromium manifest version. The PowerShell build requires no GNU Make, Bash, `jq` or external `zip` executable.
+Add `-Full` to create a zip or `-Version 1.1.1` to create a release-style package with that Chromium manifest version. The PowerShell build requires no GNU Make, Bash, `jq` or external `zip` executable.
 
 ## Linux/macOS
 
@@ -37,11 +37,11 @@ node tools/validate-mv3.mjs dist/build/uBlockPlus.chromium
 ## Optional Experimental WebRequest package (Windows)
 
 ```powershell
-.\tools\make-mv3.ps1 -Platform chromium -Version 1.1.0 -ExperimentalWebRequest
+.\tools\make-mv3.ps1 -Platform chromium -Version 1.1.1 -ExperimentalWebRequest
 node tools/validate-mv3.mjs dist/build/uBlockPlus.experimental.chromium --release --experimental-webrequest
 ```
 
-The separate `uBlockPlus.experimental.chromium` output and `uBlock-Plus_1.1.0.experimental.chromium.zip` include a dedicated-profile Chrome launcher. They supplement DNR with synchronous firewall blocking when the browser grants `webRequestBlocking`; they do not replace the complete static engine or remove quotas. See the [setup and fallback guide](https://github.com/kayurachann/uBlock-Plus/blob/main/docs/EXPERIMENTAL-WEBREQUEST.md). The standard build never requests the blocking permission.
+The separate `uBlockPlus.experimental.chromium` output and `uBlock-Plus_1.1.1.experimental.chromium.zip` include a dedicated-profile Chrome launcher. They supplement DNR with synchronous firewall blocking when the browser grants `webRequestBlocking`; they do not replace the complete static engine or remove quotas. See the [setup and fallback guide](https://github.com/kayurachann/uBlock-Plus/blob/main/docs/EXPERIMENTAL-WEBREQUEST.md). The standard build never requests the blocking permission.
 
 The build compiles supported uBO/ABP network filters into DNR rules and prepares declarative cosmetic/scriptlet resources. Filter lists are live external inputs, the cache contains a generated secret, and development versions can be date-generated; independent builds are therefore not expected to be byte-for-byte identical.
 

@@ -1,0 +1,1405 @@
+{
+  "recordedAt": "2026-09-08T07:51:33.747Z",
+  "version": "1.1.1",
+  "sourceRef": "v1.1.1",
+  "baselineRef": "v1.1.0",
+  "description": "Locally built release ZIPs, extracted without modifications, loaded in installed Google Chrome. Public download checksums are recorded in release notes. All source test programs, build validation and ZIP byte comparisons use the workflow Node/npm versions.",
+  "packages": [
+    {
+      "package": "uBlock-Plus_1.1.1.chromium.zip",
+      "sha256": "5ee8b08e27700827a769cbbdf1af6597fbea65243562e920f01787701f303782",
+      "bytes": 30662544,
+      "files": 1117,
+      "result": "PASS"
+    },
+    {
+      "package": "uBlock-Plus_1.1.1.experimental.chromium.zip",
+      "sha256": "8c142b9fe7495ee49eba41301a4ff2a203222023b02da5c642c743b43c28fe76",
+      "bytes": 30666940,
+      "files": 1120,
+      "result": "PASS"
+    }
+  ],
+  "stockCompiler": {
+    "sourceSHA256": "536363e069321c546d6904ae8cc7d68e587f2a572377f4aa198c9fe068d56399",
+    "beforeCount": 8020,
+    "afterCount": 8021,
+    "cancelled": 6,
+    "unaffectedRulesIdentical": true
+  },
+  "pipeline": [
+    {
+      "stage": "npm-ci",
+      "result": "PASS",
+      "seconds": 2.2
+    },
+    {
+      "stage": "npm-test",
+      "result": "PASS",
+      "seconds": 16.1
+    },
+    {
+      "stage": "npm-lint",
+      "result": "PASS",
+      "seconds": 3.18
+    },
+    {
+      "stage": "npm-audit",
+      "result": "PASS",
+      "seconds": 1.05
+    },
+    {
+      "stage": "build-standard",
+      "result": "PASS",
+      "seconds": 19.09
+    },
+    {
+      "stage": "validate-standard",
+      "result": "PASS",
+      "seconds": 1.56
+    },
+    {
+      "stage": "build-experimental",
+      "result": "PASS",
+      "seconds": 17.46
+    },
+    {
+      "stage": "validate-experimental",
+      "result": "PASS",
+      "seconds": 1.39
+    },
+    {
+      "stage": "launcher-powershell51",
+      "result": "PASS",
+      "seconds": 0.47
+    }
+  ],
+  "baselineNative": {
+    "version": "1.1.0",
+    "started": "2026-09-08T07:27:12.749Z",
+    "finished": "2026-09-08T07:27:30.109Z",
+    "loadedFiles": 1117,
+    "loadedTreeSHA256": "57da5a5fc1ce90f961455e9f5e9b27f3bd4cc70008b065635294c8e0ddc568ac",
+    "browser": {
+      "protocolVersion": "1.3",
+      "product": "Chrome/152.0.7977.76",
+      "revision": "@0d89dfa2dd7c1ec4b8a14b9f303f887bb63b6174",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+      "jsVersion": "15.2.124.19"
+    },
+    "cases": [
+      {
+        "name": "unfiltered positive control exposes detector and network payload",
+        "passed": true
+      },
+      {
+        "name": "scoped scriptlet, redirect and bait exception preserve usable content",
+        "passed": true
+      },
+      {
+        "name": "inactive MV2 and Firefox branches cannot cancel anti-adblock protection",
+        "passed": false
+      },
+      {
+        "name": "Off restores page scripts, bait and original network",
+        "passed": true
+      },
+      {
+        "name": "Basic mode honors explicitly opted-in personal scriptlets and network filters",
+        "passed": true
+      },
+      {
+        "name": "ordinary network exception wins over the redirect",
+        "passed": true
+      },
+      {
+        "name": "AdGuard detector alias loads the packaged nofab API without the original script",
+        "passed": false
+      },
+      {
+        "name": "entity-only scriptlet exception prevents intervention",
+        "passed": true
+      },
+      {
+        "name": "ancestor-only exception protects child frame",
+        "passed": true
+      },
+      {
+        "name": "unknown conditional rejects update and preserves prior protection",
+        "passed": false
+      }
+    ]
+  },
+  "beforeRegexCompatibility": {
+    "version": "1.1.1",
+    "started": "2026-09-08T07:35:50.753Z",
+    "finished": "2026-09-08T07:36:08.419Z",
+    "loadedFiles": 1117,
+    "loadedTreeSHA256": "8b07a57e08a3431a46a8011cfef70293457cbc47214c66885052438e374859bc",
+    "browser": {
+      "protocolVersion": "1.3",
+      "product": "Chrome/152.0.7977.76",
+      "revision": "@0d89dfa2dd7c1ec4b8a14b9f303f887bb63b6174",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+      "jsVersion": "15.2.124.19"
+    },
+    "nativeStockStartup": {
+      "enabled": [
+        "ublock-filters",
+        "easylist",
+        "easyprivacy",
+        "pgl",
+        "ublock-badware",
+        "urlhaus-full"
+      ],
+      "stockRegexRules": 250,
+      "stockDynamicCount": 0,
+      "dynamicCount": 0,
+      "sessionCount": 1000,
+      "allowRules": [
+        {
+          "list": "ublock-filters",
+          "id": 34,
+          "regexSHA256": "be77682b2abb8c3200e24dab391fa34c58de0414eb5d8f3d98a84b1144b21628",
+          "isCaseSensitive": false,
+          "requireCapturing": false,
+          "isSupported": true
+        },
+        {
+          "list": "ublock-filters",
+          "id": 47,
+          "regexSHA256": "dff3f8bc7426b1aa888dee80cd594d38e0a99ef5bb0134c33bdda6398ca6c2c2",
+          "isCaseSensitive": false,
+          "requireCapturing": false,
+          "isSupported": false,
+          "reason": "memoryLimitExceeded"
+        },
+        {
+          "list": "ublock-filters",
+          "id": 48,
+          "regexSHA256": "0bee6e1a327c05774b153d1bad4ddf933694bddb796fe9aaa9053a35d589224d",
+          "isCaseSensitive": false,
+          "requireCapturing": false,
+          "isSupported": false,
+          "reason": "memoryLimitExceeded"
+        },
+        {
+          "list": "ublock-filters",
+          "id": 49,
+          "regexSHA256": "b5d6957f5735ff9f8b6c6514a669a3fbc1d42e64740dbf4045a41e7d5e6b4ecb",
+          "isCaseSensitive": false,
+          "requireCapturing": false,
+          "isSupported": false,
+          "reason": "memoryLimitExceeded"
+        },
+        {
+          "list": "ublock-filters",
+          "id": 50,
+          "regexSHA256": "de9b3a9ff69788ab80826af625f48a187f8e9d80e7b022bef798d0a835f28e3f",
+          "isCaseSensitive": false,
+          "requireCapturing": false,
+          "isSupported": false,
+          "reason": "memoryLimitExceeded"
+        },
+        {
+          "list": "ublock-filters",
+          "id": 51,
+          "regexSHA256": "ab4a69ada931c18c772ec995b14713f6bc66606ad9b7d5484e3e07e2a519035a",
+          "isCaseSensitive": false,
+          "requireCapturing": false,
+          "isSupported": true
+        },
+        {
+          "list": "ublock-filters",
+          "id": 52,
+          "regexSHA256": "13dac609443bd77a9fd30d057a40a2c5df5b49872db65e931f692976b9ce1f54",
+          "isCaseSensitive": false,
+          "requireCapturing": false,
+          "isSupported": false,
+          "reason": "memoryLimitExceeded"
+        },
+        {
+          "list": "ublock-filters",
+          "id": 53,
+          "regexSHA256": "5693422bd13c023b9d8db00c2c385301393fb8a2600e3f859e6863b622871a3c",
+          "isCaseSensitive": false,
+          "requireCapturing": false,
+          "isSupported": false,
+          "reason": "memoryLimitExceeded"
+        }
+      ]
+    },
+    "cases": [
+      {
+        "name": "packaged allow regexes are supported and stock DNR is initialized",
+        "passed": false
+      },
+      {
+        "name": "unfiltered positive control exposes detector and network payload",
+        "passed": true
+      },
+      {
+        "name": "scoped scriptlet, redirect and bait exception preserve usable content",
+        "passed": true
+      },
+      {
+        "name": "inactive MV2 and Firefox branches cannot cancel anti-adblock protection",
+        "passed": true
+      },
+      {
+        "name": "Off restores page scripts, bait and original network",
+        "passed": true
+      },
+      {
+        "name": "Basic mode honors explicitly opted-in personal scriptlets and network filters",
+        "passed": true
+      },
+      {
+        "name": "ordinary network exception wins over the redirect",
+        "passed": true
+      },
+      {
+        "name": "AdGuard detector alias loads the packaged nofab API without the original script",
+        "passed": true
+      },
+      {
+        "name": "entity-only scriptlet exception prevents intervention",
+        "passed": true
+      },
+      {
+        "name": "ancestor-only exception protects child frame",
+        "passed": true
+      },
+      {
+        "name": "unknown conditional rejects update and preserves prior protection",
+        "passed": true
+      }
+    ]
+  },
+  "setupRetry": "An earlier run ended with zero cases during profile setup. The harness now waits for the initial dashboard configuration before toggling User Scripts and restarting the worker; no global timeout was increased. That run is not counted as a pass.",
+  "native": {
+    "version": "1.1.1",
+    "started": "2026-09-08T07:43:44.032Z",
+    "finished": "2026-09-08T07:44:11.472Z",
+    "loadedFiles": 1117,
+    "loadedTreeSHA256": "89cab53e0741e2cf16f0b7bacccbe1fe4777173acfb618301c8c9e255aeae293",
+    "browser": {
+      "protocolVersion": "1.3",
+      "product": "Chrome/152.0.7977.76",
+      "revision": "@0d89dfa2dd7c1ec4b8a14b9f303f887bb63b6174",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+      "jsVersion": "15.2.124.19"
+    },
+    "cases": [
+      {
+        "name": "packaged allow regexes are supported and stock DNR is initialized",
+        "passed": true,
+        "details": {
+          "enabled": [
+            "ublock-filters",
+            "easylist",
+            "easyprivacy",
+            "pgl",
+            "ublock-badware",
+            "urlhaus-full"
+          ],
+          "stockRegexRules": 251,
+          "stockDynamicCount": 172,
+          "dynamicCount": 172,
+          "sessionCount": 828,
+          "allowRules": [
+            {
+              "list": "ublock-filters",
+              "id": 34,
+              "regexSHA256": "be77682b2abb8c3200e24dab391fa34c58de0414eb5d8f3d98a84b1144b21628",
+              "isCaseSensitive": false,
+              "requireCapturing": false,
+              "isSupported": true
+            },
+            {
+              "list": "ublock-filters",
+              "id": 47,
+              "regexSHA256": "af0ded352065e2ef48e26e675af612ac024922418107c6b9938fdfc207a92410",
+              "isCaseSensitive": false,
+              "requireCapturing": false,
+              "isSupported": true
+            },
+            {
+              "list": "ublock-filters",
+              "id": 48,
+              "regexSHA256": "d4947a39a297d6ca594dc63e9be2deaceac8de67bf8e2de124a3a803c5e38c93",
+              "isCaseSensitive": false,
+              "requireCapturing": false,
+              "isSupported": true
+            },
+            {
+              "list": "ublock-filters",
+              "id": 49,
+              "regexSHA256": "ac8dd909753279fab841742ae20d91d79f5e6d98bf4c49dd052a09e223f47346",
+              "isCaseSensitive": false,
+              "requireCapturing": false,
+              "isSupported": true
+            },
+            {
+              "list": "ublock-filters",
+              "id": 50,
+              "regexSHA256": "93f626631f10fc6d481f727372fa43539cf07e946ee06ac6c2988e032410b0a0",
+              "isCaseSensitive": false,
+              "requireCapturing": false,
+              "isSupported": true
+            },
+            {
+              "list": "ublock-filters",
+              "id": 51,
+              "regexSHA256": "343e8c956cc9c45d1efa5d22c373ac3c2cd05f38cc7c6ca010e24dfd9f423b28",
+              "isCaseSensitive": false,
+              "requireCapturing": false,
+              "isSupported": true
+            },
+            {
+              "list": "ublock-filters",
+              "id": 52,
+              "regexSHA256": "ad71d7fdf70198e6dc1784b872528d1270808b1b9f5167f1300020a5f9b7c121",
+              "isCaseSensitive": false,
+              "requireCapturing": false,
+              "isSupported": true
+            },
+            {
+              "list": "ublock-filters",
+              "id": 53,
+              "regexSHA256": "369ce641d34b55887f988a1eb02decd848cdb20a85ec76a53f246213f21e3c24",
+              "isCaseSensitive": false,
+              "requireCapturing": false,
+              "isSupported": true
+            },
+            {
+              "list": "ublock-filters",
+              "id": 54,
+              "regexSHA256": "ab4a69ada931c18c772ec995b14713f6bc66606ad9b7d5484e3e07e2a519035a",
+              "isCaseSensitive": false,
+              "requireCapturing": false,
+              "isSupported": true
+            }
+          ]
+        }
+      },
+      {
+        "name": "unfiltered positive control exposes detector and network payload",
+        "passed": true,
+        "details": {
+          "detected": true,
+          "ad": true,
+          "baitPayload": true,
+          "baitLoaded": true,
+          "baitVisible": true,
+          "realAdVisible": true,
+          "contentVisible": false,
+          "requests": [
+            {
+              "host": "anti.localhost",
+              "path": "/",
+              "token": "1"
+            },
+            {
+              "host": "assets.anti.localhost",
+              "path": "/real-ad.js",
+              "token": "1"
+            },
+            {
+              "host": "assets.anti.localhost",
+              "path": "/bait.js",
+              "token": "1"
+            }
+          ],
+          "failures": []
+        }
+      },
+      {
+        "name": "scoped scriptlet, redirect and bait exception preserve usable content",
+        "passed": true,
+        "details": {
+          "detected": false,
+          "ad": false,
+          "baitPayload": false,
+          "baitLoaded": true,
+          "baitVisible": true,
+          "realAdVisible": false,
+          "contentVisible": true,
+          "requests": [
+            {
+              "host": "anti.localhost",
+              "path": "/",
+              "token": "2"
+            }
+          ],
+          "failures": [
+            {
+              "url": "http://assets.anti.localhost:32943/real-ad.js?case=2",
+              "error": "net::ERR_BLOCKED_BY_CLIENT"
+            }
+          ]
+        }
+      },
+      {
+        "name": "inactive MV2 and Firefox branches cannot cancel anti-adblock protection",
+        "passed": true,
+        "details": {
+          "detected": false,
+          "ad": false,
+          "baitPayload": false,
+          "baitLoaded": true,
+          "baitVisible": true,
+          "realAdVisible": false,
+          "contentVisible": true,
+          "requests": [
+            {
+              "host": "anti.localhost",
+              "path": "/",
+              "token": "3"
+            }
+          ],
+          "failures": [
+            {
+              "url": "http://assets.anti.localhost:32943/real-ad.js?case=3",
+              "error": "net::ERR_BLOCKED_BY_CLIENT"
+            }
+          ]
+        }
+      },
+      {
+        "name": "Off restores page scripts, bait and original network",
+        "passed": true,
+        "details": {
+          "detected": true,
+          "ad": true,
+          "baitPayload": true,
+          "baitLoaded": true,
+          "baitVisible": true,
+          "realAdVisible": true,
+          "contentVisible": false,
+          "requests": [
+            {
+              "host": "anti.localhost",
+              "path": "/",
+              "token": "4"
+            },
+            {
+              "host": "assets.anti.localhost",
+              "path": "/real-ad.js",
+              "token": "4"
+            },
+            {
+              "host": "assets.anti.localhost",
+              "path": "/bait.js",
+              "token": "4"
+            }
+          ],
+          "failures": []
+        }
+      },
+      {
+        "name": "Basic mode honors explicitly opted-in personal scriptlets and network filters",
+        "passed": true,
+        "details": {
+          "detected": false,
+          "ad": false,
+          "baitPayload": false,
+          "baitLoaded": true,
+          "baitVisible": true,
+          "realAdVisible": false,
+          "contentVisible": true,
+          "requests": [
+            {
+              "host": "anti.localhost",
+              "path": "/",
+              "token": "5"
+            }
+          ],
+          "failures": [
+            {
+              "url": "http://assets.anti.localhost:32943/real-ad.js?case=5",
+              "error": "net::ERR_BLOCKED_BY_CLIENT"
+            }
+          ]
+        }
+      },
+      {
+        "name": "ordinary network exception wins over the redirect",
+        "passed": true,
+        "details": {
+          "detected": false,
+          "ad": false,
+          "baitPayload": true,
+          "baitLoaded": true,
+          "baitVisible": true,
+          "realAdVisible": false,
+          "contentVisible": true,
+          "requests": [
+            {
+              "host": "anti.localhost",
+              "path": "/",
+              "token": "6"
+            },
+            {
+              "host": "assets.anti.localhost",
+              "path": "/bait.js",
+              "token": "6"
+            }
+          ],
+          "failures": [
+            {
+              "url": "http://assets.anti.localhost:32943/real-ad.js?case=6",
+              "error": "net::ERR_BLOCKED_BY_CLIENT"
+            }
+          ]
+        }
+      },
+      {
+        "name": "AdGuard detector alias loads the packaged nofab API without the original script",
+        "passed": true,
+        "details": {
+          "detected": true,
+          "ad": true,
+          "baitPayload": false,
+          "baitLoaded": true,
+          "baitVisible": true,
+          "realAdVisible": true,
+          "contentVisible": false,
+          "requests": [
+            {
+              "host": "anti.localhost",
+              "path": "/",
+              "token": "7"
+            },
+            {
+              "host": "assets.anti.localhost",
+              "path": "/real-ad.js",
+              "token": "7"
+            }
+          ],
+          "failures": [],
+          "detectorAPI": {
+            "detected": 0,
+            "notDetected": 1
+          }
+        }
+      },
+      {
+        "name": "entity-only scriptlet exception prevents intervention",
+        "passed": true,
+        "details": {
+          "detected": true,
+          "ad": true,
+          "baitPayload": true,
+          "baitLoaded": true,
+          "baitVisible": true,
+          "realAdVisible": true,
+          "contentVisible": false,
+          "requests": [
+            {
+              "host": "anti.localhost",
+              "path": "/",
+              "token": "8"
+            },
+            {
+              "host": "assets.anti.localhost",
+              "path": "/real-ad.js",
+              "token": "8"
+            },
+            {
+              "host": "assets.anti.localhost",
+              "path": "/bait.js",
+              "token": "8"
+            }
+          ],
+          "failures": []
+        }
+      },
+      {
+        "name": "ancestor-only exception protects child frame",
+        "passed": true,
+        "details": {
+          "withoutException": {
+            "detected": false,
+            "ad": true,
+            "baitPayload": true,
+            "baitLoaded": true,
+            "baitVisible": true,
+            "realAdVisible": true,
+            "contentVisible": true,
+            "requests": [
+              {
+                "host": "parent.anti.localhost",
+                "path": "/parent",
+                "token": "9"
+              },
+              {
+                "host": "child.anti.localhost",
+                "path": "/",
+                "token": "9"
+              },
+              {
+                "host": "assets.anti.localhost",
+                "path": "/real-ad.js",
+                "token": "9"
+              },
+              {
+                "host": "assets.anti.localhost",
+                "path": "/bait.js",
+                "token": "9"
+              }
+            ],
+            "failures": []
+          },
+          "withException": {
+            "detected": true,
+            "ad": true,
+            "baitPayload": true,
+            "baitLoaded": true,
+            "baitVisible": true,
+            "realAdVisible": true,
+            "contentVisible": false,
+            "requests": [
+              {
+                "host": "parent.anti.localhost",
+                "path": "/parent",
+                "token": "10"
+              },
+              {
+                "host": "child.anti.localhost",
+                "path": "/",
+                "token": "10"
+              },
+              {
+                "host": "assets.anti.localhost",
+                "path": "/real-ad.js",
+                "token": "10"
+              },
+              {
+                "host": "assets.anti.localhost",
+                "path": "/bait.js",
+                "token": "10"
+              }
+            ],
+            "failures": []
+          }
+        }
+      },
+      {
+        "name": "unknown conditional rejects update and preserves prior protection",
+        "passed": true,
+        "details": {
+          "detected": false,
+          "ad": false,
+          "baitPayload": false,
+          "baitLoaded": true,
+          "baitVisible": true,
+          "realAdVisible": false,
+          "contentVisible": true,
+          "requests": [
+            {
+              "host": "anti.localhost",
+              "path": "/",
+              "token": "11"
+            }
+          ],
+          "failures": [
+            {
+              "url": "http://assets.anti.localhost:32943/real-ad.js?case=11",
+              "error": "net::ERR_BLOCKED_BY_CLIENT"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "tester": {
+    "started": "2026-09-08T07:44:15.637Z",
+    "finished": "2026-09-08T07:44:27.506Z",
+    "loadedFiles": 1117,
+    "loadedTreeSHA256": "89cab53e0741e2cf16f0b7bacccbe1fe4777173acfb618301c8c9e255aeae293",
+    "browser": {
+      "protocolVersion": "1.3",
+      "product": "Chrome/152.0.7977.76",
+      "revision": "@0d89dfa2dd7c1ec4b8a14b9f303f887bb63b6174",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+      "jsVersion": "15.2.124.19"
+    },
+    "passed": true,
+    "cases": [
+      {
+        "name": "third-party block",
+        "result": "Draft: block — the winning cell requests blocking.\nnews.example → ads.example.net\nThird party (3p)\n* * 3p-script block"
+      },
+      {
+        "name": "specific-source noop",
+        "result": "Draft: noop — bypass the firewall; filter lists may still block.\nnews.example → ads.example.net\nThird party (3p)\nnews.example * 3p-script noop"
+      },
+      {
+        "name": "destination allow precedence",
+        "result": "Draft: allow — the winning cell requests allowing.\nnews.example → ads.example.net\nThird party (3p)\n* ads.example.net * allow"
+      },
+      {
+        "name": "Off overrides draft",
+        "result": "Off applies to this page and takes precedence over the firewall draft.\noff.example → ads.example.net"
+      },
+      {
+        "name": "first-party script",
+        "result": "Draft: block — the winning cell requests blocking.\nwww.example.com → cdn.example.com\nFirst party (1p)\n* * 1p-script block"
+      },
+      {
+        "name": "PSL separates github.io tenants",
+        "result": "Draft: block — the winning cell requests blocking.\nalice.github.io → bob.github.io\nThird party (3p)\n* * 3p-script block"
+      },
+      {
+        "name": "PSL preserves tenant subdomain",
+        "result": "Draft: noop — bypass the firewall; filter lists may still block.\nalice.github.io → cdn.alice.github.io\nFirst party (1p)\n* * 1p-script noop"
+      },
+      {
+        "name": "one-character source precedence",
+        "result": "Draft: noop — bypass the firewall; filter lists may still block.\nn → ads.example.net\nThird party (3p)\nn * 3p-script noop"
+      },
+      {
+        "name": "image type",
+        "result": "Draft: block — the winning cell requests blocking.\nnews.example → ads.example.net\nThird party (3p)\n* * image block"
+      },
+      {
+        "name": "no matching cell",
+        "result": "No firewall cell matches; filter lists may still block.\nnews.example → ads.example.net\nThird party (3p)"
+      },
+      {
+        "name": "local HTTP URL is never fetched",
+        "result": "Draft: block — the winning cell requests blocking.\nnews.example → 127.0.0.1\nThird party (3p)\n* * 3p-script block"
+      },
+      {
+        "name": "reject URL credentials",
+        "result": "Remove credentials from the URL"
+      },
+      {
+        "name": "reject unsupported URL scheme",
+        "result": "Only HTTP(S) page and resource URLs are supported"
+      },
+      {
+        "name": "reject invalid draft",
+        "result": "Line 1: inline-script has no equivalent native network decision"
+      },
+      {
+        "name": "reject empty source",
+        "result": "Use a specific hostname"
+      },
+      {
+        "name": "stale success discarded",
+        "result": "Inputs changed; test again."
+      },
+      {
+        "name": "stale error discarded",
+        "result": "Inputs changed; test again."
+      },
+      {
+        "name": "revert setup",
+        "result": "Draft: block — the winning cell requests blocking.\nnews.example → ads.example.net\nThird party (3p)\n* * 3p-script block"
+      },
+      {
+        "name": "load permanent rules clears explanation",
+        "result": "cleared"
+      },
+      {
+        "name": "import setup",
+        "result": "Draft: block — the winning cell requests blocking.\nnews.example → ads.example.net\nThird party (3p)\n* * 3p-script block"
+      },
+      {
+        "name": "import clears explanation",
+        "result": "cleared"
+      },
+      {
+        "name": "screenshot example",
+        "result": "Draft: noop — bypass the firewall; filter lists may still block.\nnews.example → ads.example.net\nThird party (3p)\nnews.example * 3p-script noop"
+      },
+      {
+        "name": "all stored settings and native DNR unchanged",
+        "result": "all hashes identical"
+      },
+      {
+        "name": "diagnostic console contains no entered URL",
+        "result": "Existing error logging is separate from configuration; URL markers and credentials absent"
+      },
+      {
+        "name": "no request side effect",
+        "result": "0 local HTTP requests during draft tests"
+      },
+      {
+        "name": "HTTP counter positive control",
+        "result": "1 intentional request"
+      },
+      {
+        "name": "content-script sender cannot access tester",
+        "result": {
+          "rejected": true,
+          "responseType": "null"
+        }
+      }
+    ]
+  },
+  "firewall": {
+    "started": "2026-09-08T07:44:15.699Z",
+    "finished": "2026-09-08T07:45:07.566Z",
+    "loadedFiles": 1120,
+    "loadedTreeSHA256": "4ca7f738354cd45b028aaac7abbae31a7988585ea877ce32e97433a2277cacca",
+    "runs": [
+      {
+        "label": "no-switch",
+        "version": {
+          "protocolVersion": "1.3",
+          "product": "Chrome/152.0.7977.76",
+          "revision": "@0d89dfa2dd7c1ec4b8a14b9f303f887bb63b6174",
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+          "jsVersion": "15.2.124.19"
+        },
+        "passed": true,
+        "scenarios": [
+          {
+            "name": "actual-granted-permission-and-status",
+            "passed": true
+          },
+          {
+            "name": "unfiltered-real-network-baseline",
+            "passed": true
+          },
+          {
+            "name": "ordinary-dnr-firewall-remains-active",
+            "passed": true
+          },
+          {
+            "name": "isolated-supplement-network-coverage",
+            "passed": true
+          },
+          {
+            "name": "site-off-restores-network",
+            "passed": true
+          },
+          {
+            "name": "allow-overrides-broader-block",
+            "passed": true
+          },
+          {
+            "name": "noop-overrides-broader-block",
+            "passed": true
+          },
+          {
+            "name": "noop-retains-personal-static-network-rule",
+            "passed": true
+          },
+          {
+            "name": "new-top-domain-party-rule-and-first-post-navigation-request",
+            "passed": true
+          },
+          {
+            "name": "tabless-extension-fetch-is-fail-open",
+            "passed": true
+          },
+          {
+            "name": "worker-restart-preserves-temporary-noop",
+            "passed": true
+          },
+          {
+            "name": "worker-restart-rehydrates-existing-page-before-blocking",
+            "passed": true
+          }
+        ]
+      },
+      {
+        "label": "allowlisted",
+        "version": {
+          "protocolVersion": "1.3",
+          "product": "Chrome/152.0.7977.76",
+          "revision": "@0d89dfa2dd7c1ec4b8a14b9f303f887bb63b6174",
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+          "jsVersion": "15.2.124.19"
+        },
+        "passed": true,
+        "scenarios": [
+          {
+            "name": "actual-granted-permission-and-status",
+            "passed": true
+          },
+          {
+            "name": "unfiltered-real-network-baseline",
+            "passed": true
+          },
+          {
+            "name": "ordinary-dnr-firewall-remains-active",
+            "passed": true
+          },
+          {
+            "name": "isolated-supplement-network-coverage",
+            "passed": true
+          },
+          {
+            "name": "site-off-restores-network",
+            "passed": true
+          },
+          {
+            "name": "allow-overrides-broader-block",
+            "passed": true
+          },
+          {
+            "name": "noop-overrides-broader-block",
+            "passed": true
+          },
+          {
+            "name": "noop-retains-personal-static-network-rule",
+            "passed": true
+          },
+          {
+            "name": "new-top-domain-party-rule-and-first-post-navigation-request",
+            "passed": true
+          },
+          {
+            "name": "tabless-extension-fetch-is-fail-open",
+            "passed": true
+          },
+          {
+            "name": "worker-restart-preserves-temporary-noop",
+            "passed": true
+          },
+          {
+            "name": "worker-restart-rehydrates-existing-page-before-blocking",
+            "passed": true
+          }
+        ]
+      }
+    ]
+  },
+  "live": {
+    "version": "1.1.1",
+    "started": "2026-09-08T07:43:43.177Z",
+    "finished": "2026-09-08T07:48:52.574Z",
+    "loadedFiles": 1117,
+    "loadedTreeSHA256": "89cab53e0741e2cf16f0b7bacccbe1fe4777173acfb618301c8c9e255aeae293",
+    "methodology": "Real Chrome; separate clean profiles for global Off and Complete; unchanged packaged lists, no custom test-site filters, no mocked responses. Live-page observations are not assertions of universal protection. Audio muted. No login; reject optional cookies and close newsletter overlays through visible controls when needed for the recipe and Samplette interactions. At most 1500 requests/page before abandoning an inconclusive page.",
+    "runs": [
+      {
+        "mode": "off",
+        "browser": {
+          "protocolVersion": "1.3",
+          "product": "Chrome/152.0.7977.76",
+          "revision": "@0d89dfa2dd7c1ec4b8a14b9f303f887bb63b6174",
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+          "jsVersion": "15.2.124.19"
+        },
+        "pages": [
+          {
+            "id": "adblock-tester",
+            "url": "https://adblock-tester.com/",
+            "started": "2026-09-08T07:43:50.351Z",
+            "finished": "2026-09-08T07:44:10.406Z",
+            "requestCount": 74,
+            "failures": {
+              "net::ERR_BLOCKED_BY_ORB": 1,
+              "net::ERR_ABORTED": 1,
+              "net::ERR_FAILED": 1,
+              "net::ERR_CERT_AUTHORITY_INVALID": 1
+            },
+            "status": 200,
+            "pageErrorCount": 0,
+            "observationCaptured": true,
+            "interactions": [],
+            "detectorScore": {
+              "value": 48,
+              "total": 100
+            }
+          },
+          {
+            "id": "turtlecute",
+            "url": "https://adblock.turtlecute.org/",
+            "started": "2026-09-08T07:44:10.519Z",
+            "finished": "2026-09-08T07:44:29.339Z",
+            "requestCount": 170,
+            "failures": {
+              "net::ERR_ABORTED": 122,
+              "net::ERR_NAME_NOT_RESOLVED": 1,
+              "net::ERR_CERT_AUTHORITY_INVALID": 1,
+              "mixed-content": 1,
+              "net::ERR_CERT_COMMON_NAME_INVALID": 1,
+              "net::ERR_CONNECTION_REFUSED": 2
+            },
+            "status": 200,
+            "pageErrorCount": 0,
+            "observationCaptured": true,
+            "interactions": [],
+            "detectorScore": {
+              "value": 11,
+              "total": 132
+            }
+          },
+          {
+            "id": "primavera-recipe",
+            "url": "https://www.primaverakitchen.com/garlic-butter-lamb-chops/",
+            "started": "2026-09-08T07:44:29.420Z",
+            "finished": "2026-09-08T07:44:55.241Z",
+            "requestCount": 527,
+            "failures": {
+              "net::ERR_ABORTED": 48,
+              "net::ERR_CERT_COMMON_NAME_INVALID": 17
+            },
+            "status": 200,
+            "pageErrorCount": 0,
+            "observationCaptured": true,
+            "interactions": [
+              {
+                "action": "Reject optional cookies"
+              },
+              {
+                "action": "Close newsletter form without submitting"
+              },
+              {
+                "action": "Jump to Recipe",
+                "clicked": true
+              }
+            ]
+          },
+          {
+            "id": "uploadvr",
+            "url": "https://www.uploadvr.com/",
+            "started": "2026-09-08T07:44:55.403Z",
+            "finished": "2026-09-08T07:45:15.282Z",
+            "requestCount": 1421,
+            "failures": {
+              "net::ERR_ABORTED": 45,
+              "net::ERR_BLOCKED_BY_ORB": 11,
+              "net::ERR_NAME_NOT_RESOLVED": 2,
+              "net::ERR_CONNECTION_RESET": 1,
+              "net::ERR_SOCKET_NOT_CONNECTED": 1,
+              "net::ERR_CERT_DATE_INVALID": 3
+            },
+            "status": 200,
+            "pageErrorCount": 1,
+            "observationCaptured": true,
+            "interactions": []
+          },
+          {
+            "id": "money",
+            "url": "https://www.money.pl/",
+            "started": "2026-09-08T07:45:15.438Z",
+            "finished": "2026-09-08T07:45:34.005Z",
+            "requestCount": 268,
+            "failures": {
+              "net::ERR_ABORTED": 20
+            },
+            "status": 200,
+            "pageErrorCount": 0,
+            "observationCaptured": true,
+            "interactions": []
+          },
+          {
+            "id": "samplette",
+            "url": "https://samplette.io/97436653",
+            "started": "2026-09-08T07:45:34.079Z",
+            "finished": "2026-09-08T07:46:02.131Z",
+            "requestCount": 428,
+            "failures": {
+              "net::ERR_CONNECTION_RESET": 4,
+              "net::ERR_ABORTED": 28,
+              "net::ERR_BLOCKED_BY_ORB": 1,
+              "net::ERR_CONNECTION_REFUSED": 1
+            },
+            "status": 200,
+            "pageErrorCount": 0,
+            "observationCaptured": true,
+            "interactions": [
+              {
+                "action": "Reject optional cookies"
+              },
+              {
+                "action": "Random next track",
+                "naturalPlaybackEndTested": false,
+                "urlChanged": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "complete",
+        "browser": {
+          "protocolVersion": "1.3",
+          "product": "Chrome/152.0.7977.76",
+          "revision": "@0d89dfa2dd7c1ec4b8a14b9f303f887bb63b6174",
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+          "jsVersion": "15.2.124.19"
+        },
+        "pages": [
+          {
+            "id": "adblock-tester",
+            "url": "https://adblock-tester.com/",
+            "started": "2026-09-08T07:46:08.214Z",
+            "finished": "2026-09-08T07:46:47.033Z",
+            "requestCount": 46,
+            "failures": {
+              "net::ERR_BLOCKED_BY_CLIENT": 22
+            },
+            "status": 200,
+            "pageErrorCount": 1,
+            "observationCaptured": true,
+            "auditError": true,
+            "interactions": [],
+            "detectorScore": {
+              "value": 96,
+              "total": 100
+            }
+          },
+          {
+            "id": "turtlecute",
+            "url": "https://adblock.turtlecute.org/",
+            "started": "2026-09-08T07:46:47.092Z",
+            "finished": "2026-09-08T07:47:05.745Z",
+            "requestCount": 157,
+            "failures": {
+              "net::ERR_BLOCKED_BY_CLIENT": 82,
+              "net::ERR_ABORTED": 40
+            },
+            "status": 200,
+            "pageErrorCount": 0,
+            "observationCaptured": true,
+            "interactions": [],
+            "detectorScore": {
+              "value": 86,
+              "total": 132
+            }
+          },
+          {
+            "id": "primavera-recipe",
+            "url": "https://www.primaverakitchen.com/garlic-butter-lamb-chops/",
+            "started": "2026-09-08T07:47:05.797Z",
+            "finished": "2026-09-08T07:47:26.597Z",
+            "requestCount": 78,
+            "failures": {
+              "net::ERR_BLOCKED_BY_CLIENT": 5
+            },
+            "status": 200,
+            "pageErrorCount": 1,
+            "observationCaptured": true,
+            "interactions": [
+              {
+                "action": "Close newsletter form without submitting"
+              },
+              {
+                "action": "Jump to Recipe",
+                "clicked": true
+              }
+            ]
+          },
+          {
+            "id": "uploadvr",
+            "url": "https://www.uploadvr.com/",
+            "started": "2026-09-08T07:47:26.650Z",
+            "finished": "2026-09-08T07:48:05.394Z",
+            "requestCount": 57,
+            "failures": {
+              "net::ERR_BLOCKED_BY_CLIENT": 5,
+              "net::ERR_ABORTED": 1
+            },
+            "status": 200,
+            "pageErrorCount": 0,
+            "observationCaptured": true,
+            "auditError": true,
+            "interactions": []
+          },
+          {
+            "id": "money",
+            "url": "https://www.money.pl/",
+            "started": "2026-09-08T07:48:05.464Z",
+            "finished": "2026-09-08T07:48:24.172Z",
+            "requestCount": 249,
+            "failures": {
+              "net::ERR_ABORTED": 10,
+              "net::ERR_BLOCKED_BY_CLIENT": 3,
+              "net::ERR_NAME_NOT_RESOLVED": 1
+            },
+            "status": 200,
+            "pageErrorCount": 1,
+            "observationCaptured": true,
+            "interactions": []
+          },
+          {
+            "id": "samplette",
+            "url": "https://samplette.io/97436653",
+            "started": "2026-09-08T07:48:24.262Z",
+            "finished": "2026-09-08T07:48:52.081Z",
+            "requestCount": 102,
+            "failures": {
+              "net::ERR_BLOCKED_BY_CLIENT": 5,
+              "net::ERR_ABORTED": 3
+            },
+            "status": 200,
+            "pageErrorCount": 0,
+            "observationCaptured": true,
+            "interactions": [
+              {
+                "action": "Reject optional cookies"
+              },
+              {
+                "action": "Random next track",
+                "naturalPlaybackEndTested": false,
+                "urlChanged": true
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "samplette": {
+    "started": "2026-09-08T07:43:50.105Z",
+    "finished": "2026-09-08T07:45:09.492Z",
+    "version": "1.1.1",
+    "artifactTreeSHA256": "89cab53e0741e2cf16f0b7bacccbe1fe4777173acfb618301c8c9e255aeae293",
+    "artifactFiles": 1117,
+    "methodology": "Two clean Chrome profiles, unchanged final package. User Scripts remains disabled as observed in Chrome UI. Default packaged site fix only; no personal filters. Complete versus Off, three real Random (D) actions each. Read-only page state; no page flags injected or mocked responses; optional cookies rejected; request budget1500; no natural-playback-end claim.",
+    "runs": [
+      {
+        "condition": "complete-default",
+        "status": 200,
+        "requestCount": 125,
+        "failures": {
+          "net::ERR_BLOCKED_BY_CLIENT": 8,
+          "net::ERR_ABORTED": 14
+        },
+        "browser": {
+          "protocolVersion": "1.3",
+          "product": "Chrome/152.0.7977.76",
+          "revision": "@0d89dfa2dd7c1ec4b8a14b9f303f887bb63b6174",
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+          "jsVersion": "15.2.124.19"
+        },
+        "userScriptsToggle": false,
+        "userScriptsNamespace": "undefined",
+        "pageErrorCount": 0,
+        "actions": [
+          {
+            "attempt": 1,
+            "changed": true,
+            "urlChanged": true
+          },
+          {
+            "attempt": 2,
+            "changed": true,
+            "urlChanged": true
+          },
+          {
+            "attempt": 3,
+            "changed": true,
+            "urlChanged": true
+          }
+        ],
+        "final": {
+          "forceDisabled": true,
+          "forceFlagGetter": true,
+          "adblockModalVisible": false,
+          "randomEnabled": true,
+          "adState": {
+            "sdkState": "disabled",
+            "blockState": "disabled",
+            "baitPollingActive": false,
+            "isPro": false,
+            "isBot": false
+          }
+        }
+      },
+      {
+        "condition": "off-default",
+        "status": 200,
+        "requestCount": 841,
+        "failures": {
+          "net::ERR_ABORTED": 100,
+          "net::ERR_BLOCKED_BY_ORB": 2,
+          "net::ERR_CONNECTION_RESET": 2,
+          "net::ERR_CONNECTION_TIMED_OUT": 3
+        },
+        "browser": {
+          "protocolVersion": "1.3",
+          "product": "Chrome/152.0.7977.76",
+          "revision": "@0d89dfa2dd7c1ec4b8a14b9f303f887bb63b6174",
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+          "jsVersion": "15.2.124.19"
+        },
+        "userScriptsToggle": false,
+        "userScriptsNamespace": "undefined",
+        "pageErrorCount": 0,
+        "actions": [
+          {
+            "attempt": 1,
+            "changed": true,
+            "urlChanged": true
+          },
+          {
+            "attempt": 2,
+            "changed": true,
+            "urlChanged": true
+          },
+          {
+            "attempt": 3,
+            "changed": true,
+            "urlChanged": true
+          }
+        ],
+        "final": {
+          "forceDisabled": false,
+          "forceFlagGetter": false,
+          "adblockModalVisible": false,
+          "randomEnabled": true,
+          "adState": {
+            "sdkState": "ready",
+            "blockState": "clear",
+            "baitPollingActive": true,
+            "isPro": false,
+            "isBot": false
+          }
+        }
+      }
+    ]
+  },
+  "limitations": [
+    "Detector scores are observations, not a universal ad-blocking or anti-adblock success rate.",
+    "Fresh separate Off and Complete profiles; DNS/TLS/cache/geography and site changes can affect results.",
+    "Live page bodies, user profile paths, third-party comments and browser extension IDs omitted.",
+    "The Samplette initial failure varied across visits; final tests cover Random, not natural end-of-track autoplay.",
+    "No quantitative RAM/CPU improvement is claimed."
+  ],
+  "liveCaptureRetry": {
+    "started": "2026-09-08T07:50:01.568Z",
+    "finished": "2026-09-08T07:50:44.818Z",
+    "version": "1.1.1",
+    "loadedFiles": 1117,
+    "loadedTreeSHA256": "89cab53e0741e2cf16f0b7bacccbe1fe4777173acfb618301c8c9e255aeae293",
+    "purpose": "Two first-run screenshots timed out after DOM observations were captured. Repeat visits use native Chrome viewport capture without waiting for fonts; page content and requests are not modified.",
+    "pages": [
+      {
+        "id": "adblock-tester",
+        "url": "https://adblock-tester.com/",
+        "status": 200,
+        "requestCount": 46,
+        "failures": {
+          "net::ERR_BLOCKED_BY_CLIENT": 22
+        },
+        "screenshotMethod": "Chrome Page.captureScreenshot",
+        "score": "96 points out of 100",
+        "screenshotCaptured": true,
+        "pageErrorCount": 1
+      },
+      {
+        "id": "uploadvr",
+        "url": "https://www.uploadvr.com/",
+        "status": 200,
+        "requestCount": 57,
+        "failures": {
+          "net::ERR_BLOCKED_BY_CLIENT": 5,
+          "net::ERR_ABORTED": 1
+        },
+        "screenshotMethod": "Chrome Page.captureScreenshot",
+        "screenshotCaptured": true,
+        "pageErrorCount": 0
+      }
+    ]
+  }
+}

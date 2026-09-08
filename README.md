@@ -53,6 +53,8 @@ See the [firewall, logger and exception guide](docs/MV3-PARITY-IMPLEMENTATION-20
 
 An optional [Experimental WebRequest package](docs/EXPERIMENTAL-WEBREQUEST.md) adds synchronous firewall blocking with a separate Chrome launcher/profile. The dashboard reports the actual permission and active state. It preserves DNR and Off/allow/noop behavior; it does not remove quotas or restore the complete uBO engine.
 
+**Anti-adblock compatibility:** v1.1.1 adds six AdGuard-compatible redirect names for existing packaged resources, corrects conditional filters and entity/ancestor scriptlet exceptions, and rejects ambiguous source branches while preserving the last working configuration. A scoped Samplette filter disables its ad-detector polling while keeping track discovery usable. These changes use existing uBO resources and do not add a background page scanner. See the [research, Chrome regressions and real-site audit](docs/ANTI-ADBLOCK-2026-09-08.md) for measured results and remaining limits.
+
 The screenshots below show the **actual unpacked extension in Google Chrome 152.0.7977.76 on Windows**, captured on 6 September 2026. They use isolated profiles and demonstration pages; they are not concept mockups. UI language in the screenshots is English. [Image provenance](docs/assets/readme/README.md).
 
 <p align="center">
@@ -93,7 +95,7 @@ The screenshots below show the **actual unpacked extension in Google Chrome 152.
 
 The manifest declares **Chromium 130 or newer**. The latest documented native-browser test is on Google Chrome 152; that result is not certification of every Chromium derivative or version. This repository's release pipeline targets Chromium MV3, not a Firefox or Safari package.
 
-The **v1.1.0 preview** includes the popup fixes, yellow-plus logo, firewall tester, indexed firewall matching, cross-source filter exceptions and memory-profile improvements described in this README. Download the standard `uBlock-Plus_1.1.0.chromium.zip` and its checksum from [GitHub Releases](https://github.com/kayurachann/uBlock-Plus/releases). The separate `experimental.chromium.zip` requires the [Experimental WebRequest setup](docs/EXPERIMENTAL-WEBREQUEST.md). Choose the newest preview on the Releases page; GitHub's `/releases/latest` endpoint excludes pre-releases.
+The **v1.1.1 preview** includes the popup fixes, yellow-plus logo, firewall tester, indexed firewall matching, cross-source filter exceptions and memory-profile improvements described in this README. Download the standard `uBlock-Plus_1.1.1.chromium.zip` and its checksum from [GitHub Releases](https://github.com/kayurachann/uBlock-Plus/releases). The separate `experimental.chromium.zip` requires the [Experimental WebRequest setup](docs/EXPERIMENTAL-WEBREQUEST.md). Choose the newest preview on the Releases page; GitHub's `/releases/latest` endpoint excludes pre-releases.
 
 For a CI build, open [MV3 Chromium Actions](https://github.com/kayurachann/uBlock-Plus/actions/workflows/mv3-chromium.yml), select a successful run for the desired commit, and download its `uBlock-Plus-chromium-<commit>` artifact. GitHub may require sign-in. Extract that outer artifact archive first to find the extension ZIP and matching checksum. CI artifacts are preview build outputs with limited retention; they do not update the public Release automatically.
 
@@ -112,8 +114,8 @@ For a CI build, open [MV3 Chromium Actions](https://github.com/kayurachann/uBloc
 Run these commands in the download folder, adjusting the version if necessary:
 
 ```powershell
-(Get-FileHash .\uBlock-Plus_1.1.0.chromium.zip -Algorithm SHA256).Hash
-Get-Content .\uBlock-Plus_1.1.0.chromium.zip.sha256
+(Get-FileHash .\uBlock-Plus_1.1.1.chromium.zip -Algorithm SHA256).Hash
+Get-Content .\uBlock-Plus_1.1.1.chromium.zip.sha256
 ```
 
 The hexadecimal values must match; letter case does not matter. Compare against the checksum supplied with the **same build**.
@@ -124,7 +126,7 @@ The hexadecimal values must match; letter case does not matter. Compare against 
 
 An unpacked installation **does not auto-update** through the Chrome Web Store. Export a backup from **Dashboard → Settings**, close affected tabs if needed, verify and extract the replacement build, then replace the contents of the same extension folder. Preserve the folder path and click **Reload** on its extension card. Reload websites to refresh already-injected scripts and cosmetic filters. Do not place the new build one folder deeper inside the old one.
 
-After updating to this preview, **Details** on `chrome://extensions` must show **1.1.0**. If it still shows 1.0.0, Chrome is loading the old folder or its old contents. Pushing source commits or publishing a GitHub Release does not update an installed unpacked copy.
+After updating to this preview, **Details** on `chrome://extensions` must show **1.1.1**. If it still shows 1.0.0, Chrome is loading the old folder or its old contents. Pushing source commits or publishing a GitHub Release does not update an installed unpacked copy.
 
 To uninstall, optionally export a backup first, then select **Remove** on the browser's extensions page. Deleting the source folder alone is not an uninstall. Reinstalling from a different folder can create a different unpacked extension identity; use your backup when migrating.
 
@@ -298,7 +300,9 @@ node tools/validate-mv3.mjs dist/build/uBlockPlus.chromium --release
 
 ### What has been tested
 
-The latest [indexed firewall and draft tester validation](docs/GITHUB-UPGRADES-2026-09-06.md#measurements-and-verification) passed **46 source test programs**, lint, both release builds and artifact validators, **27 native Chrome tester checks** and **24 native network checks**. The new matcher includes **146,289 full-uBO action/provenance comparisons**. Standard/Experimental ZIPs contain **1,116/1,119 verified entries**. The earlier [firewall, logger and exception validation](docs/MV3-PARITY-IMPLEMENTATION-2026-09-06.md#xác-minh) records its separate 41-program, 53-scenario run and original artifact hashes.
+The [8 September anti-adblock release validation](docs/ANTI-ADBLOCK-2026-09-08.md) passed **47 source test programs**, lint, both release builds and validators, **11 native anti-adblock checks**, **27 firewall UI checks** and **24 network checks** on Chrome 152. The exact Standard/Experimental ZIPs contain **1,117/1,120 verified entries**. The native startup check caught six oversized stock allow regexes that left the stock dynamic group empty; scoped compatibility overrides restored **172 native stock rules**. The report documents the deliberate token-length relaxation, live website observations and remaining MV3 limits.
+
+The earlier [indexed firewall and draft tester validation](docs/GITHUB-UPGRADES-2026-09-06.md#measurements-and-verification) passed 46 source test programs and includes **146,289 full-uBO action/provenance comparisons**. Its artifact hashes and counts remain recorded separately. The [firewall, logger and exception validation](docs/MV3-PARITY-IMPLEMENTATION-2026-09-06.md#xác-minh) records the preceding 41-program, 53-scenario run.
 
 The [6 September 2026 local release validation](docs/MV3-CHROME-RETEST-2026-09-06.md) recorded:
 

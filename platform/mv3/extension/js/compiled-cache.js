@@ -19,7 +19,7 @@ import {
 
 // Increment when compiler semantics change; older envelopes must be rebuilt
 // from source instead of reusing output which lost exceptions or metadata.
-export const COMPILED_FILTERS_REVISION = 2;
+export const COMPILED_FILTERS_REVISION = 3;
 
 function isStats(value, fields) {
     if ( typeof value !== 'object' || value === null ) { return false; }

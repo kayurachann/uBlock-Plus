@@ -1,0 +1,336 @@
+{
+  "capturedAt": "2026-09-08T07:21:38.1601101Z",
+  "description": "Inputs fetched after moving prior cache aside on 2026-09-08; reused for the two final packages.",
+  "inputs": [
+    {
+      "id": "adguard-mobile",
+      "bytes": 542793,
+      "sha256": "d408f625cccb68f1054d1aed82da2ce8a605bf7a531166cf009d6352501c2ed4",
+      "downloadedAt": "2026-09-08T07:11:50.4362731Z"
+    },
+    {
+      "id": "adguard-spyware-url",
+      "bytes": 172866,
+      "sha256": "03609bb89bd59b2cdcb06135ccb1f250cbc89b8c96f396faab172cfbb565a4bb",
+      "downloadedAt": "2026-09-08T07:11:50.8233384Z"
+    },
+    {
+      "id": "alb-0",
+      "bytes": 15878,
+      "sha256": "cc4ee64ee416bc92b9b52c8bfc96fdbab2b26fa43e9cf5f7b892cde9e0ac77ce",
+      "downloadedAt": "2026-09-08T07:11:53.0920964Z"
+    },
+    {
+      "id": "annoyances-ai",
+      "bytes": 13504,
+      "sha256": "e2bcc1375f11d3fd87b60b9d387b249706226aa013f3b4fff6fbffdae90d2a40",
+      "downloadedAt": "2026-09-08T07:11:51.1075401Z"
+    },
+    {
+      "id": "annoyances-cookies",
+      "bytes": 1574304,
+      "sha256": "e7bc933d6ddfa98699c2c47e7ffba687440fafcb377e08eb8e2dc217fd49f633",
+      "downloadedAt": "2026-09-08T07:11:51.6924755Z"
+    },
+    {
+      "id": "annoyances-notifications",
+      "bytes": 75974,
+      "sha256": "9ffb21736bf89d3a967f943ff20d538212ca82680989207d643e49b0e60d0725",
+      "downloadedAt": "2026-09-08T07:11:52.5984114Z"
+    },
+    {
+      "id": "annoyances-others",
+      "bytes": 162868,
+      "sha256": "a4d3bc84427a7c8bd082c60a0b756b5f225713bfca2787694818ea84e5b65306",
+      "downloadedAt": "2026-09-08T07:11:52.4974948Z"
+    },
+    {
+      "id": "annoyances-overlays",
+      "bytes": 705597,
+      "sha256": "4e6f09e2d233c73e3b440862384f4e14cf01ff83b2ac6b9a051b542540af059a",
+      "downloadedAt": "2026-09-08T07:11:51.8849787Z"
+    },
+    {
+      "id": "annoyances-social",
+      "bytes": 403044,
+      "sha256": "c9b33128c8231e1c8c7ad70042530d1d4b45c50fa686ae188fe7dd8112866cbb",
+      "downloadedAt": "2026-09-08T07:11:52.3123158Z"
+    },
+    {
+      "id": "annoyances-widgets",
+      "bytes": 9943,
+      "sha256": "ea6c030e3380338798cd1831dab7af456569df7fdaa63ce22d0d8395ebfba17e",
+      "downloadedAt": "2026-09-08T07:11:52.3986092Z"
+    },
+    {
+      "id": "ara-0",
+      "bytes": 61907,
+      "sha256": "c90761d1240b01c9d0fe13a1acda17a57213356e08e7f0d574480ae808d194ca",
+      "downloadedAt": "2026-09-08T07:11:53.6135337Z"
+    },
+    {
+      "id": "bgr-0",
+      "bytes": 51895,
+      "sha256": "32b17948cca1ae2c3b12ab7578cf45160753e3f8a483f41cf7c8e92ddca478ee",
+      "downloadedAt": "2026-09-08T07:11:53.8898453Z"
+    },
+    {
+      "id": "block-lan",
+      "bytes": 10319,
+      "sha256": "ee2112dfb68d0ce6c4548b54af534a29e247f97b7b2f14f1b62dd2a68ae5dae3",
+      "downloadedAt": "2026-09-08T07:11:50.5345459Z"
+    },
+    {
+      "id": "chn-0",
+      "bytes": 769123,
+      "sha256": "a6738c0d98a70ce03416764bd9da500fa38f766f02e0cb7c91f0f97dac39b33a",
+      "downloadedAt": "2026-09-08T07:11:55.5457831Z"
+    },
+    {
+      "id": "cze-0",
+      "bytes": 30543,
+      "sha256": "1143f6a84c01330613cfaf785aaa12db245b1145a8da684d7d9946ba665c35a9",
+      "downloadedAt": "2026-09-08T07:11:55.7028555Z"
+    },
+    {
+      "id": "deu-0",
+      "bytes": 276387,
+      "sha256": "33f1fcd41834d25d9f0d74ee11c7a0b8751eeeea188efcac4ab3eec0ba48a426",
+      "downloadedAt": "2026-09-08T07:11:55.9964568Z"
+    },
+    {
+      "id": "easylist",
+      "bytes": 2074373,
+      "sha256": "5cbf507ef2581248a88ae5cb8a47d4a95bed0f417ac94d3259da70accd569145",
+      "downloadedAt": "2026-09-08T07:11:45.4832303Z"
+    },
+    {
+      "id": "easyprivacy",
+      "bytes": 1490223,
+      "sha256": "7e6ddafb0dc3a7c1ae37096e11528a6eab87c1611ecebb69b9b92c3818fa7f5c",
+      "downloadedAt": "2026-09-08T07:11:46.8115119Z"
+    },
+    {
+      "id": "est-0",
+      "bytes": 15517,
+      "sha256": "313556d7f04574a29a36095a7eaca7c8ffd546f61b9a401e3a224d7c998af4ee",
+      "downloadedAt": "2026-09-08T07:11:56.6666528Z"
+    },
+    {
+      "id": "fin-0",
+      "bytes": 77851,
+      "sha256": "5723b471290dc4e3c96c067e2d37f20bf1e627460e8573848072fbd6785dfad7",
+      "downloadedAt": "2026-09-08T07:11:57.4002650Z"
+    },
+    {
+      "id": "fra-0",
+      "bytes": 585828,
+      "sha256": "f41e874410705d5d41cf28f4a38b5388f07e676a235ca53c6c348702b7c09187",
+      "downloadedAt": "2026-09-08T07:11:58.8244621Z"
+    },
+    {
+      "id": "grc-0",
+      "bytes": 52369,
+      "sha256": "78aaffdc698430b242cec6d55ccdb292c081f307ec2e79e538e8c59692248056",
+      "downloadedAt": "2026-09-08T07:12:00.6347698Z"
+    },
+    {
+      "id": "hrv-0",
+      "bytes": 25243,
+      "sha256": "f0cdfe6c606b90c543c139078c741ad5bf91e1407df59e2b9df56a60b3bda82c",
+      "downloadedAt": "2026-09-08T07:12:00.7127853Z"
+    },
+    {
+      "id": "hun-0",
+      "bytes": 95200,
+      "sha256": "76eea7441e73195cfebf562a213b3587920f6bc605c2349776d13db4a7ad146f",
+      "downloadedAt": "2026-09-08T07:12:00.8420701Z"
+    },
+    {
+      "id": "idn-0",
+      "bytes": 313951,
+      "sha256": "1d1284e3f97b6666bda1b46df31bf13a0548d9e429900dad539cb1dc54f3faf3",
+      "downloadedAt": "2026-09-08T07:12:01.1804314Z"
+    },
+    {
+      "id": "ind-0",
+      "bytes": 644880,
+      "sha256": "e2b5b53738138dc0887ac673c2e030bf89d9bfb1a1a47aa52b9df1850c2110a8",
+      "downloadedAt": "2026-09-08T07:12:02.3631600Z"
+    },
+    {
+      "id": "irn-0",
+      "bytes": 216117,
+      "sha256": "ec31d5ec9b4bc9f3c32ac03db1a9ce823d48016229c4f0bc4b9eac035faf2ebc",
+      "downloadedAt": "2026-09-08T07:12:03.0260900Z"
+    },
+    {
+      "id": "isl-0",
+      "bytes": 2703,
+      "sha256": "9712810a73f1dc3627f6f26ece15fd60209600b3b0ab6c1996009879b9e11a9a",
+      "downloadedAt": "2026-09-08T07:12:03.2993754Z"
+    },
+    {
+      "id": "isr-0",
+      "bytes": 230877,
+      "sha256": "6dcd32a83671bfe2eb758da639f4fd160faf5036acf32331b7a66df0f3d11101",
+      "downloadedAt": "2026-09-08T07:12:03.4636609Z"
+    },
+    {
+      "id": "ita-0",
+      "bytes": 190153,
+      "sha256": "5d6a38d222e80570eb9104c8b278a103734853701336f78df8ae0a5a8443864f",
+      "downloadedAt": "2026-09-08T07:12:04.0098503Z"
+    },
+    {
+      "id": "jpn-1",
+      "bytes": 737057,
+      "sha256": "17eb87a5c199ad18a1e9ea3b5471ba73f730f831e8b477fb89202e103a401263",
+      "downloadedAt": "2026-09-08T07:12:05.3597980Z"
+    },
+    {
+      "id": "kor-1",
+      "bytes": 215365,
+      "sha256": "f5db9a19342197a54f07a95d5719c1b30bfff03fcbb1cbaf48e86adef07b16a1",
+      "downloadedAt": "2026-09-08T07:12:05.6664260Z"
+    },
+    {
+      "id": "ltu-0",
+      "bytes": 53879,
+      "sha256": "4aa8770289e3c7198922f4e65013ac40a535e190224adba3a1c40e75ae3239e9",
+      "downloadedAt": "2026-09-08T07:12:05.7722738Z"
+    },
+    {
+      "id": "lva-0",
+      "bytes": 16228,
+      "sha256": "3798b3564f12706bf9b9c49fa5dbf64a683b875c52d6020f237e10123245bffb",
+      "downloadedAt": "2026-09-08T07:12:05.8430036Z"
+    },
+    {
+      "id": "mkd-0",
+      "bytes": 61133,
+      "sha256": "6a58f2549993bb90f28830484800cbe6c482edc12ec2a694b30a42197348aae0",
+      "downloadedAt": "2026-09-08T07:12:05.9327903Z"
+    },
+    {
+      "id": "nld-0",
+      "bytes": 102206,
+      "sha256": "bba50bdbe74a1b2074c94c330018d0e1f769929775147fbdfaad7d9077de5f5a",
+      "downloadedAt": "2026-09-08T07:12:06.6365238Z"
+    },
+    {
+      "id": "nor-0",
+      "bytes": 176839,
+      "sha256": "91b1b5f0b820051de0a9ffae900913a9ec3aad6625cea54361a467ed3d80e950",
+      "downloadedAt": "2026-09-08T07:12:07.5351148Z"
+    },
+    {
+      "id": "pgl",
+      "bytes": 94834,
+      "sha256": "9f7248d597a0a90c50528fd20a4b5f2b7f8c01375cf15d6ff34d8207d223ccaf",
+      "downloadedAt": "2026-09-08T07:11:48.2322290Z"
+    },
+    {
+      "id": "pol-0",
+      "bytes": 376095,
+      "sha256": "7b85a5d055f6d095564da5f980daaf009034e5295f13cd024c6246bf1141af9f",
+      "downloadedAt": "2026-09-08T07:12:08.0409706Z"
+    },
+    {
+      "id": "pol-3",
+      "bytes": 368124,
+      "sha256": "0d8dad7db1a83b1b66cfc01bba29d1d001707d04b5c257c9f4ee33ec1b9b5a2a",
+      "downloadedAt": "2026-09-08T07:12:09.8272454Z"
+    },
+    {
+      "id": "rou-1",
+      "bytes": 94343,
+      "sha256": "55a7c90a6b1b650d4b47455000139293932b3d5b0cbf3e52a20ac1a0212b58e2",
+      "downloadedAt": "2026-09-08T07:12:10.4984833Z"
+    },
+    {
+      "id": "rus-0",
+      "bytes": 1354906,
+      "sha256": "c44b9c964f46740ab8375d87326a0d2d5405a9ac81f202be04570813326c27f4",
+      "downloadedAt": "2026-09-08T07:12:12.1618533Z"
+    },
+    {
+      "id": "rus-1",
+      "bytes": 82312,
+      "sha256": "3adf8c7efbf3cfde1261589e3ba63d6a8bcbd6aa26a503a5dc808457e3214321",
+      "downloadedAt": "2026-09-08T07:12:12.3428862Z"
+    },
+    {
+      "id": "spa-0",
+      "bytes": 128120,
+      "sha256": "04e85aea8c5a11ca8927fb85a8f5738bf9043f52f63e75cb0c96ed7dfae26935",
+      "downloadedAt": "2026-09-08T07:12:13.4828223Z"
+    },
+    {
+      "id": "spa-1",
+      "bytes": 358887,
+      "sha256": "ad7a52da596af9445ab25b680375a77861819ae4c2f9d981fb67c2fa0f97f8b1",
+      "downloadedAt": "2026-09-08T07:12:14.6780153Z"
+    },
+    {
+      "id": "svn-0",
+      "bytes": 18352,
+      "sha256": "9b78c11a3ee68e7c611c700365dedd56ae18ff212e600f12fb3d5fe6c5dcec32",
+      "downloadedAt": "2026-09-08T07:12:14.7491066Z"
+    },
+    {
+      "id": "swe-1",
+      "bytes": 228308,
+      "sha256": "e489236ddea942d3bd84b00011c6a5122f52b1393767bf369884ee1b89768ed4",
+      "downloadedAt": "2026-09-08T07:12:14.9185132Z"
+    },
+    {
+      "id": "tha-0",
+      "bytes": 52531,
+      "sha256": "f3ba929257fcf01ef7f4da2dd9cde2309d06c8bc8cf0bd41b0b0bb9fd69ae2b5",
+      "downloadedAt": "2026-09-08T07:12:15.4046038Z"
+    },
+    {
+      "id": "tur-0",
+      "bytes": 507485,
+      "sha256": "468943b7ed657ca15dab56ed6c90cefb68ad6d8ae846710bcab1f4c1f65f84ff",
+      "downloadedAt": "2026-09-08T07:12:16.3913840Z"
+    },
+    {
+      "id": "ublock-badware",
+      "bytes": 146665,
+      "sha256": "517ec348cf15ea3c0f3f4a2f49c5091faa28f63b9f7740fc612c4e7bd910a961",
+      "downloadedAt": "2026-09-08T07:11:48.4832005Z"
+    },
+    {
+      "id": "ublock-experimental",
+      "bytes": 11875,
+      "sha256": "6d4c82729acb87b7fa969bb593d467f59c67afa807e0ba8d9acd6d49b2afd26e",
+      "downloadedAt": "2026-09-08T07:11:52.9142671Z"
+    },
+    {
+      "id": "ublock-filters",
+      "bytes": 2147043,
+      "sha256": "536363e069321c546d6904ae8cc7d68e587f2a572377f4aa198c9fe068d56399",
+      "downloadedAt": "2026-09-08T07:11:43.8171684Z"
+    },
+    {
+      "id": "ukr-0",
+      "bytes": 216032,
+      "sha256": "7202a468987d87f250b731fbd6eb418d09c9d5facb0e28fc3f4721f0316e1f9c",
+      "downloadedAt": "2026-09-08T07:12:17.3708725Z"
+    },
+    {
+      "id": "urlhaus-full",
+      "bytes": 143818,
+      "sha256": "14510fcc6d5167958c4a744104788c099409f575ef8398365f1e485716b477ac",
+      "downloadedAt": "2026-09-08T07:11:49.2424214Z"
+    },
+    {
+      "id": "vie-1",
+      "bytes": 50698,
+      "sha256": "eec379061f43a421faf3c6b6b3dee2dc60f60ffc341fb8b69ca15bc6266ce15c",
+      "downloadedAt": "2026-09-08T07:12:17.4595971Z"
+    }
+  ]
+}

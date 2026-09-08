@@ -66,3 +66,7 @@ The extension UI and project artwork retain their existing copyright and license
 Experimental ZIP SHA-256: `46f50d8cab4eb2a7d52f4c65d5ae44ba27e384aae0c60d48855c7fcae7d3b3bc`. Loaded tree: `f1e2d8ac8f142546228c723667bc5450a27f3006bc1e6d52712e292fc5df173e`, including build-only `log.txt`. All 1,117 ZIP entries were compared with the loaded copy.
 
 Diagnostics displays the granted blocking permission, active supplemental firewall, remaining limits and `.cmd` launcher instructions. Logger shows synthetic localhost traffic and native `browser.webRequest (firewall supplement)` decisions. The logger image is from an explicit API-isolation case that temporarily removes only firewall-owned DNR rules, then restores them. It is not an image of standard DNR-only operation. Chrome used isolated short temporary paths, the normal sandbox and popup protection; User Scripts was not enabled in this network suite. See [the setup and verification guide](../../EXPERIMENTAL-WEBREQUEST.md).
+
+## Anti-adblock fixture (8 September 2026)
+
+[anti-adblock-fixture.png](anti-adblock-fixture.png), 1120 × 850 pixels, is a direct Chrome 152.0.7977.76 capture of the project's local HTTP regression fixture. The unchanged Standard v1.1.1 ZIP extraction was loaded in an isolated profile. The retained bait, available article and clicked interaction button demonstrate the recorded test; this is not a public-site score or generated UI. See the [anti-adblock report](../../ANTI-ADBLOCK-2026-09-08.md) for artifact hashes and test limits.

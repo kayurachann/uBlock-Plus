@@ -1,4 +1,5 @@
 /* uBlock Plus+ — cross-source scriptlet exception regressions. GPL-3.0-or-later. */
+import * as sfp from '../src/js/static-filtering-parser.js';
 import {
     SCRIPTLET_EXCEPTION_SLOT,
     SCRIPTLET_WARNINGS_KEY,
@@ -23,6 +24,7 @@ const makerSource = await read('../platform/mv3/extension/js/offscreen/make-scri
 const template = await read('../platform/mv3/extension/js/offscreen/scriptlet.template.js');
 const registrySource = await read('../platform/mv3/extension/js/compiled-filters.js');
 const stockRegistrySource = await read('../platform/mv3/extension/js/scriptlet-registration.js');
+const compilerSource = await read('../platform/mv3/extension/js/offscreen/compile-filters.js');
 const sourceBody = makerSource.slice(makerSource.indexOf('const resourceDetails ='))
     .replaceAll('export function ', 'function ');
 
@@ -50,6 +52,89 @@ const resources = [ 'MAIN', 'ISOLATED' ].map((world, index) => ({
     fn: function probe(name, value) { globalThis.probes.push([ name, value ]); },
 }));
 const maker = makeCompiler(resources);
+const mv3Compiler = vm.createContext({
+    makeScriptlets: maker,
+    fetch: async () => ({ text: async () => template }),
+});
+vm.runInContext(section(compilerSource, 'export async function toMv3Data('), mv3Compiler);
+const toMv3Scriptlets = async details => {
+    maker.reset();
+    return mv3Compiler.toMv3Data('native-stock', {
+        scriptletDetails: new Map(details.map((entry, index) => [ index, structuredClone(entry) ])),
+        specificCosmeticDetails: new Map(), dnrRules: [],
+    });
+};
+const registrationScopes = [];
+const optimal = { none: new Set(), basic: new Set(), optimal: new Set([ 'all-urls' ]), complete: new Set() };
+const basic = { none: new Set(), basic: new Set([ 'all-urls' ]), optimal: new Set(), complete: new Set() };
+// Stock and imported filters use this same maker. Native stock registration
+// relies on exceptions in its own generated code, even without userScripts
+// or a bound cross-source payload. Exception-only scopes must enable lookup.
+for ( const [ index, { world } ] of resources.entries() ) {
+    for ( const scope of [ 'example.*', 'parent.test>>', 'parent.*>>', '/^child\\.example\\.test$/' ] ) {
+        for ( const exceptionFirst of [ false, true ] ) {
+            maker.reset();
+            const details = [
+                { args: [ `probe-${index}`, 'target', 'yes' ],
+                    matches: [ 'child.example.test', 'unrelated.test' ] },
+                { args: [ `alias-${index}`, 'target', 'yes' ], excludeMatches: [ scope ] },
+            ];
+            if ( exceptionFirst ) { details.reverse(); }
+            details.forEach(entry => maker.compile('native-stock', entry));
+            const result = maker.commit('native-stock', template)[world];
+            assert.deepEqual(Array.from(result.hostnames), [ 'child.example.test', 'unrelated.test' ],
+                `${world} ${scope}: an exception-only alias must not broaden positive registration`);
+            registrationScopes.push({ world, hostnames: result.hostnames });
+            const imported = await toMv3Scriptlets(details);
+            assert.deepEqual(Array.from(imported[world.toLowerCase()][0].hostnames),
+                [ 'child.example.test', 'unrelated.test' ],
+                'Imported conversion must preserve the same finite positive scope');
+            const nativeRun = (hostname, ancestors) => {
+                const probes = [];
+                const context = vm.createContext({ probes, URL,
+                    document: { location: { origin: `https://${hostname}`,
+                        ancestorOrigins: ancestors.map(hn => `https://${hn}`) } } });
+                context.self = context;
+                vm.runInContext(result.code, context);
+                return probes.length;
+            };
+            assert.equal(nativeRun('child.example.test', [ 'parent.test' ]), 0,
+                `${world} ${scope}: matching native exception must suppress invocation`);
+            assert.equal(nativeRun('unrelated.test', [ 'other.test' ]), 1,
+                `${world} ${scope}: an unrelated page must retain the invocation`);
+            if ( scope.endsWith('>>') ) {
+                assert.equal(nativeRun('child.example.test', []), 1,
+                    'A missing ancestor does not match an ancestor-only exception');
+            }
+        }
+    }
+}
+// A merged invocation/exception entry must keep the same narrow scope, while
+// positive entity, ancestor and regex filters still require broad injection.
+for ( const [ index, { world } ] of resources.entries() ) {
+    for ( const scope of [ 'example.*', 'parent.test>>', '/^child\\.example\\.test$/' ] ) {
+        const result = await toMv3Scriptlets([ {
+            args: [ `probe-${index}`, 'target', 'yes' ],
+            matches: [ 'child.example.test' ], excludeMatches: [ scope ],
+        } ]);
+        assert.deepEqual(Array.from(result[world.toLowerCase()][0].hostnames), [ 'child.example.test' ],
+            `${world} ${scope}: merged exceptions must not broaden positive registration`);
+    }
+    for ( const scope of [ '*', 'example.*', 'parent.test>>', 'parent.*>>', '/^child\\.example\\.test$/' ] ) {
+        const result = await toMv3Scriptlets([ {
+            args: [ `probe-${index}`, 'target', 'yes' ], matches: [ scope ],
+        } ]);
+        const script = result[world.toLowerCase()][0];
+        assert.equal(script.hostnames, '*', `${world} ${scope}: broad positive scopes still register broadly`);
+        assert.deepEqual(run(script.code, [], 'child.example.test', undefined, [ 'parent.test' ]),
+            [ [ 'target', 'yes' ] ], 'Broad positive scopes still execute on matching pages');
+    }
+    const onlyException = await toMv3Scriptlets([ {
+        args: [ `probe-${index}`, 'target', 'yes' ], excludeMatches: [ 'example.*' ],
+    } ]);
+    assert.deepEqual(Array.from(onlyException[world.toLowerCase()][0].hostnames), [],
+        'An exception alone must not create any registration target');
+}
 function compile(worldIndex, realm = 'stock-test') {
     maker.reset();
     maker.compile(realm, { args: [ `probe-${worldIndex}`, 'target', 'yes' ],
@@ -58,8 +143,6 @@ function compile(worldIndex, realm = 'stock-test') {
         trustedSource: true, matches: [ '*' ] });
     return maker.commit(realm, template)[resources[worldIndex].world].code;
 }
-const optimal = { none: new Set(), basic: new Set(), optimal: new Set([ 'all-urls' ]), complete: new Set() };
-const basic = { none: new Set(), basic: new Set([ 'all-urls' ]), optimal: new Set(), complete: new Set() };
 function exception(source, worldIndex, hostnames, broad = false) {
     const details = new Map([ [ 'fixture', { args: broad ? [] : [ `alias-${worldIndex}`, 'target', 'yes' ],
         excludeMatches: hostnames } ] ]);
@@ -209,6 +292,15 @@ const nativePreparation = vm.createContext({ Set, Object, intersectHostnameIters
 const prepareStart = stockRegistrySource.indexOf('export function prepareNativeStockScriptlets(');
 const prepareEnd = stockRegistrySource.indexOf('\nexport async function removeNativeStockScriptlets', prepareStart);
 vm.runInContext(stockRegistrySource.slice(prepareStart, prepareEnd).replace(/^export /, ''), nativePreparation);
+for ( const { world, hostnames } of registrationScopes ) {
+    const directives = nativePreparation.prepareNativeStockScriptlets({
+        stock: [ { id: 'native-stock', worlds: { [world]: hostnames } } ], nativeExclusions: new Map(),
+    }, { none: new Set(), basic: new Set(), optimal: new Set(), complete: new Set([ 'all-urls' ]) });
+    assert.equal(directives.length, 1);
+    assert.deepEqual(Array.from(directives[0].matches),
+        [ '*://*.child.example.test/*', '*://*.unrelated.test/*' ],
+        'Native packaged registration must not inject on unrelated origins for exception lookup');
+}
 const scopedOrigin = nativePreparation.prepareNativeStockScriptlets({
     stock: [ { id: 'stock-test', worlds: { MAIN: [ '*' ] } } ],
     nativeExclusions: new Map([ [ 'stock-test', [ 'except.example.test' ] ] ]),
@@ -219,6 +311,67 @@ assert.equal(scopedOrigin[0].id, 'stock-test.origin.main');
 assert.equal(scopedOrigin[0].matchOriginAsFallback, true);
 assert.deepEqual(Array.from(scopedOrigin[0].excludeMatches),
     [ '*://*.off.example.test/*', '*://*.except.example.test/*' ]);
+
+// Compile the reviewed inline site filters from the release configuration and
+// execute the real bundled set-constant implementation. The fixture models the
+// site's later var assignment; it does not execute downloaded website code.
+const siteRuleset = JSON.parse(await read('../platform/mv3/rulesets.json'))
+    .find(entry => entry.id === 'ublock-filters');
+const sourceCompiler = vm.createContext({ Map, JSON });
+vm.runInContext(section(compilerSource, 'function compileScriptletFilter('), sourceCompiler);
+const compileSiteFixes = (extra = []) => {
+    const details = new Map();
+    const parser = new sfp.AstFilterParser({ trustedSource: true });
+    for ( const line of [ ...(siteRuleset.filters || []), ...extra ] ) {
+        parser.parse(line);
+        assert.equal(parser.hasError(), false, line);
+        if ( parser.isScriptletFilter() ) {
+            sourceCompiler.compileScriptletFilter(parser, details);
+        }
+    }
+    realCompiler.reset();
+    for ( const entry of details.values() ) { realCompiler.compile(siteRuleset.id, entry); }
+    return realCompiler.commit(siteRuleset.id, template).MAIN;
+};
+const sampletteFix = compileSiteFixes();
+assert.ok(sampletteFix, 'Reviewed site filters must produce a MAIN-world program');
+const runSiteFix = (program, hostname) => {
+    const page = vm.createContext({ URL, Request, EventTarget, console,
+        document: { location: { origin: `https://${hostname}` },
+            readyState: 'loading', currentScript: {} } });
+    vm.runInContext('self = globalThis; window = globalThis;', page);
+    vm.runInContext(program.code, page);
+    page.document.currentScript = {};
+    vm.runInContext('var pwAdsForceDisabled = false; var isPro = false; ' +
+        'var detectorPolling = !pwAdsForceDisabled;', page);
+    return { flag: page.pwAdsForceDisabled, polling: page.detectorPolling, isPro: page.isPro };
+};
+for ( const hostname of [ 'samplette.io', 'child.samplette.io' ] ) {
+    assert.deepEqual(runSiteFix(sampletteFix, hostname),
+        { flag: true, polling: false, isPro: false });
+}
+for ( const hostname of [ 'unrelated.test', 'notsamplette.io', 'samplette.io.example' ] ) {
+    assert.deepEqual(runSiteFix(sampletteFix, hostname),
+        { flag: false, polling: true, isPro: false });
+}
+const exceptedSiteFix = compileSiteFixes([
+    'samplette.io#@#+js(set-constant, pwAdsForceDisabled, true)',
+]);
+assert.deepEqual(runSiteFix(exceptedSiteFix, 'samplette.io'),
+    { flag: false, polling: true, isPro: false }, 'Ordinary scriptlet exceptions preserve the page state');
+const sampletteRegistration = { stock: [ {
+    id: siteRuleset.id, worlds: { MAIN: sampletteFix.hostnames },
+} ], nativeExclusions: new Map() };
+assert.equal(nativePreparation.prepareNativeStockScriptlets(sampletteRegistration, {
+    none: new Set([ 'all-urls' ]), basic: new Set(), optimal: new Set(), complete: new Set(),
+}).length, 0, 'Off cannot register the packaged site fix');
+const sampletteDirectives = nativePreparation.prepareNativeStockScriptlets(sampletteRegistration, {
+    none: new Set([ 'child.samplette.io' ]), basic: new Set(),
+    optimal: new Set(), complete: new Set([ 'all-urls' ]),
+});
+assert.equal(sampletteDirectives.length, 1);
+assert.deepEqual(Array.from(sampletteDirectives[0].excludeMatches), [ '*://*.child.samplette.io/*' ],
+    'An Off child is excluded while its parent keeps protection');
 
 let nativeScripts = [
     { id: 'cosmetic-unrelated', js: [ '/js/scripting/css-api.js' ] },

@@ -25,6 +25,7 @@ This directory contains the user, architecture, security and community documenta
 | Document | Scope |
 | --- | --- |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | MV3 pipeline, compiled popup routes, durable state, memory profiles and capability layers. |
+| [ANTI-ADBLOCK-2026-09-08.md](ANTI-ADBLOCK-2026-09-08.md) | Vietnamese anti-adblock research, verified redirect aliases, conditional/exception fixes, native Chrome regressions and live-audit methodology; final artifact evidence tracked in the report. |
 | [PERFORMANCE-2026-09-06.md](PERFORMANCE-2026-09-06.md) | Full uBO/AdGuard/Ghostery research, memory profiles, native Chrome before/after measurements, correctness and tradeoffs. |
 | [GITHUB-UPGRADES-2026-09-06.md](GITHUB-UPGRADES-2026-09-06.md) | Delivered indexed firewall/draft tester, verified native UI and network behavior, and prioritized full uBO/AdGuard/Ghostery/Brave/ClearURLs ideas. |
 | [FEATURE-MATRIX.md](FEATURE-MATRIX.md) | Honest comparison between original MV2 behavior and current MV3 support. |

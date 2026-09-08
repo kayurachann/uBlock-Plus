@@ -25,6 +25,7 @@ import {
     createImportedFetchBudget,
     isCredentialFreeHTTPS,
 } from '../imported-fetch-policy.js';
+import { validateFilterConditionalStructure } from './filter-conditional-structure.js';
 
 async function fetchText(url, progressFn, budget) {
     if ( isCredentialFreeHTTPS(url) === false ) {
@@ -139,6 +140,9 @@ export async function fetchList(context, asset, progressFn) {
                     if ( /^<.*>$/.test(content) ) {
                         return { url, error: `Bad content: ${url}` };
                     }
+                    validateFilterConditionalStructure(content, {
+                        preparser: sfp.utils.preparser, env: context.env,
+                    });
                     return { url, content };
                 })
             );

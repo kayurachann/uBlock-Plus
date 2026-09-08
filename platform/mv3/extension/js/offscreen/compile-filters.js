@@ -51,10 +51,14 @@ import { isVerifiedSourceKey } from '../verified-source-handoff.js';
 import { makeCosmeticScripts } from './make-cosmetic-filters.js';
 import { pendingImportedMetadataKey } from '../imported-list-metadata.js';
 import { safeReplace } from './safe-replace.js';
+import { validateFilterConditionalStructure } from './filter-conditional-structure.js';
 
 /******************************************************************************/
 
 const browser = (self.browser || self.chrome);
+const filterEnvironment = [
+    'chromium', 'native_css_has', 'mv3', 'ublock', 'ubol',
+];
 
 let resourceTypes;
 const compilationErrors = [];
@@ -242,10 +246,45 @@ function sanitizeCompiledCosmeticFilter(compiled) {
 
 /******************************************************************************/
 
+function preprocessFilterSource(text) {
+    // Fetched lists are expanded by fetchList, but pinned bytes and personal
+    // filters enter the compiler directly. All three must select the same
+    // branches before network rules, scriptlets or exceptions are collected.
+    const slices = sfp.utils.preparser.splitter(text, filterEnvironment);
+    const parts = [];
+    for ( let i = 0; i < slices.length; i += 2 ) {
+        const part = text.slice(slices[i], slices[i + 1]);
+        for ( const match of part.matchAll(/^!#if\b([^\r\n]*)/gm) ) {
+            if ( sfp.utils.preparser.evaluateExpr(
+                match[1].trim(), filterEnvironment
+            ) !== undefined ) { continue; }
+            const line = text.slice(0, slices[i] + match.index).split('\n').length;
+            // An unknown active condition cannot safely select a branch.
+            // Keep the last complete generation rather than activate both.
+            throw new TypeError(`Unsupported filter condition at line ${line}`);
+        }
+        parts.push(part);
+        const end = slices[i + 2] ?? text.length;
+        // Pinned source digests are verified before this transformation.
+        // Preserve line numbers for diagnostics and badfilter provenance.
+        parts.push(text.slice(slices[i + 1], end).replace(/[^\r\n]/g, ''));
+    }
+    return parts.join('');
+}
+
 export function compileFilters(listid, text, context = {}) {
     if ( Boolean(text) === false ) { return; }
+    const { sourceIsExpanded = false, ...parserOptions } = context;
+    // fetchList validates each raw include before pruning. Its joined output
+    // can legitimately lack delimiters, so only direct inputs need this check.
+    if ( sourceIsExpanded !== true ) {
+        validateFilterConditionalStructure(text, {
+            preparser: sfp.utils.preparser, env: filterEnvironment,
+        });
+    }
+    text = preprocessFilterSource(text);
 
-    const parser = new sfp.AstFilterParser(context);
+    const parser = new sfp.AstFilterParser(parserOptions);
 
     const networkCompiler = new NetworkFilterCompiler({
         listid,
@@ -319,9 +358,9 @@ export async function toMv3Data(rulesetid, compiledData) {
         );
         const result = makeScriptlets.commit(rulesetid, template);
         if ( result.ISOLATED ) {
-            const { hasRegexes, hasAncestors, hasEntities } = result.ISOLATED;
-            const hostnames = hasRegexes || hasAncestors || hasEntities ||
-                result.ISOLATED.hostnames.includes('*')
+            // Runtime exception lookups can need entities, ancestors or regexes
+            // while positive filters still have a finite registration scope.
+            const hostnames = result.ISOLATED.hostnames.includes('*')
                 ? '*'
                 : result.ISOLATED.hostnames;
             isolated.push({
@@ -331,9 +370,7 @@ export async function toMv3Data(rulesetid, compiledData) {
             });
         }
         if ( result.MAIN ) {
-            const { hasRegexes, hasAncestors, hasEntities } = result.MAIN;
-            const hostnames = hasRegexes || hasAncestors || hasEntities ||
-                result.MAIN.hostnames.includes('*')
+            const hostnames = result.MAIN.hostnames.includes('*')
                 ? '*'
                 : result.MAIN.hostnames;
             main.push({
@@ -534,13 +571,7 @@ async function fetchPinnedText(list) {
 
 async function updateList(list) {
     const context = {
-        env: [
-            'chromium',
-            'native_css_has',
-            'mv3',
-            'ublock',
-            'ubol',
-        ],
+        env: filterEnvironment,
     };
     let text;
     try {
@@ -579,6 +610,7 @@ async function updateList(list) {
 
     const compiled = compileFilters(list.id, text, {
         nativeCssHas: true,
+        sourceIsExpanded: list.sourceIntegrity === undefined,
     });
     if ( Boolean(compiled) === false ) { return; }
 

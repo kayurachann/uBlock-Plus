@@ -28,6 +28,10 @@
 // type of the loaded data. The `data` property allows for manual injection
 // through `+js(...)`, or for redirection to a data: URI when a redirection
 // to a web accessible resource is not desirable.
+//
+// AdGuard redirect compatibility names reuse the existing uBO resource bytes.
+// Reference: AdguardTeam/Scriptlets at ceff76181358797f9ffa0c9af6640a17f7950a20,
+// wiki/compatibility-table.md (Redirects compatibility table).
 
 export default new Map([
     [ '1x1.gif', {
@@ -51,6 +55,7 @@ export default new Map([
         data: 'text',
     } ],
     [ 'amazon_apstag.js', {
+        alias: 'amazon-apstag',                    /* adguard compatibility */
     } ],
     [ 'ampproject_v0.js', {
         alias: 'ampproject.org/v0.js',
@@ -79,6 +84,7 @@ export default new Map([
     } ],
     [ 'google-analytics_analytics.js', {
         alias: [
+            'google-analytics',                   /* adguard compatibility */
             'google-analytics.com/analytics.js',
             'googletagmanager_gtm.js',
             'googletagmanager.com/gtm.js'
@@ -100,7 +106,7 @@ export default new Map([
         data: 'text',
     } ],
     [ 'google-ima-dai.js', {
-        aliases: [ 'google-ima3-dai' ],             /* adguard compatibility */
+        alias: 'google-ima3-dai',                  /* adguard compatibility */
         data: 'text',
     } ],
     [ 'googlesyndication_adsbygoogle.js', {
@@ -133,7 +139,10 @@ export default new Map([
         data: 'text',
     } ],
     [ 'nofab.js', {
-        alias: 'fuckadblock.js-3.2.0',
+        alias: [
+            'fuckadblock.js-3.2.0',
+            'prevent-fab-3.2.0',                   /* adguard compatibility */
+        ],
         data: 'text',
     } ],
     [ 'noop-0.1s.mp3', {
@@ -147,6 +156,7 @@ export default new Map([
         data: 'blob',
     } ],
     [ 'noop.css', {
+        alias: 'noopcss',                          /* adguard compatibility */
         data: 'text',
     } ],
     [ 'noop.html', {
@@ -193,6 +203,7 @@ export default new Map([
         data: 'text',
     } ],
     [ 'prebid-ads.js', {
+        alias: 'prebid-ads',                       /* adguard compatibility */
         data: 'text',
     } ],
     [ 'scorecardresearch_beacon.js', {

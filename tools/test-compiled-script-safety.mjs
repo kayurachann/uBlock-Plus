@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import { compiledStorageKey } from '../platform/mv3/extension/js/compiled-storage.js';
 import fs from 'node:fs/promises';
 import { literalStrFromRegex } from '../src/js/regex-analyzer.js';
+import { validateFilterConditionalStructure } from '../platform/mv3/extension/js/offscreen/filter-conditional-structure.js';
 import vm from 'node:vm';
 
 const readSource = async name => (await fs.readFile(new URL(
@@ -186,6 +187,88 @@ vm.runInContext(section(compiler, 'function compileScriptletFilter(') + '\n' +
     section(compiler, 'export function compileCosmeticFilter(') + '\n' +
     cosmeticMaker.slice(cosmeticMaker.indexOf('export function makeCosmeticScripts('))
         .replace(/^export /, ''), compilerContext);
+
+await check('Filter condition pruning preserves source lines and upstream selection', () => {
+    const env = [ 'chromium', 'native_css_has', 'mv3', 'ublock', 'ubol' ];
+    const context = vm.createContext({ sfp, filterEnvironment: env });
+    const start = compiler.indexOf('function preprocessFilterSource(');
+    const end = compiler.indexOf('export function compileFilters(', start);
+    assert.ok(start >= 0 && end > start);
+    vm.runInContext(compiler.slice(start, end), context);
+    const directives = [
+        'env_mv3', '!env_mv3', 'env_firefox', '!env_firefox',
+        'env_chromium && env_mv3', 'env_firefox || env_mv3',
+        'cap_html_filtering', 'cap_future_feature', 'adguard_ext_chromium_mv3',
+    ];
+    for ( const newline of [ '\n', '\r\n' ] ) {
+        for ( const outer of directives ) {
+            for ( const inner of directives ) {
+                const input = [
+                    '! source header', `!#if ${outer}`, '||outer.example^',
+                    `!#if ${inner}`, '@@||inner.example^', '!#else',
+                    'page.example##+js(set, antiAdblockReady, true)',
+                    '!#endif', '!#else', 'page.example#@#+js()',
+                    '!#endif', '||last.example^',
+                ].join(newline);
+                validateFilterConditionalStructure(input, {
+                    preparser: sfp.utils.preparser, env,
+                });
+                const actual = context.preprocessFilterSource(input);
+                const expected = sfp.utils.preparser.prune(input, env);
+                const filters = text => text.split(/\r?\n/)
+                    .filter(line => line !== '' && line.startsWith('!') === false);
+                assert.deepEqual(filters(actual), filters(expected), `${outer}/${inner}`);
+                const expanded = sfp.utils.preparser.expandIncludes([ {
+                    url: 'https://filters.example/list.txt', content: input,
+                } ], env).join('\n');
+                assert.deepEqual(filters(context.preprocessFilterSource(expanded)),
+                    filters(expected), 'Fetched lists preserve the same branch selection');
+                assert.equal(actual.split('\n').length, input.split('\n').length,
+                    'Excluded branches retain original line numbers');
+                assert.equal(actual.split('\n').at(-1), '||last.example^');
+            }
+        }
+    }
+    for ( const expression of [ '', 'unknown_platform', 'env_mv3 &&' ] ) {
+        assert.throws(() => context.preprocessFilterSource(
+            `! header\n\n!#if ${expression}\n||uncertain.example^\n!#endif`
+        ), /Unsupported filter condition at line 3/);
+    }
+    const inactiveUnknown = '!#if env_firefox\n!#if unknown_platform\n' +
+        '||wrong.example^\n!#endif\n!#endif\n||right.example^';
+    assert.equal(context.preprocessFilterSource(inactiveUnknown).trim(),
+        '||right.example^', 'Unknown syntax in an inactive branch does not stop compilation');
+    for ( const expression of [
+        'unknown_platform || env_firefox', 'env_firefox || unknown_platform',
+        'unknown_platform || env_mv3', 'env_mv3 || unknown_platform',
+        'unknown_platform && env_firefox', 'env_firefox && unknown_platform',
+        '(unknown_platform || env_firefox)',
+    ] ) {
+        const guarded = `!#if ${expression}\n@@||guarded.example^\n!#else\n` +
+            '||guarded.example^\n!#endif';
+        assert.throws(() => validateFilterConditionalStructure(guarded, {
+            preparser: sfp.utils.preparser, env,
+        }), /Unsupported filter condition at line 1/,
+        'Unknown tokens cannot disappear through boolean coercion or pruning');
+        validateFilterConditionalStructure(
+            `!#if env_firefox\n${guarded}\n!#endif`, {
+                preparser: sfp.utils.preparser, env,
+            });
+    }
+    for ( const [ source, expected ] of [
+        [ '! header\n!#else\n||wrong.example^', /line 2: orphan !#else/ ],
+        [ '! header\r\n!#endif', /line 2: orphan !#endif/ ],
+        [ '!#if env_mv3\n!#else\n!#else\n!#endif', /line 3: duplicate !#else/ ],
+        [ '! header\n!#if env_mv3\n||wrong.example^', /line 2: unterminated !#if/ ],
+        [ '!#if env_firefox\n!#if env_mv3\n!#endif', /line 1: unterminated !#if/ ],
+    ] ) {
+        assert.throws(() => validateFilterConditionalStructure(source), expected);
+    }
+    const deep = '!#if env_mv3\n'.repeat(256) + '!#endif\n'.repeat(256);
+    validateFilterConditionalStructure(deep);
+    assert.throws(() => validateFilterConditionalStructure(`!#if env_mv3\n${deep}!#endif`),
+        /line 257: conditional nesting exceeds 256/);
+});
 
 function compileScriptletLines(lines) {
     const parser = new sfp.AstFilterParser({ nativeCssHas: true });
