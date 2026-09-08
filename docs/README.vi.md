@@ -95,7 +95,7 @@ Các ảnh dưới đây chụp **tiện ích thực tế được nạp dạng 
 
 Manifest khai báo yêu cầu **Chromium 130 trở lên**. Lần kiểm thử trình duyệt thực tế gần nhất được ghi nhận dùng Google Chrome 152; kết quả đó không chứng nhận mọi biến thể hoặc phiên bản Chromium. Quy trình phát hành của repository này tạo gói Chromium MV3, không tạo gói Firefox hay Safari.
 
-Tại thời điểm kiểm tra **ngày 6 tháng 9 năm 2026**, [GitHub Releases](https://github.com/kayurachann/uBlock-Plus/releases) cung cấp **bản thử nghiệm v1.0.0 phát hành ngày 1 tháng 9**. Gói ZIP đó có trước các bản sửa popup và đợt kiểm thử Chrome được mô tả trong README này. Để có những thay đổi đó, **hãy build từ mã nguồn hiện tại hoặc dùng gói đầu ra của một lần chạy Actions thành công** cho tới khi có bản phát hành mới. Huy hiệu CI hiển thị trạng thái hiện tại của workflow; việc một commit được đẩy lên không tự có nghĩa là đã tạo được gói đầu ra.
+Bản thử nghiệm **v1.1.0** bao gồm các bản sửa popup, logo dấu cộng vàng, công cụ thử quy tắc firewall, bộ tra cứu firewall dùng chỉ mục, ngoại lệ bộ lọc giữa các nguồn và cải tiến cấu hình bộ nhớ được mô tả trong README này. Tải gói thông thường `uBlock-Plus_1.1.0.chromium.zip` cùng checksum tại [GitHub Releases](https://github.com/kayurachann/uBlock-Plus/releases). Gói riêng `experimental.chromium.zip` cần làm theo [hướng dẫn Experimental WebRequest](EXPERIMENTAL-WEBREQUEST.md). Chọn bản thử nghiệm mới nhất trên trang Releases; đường dẫn `/releases/latest` của GitHub không bao gồm pre-release.
 
 Để lấy bản build CI, mở [MV3 Chromium Actions](https://github.com/kayurachann/uBlock-Plus/actions/workflows/mv3-chromium.yml), chọn lần chạy thành công ứng với commit muốn dùng và tải artifact `uBlock-Plus-chromium-<commit>`. GitHub có thể yêu cầu đăng nhập. Giải nén file artifact bên ngoài trước để lấy ZIP tiện ích và checksum tương ứng. Artifact CI là bản build thử nghiệm có thời gian lưu giới hạn; chúng không tự cập nhật bản Release công khai.
 
@@ -114,8 +114,8 @@ Tại thời điểm kiểm tra **ngày 6 tháng 9 năm 2026**, [GitHub Releases
 Chạy các lệnh sau trong thư mục tải xuống, thay số phiên bản nếu cần:
 
 ```powershell
-(Get-FileHash .\uBlock-Plus_1.0.0.chromium.zip -Algorithm SHA256).Hash
-Get-Content .\uBlock-Plus_1.0.0.chromium.zip.sha256
+(Get-FileHash .\uBlock-Plus_1.1.0.chromium.zip -Algorithm SHA256).Hash
+Get-Content .\uBlock-Plus_1.1.0.chromium.zip.sha256
 ```
 
 Các giá trị thập lục phân phải trùng nhau; chữ hoa hay chữ thường không ảnh hưởng. Hãy đối chiếu với checksum đi kèm **đúng bản đóng gói đó**.
@@ -125,6 +125,8 @@ Các giá trị thập lục phân phải trùng nhau; chữ hoa hay chữ thư�
 ### Cập nhật hoặc gỡ bỏ
 
 Bản cài unpacked **không tự cập nhật** qua Chrome Web Store. Xuất bản sao lưu tại **Dashboard/Bảng điều khiển → Settings/Cài đặt**, đóng các tab liên quan nếu cần, kiểm tra và giải nén bản mới, rồi thay thế nội dung trong chính thư mục tiện ích đang dùng. Giữ nguyên đường dẫn thư mục và bấm **Reload/Tải lại** trên thẻ tiện ích. Tải lại các trang web để làm mới script và bộ lọc giao diện đã được áp dụng. Không đặt bản mới vào một thư mục con bên trong bản cũ.
+
+Sau khi cập nhật bản thử nghiệm này, mục **Details/Chi tiết** tại `chrome://extensions` phải hiển thị **1.1.0**. Nếu vẫn là 1.0.0, Chrome đang nạp thư mục cũ hoặc nội dung cũ trong thư mục đó. Push mã nguồn hay xuất bản GitHub Release không tự cập nhật bản unpacked đã cài.
 
 Để gỡ cài đặt, xuất bản sao lưu nếu muốn giữ cấu hình, rồi chọn **Remove/Xóa** trên trang quản lý tiện ích của trình duyệt. Chỉ xóa thư mục mã nguồn không gỡ tiện ích khỏi trình duyệt. Cài lại từ một thư mục khác có thể tạo mã định danh unpacked khác; hãy dùng bản sao lưu khi chuyển sang bản cài mới.
 

@@ -93,7 +93,7 @@ The screenshots below show the **actual unpacked extension in Google Chrome 152.
 
 The manifest declares **Chromium 130 or newer**. The latest documented native-browser test is on Google Chrome 152; that result is not certification of every Chromium derivative or version. This repository's release pipeline targets Chromium MV3, not a Firefox or Safari package.
 
-As checked on **6 September 2026**, [GitHub Releases](https://github.com/kayurachann/uBlock-Plus/releases) provides the **v1.0.0 pre-release published on 1 September**. That ZIP predates the popup fixes and Chrome testing described in this README. For those changes, **build the current source or use an artifact from a successful Actions run** until a newer release is published. The CI badge reports the current workflow status; a source commit being pushed does not by itself mean an artifact was produced.
+The **v1.1.0 preview** includes the popup fixes, yellow-plus logo, firewall tester, indexed firewall matching, cross-source filter exceptions and memory-profile improvements described in this README. Download the standard `uBlock-Plus_1.1.0.chromium.zip` and its checksum from [GitHub Releases](https://github.com/kayurachann/uBlock-Plus/releases). The separate `experimental.chromium.zip` requires the [Experimental WebRequest setup](docs/EXPERIMENTAL-WEBREQUEST.md). Choose the newest preview on the Releases page; GitHub's `/releases/latest` endpoint excludes pre-releases.
 
 For a CI build, open [MV3 Chromium Actions](https://github.com/kayurachann/uBlock-Plus/actions/workflows/mv3-chromium.yml), select a successful run for the desired commit, and download its `uBlock-Plus-chromium-<commit>` artifact. GitHub may require sign-in. Extract that outer artifact archive first to find the extension ZIP and matching checksum. CI artifacts are preview build outputs with limited retention; they do not update the public Release automatically.
 
@@ -112,8 +112,8 @@ For a CI build, open [MV3 Chromium Actions](https://github.com/kayurachann/uBloc
 Run these commands in the download folder, adjusting the version if necessary:
 
 ```powershell
-(Get-FileHash .\uBlock-Plus_1.0.0.chromium.zip -Algorithm SHA256).Hash
-Get-Content .\uBlock-Plus_1.0.0.chromium.zip.sha256
+(Get-FileHash .\uBlock-Plus_1.1.0.chromium.zip -Algorithm SHA256).Hash
+Get-Content .\uBlock-Plus_1.1.0.chromium.zip.sha256
 ```
 
 The hexadecimal values must match; letter case does not matter. Compare against the checksum supplied with the **same build**.
@@ -123,6 +123,8 @@ The hexadecimal values must match; letter case does not matter. Compare against 
 ### Update or remove
 
 An unpacked installation **does not auto-update** through the Chrome Web Store. Export a backup from **Dashboard → Settings**, close affected tabs if needed, verify and extract the replacement build, then replace the contents of the same extension folder. Preserve the folder path and click **Reload** on its extension card. Reload websites to refresh already-injected scripts and cosmetic filters. Do not place the new build one folder deeper inside the old one.
+
+After updating to this preview, **Details** on `chrome://extensions` must show **1.1.0**. If it still shows 1.0.0, Chrome is loading the old folder or its old contents. Pushing source commits or publishing a GitHub Release does not update an installed unpacked copy.
 
 To uninstall, optionally export a backup first, then select **Remove** on the browser's extensions page. Deleting the source folder alone is not an uninstall. Reinstalling from a different folder can create a different unpacked extension identity; use your backup when migrating.
 
