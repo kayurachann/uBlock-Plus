@@ -97,7 +97,7 @@ Các ảnh dưới đây chụp **tiện ích thực tế được nạp dạng 
 
 Manifest khai báo yêu cầu **Chromium 130 trở lên**. Lần kiểm thử trình duyệt thực tế gần nhất được ghi nhận dùng Google Chrome 152; kết quả đó không chứng nhận mọi biến thể hoặc phiên bản Chromium. Quy trình phát hành của repository này tạo gói Chromium MV3, không tạo gói Firefox hay Safari.
 
-Bản thử nghiệm **v1.1.1** bao gồm các bản sửa popup, logo dấu cộng vàng, công cụ thử quy tắc firewall, bộ tra cứu firewall dùng chỉ mục, ngoại lệ bộ lọc giữa các nguồn và cải tiến cấu hình bộ nhớ được mô tả trong README này. Tải gói thông thường `uBlock-Plus_1.1.1.chromium.zip` cùng checksum tại [GitHub Releases](https://github.com/kayurachann/uBlock-Plus/releases). Gói riêng `experimental.chromium.zip` cần làm theo [hướng dẫn Experimental WebRequest](EXPERIMENTAL-WEBREQUEST.md). Chọn bản thử nghiệm mới nhất trên trang Releases; đường dẫn `/releases/latest` của GitHub không bao gồm pre-release.
+Bản thử nghiệm **v1.1.2** bao gồm các bản sửa popup, logo dấu cộng vàng, công cụ thử quy tắc firewall, bộ tra cứu firewall dùng chỉ mục, ngoại lệ bộ lọc giữa các nguồn và cải tiến cấu hình bộ nhớ được mô tả trong README này. Tải gói thông thường `uBlock-Plus_1.1.2.chromium.zip` cùng checksum tại [GitHub Releases](https://github.com/kayurachann/uBlock-Plus/releases). Gói riêng `experimental.chromium.zip` cần làm theo [hướng dẫn Experimental WebRequest](EXPERIMENTAL-WEBREQUEST.md). Chọn bản thử nghiệm mới nhất trên trang Releases; đường dẫn `/releases/latest` của GitHub không bao gồm pre-release.
 
 Để lấy bản build CI, mở [MV3 Chromium Actions](https://github.com/kayurachann/uBlock-Plus/actions/workflows/mv3-chromium.yml), chọn lần chạy thành công ứng với commit muốn dùng và tải artifact `uBlock-Plus-chromium-<commit>`. GitHub có thể yêu cầu đăng nhập. Giải nén file artifact bên ngoài trước để lấy ZIP tiện ích và checksum tương ứng. Artifact CI là bản build thử nghiệm có thời gian lưu giới hạn; chúng không tự cập nhật bản Release công khai.
 
@@ -116,8 +116,8 @@ Bản thử nghiệm **v1.1.1** bao gồm các bản sửa popup, logo dấu c�
 Chạy các lệnh sau trong thư mục tải xuống, thay số phiên bản nếu cần:
 
 ```powershell
-(Get-FileHash .\uBlock-Plus_1.1.1.chromium.zip -Algorithm SHA256).Hash
-Get-Content .\uBlock-Plus_1.1.1.chromium.zip.sha256
+(Get-FileHash .\uBlock-Plus_1.1.2.chromium.zip -Algorithm SHA256).Hash
+Get-Content .\uBlock-Plus_1.1.2.chromium.zip.sha256
 ```
 
 Các giá trị thập lục phân phải trùng nhau; chữ hoa hay chữ thường không ảnh hưởng. Hãy đối chiếu với checksum đi kèm **đúng bản đóng gói đó**.
@@ -128,7 +128,7 @@ Các giá trị thập lục phân phải trùng nhau; chữ hoa hay chữ thư�
 
 Bản cài unpacked **không tự cập nhật** qua Chrome Web Store. Xuất bản sao lưu tại **Dashboard/Bảng điều khiển → Settings/Cài đặt**, đóng các tab liên quan nếu cần, kiểm tra và giải nén bản mới, rồi thay thế nội dung trong chính thư mục tiện ích đang dùng. Giữ nguyên đường dẫn thư mục và bấm **Reload/Tải lại** trên thẻ tiện ích. Tải lại các trang web để làm mới script và bộ lọc giao diện đã được áp dụng. Không đặt bản mới vào một thư mục con bên trong bản cũ.
 
-Sau khi cập nhật bản thử nghiệm này, mục **Details/Chi tiết** tại `chrome://extensions` phải hiển thị **1.1.1**. Nếu vẫn là 1.0.0, Chrome đang nạp thư mục cũ hoặc nội dung cũ trong thư mục đó. Push mã nguồn hay xuất bản GitHub Release không tự cập nhật bản unpacked đã cài.
+Sau khi cập nhật bản thử nghiệm này, mục **Details/Chi tiết** tại `chrome://extensions` phải hiển thị **1.1.2**. Nếu vẫn là 1.0.0, Chrome đang nạp thư mục cũ hoặc nội dung cũ trong thư mục đó. Push mã nguồn hay xuất bản GitHub Release không tự cập nhật bản unpacked đã cài.
 
 Để gỡ cài đặt, xuất bản sao lưu nếu muốn giữ cấu hình, rồi chọn **Remove/Xóa** trên trang quản lý tiện ích của trình duyệt. Chỉ xóa thư mục mã nguồn không gỡ tiện ích khỏi trình duyệt. Cài lại từ một thư mục khác có thể tạo mã định danh unpacked khác; hãy dùng bản sao lưu khi chuyển sang bản cài mới.
 
@@ -150,6 +150,8 @@ Các mức này chọn hành vi lọc; chọn Basic **không** thu hồi quyền
 Dùng **Reload/Tải lại** sau khi thay đổi bảo vệ. **More/Less** mở rộng hoặc thu gọn chi tiết popup; thao tác này không đổi cách lọc. Popup hỗ trợ phím Tab/Enter và đưa tiêu điểm về nút vừa thao tác sau khi thay đổi bất đồng bộ thành công. Trên trang cài đặt trình duyệt, trang tiện ích và các trang bị hạn chế khác, những công cụ không dùng được sẽ hiển thị trạng thái không khả dụng.
 
 ### Chính sách popup
+
+Bản v1.1.2 sửa xử lý cửa sổ hợp lệ tải chậm, các lần bấm nhanh riêng biệt, đích gửi biểu mẫu và việc tắt bảo vệ khi quyết định đang chờ. Xem [báo cáo popup blocker và phương pháp kiểm thử Chrome](POPUP-BLOCKER-2026-09-08.md). Popup do Chrome tự ngăn được đo riêng với tab do extension đóng.
 
 Chính sách popup áp dụng cho **đúng tên máy chủ**. Chính sách này điều khiển việc xử lý popup theo ngữ cảnh, đồng thời vẫn tuân theo quy tắc danh sách lọc và thiết lập trang đáng tin cậy.
 
@@ -301,6 +303,8 @@ Có thể dùng `make mv3-chromium` để tạo thư mục unpacked. Truyền s�
 </details>
 
 ### Những gì đã được kiểm thử
+
+Đợt [kiểm tra popup blocker v1.1.2](POPUP-BLOCKER-2026-09-08.md) đạt **48 chương trình source test**, lint, build/xác thực cả hai gói và **54/54 ca popup trên Chrome thật cho mỗi gói**. Bản v1.1.1 đã phát hành đạt 44/54 assertion cùng hành vi. Có đối chứng tách popup do Chrome tự ngăn khỏi tab extension đóng; đây là kiểm tra hồi quy có kiểm soát, không phải tỷ lệ chặn trên toàn Internet.
 
 Đợt [xác minh anti-adblock ngày 8 tháng 9](ANTI-ADBLOCK-2026-09-08.md) đạt **47 chương trình test**, lint, build và xác thực cả hai gói, **11 ca anti-adblock native**, **27 kiểm tra UI firewall** và **24 kiểm tra mạng** trên Chrome 152. Đúng ZIP Standard/Experimental chứa **1.117/1.120 mục đã đối chiếu**. Kiểm tra khởi tạo phát hiện sáu regex ngoại lệ quá lớn khiến nhóm dynamic stock rỗng; override có phạm vi đã khôi phục **172 quy tắc stock native**. Báo cáo ghi rõ việc nới độ dài token có chủ đích, kết quả quan sát website và giới hạn MV3 còn lại.
 

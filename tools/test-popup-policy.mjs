@@ -188,6 +188,7 @@ const tabState = new Map([
 ]);
 const removedTabs = [];
 const dependencies = {
+    supportsNavigationTargetContext: false,
     tabs: {
         get: async tabId => {
             if ( tabState.has(tabId) === false ) { throw new Error('missing tab'); }
@@ -1025,6 +1026,307 @@ assert.equal(stockDiagnostic.filterKind, 'popup');
 assert.equal(stockDiagnostic.filterRealm, 'stock');
 assert.equal(JSON.stringify(compiledDiagnostics).includes('/path'), false);
 
+// Lifecycle regressions use real asynchronous dependency boundaries. A read
+// completing late must never override a newer navigation or a user's Off.
+function delayedResult() {
+    let resolve;
+    const promise = new Promise(done => { resolve = done; });
+    return { promise, resolve };
+}
+
+function lifecycleFilter(kind, hostname, action = 'block', initiatorDomains) {
+    return {
+        schemaVersion: 1,
+        routeCode: 'popup-observer-runtime',
+        kind,
+        action,
+        important: false,
+        condition: {
+            requestDomains: [ hostname ],
+            ...(initiatorDomains ? { initiatorDomains } : {}),
+        },
+        lineNumber: action === 'allow' ? 2 : 1,
+    };
+}
+
+function lifecycleFixture(options = {}) {
+    const state = {
+        enabled: true,
+        clock: 1_000_000,
+        modes: new Map(),
+        gestures: [ { frameId: 0, at: 0, sequence: 0, targetURL: '' } ],
+        removed: [],
+        session: new Map(),
+        tabs: new Map([
+            [ 1, { id: 1, url: 'https://shop.example/start' } ],
+            [ 2, { id: 2, openerTabId: 1,
+                url: options.targetURL || 'https://ads.example/popup' } ],
+        ]),
+    };
+    const dependency = {
+        tabs: {
+            async get(id) {
+                await state.beforeGet?.(id);
+                if ( state.tabs.has(id) === false ) { throw new Error('gone'); }
+                return { ...state.tabs.get(id) };
+            },
+            async remove(id) { state.removed.push(id); state.tabs.delete(id); },
+        },
+        isEnabled: ( ) => state.enabled,
+        now: ( ) => state.clock,
+        getFilteringMode: async hostname => {
+            state.modeRead?.(hostname);
+            return state.modes.get(hostname) ?? 3;
+        },
+        getGestureContexts: async (tabId, frameId) => {
+            assert.equal(tabId, 1);
+            return state.gestureRead?.(frameId) ?? state.gestures;
+        },
+        getStockPopupSnapshot: async ( ) => {
+            await state.stockRead?.();
+            return { filters: options.filters || [
+                lifecycleFilter('popup', 'ads.example'),
+            ] };
+        },
+        getSourceContext: async ( ) => state.sourceContext || {
+            topURL: state.tabs.get(1).url,
+            topContextComplete: true,
+            initiatorURL: state.tabs.get(1).url,
+            initiatorContextComplete: true,
+        },
+        sessionRead: async key => structuredClone(state.session.get(key)),
+        sessionWrite: async (key, value) =>
+            state.session.set(key, structuredClone(value)),
+    };
+    state.blocker = createPopupBlocker(dependency);
+    state.restart = ( ) => createPopupBlocker(dependency);
+    state.open = (sourceFrameId = 0) => state.blocker.onNavigationTarget({
+        tabId: 2, sourceTabId: 1, sourceFrameId, url: state.tabs.get(2).url,
+    });
+    return state;
+}
+
+for ( const offKind of [ 'global', 'opener', 'target' ] ) {
+    const fixture = lifecycleFixture();
+    const entered = delayedResult();
+    const release = delayedResult();
+    fixture.stockRead = async ( ) => { entered.resolve(); await release.promise; };
+    const pending = fixture.open();
+    await entered.promise;
+    if ( offKind === 'global' ) { fixture.enabled = false; }
+    if ( offKind === 'opener' ) { fixture.modes.set('shop.example', 0); }
+    if ( offKind === 'target' ) { fixture.modes.set('ads.example', 0); }
+    release.resolve();
+    assert.equal((await pending).action, 'allow', `${offKind} during corpus read`);
+    assert.deepEqual(fixture.removed, []);
+}
+
+for ( const offKind of [ 'global', 'current-opener' ] ) {
+    const fixture = lifecycleFixture({
+        targetURL: 'https://benign.example/new-tab',
+        filters: [ lifecycleFilter('popunder', 'shop.example') ],
+    });
+    await fixture.blocker.setPolicy('shop.example', 'allow');
+    await fixture.open();
+    fixture.tabs.get(1).url = 'https://landing.example/replaced';
+    if ( offKind === 'global' ) { fixture.enabled = false; }
+    if ( offKind === 'current-opener' ) { fixture.modes.set('landing.example', 0); }
+    await fixture.blocker.onTabUpdated(1,
+        { url: fixture.tabs.get(1).url }, fixture.tabs.get(1));
+    assert.deepEqual(fixture.removed, [], `Popunder respects ${offKind} Off`);
+}
+
+{
+    const fixture = lifecycleFixture({ filters: [] });
+    const entered = delayedResult();
+    const release = delayedResult();
+    fixture.beforeGet = async id => {
+        if ( id !== 2 ) { return; }
+        entered.resolve();
+        await release.promise;
+    };
+    const pending = fixture.open();
+    await entered.promise;
+    await fixture.blocker.setPolicy('shop.example', 'allow');
+    release.resolve();
+    assert.equal((await pending).reason, 'site-policy-allow');
+    assert.deepEqual(fixture.removed, []);
+}
+
+for ( const restart of [ false, true ] ) {
+    const fixture = lifecycleFixture();
+    fixture.gestures = [ {
+        frameId: 0, at: fixture.clock, sequence: 1,
+        targetURL: fixture.tabs.get(2).url,
+    } ];
+    assert.equal((await fixture.open()).reason, 'trusted-navigation-target');
+    fixture.clock += 6_000;
+    const active = restart ? fixture.restart() : fixture.blocker;
+    if ( restart ) { await active.resume(); }
+    for ( const update of [ { status: 'complete' }, { title: 'Sign in' },
+        { audible: true } ] ) {
+        await active.onTabUpdated(2, update, fixture.tabs.get(2));
+    }
+    assert.deepEqual(fixture.removed, [], `Slow trusted popup; restart=${restart}`);
+    if ( restart ) {
+        // Its path was not persisted, so future decisions about this old
+        // candidate fail open after eviction instead of guessing at intent.
+        assert.equal(fixture.session.get('popupBlocker.transient').candidates.length, 0);
+        continue;
+    }
+    fixture.tabs.get(2).url = 'https://ads.example/new-ad-redirect';
+    await active.onTabUpdated(2, { url: fixture.tabs.get(2).url }, fixture.tabs.get(2));
+    assert.deepEqual(fixture.removed, [ 2 ], 'A changed destination still evaluates');
+}
+
+for ( const change of [ 'redirect', 'removed' ] ) {
+    const fixture = lifecycleFixture();
+    await fixture.blocker.setPolicy('shop.example', 'allow');
+    const entered = delayedResult();
+    const release = delayedResult();
+    fixture.stockRead = async ( ) => { entered.resolve(); await release.promise; };
+    const stale = fixture.open();
+    await entered.promise;
+    let fresh;
+    if ( change === 'removed' ) {
+        await fixture.blocker.onTabRemoved(2);
+    } else {
+        const newEvaluation = delayedResult();
+        fixture.modeRead = hostname => {
+            if ( hostname === 'safe.example' ) { newEvaluation.resolve(); }
+        };
+        fixture.tabs.get(2).url = 'https://safe.example/accepted';
+        fresh = fixture.blocker.onTabUpdated(2,
+            { url: fixture.tabs.get(2).url }, fixture.tabs.get(2));
+        await newEvaluation.promise;
+    }
+    release.resolve();
+    assert.equal((await stale).action, 'defer', `Stale decision after ${change}`);
+    if ( fresh ) { assert.equal((await fresh).action, 'allow'); }
+    assert.deepEqual(fixture.removed, []);
+}
+
+for ( const inheritedURL of [ 'about:blank', 'about:blank#anchor',
+    'about:blank?query', 'about:srcdoc#anchor' ] ) {
+    const fixture = lifecycleFixture({ filters: [
+        lifecycleFilter('popup', 'ads.example'),
+        lifecycleFilter('popup', 'ads.example', 'allow', [ 'safe.example' ]),
+    ] });
+    fixture.sourceContext = await capturePopupFrameContext(
+        async ({ frameId }) => new Map([
+            [ 0, { url: 'https://shop.example/start', parentFrameId: -1 } ],
+            [ 4, { url: 'https://safe.example/embedded', parentFrameId: 0 } ],
+            [ 9, { url: inheritedURL, parentFrameId: 4 } ],
+        ]).get(frameId), 1, 9
+    );
+    assert.equal(fixture.sourceContext.initiatorURL, 'https://safe.example/embedded');
+    assert.equal((await fixture.open(9)).action, 'allow', inheritedURL);
+    assert.deepEqual(fixture.removed, []);
+}
+
+{
+    const fixture = lifecycleFixture();
+    const queriedFrames = [];
+    fixture.gestureRead = frameId => {
+        queriedFrames.push(frameId);
+        return frameId === 70 ? [ {
+            frameId: 70, at: fixture.clock, sequence: 1,
+            targetURL: fixture.tabs.get(2).url,
+        } ] : [ { frameId: 0, at: 0, sequence: 0, targetURL: '' } ];
+    };
+    assert.equal((await fixture.blocker.onTabCreated(fixture.tabs.get(2))).action, 'defer');
+    assert.equal((await fixture.open(70)).reason, 'trusted-navigation-target');
+    assert.deepEqual(queriedFrames, [ -1, 70 ]);
+    assert.deepEqual(fixture.removed, []);
+}
+
+{
+    const fixture = lifecycleFixture({ filters: [] });
+    assert.equal((await fixture.blocker.onTabCreated(fixture.tabs.get(2))).reason,
+        'gesture-context-unavailable');
+    assert.equal((await fixture.open(70)).reason, 'gesture-context-unavailable',
+        'A sibling response cannot imply that the actual opener lacked activation');
+    assert.deepEqual(fixture.removed, []);
+}
+
+{
+    const removed = [];
+    const writes = [];
+    const unavailable = createPopupBlocker({
+        tabs: {
+            get: async id => ({ id, url: 'https://shop.example/' }),
+            remove: async id => removed.push(id),
+        },
+        getGestureContexts: async ( ) => [ { frameId: 0, at: 0, sequence: 0 } ],
+        localRead: async ( ) => { throw new Error('policy database unavailable'); },
+        localWrite: async (...args) => writes.push(args),
+        sessionWrite: async (...args) => writes.push(args),
+    });
+    assert.equal((await unavailable.onNavigationTarget({
+        tabId: 2, sourceTabId: 1, sourceFrameId: 0, url: 'https://ads.example/',
+    })).reason, 'popup-state-unavailable');
+    await unavailable.resume();
+    await assert.rejects(unavailable.getPolicies('shop.example'), /unavailable/);
+    await assert.rejects(unavailable.setPolicy('shop.example', 'strict'), /unavailable/);
+    assert.deepEqual(removed, []);
+    assert.deepEqual(writes, []);
+}
+
+for ( const lateSnapshot of [ false, true ] ) {
+    const states = new Map([
+        [ 1, { id: 1, url: 'https://actual.example/' } ],
+        [ 3, { id: 3, url: 'https://provisional.example/' } ],
+        [ 2, { id: 2, openerTabId: 3, url: 'https://ads.example/popup' } ],
+        [ 4, { id: 4, openerTabId: 3, url: 'https://ads.example/popup' } ],
+    ]);
+    const removed = [];
+    const session = new Map();
+    const observer = createPopupBlocker({
+        tabs: {
+            get: async id => ({ ...states.get(id) }),
+            remove: async id => removed.push(id),
+        },
+        now: ( ) => 100_000,
+        getGestureContexts: async ( ) => [ {
+            frameId: 0, at: 100_000, sequence: 1,
+            targetURL: 'https://ads.example/popup',
+        } ],
+        getStockPopupSnapshot: async ( ) => ({
+            filters: [ lifecycleFilter('popup', 'ads.example') ],
+        }),
+        getSourceContext: async tabId => ({
+            topURL: states.get(tabId).url, topContextComplete: true,
+            initiatorURL: states.get(tabId).url, initiatorContextComplete: true,
+        }),
+        sessionWrite: async (key, value) => session.set(key, structuredClone(value)),
+    });
+    await observer.ready;
+    const snapshot = delayedResult();
+    const provisional = observer.onTabCreated(states.get(2), lateSnapshot
+        ? snapshot.promise : Promise.resolve(states.get(3)));
+    if ( lateSnapshot ) { await Promise.resolve(); }
+    else { await provisional; }
+    const authoritative = await observer.onNavigationTarget({
+        tabId: 2, sourceTabId: 1, sourceFrameId: 0, url: states.get(2).url,
+    });
+    assert.equal(authoritative.reason, 'trusted-navigation-target');
+    assert.equal(authoritative.openerHostname, 'actual.example');
+    if ( lateSnapshot ) {
+        snapshot.resolve(states.get(3));
+        assert.equal((await provisional).reason, 'popup-context-changed');
+    }
+    // A wrong opener attribution must not consume the actual activation or
+    // increase the next burst count belonging to that unrelated tab.
+    assert.equal((await observer.onNavigationTarget({
+        tabId: 4, sourceTabId: 3, sourceFrameId: 0, url: states.get(4).url,
+    })).reason, 'trusted-navigation-target');
+    const checkpoint = session.get('popupBlocker.transient');
+    assert.equal(checkpoint.candidates.find(candidate => candidate.tabId === 2)
+        .openerTabId, 1);
+    assert.equal(checkpoint.bursts.find(([ tabId ]) => tabId === 3)[2], 1);
+    assert.deepEqual(removed, []);
+}
+
 // Old registrations must fail open even when their target-only data contains
 // a matching block. Only the observer has authoritative opener/intent context.
 const preventPopupSource = await fs.readFile(path.join(
@@ -1113,6 +1415,33 @@ const [ backgroundSource, popupHTML, popupSource ] = await Promise.all([
         'popup.js'
     ), 'utf8'),
 ]);
+const gestureCollectorSource = backgroundSource.slice(
+    backgroundSource.indexOf('async function getPopupGestureContexts('),
+    backgroundSource.indexOf('async function getPopupSourceFrameURL(')
+);
+const messagedFrames = [];
+const collectorContext = vm.createContext({
+    Object,
+    webextFlavor: 'chromium',
+    browser: {
+        webNavigation: {
+            getAllFrames: async ( ) => Array.from({ length: 80 }, (_, frameId) => ({ frameId })),
+        },
+        tabs: {
+            sendMessage: async (tabId, message, { frameId }) => {
+                void tabId; void message;
+                messagedFrames.push(frameId);
+                return { sequence: frameId === 70 ? 1 : 0 };
+            },
+        },
+    },
+});
+vm.runInContext(gestureCollectorSource, collectorContext);
+const collected = await collectorContext.getPopupGestureContexts(1, 70);
+assert.equal(messagedFrames.length, 64, 'Source priority preserves message cap');
+assert.equal(messagedFrames[0], 70);
+assert.equal(new Set(messagedFrames).size, 64);
+assert.equal(collected.find(context => context.frameId === 70)?.sequence, 1);
 assert.match(
     backgroundSource,
     /popupPanelData[\s\S]{0,1600}popupPolicy:\s*results\[4\]\.effective/

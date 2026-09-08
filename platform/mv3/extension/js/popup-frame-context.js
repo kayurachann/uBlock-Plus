@@ -12,7 +12,7 @@
 
 const MAX_CONTEXT_URL_LENGTH = 8192;
 const MAX_PARENT_DEPTH = 32;
-const inheritedFrameURLs = new Set([ 'about:blank', 'about:srcdoc' ]);
+const inheritedFramePaths = new Set([ 'blank', 'srcdoc' ]);
 const ambiguousOriginProtocols = new Set([ 'data:', 'javascript:' ]);
 
 /******************************************************************************/
@@ -56,7 +56,13 @@ function boundedURLDetails(value) {
 }
 
 function isInheritedFrameURL(value) {
-    return inheritedFrameURLs.has(value.toLowerCase());
+    try {
+        const url = new URL(value);
+        return url.protocol === 'about:' &&
+            inheritedFramePaths.has(url.pathname.toLowerCase());
+    } catch {
+        return false;
+    }
 }
 
 function hasReliableFrameOrigin(value) {

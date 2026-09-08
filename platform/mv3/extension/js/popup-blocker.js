@@ -192,6 +192,7 @@ export function createPopupBlocker(dependencies = {}) {
     const consumedGestures = new Map();
     let policies = Object.create(null);
     let diagnostics = [];
+    let stateLoaded = false;
     let policyMutation = Promise.resolve();
     let diagnosticMutation = Promise.resolve();
     let transientMutation = Promise.resolve();
@@ -364,6 +365,11 @@ export function createPopupBlocker(dependencies = {}) {
                 ) === false ) {
                 continue;
             }
+            // A settled, trusted destination must not lose its protection
+            // merely because Chrome evicted the worker during a slow load.
+            // Its exact path is intentionally absent from the checkpoint, so
+            // we cannot distinguish that load from a later redirect safely.
+            if ( entry.trustedDestinationAccepted === true ) { continue; }
             const initiatorURL = checkpointURL(entry.initiatorURL);
             const candidate = {
                 tabId: entry.tabId,
@@ -384,6 +390,7 @@ export function createPopupBlocker(dependencies = {}) {
                 sourceFrameId: validTabId(entry.sourceFrameId)
                     ? entry.sourceFrameId
                     : -1,
+                sourceIsAuthoritative: entry.sourceIsAuthoritative === true,
                 popunderObserved: false,
                 gestureTargetURL: checkpointURL(entry.gestureTargetURL),
                 createdAt: entry.createdAt,
@@ -394,6 +401,10 @@ export function createPopupBlocker(dependencies = {}) {
                 gestureAt: Number.isSafeInteger(entry.gestureAt)
                     ? entry.gestureAt
                     : 0,
+                gestureFingerprint: typeof entry.gestureFingerprint === 'string' &&
+                    entry.gestureFingerprint.length <= 160
+                    ? entry.gestureFingerprint
+                    : '',
                 burstCount: Number.isSafeInteger(entry.burstCount)
                     ? Math.max(1, Math.min(entry.burstCount, 1000))
                     : 1,
@@ -420,6 +431,7 @@ export function createPopupBlocker(dependencies = {}) {
             }
         }
         restoreTransient(storedTransient);
+        stateLoaded = true;
     }).catch(reason => {
         log(`popup blocker state load failed: ${reason}`);
     });
@@ -446,6 +458,7 @@ export function createPopupBlocker(dependencies = {}) {
                 compiledPopupAllowed:
                     candidate.compiledPopupAllowed === true,
                 sourceFrameId: candidate.sourceFrameId,
+                sourceIsAuthoritative: candidate.sourceIsAuthoritative === true,
                 gestureTargetURL: checkpointURL(
                     candidate.gestureTargetURL
                 ),
@@ -456,8 +469,11 @@ export function createPopupBlocker(dependencies = {}) {
                 hasRecentUserGesture:
                     candidate.hasRecentUserGesture === true,
                 gestureAt: candidate.gestureAt,
+                gestureFingerprint: candidate.gestureFingerprint || '',
                 burstCount: candidate.burstCount,
                 lastSignature: candidate.lastSignature,
+                trustedDestinationAccepted:
+                    candidate.trustedDestinationAccepted === true,
             })),
             consumedGestures: Array.from(consumedGestures),
         };
@@ -490,18 +506,45 @@ export function createPopupBlocker(dependencies = {}) {
         context = {}
     ) {
         let candidate = candidates.get(tabId);
+        if ( candidate !== undefined && context.authoritativeSource === true &&
+            candidate.openerTabId !== openerTabId ) {
+            // Navigation-target provenance is authoritative when the two
+            // browser events identify different source tabs. Drop provisional
+            // attribution, including its one-shot token, before accepting any
+            // source URL or user activation from it.
+            const burst = bursts.get(candidate.openerTabId);
+            if ( burst?.at === candidate.createdAt &&
+                burst.count === candidate.burstCount ) {
+                if ( burst.count > 1 ) { burst.count -= 1; }
+                else { bursts.delete(candidate.openerTabId); }
+            }
+            consumedGestures.delete(candidate.gestureFingerprint);
+            candidates.delete(tabId);
+            candidate = undefined;
+        }
         if ( candidate !== undefined ) {
+            if ( context.authoritativeSource !== true &&
+                candidate.sourceIsAuthoritative === true ) {
+                return candidate;
+            }
             if ( targetURL !== '' ) {
                 const target = contextURLDetails(targetURL);
                 const nextTargetURL = target.url;
                 if ( candidate.targetURL !== nextTargetURL ) {
                     candidate.compiledPopupAllowed = false;
+                    candidate.trustedDestinationAccepted = false;
                 }
                 candidate.targetURL = nextTargetURL;
                 candidate.targetURLComplete = target.complete;
             }
             if ( validTabId(context.sourceFrameId) ) {
+                if ( candidate.sourceFrameId !== context.sourceFrameId ) {
+                    candidate.gestureResolved = false;
+                }
                 candidate.sourceFrameId = context.sourceFrameId;
+            }
+            if ( context.authoritativeSource === true ) {
+                candidate.sourceIsAuthoritative = true;
             }
             return candidate;
         }
@@ -521,6 +564,7 @@ export function createPopupBlocker(dependencies = {}) {
             sourceFrameId: validTabId(context.sourceFrameId)
                 ? context.sourceFrameId
                 : -1,
+            sourceIsAuthoritative: context.authoritativeSource === true,
             popunderObserved: false,
             gestureTargetURL: '',
             createdAt: timestamp,
@@ -528,6 +572,7 @@ export function createPopupBlocker(dependencies = {}) {
             gestureContextAvailable: false,
             hasRecentUserGesture: false,
             gestureAt: 0,
+            gestureFingerprint: '',
             burstCount: nextBurstCount(openerTabId, timestamp),
             lastSignature: '',
         };
@@ -591,12 +636,28 @@ export function createPopupBlocker(dependencies = {}) {
         const timestamp = now();
         let contexts = [];
         try {
-            const response = await getGestureContexts(candidate.openerTabId);
+            const response = await getGestureContexts(
+                candidate.openerTabId,
+                candidate.sourceFrameId
+            );
             if ( Array.isArray(response) ) { contexts = response; }
         } catch ( reason ) {
             log(`popup gesture context unavailable: ${reason}`);
         }
-        candidate.gestureContextAvailable = contexts.length !== 0;
+        if ( candidates.get(candidate.tabId) !== candidate ) { return; }
+        // A response from a sibling frame cannot establish that the actual
+        // opener frame recorded this activation. On Chromium, tabs.onCreated
+        // has no frame id; wait for the navigation-target event before letting
+        // the Smart heuristic treat missing activation as negative evidence.
+        candidate.gestureContextAvailable = candidate.sourceFrameId >= 0
+            ? contexts.some(context =>
+                context?.frameId === candidate.sourceFrameId
+            )
+            : supportsNavigationTargetContext !== true && contexts.length !== 0;
+        if ( candidate.hasRecentUserGesture === true ) {
+            candidate.gestureResolved = true;
+            return;
+        }
         const eligible = contexts.filter(context =>
             validTabId(context?.frameId) &&
             Number.isSafeInteger(context?.sequence) &&
@@ -613,6 +674,7 @@ export function createPopupBlocker(dependencies = {}) {
             if ( consumedGestures.has(fingerprint) ) { continue; }
             candidate.hasRecentUserGesture = true;
             candidate.gestureAt = context.at;
+            candidate.gestureFingerprint = fingerprint;
             candidate.gestureTargetURL = boundedContextURL(context.targetURL);
             boundedMapSet(consumedGestures, fingerprint, timestamp);
             break;
@@ -643,7 +705,76 @@ export function createPopupBlocker(dependencies = {}) {
         }
     }
 
-    async function finalizeDecision(candidate, result, closeTabId) {
+    async function finalizeDecision(candidate, result, closeTabId, observation) {
+        const isCurrent = ( ) => candidates.get(candidate.tabId) === candidate &&
+            (observation === undefined || (
+                candidate.evaluationId === observation.evaluationId &&
+                candidate.targetURL === observation.targetURL
+            ));
+        if ( isCurrent() === false ) {
+            return { action: 'defer', reason: 'popup-context-changed' };
+        }
+        if ( result.action === 'block' ) {
+            // Corpus/storage reads yield to other browser events and user
+            // settings changes. Recheck authority immediately before closing,
+            // including the current tab URL for an already-navigated popunder.
+            if ( isEnabled() !== true ) {
+                result = { action: 'allow', reason: 'popup-blocker-disabled' };
+            } else {
+                let closingTab;
+                try {
+                    closingTab = await tabs.get(closeTabId);
+                } catch {
+                }
+                const currentURL = tabURL(closingTab);
+                if ( closingTab === undefined || closingTab.discarded === true ) {
+                    result = { action: 'allow', reason: 'popup-tab-unavailable' };
+                } else if ( closeTabId === candidate.tabId &&
+                    boundedContextURL(currentURL) !== candidate.targetURL ) {
+                    result = { action: 'defer', reason: 'popup-context-changed' };
+                } else {
+                    const modes = await Promise.all([
+                        filteringModeFromURL(candidate.originalOpenerURL),
+                        filteringModeFromURL(candidate.targetURL, true),
+                        filteringModeFromURL(currentURL, true),
+                    ]);
+                    if ( modes.some(mode => mode < 1) ) {
+                        result = {
+                            action: 'allow', reason: 'popup-filtering-disabled',
+                        };
+                    }
+                }
+            }
+            if ( isCurrent() === false ) {
+                return { action: 'defer', reason: 'popup-context-changed' };
+            }
+            if ( isEnabled() !== true ) {
+                result = { action: 'allow', reason: 'popup-blocker-disabled' };
+            } else if ( enforceCandidateLifetime(candidate, now()).candidateExpired ) {
+                candidates.delete(candidate.tabId);
+                await persistTransient();
+                return { action: 'allow', reason: 'candidate-expired' };
+            }
+            if ( result.action === 'block' && result.policy !== undefined ) {
+                const { mode, matchedHostname } = resolvePopupPolicy(
+                    policies, candidate.originalOpenerURL
+                );
+                if ( mode !== result.policy ) {
+                    result = evaluatePopupCandidate({
+                        policy: mode,
+                        matchedHostname,
+                        openerURL: candidate.originalOpenerURL,
+                        targetURL: candidate.targetURL,
+                        gestureContextAvailable: candidate.gestureContextAvailable,
+                        hasRecentUserGesture: candidate.hasRecentUserGesture,
+                        gestureTargetMatches: sameNavigationTarget(
+                            candidate.gestureTargetURL, candidate.targetURL
+                        ),
+                        burstCount: candidate.burstCount,
+                    });
+                }
+            }
+        }
         if ( result.action === 'defer' ) {
             await persistTransient();
             return result;
@@ -659,6 +790,13 @@ export function createPopupBlocker(dependencies = {}) {
         ].join('|');
         if ( signature === candidate.lastSignature ) { return result; }
         candidate.lastSignature = signature;
+        if ( result.action === 'allow' && (
+            result.reason === 'trusted-navigation-target' ||
+            result.reason === 'recent-user-gesture' ||
+            result.reason === 'strict-related-hostname-user-gesture'
+        ) ) {
+            candidate.trustedDestinationAccepted = true;
+        }
 
         if ( result.action === 'block' ) {
             let action = 'blocked';
@@ -724,6 +862,8 @@ export function createPopupBlocker(dependencies = {}) {
             await persistTransient();
             return { action: 'allow', reason: 'candidate-expired' };
         }
+        const evaluationId = (candidate.evaluationId || 0) + 1;
+        candidate.evaluationId = evaluationId;
         let openerTab;
         try {
             openerTab = await tabs.get(candidate.openerTabId);
@@ -742,6 +882,7 @@ export function createPopupBlocker(dependencies = {}) {
         const targetURL = candidate.targetURL ||
             boundedContextURL(tabURL(fallbackTab));
         const filteringSiteURL = candidate.originalOpenerURL || openerURL;
+        const observation = { evaluationId, targetURL: candidate.targetURL };
         // The current opener tab may already be the popunder landing page.
         // Policy lookup must use the immutable pre-navigation snapshot; its
         // canonical origin also remains parseable when a long path was
@@ -758,7 +899,7 @@ export function createPopupBlocker(dependencies = {}) {
                 reason: 'popup-filtering-disabled',
                 openerHostname,
                 targetHostname: normalizePopupHostname(targetURL),
-            }, candidate.tabId);
+            }, candidate.tabId, observation);
         }
         const gestureTargetMatches = sameNavigationTarget(
             candidate.gestureTargetURL,
@@ -776,6 +917,10 @@ export function createPopupBlocker(dependencies = {}) {
                     candidate.initiatorContextComplete === true,
                 filteringMode,
             });
+            if ( candidate.evaluationId !== evaluationId ||
+                candidate.targetURL !== observation.targetURL ) {
+                return { action: 'defer', reason: 'popup-context-changed' };
+            }
             if ( compiledResult.action === 'allow' ) {
                 candidate.compiledPopupAllowed = true;
             } else if ( compiledResult.action === 'none' ) {
@@ -785,7 +930,8 @@ export function createPopupBlocker(dependencies = {}) {
                 return finalizeDecision(
                     candidate,
                     compiledResult,
-                    candidate.tabId
+                    candidate.tabId,
+                    observation
                 );
             }
         } else {
@@ -807,7 +953,7 @@ export function createPopupBlocker(dependencies = {}) {
             gestureTargetMatches,
             burstCount: candidate.burstCount,
         });
-        return finalizeDecision(candidate, result, candidate.tabId);
+        return finalizeDecision(candidate, result, candidate.tabId, observation);
     }
 
     async function onTabCreated(tab, capturedOpenerTabPromise) {
@@ -825,13 +971,20 @@ export function createPopupBlocker(dependencies = {}) {
                 log(`popup opener snapshot unavailable: ${reason}`);
             });
         await ready;
+        if ( stateLoaded !== true ) {
+            return { action: 'allow', reason: 'popup-state-unavailable' };
+        }
         const candidate = getOrCreateCandidate(
             tab.id,
             tab.openerTabId,
             tabURL(tab)
         );
         const openerTab = await openerTabPromise;
-        if ( openerTab !== undefined ) {
+        if ( candidates.get(candidate.tabId) !== candidate ) {
+            return { action: 'defer', reason: 'popup-context-changed' };
+        }
+        if ( openerTab !== undefined &&
+            candidate.openerTabId === tab.openerTabId ) {
             await resolveOpenerContext(candidate, tabURL(openerTab));
         }
         await resolveGesture(candidate);
@@ -855,19 +1008,29 @@ export function createPopupBlocker(dependencies = {}) {
                 log(`popup source context unavailable: ${reason}`);
             });
         await ready;
+        if ( stateLoaded !== true ) {
+            return { action: 'allow', reason: 'popup-state-unavailable' };
+        }
         const candidate = getOrCreateCandidate(
             details.tabId,
             details.sourceTabId,
             details.url || '',
-            { sourceFrameId: details.sourceFrameId }
+            { sourceFrameId: details.sourceFrameId, authoritativeSource: true }
         );
-        applySourceContext(candidate, await sourceContextPromise);
+        const sourceContext = await sourceContextPromise;
+        if ( candidates.get(candidate.tabId) !== candidate ) {
+            return { action: 'defer', reason: 'popup-context-changed' };
+        }
+        applySourceContext(candidate, sourceContext);
         await resolveGesture(candidate);
         await persistTransient();
         return evaluateCandidate(candidate);
     }
 
     async function evaluatePopunderCandidate(candidate) {
+        if ( isEnabled() !== true ) {
+            return { action: 'none', reason: 'popup-blocker-disabled' };
+        }
         if ( candidate.compiledPopupAllowed === true ) {
             return {
                 action: 'none',
@@ -880,6 +1043,9 @@ export function createPopupBlocker(dependencies = {}) {
             // so fail open instead of turning a broad block into a false hit.
             return { action: 'none', reason: 'popunder-context-incomplete' };
         }
+        const evaluationId = (candidate.evaluationId || 0) + 1;
+        candidate.evaluationId = evaluationId;
+        const observation = { evaluationId, targetURL: candidate.targetURL };
         let targetTab;
         try {
             targetTab = await tabs.get(candidate.tabId);
@@ -916,7 +1082,8 @@ export function createPopupBlocker(dependencies = {}) {
             return finalizeDecision(
                 candidate,
                 popunderResult,
-                candidate.openerTabId
+                candidate.openerTabId,
+                observation
             );
         }
         // uBO's original engine retries a hostname-touching ordinary $popup
@@ -935,11 +1102,26 @@ export function createPopupBlocker(dependencies = {}) {
             ? popunderResult
             : popupFallbackResult;
         if ( result.action === 'none' ) { return result; }
-        return finalizeDecision(candidate, result, candidate.openerTabId);
+        return finalizeDecision(
+            candidate, result, candidate.openerTabId, observation
+        );
     }
 
     async function onTabUpdated(tabId, changeInfo, tab) {
         await ready;
+        if ( stateLoaded !== true ) {
+            return { action: 'allow', reason: 'popup-state-unavailable' };
+        }
+        if ( isEnabled() !== true ) {
+            if ( candidates.size !== 0 || bursts.size !== 0 ||
+                consumedGestures.size !== 0 ) {
+                candidates.clear();
+                bursts.clear();
+                consumedGestures.clear();
+                await persistTransient();
+            }
+            return { action: 'allow', reason: 'popup-blocker-disabled' };
+        }
         let directResult;
         const candidate = candidates.get(tabId);
         if ( candidate !== undefined ) {
@@ -953,17 +1135,27 @@ export function createPopupBlocker(dependencies = {}) {
                 };
             } else {
                 const targetURL = changeInfo?.url || tabURL(tab);
+                let targetChanged = false;
                 if ( targetURL !== '' ) {
                     const target = contextURLDetails(targetURL);
                     const nextTargetURL = target.url;
+                    targetChanged = candidate.targetURL !== nextTargetURL ||
+                        candidate.targetURLComplete !== target.complete;
                     if ( candidate.targetURL !== nextTargetURL ) {
                         candidate.compiledPopupAllowed = false;
+                        candidate.trustedDestinationAccepted = false;
                     }
                     candidate.targetURL = nextTargetURL;
                     candidate.targetURLComplete = target.complete;
                 }
-                await resolveGesture(candidate);
-                directResult = await evaluateCandidate(candidate, tab);
+                // Finishing a slow load, changing the title, or starting audio
+                // does not create another popup. Keep an accepted destination
+                // after its gesture TTL while still inspecting every redirect
+                // and unresolved about:blank candidate.
+                if ( targetChanged || candidate.lastSignature === '' ) {
+                    await resolveGesture(candidate);
+                    directResult = await evaluateCandidate(candidate, tab);
+                }
             }
         }
 
@@ -993,6 +1185,7 @@ export function createPopupBlocker(dependencies = {}) {
 
     async function onTabRemoved(tabId) {
         await ready;
+        if ( stateLoaded !== true ) { return; }
         let modified = candidates.delete(tabId) || bursts.delete(tabId);
         for ( const [ candidateTabId, candidate ] of candidates ) {
             if ( candidate.openerTabId !== tabId ) { continue; }
@@ -1010,6 +1203,7 @@ export function createPopupBlocker(dependencies = {}) {
 
     async function resume() {
         await ready;
+        if ( stateLoaded !== true ) { return; }
         if ( isEnabled() !== true ) {
             candidates.clear();
             bursts.clear();
@@ -1037,6 +1231,9 @@ export function createPopupBlocker(dependencies = {}) {
 
     async function getPolicies(hostname = '') {
         await ready;
+        if ( stateLoaded !== true ) {
+            throw new Error('Popup policy state is unavailable');
+        }
         const effective = resolvePopupPolicy(policies, hostname);
         return {
             policies: cloneObject(policies),
@@ -1054,6 +1251,9 @@ export function createPopupBlocker(dependencies = {}) {
         }
         const result = policyMutation.then(async ( ) => {
             await ready;
+            if ( stateLoaded !== true ) {
+                throw new Error('Popup policy state is unavailable');
+            }
             const replacement = cloneObject(policies);
             if ( mode === 'default' ) {
                 delete replacement[normalizedHostname];

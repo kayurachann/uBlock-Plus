@@ -1,0 +1,3852 @@
+{
+  "date": "2026-09-08",
+  "version": "1.1.2",
+  "methodology": "Local HTTP fixtures, actual installed Google Chrome, clean profiles, unmodified ZIP extractions. Normal native popup blocking and isolated disable-popup-blocking controls. Automatic calls verified without user activation; tab lifecycle, source provenance, observer diagnostics and server receipts measured independently. No Internet-wide success percentage or CPU/RAM benchmark.",
+  "sourceTestPrograms": 48,
+  "gestureRegressionChecks": 50,
+  "harnessSHA256": "38cdd5fcf06d13fde7e57a9527927751607a940b358bffc75330ef4dc7d1c6d3",
+  "pipeline": [
+    {
+      "stage": "npm-ci",
+      "result": "PASS",
+      "seconds": 3.44
+    },
+    {
+      "stage": "npm-test",
+      "result": "PASS",
+      "seconds": 17.39
+    },
+    {
+      "stage": "npm-lint",
+      "result": "PASS",
+      "seconds": 3.96
+    },
+    {
+      "stage": "npm-audit",
+      "result": "PASS",
+      "seconds": 1.44
+    },
+    {
+      "stage": "build-standard",
+      "result": "PASS",
+      "seconds": 20.37
+    },
+    {
+      "stage": "validate-standard",
+      "result": "PASS",
+      "seconds": 1.45
+    },
+    {
+      "stage": "build-experimental",
+      "result": "PASS",
+      "seconds": 18.61
+    },
+    {
+      "stage": "validate-experimental",
+      "result": "PASS",
+      "seconds": 1.53
+    },
+    {
+      "stage": "launcher-powershell51",
+      "result": "PASS",
+      "seconds": 0.51
+    }
+  ],
+  "packages": [
+    {
+      "package": "uBlock-Plus_1.1.2.chromium.zip",
+      "sha256": "fc1eee5a8f962a00a45ce140ec76952d8bfa941406dc91b3d6539a84a0e9c8aa",
+      "bytes": 30666077,
+      "files": 1117,
+      "result": "PASS"
+    },
+    {
+      "package": "uBlock-Plus_1.1.2.experimental.chromium.zip",
+      "sha256": "17314eaa71e3303cdc3df85ebd8f40467794ca35581191e9bad920a18959adef",
+      "bytes": 30670474,
+      "files": 1120,
+      "result": "PASS"
+    }
+  ],
+  "provenance": {
+    "generated": "2026-09-08T08:42:31.2910401Z",
+    "browser": "Chrome/152.0.7977.76",
+    "baselineVersion": "1.1.1",
+    "candidateVersion": "1.1.2",
+    "baseline": {
+      "total": 54,
+      "passed": 44,
+      "failed": 10
+    },
+    "candidate": {
+      "total": 54,
+      "passed": 54,
+      "failed": 0
+    },
+    "interpretation": "These are 54 compatibility and regression assertions in local Chrome fixtures, not a percentage of advertisements or web popups blocked. Four baseline failures change surviving-tab outcomes; six detect incorrect gesture sequence or submitter intent. Both rapid-click tabs remained open in the baseline, so those cases do not demonstrate a second tab being closed.",
+    "automaticControls": "All 14 automatic cases asserted navigator.userActivation.isActive=false and hasBeenActive=false before window.open. Separate native-blocker and isolated-lab profiles distinguish Chrome suppression from extension closures.",
+    "failures": [
+      {
+        "mode": "normal",
+        "name": "Smart preserves a slow trusted cross-host navigation",
+        "failureKind": "unwanted-closure-of-legitimate-tab",
+        "beforeAlive": 0,
+        "afterAlive": 1,
+        "beforeClosures": 1,
+        "afterClosures": 0,
+        "candidatePassed": true
+      },
+      {
+        "mode": "normal",
+        "name": "Smart preserves two rapid independent clicks",
+        "failureKind": "gesture-sequence-assertion",
+        "beforeAlive": 2,
+        "afterAlive": 2,
+        "beforeClosures": 0,
+        "afterClosures": 0,
+        "candidatePassed": true
+      },
+      {
+        "mode": "normal",
+        "name": "Smart respects submitter formaction",
+        "failureKind": "submitter-destination-assertion",
+        "beforeAlive": 1,
+        "afterAlive": 1,
+        "beforeClosures": 0,
+        "afterClosures": 0,
+        "candidatePassed": true
+      },
+      {
+        "mode": "normal",
+        "name": "Strict recognizes the overridden same-host form target",
+        "failureKind": "submitter-destination-assertion",
+        "beforeAlive": 1,
+        "afterAlive": 1,
+        "beforeClosures": 0,
+        "afterClosures": 0,
+        "candidatePassed": true
+      },
+      {
+        "mode": "isolated-lab",
+        "name": "Smart preserves a slow trusted cross-host navigation",
+        "failureKind": "unwanted-closure-of-legitimate-tab",
+        "beforeAlive": 0,
+        "afterAlive": 1,
+        "beforeClosures": 1,
+        "afterClosures": 0,
+        "candidatePassed": true
+      },
+      {
+        "mode": "isolated-lab",
+        "name": "Smart preserves two rapid independent clicks",
+        "failureKind": "gesture-sequence-assertion",
+        "beforeAlive": 2,
+        "afterAlive": 2,
+        "beforeClosures": 0,
+        "afterClosures": 0,
+        "candidatePassed": true
+      },
+      {
+        "mode": "isolated-lab",
+        "name": "Smart blocks excess automatic related windows",
+        "failureKind": "excess-popup-tabs-left-open",
+        "beforeAlive": 3,
+        "afterAlive": 1,
+        "beforeClosures": 0,
+        "afterClosures": 2,
+        "candidatePassed": true
+      },
+      {
+        "mode": "isolated-lab",
+        "name": "A single trusted click does not authorize a popup flood",
+        "failureKind": "excess-popup-tabs-left-open",
+        "beforeAlive": 4,
+        "afterAlive": 1,
+        "beforeClosures": 0,
+        "afterClosures": 3,
+        "candidatePassed": true
+      },
+      {
+        "mode": "isolated-lab",
+        "name": "Smart respects submitter formaction",
+        "failureKind": "submitter-destination-assertion",
+        "beforeAlive": 1,
+        "afterAlive": 1,
+        "beforeClosures": 0,
+        "afterClosures": 0,
+        "candidatePassed": true
+      },
+      {
+        "mode": "isolated-lab",
+        "name": "Strict recognizes the overridden same-host form target",
+        "failureKind": "submitter-destination-assertion",
+        "beforeAlive": 1,
+        "afterAlive": 1,
+        "beforeClosures": 0,
+        "afterClosures": 0,
+        "candidatePassed": true
+      }
+    ],
+    "nativeEvidence": [
+      {
+        "mode": "normal",
+        "name": "Smart preserves two rapid independent clicks",
+        "actualOpenerTabId": 909159507,
+        "openerHostname": "case7.popup.localhost",
+        "provenanceMismatches": [
+          {
+            "targetTabId": 909159509,
+            "tabCreatedOpenerTabId": 909159508,
+            "navigationSourceTabId": 909159507,
+            "sourceFrameId": 0,
+            "targetURL": "http://destination7.localtest.localhost:6938/target?case=normal-7"
+          }
+        ],
+        "beforeClickDeltaMs": 69,
+        "beforeSequences": [
+          1,
+          1
+        ],
+        "afterClickDeltaMs": 60,
+        "afterSequences": [
+          1,
+          2
+        ],
+        "beforeAlive": 2,
+        "afterAlive": 2
+      },
+      {
+        "mode": "isolated-lab",
+        "name": "Smart preserves two rapid independent clicks",
+        "actualOpenerTabId": 83524474,
+        "openerHostname": "case34.popup.localhost",
+        "provenanceMismatches": [
+          {
+            "targetTabId": 83524476,
+            "tabCreatedOpenerTabId": 83524475,
+            "navigationSourceTabId": 83524474,
+            "sourceFrameId": 0,
+            "targetURL": "http://destination34.localtest.localhost:6938/target?case=isolated-lab-34"
+          }
+        ],
+        "beforeClickDeltaMs": 82,
+        "beforeSequences": [
+          1,
+          1
+        ],
+        "afterClickDeltaMs": 73,
+        "afterSequences": [
+          1,
+          2
+        ],
+        "beforeAlive": 2,
+        "afterAlive": 2
+      },
+      {
+        "mode": "isolated-lab",
+        "name": "Smart blocks excess automatic related windows",
+        "actualOpenerTabId": 83524488,
+        "openerHostname": "case37.popup.localhost",
+        "provenanceMismatches": [
+          {
+            "targetTabId": 83524490,
+            "tabCreatedOpenerTabId": 83524489,
+            "navigationSourceTabId": 83524488,
+            "sourceFrameId": 0,
+            "targetURL": "http://case37.popup.localhost:6938/target?case=isolated-lab-37&item=1"
+          },
+          {
+            "targetTabId": 83524491,
+            "tabCreatedOpenerTabId": 83524490,
+            "navigationSourceTabId": 83524488,
+            "sourceFrameId": 0,
+            "targetURL": "http://case37.popup.localhost:6938/target?case=isolated-lab-37&item=2"
+          }
+        ]
+      },
+      {
+        "mode": "isolated-lab",
+        "name": "A single trusted click does not authorize a popup flood",
+        "actualOpenerTabId": 83524496,
+        "openerHostname": "case38.popup.localhost",
+        "provenanceMismatches": [
+          {
+            "targetTabId": 83524498,
+            "tabCreatedOpenerTabId": 83524497,
+            "navigationSourceTabId": 83524496,
+            "sourceFrameId": 0,
+            "targetURL": "http://destination38.localtest.localhost:6938/target?case=isolated-lab-38&item=1"
+          },
+          {
+            "targetTabId": 83524499,
+            "tabCreatedOpenerTabId": 83524498,
+            "navigationSourceTabId": 83524496,
+            "sourceFrameId": 0,
+            "targetURL": "http://destination38.localtest.localhost:6938/target?case=isolated-lab-38&item=2"
+          },
+          {
+            "targetTabId": 83524500,
+            "tabCreatedOpenerTabId": 83524499,
+            "navigationSourceTabId": 83524496,
+            "sourceFrameId": 0,
+            "targetURL": "http://destination38.localtest.localhost:6938/target?case=isolated-lab-38&item=3"
+          }
+        ]
+      }
+    ]
+  },
+  "runs": [
+    {
+      "label": "baseline1.1.1",
+      "version": "1.1.1",
+      "started": "2026-09-08T08:37:41.257Z",
+      "finished": "2026-09-08T08:41:10.684Z",
+      "loadedFiles": 1117,
+      "loadedTreeSHA256": "89cab53e0741e2cf16f0b7bacccbe1fe4777173acfb618301c8c9e255aeae293",
+      "harnessSHA256": "38cdd5fcf06d13fde7e57a9527927751607a940b358bffc75330ef4dc7d1c6d3",
+      "passed": 44,
+      "failed": 10,
+      "total": 54,
+      "profiles": [
+        {
+          "mode": "normal",
+          "browser": "Chrome/152.0.7977.76",
+          "nativePopupBlocking": true,
+          "userScriptsEnabled": false,
+          "completed": true,
+          "pageErrors": 0
+        },
+        {
+          "mode": "isolated-lab",
+          "browser": "Chrome/152.0.7977.76",
+          "nativePopupBlocking": false,
+          "userScriptsEnabled": false,
+          "completed": true,
+          "pageErrors": 0
+        }
+      ],
+      "cases": [
+        {
+          "name": "Off preserves a clicked cross-host window",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Off automatic control isolates the built-in blocker",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 0,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "Disabling the popup feature preserves an automatic window",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 0,
+          "closedTargets": 0,
+          "decisions": [],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "Smart preserves a trusted cross-host link",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: trusted-navigation-target"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart preserves keyboard activation",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: trusted-navigation-target"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart preserves a slow trusted cross-host navigation",
+          "mode": "normal",
+          "passed": false,
+          "error": "AssertionError [ERR_ASSERTION]: Actual surviving target tabs  0 !== 1",
+          "aliveTargets": 0,
+          "successfulClosures": 1,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 1,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: recent-user-gesture",
+            "blocked: unrelated-hostname-without-user-gesture"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart preserves two rapid independent clicks",
+          "mode": "normal",
+          "passed": false,
+          "error": "AssertionError [ERR_ASSERTION]: Independent trusted clicks have independent gesture sequences     at Object.assertion (file:///C:/Users/linh/Downloads/New%20folder%20(4)/uBlock0_1.74.0.chromium/uBlock0.chromium/uBlock-MV3-Community/tools/test-popup-blocker-chrome.mjs:341:24)     at test (file:///C:/Users/linh/Downloads/New%20folder%20(4)/uBlock0_1.74.0.chromium/uBlock0.chromium/uBlock-MV3-Community/tools/test-popup-blocker-chrome.mjs:306:56)",
+          "aliveTargets": 2,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            },
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "clickSpacingMs": 69,
+          "gestureSequences": [
+            1,
+            1
+          ],
+          "createdTargets": 2,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: recent-user-gesture",
+            "allow: gesture-context-unavailable"
+          ],
+          "serverRequestCount": 4,
+          "destinationRequestCount": 2
+        },
+        {
+          "name": "Smart blocks an automatic unrelated window",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 0,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "Smart permits one automatic directly related window",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 0,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "Smart blocks excess automatic related windows",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            },
+            {
+              "active": false,
+              "ever": false
+            },
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 0,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "A single trusted click does not authorize a popup flood",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            },
+            {
+              "active": false,
+              "ever": true
+            },
+            {
+              "active": false,
+              "ever": true
+            },
+            {
+              "active": false,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: recent-user-gesture"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart preserves a GET form in a new tab",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: trusted-navigation-target"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart preserves a POST form in a new tab",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: trusted-navigation-target"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart respects submitter formaction",
+          "mode": "normal",
+          "passed": false,
+          "error": "AssertionError [ERR_ASSERTION]: Gesture collector records the actual form submitter destination + actual - expected ",
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: recent-user-gesture"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Strict recognizes the overridden same-host form target",
+          "mode": "normal",
+          "passed": false,
+          "error": "AssertionError [ERR_ASSERTION]: Gesture collector records the actual form submitter destination + actual - expected ",
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: strict-related-hostname-user-gesture"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart preserves a legitimate blank document",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "Blank then navigation keeps its trusted activation",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: recent-user-gesture"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Noopener null handle does not mean the tab was blocked",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: recent-user-gesture"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "A named iframe navigation does not create or close tabs",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 0,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Trusted child survives a later strict opener navigation",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: trusted-navigation-target"
+          ],
+          "serverRequestCount": 4,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Trusted iframe link remains usable",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: recent-user-gesture"
+          ],
+          "serverRequestCount": 4,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Basic defers contextual automatic-popup judgments",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 0,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "Allow policy preserves an automatic window",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 0,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "Strict explicitly blocks unrelated trusted windows",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 1,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 1,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "blocked: strict-unrelated-hostname"
+          ],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "Compiled popup block retains authority over Allow policy",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 1,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 1,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "blocked: compiled-popup-filter"
+          ],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "Compiled popup exception preserves an explicitly allowed window",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: compiled-popup-filter"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Off takes precedence over an explicit compiled popup block",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Off preserves a clicked cross-host window",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Off automatic control isolates the built-in blocker",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Disabling the popup feature preserves an automatic window",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart preserves a trusted cross-host link",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: trusted-navigation-target"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart preserves keyboard activation",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: trusted-navigation-target"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart preserves a slow trusted cross-host navigation",
+          "mode": "isolated-lab",
+          "passed": false,
+          "error": "AssertionError [ERR_ASSERTION]: Actual surviving target tabs  0 !== 1",
+          "aliveTargets": 0,
+          "successfulClosures": 1,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 1,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: recent-user-gesture",
+            "blocked: unrelated-hostname-without-user-gesture"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart preserves two rapid independent clicks",
+          "mode": "isolated-lab",
+          "passed": false,
+          "error": "AssertionError [ERR_ASSERTION]: Independent trusted clicks have independent gesture sequences     at Object.assertion (file:///C:/Users/linh/Downloads/New%20folder%20(4)/uBlock0_1.74.0.chromium/uBlock0.chromium/uBlock-MV3-Community/tools/test-popup-blocker-chrome.mjs:341:24)     at test (file:///C:/Users/linh/Downloads/New%20folder%20(4)/uBlock0_1.74.0.chromium/uBlock0.chromium/uBlock-MV3-Community/tools/test-popup-blocker-chrome.mjs:306:56)",
+          "aliveTargets": 2,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            },
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "clickSpacingMs": 82,
+          "gestureSequences": [
+            1,
+            1
+          ],
+          "createdTargets": 2,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: recent-user-gesture",
+            "allow: gesture-context-unavailable"
+          ],
+          "serverRequestCount": 4,
+          "destinationRequestCount": 2
+        },
+        {
+          "name": "Smart blocks an automatic unrelated window",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 1,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 1,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "blocked: unrelated-hostname-without-user-gesture"
+          ],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "Smart permits one automatic directly related window",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: single-related-hostname-popup"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart blocks excess automatic related windows",
+          "mode": "isolated-lab",
+          "passed": false,
+          "error": "AssertionError [ERR_ASSERTION]: Actual surviving target tabs  3 !== 1",
+          "aliveTargets": 3,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            },
+            {
+              "active": false,
+              "ever": false
+            },
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 3,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: gesture-context-unavailable",
+            "allow: single-related-hostname-popup"
+          ],
+          "serverRequestCount": 5,
+          "destinationRequestCount": 3
+        },
+        {
+          "name": "A single trusted click does not authorize a popup flood",
+          "mode": "isolated-lab",
+          "passed": false,
+          "error": "AssertionError [ERR_ASSERTION]: Actual surviving target tabs  4 !== 1",
+          "aliveTargets": 4,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            },
+            {
+              "active": false,
+              "ever": true
+            },
+            {
+              "active": false,
+              "ever": true
+            },
+            {
+              "active": false,
+              "ever": true
+            }
+          ],
+          "createdTargets": 4,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: gesture-context-unavailable",
+            "allow: recent-user-gesture"
+          ],
+          "serverRequestCount": 6,
+          "destinationRequestCount": 4
+        },
+        {
+          "name": "Smart preserves a GET form in a new tab",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: trusted-navigation-target"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart preserves a POST form in a new tab",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: trusted-navigation-target"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart respects submitter formaction",
+          "mode": "isolated-lab",
+          "passed": false,
+          "error": "AssertionError [ERR_ASSERTION]: Gesture collector records the actual form submitter destination + actual - expected ",
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: recent-user-gesture"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Strict recognizes the overridden same-host form target",
+          "mode": "isolated-lab",
+          "passed": false,
+          "error": "AssertionError [ERR_ASSERTION]: Gesture collector records the actual form submitter destination + actual - expected ",
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: strict-related-hostname-user-gesture"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart preserves a legitimate blank document",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "Blank then navigation keeps its trusted activation",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: recent-user-gesture"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Noopener null handle does not mean the tab was blocked",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: recent-user-gesture"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "A named iframe navigation does not create or close tabs",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 0,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Trusted child survives a later strict opener navigation",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: trusted-navigation-target"
+          ],
+          "serverRequestCount": 4,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Trusted iframe link remains usable",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: recent-user-gesture"
+          ],
+          "serverRequestCount": 4,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Basic defers contextual automatic-popup judgments",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: gesture-context-unavailable"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Allow policy preserves an automatic window",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: site-policy-allow"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Strict explicitly blocks unrelated trusted windows",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 1,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 1,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "blocked: strict-unrelated-hostname"
+          ],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "Compiled popup block retains authority over Allow policy",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 1,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 1,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "blocked: compiled-popup-filter"
+          ],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "Compiled popup exception preserves an explicitly allowed window",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: compiled-popup-filter"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Off takes precedence over an explicit compiled popup block",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        }
+      ]
+    },
+    {
+      "label": "standard1.1.2",
+      "version": "1.1.2",
+      "started": "2026-09-08T08:36:50.641Z",
+      "finished": "2026-09-08T08:39:29.942Z",
+      "loadedFiles": 1117,
+      "loadedTreeSHA256": "9517175294c1e87de9bec52797bb0aa4184a7f483cf8a41b58d444515a5057a0",
+      "harnessSHA256": "dee6a4598e6eca7d3ac65535a57831e5aee53ca4903b9ab7e3e1cf3ff1ef015b",
+      "harnessNote": "Same behavioral harness, launched before adding the report-only harnessSHA256 field; derived hash omits exactly that field.",
+      "passed": 54,
+      "failed": 0,
+      "total": 54,
+      "profiles": [
+        {
+          "mode": "normal",
+          "browser": "Chrome/152.0.7977.76",
+          "nativePopupBlocking": true,
+          "userScriptsEnabled": false,
+          "completed": true,
+          "pageErrors": 0
+        },
+        {
+          "mode": "isolated-lab",
+          "browser": "Chrome/152.0.7977.76",
+          "nativePopupBlocking": false,
+          "userScriptsEnabled": false,
+          "completed": true,
+          "pageErrors": 0
+        }
+      ],
+      "cases": [
+        {
+          "name": "Off preserves a clicked cross-host window",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Off automatic control isolates the built-in blocker",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 0,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "Disabling the popup feature preserves an automatic window",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 0,
+          "closedTargets": 0,
+          "decisions": [],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "Smart preserves a trusted cross-host link",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: trusted-navigation-target"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart preserves keyboard activation",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: trusted-navigation-target"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart preserves a slow trusted cross-host navigation",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: recent-user-gesture"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart preserves two rapid independent clicks",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 2,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            },
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "clickSpacingMs": 60,
+          "gestureSequences": [
+            1,
+            2
+          ],
+          "createdTargets": 2,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: recent-user-gesture"
+          ],
+          "serverRequestCount": 4,
+          "destinationRequestCount": 2
+        },
+        {
+          "name": "Smart blocks an automatic unrelated window",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 0,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "Smart permits one automatic directly related window",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 0,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "Smart blocks excess automatic related windows",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            },
+            {
+              "active": false,
+              "ever": false
+            },
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 0,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "A single trusted click does not authorize a popup flood",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            },
+            {
+              "active": false,
+              "ever": true
+            },
+            {
+              "active": false,
+              "ever": true
+            },
+            {
+              "active": false,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: recent-user-gesture"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart preserves a GET form in a new tab",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: trusted-navigation-target"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart preserves a POST form in a new tab",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: trusted-navigation-target"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart respects submitter formaction",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: trusted-navigation-target"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Strict recognizes the overridden same-host form target",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: strict-related-hostname-user-gesture"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart preserves a legitimate blank document",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "Blank then navigation keeps its trusted activation",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: recent-user-gesture"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Noopener null handle does not mean the tab was blocked",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: recent-user-gesture"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "A named iframe navigation does not create or close tabs",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 0,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Trusted child survives a later strict opener navigation",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: trusted-navigation-target"
+          ],
+          "serverRequestCount": 4,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Trusted iframe link remains usable",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: recent-user-gesture"
+          ],
+          "serverRequestCount": 4,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Basic defers contextual automatic-popup judgments",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 0,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "Allow policy preserves an automatic window",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 0,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "Strict explicitly blocks unrelated trusted windows",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 1,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 1,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "blocked: strict-unrelated-hostname"
+          ],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "Compiled popup block retains authority over Allow policy",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 1,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 1,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "blocked: compiled-popup-filter"
+          ],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "Compiled popup exception preserves an explicitly allowed window",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: compiled-popup-filter"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Off takes precedence over an explicit compiled popup block",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Off preserves a clicked cross-host window",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Off automatic control isolates the built-in blocker",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Disabling the popup feature preserves an automatic window",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart preserves a trusted cross-host link",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: trusted-navigation-target"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart preserves keyboard activation",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: trusted-navigation-target"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart preserves a slow trusted cross-host navigation",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: recent-user-gesture"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart preserves two rapid independent clicks",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 2,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            },
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "clickSpacingMs": 73,
+          "gestureSequences": [
+            1,
+            2
+          ],
+          "createdTargets": 2,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: recent-user-gesture"
+          ],
+          "serverRequestCount": 4,
+          "destinationRequestCount": 2
+        },
+        {
+          "name": "Smart blocks an automatic unrelated window",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 1,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 1,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "blocked: unrelated-hostname-without-user-gesture"
+          ],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "Smart permits one automatic directly related window",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: single-related-hostname-popup"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart blocks excess automatic related windows",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 2,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            },
+            {
+              "active": false,
+              "ever": false
+            },
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 3,
+          "closedTargets": 2,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: single-related-hostname-popup",
+            "blocked: related-hostname-popup-burst"
+          ],
+          "serverRequestCount": 5,
+          "destinationRequestCount": 3
+        },
+        {
+          "name": "A single trusted click does not authorize a popup flood",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 3,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            },
+            {
+              "active": false,
+              "ever": true
+            },
+            {
+              "active": false,
+              "ever": true
+            },
+            {
+              "active": false,
+              "ever": true
+            }
+          ],
+          "createdTargets": 4,
+          "closedTargets": 3,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: recent-user-gesture",
+            "blocked: unrelated-hostname-without-user-gesture"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart preserves a GET form in a new tab",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: trusted-navigation-target"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart preserves a POST form in a new tab",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: trusted-navigation-target"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart respects submitter formaction",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: trusted-navigation-target"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Strict recognizes the overridden same-host form target",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: strict-related-hostname-user-gesture"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart preserves a legitimate blank document",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "Blank then navigation keeps its trusted activation",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: recent-user-gesture"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Noopener null handle does not mean the tab was blocked",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: recent-user-gesture"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "A named iframe navigation does not create or close tabs",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 0,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Trusted child survives a later strict opener navigation",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: trusted-navigation-target"
+          ],
+          "serverRequestCount": 4,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Trusted iframe link remains usable",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: recent-user-gesture"
+          ],
+          "serverRequestCount": 4,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Basic defers contextual automatic-popup judgments",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: gesture-context-unavailable"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Allow policy preserves an automatic window",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: site-policy-allow"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Strict explicitly blocks unrelated trusted windows",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 1,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 1,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "blocked: strict-unrelated-hostname"
+          ],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "Compiled popup block retains authority over Allow policy",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 1,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 1,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "blocked: compiled-popup-filter"
+          ],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "Compiled popup exception preserves an explicitly allowed window",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: compiled-popup-filter"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Off takes precedence over an explicit compiled popup block",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        }
+      ]
+    },
+    {
+      "label": "experimental1.1.2",
+      "version": "1.1.2",
+      "started": "2026-09-08T08:39:41.728Z",
+      "finished": "2026-09-08T08:42:19.391Z",
+      "loadedFiles": 1120,
+      "loadedTreeSHA256": "e1c265624fa44b23ac4bf65254db90c5fdfd2b30ec227a657bdd867cec31e482",
+      "harnessSHA256": "38cdd5fcf06d13fde7e57a9527927751607a940b358bffc75330ef4dc7d1c6d3",
+      "passed": 54,
+      "failed": 0,
+      "total": 54,
+      "profiles": [
+        {
+          "mode": "normal",
+          "browser": "Chrome/152.0.7977.76",
+          "nativePopupBlocking": true,
+          "userScriptsEnabled": false,
+          "completed": true,
+          "pageErrors": 0
+        },
+        {
+          "mode": "isolated-lab",
+          "browser": "Chrome/152.0.7977.76",
+          "nativePopupBlocking": false,
+          "userScriptsEnabled": false,
+          "completed": true,
+          "pageErrors": 0
+        }
+      ],
+      "cases": [
+        {
+          "name": "Off preserves a clicked cross-host window",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Off automatic control isolates the built-in blocker",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 0,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "Disabling the popup feature preserves an automatic window",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 0,
+          "closedTargets": 0,
+          "decisions": [],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "Smart preserves a trusted cross-host link",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: trusted-navigation-target"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart preserves keyboard activation",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: trusted-navigation-target"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart preserves a slow trusted cross-host navigation",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: recent-user-gesture"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart preserves two rapid independent clicks",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 2,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            },
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "clickSpacingMs": 61,
+          "gestureSequences": [
+            1,
+            2
+          ],
+          "createdTargets": 2,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: recent-user-gesture"
+          ],
+          "serverRequestCount": 4,
+          "destinationRequestCount": 2
+        },
+        {
+          "name": "Smart blocks an automatic unrelated window",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 0,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "Smart permits one automatic directly related window",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 0,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "Smart blocks excess automatic related windows",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            },
+            {
+              "active": false,
+              "ever": false
+            },
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 0,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "A single trusted click does not authorize a popup flood",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            },
+            {
+              "active": false,
+              "ever": true
+            },
+            {
+              "active": false,
+              "ever": true
+            },
+            {
+              "active": false,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: recent-user-gesture"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart preserves a GET form in a new tab",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: trusted-navigation-target"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart preserves a POST form in a new tab",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: trusted-navigation-target"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart respects submitter formaction",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: trusted-navigation-target"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Strict recognizes the overridden same-host form target",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: strict-related-hostname-user-gesture"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart preserves a legitimate blank document",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "Blank then navigation keeps its trusted activation",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: recent-user-gesture"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Noopener null handle does not mean the tab was blocked",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: recent-user-gesture"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "A named iframe navigation does not create or close tabs",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 0,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Trusted child survives a later strict opener navigation",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: trusted-navigation-target"
+          ],
+          "serverRequestCount": 4,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Trusted iframe link remains usable",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: recent-user-gesture"
+          ],
+          "serverRequestCount": 4,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Basic defers contextual automatic-popup judgments",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 0,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "Allow policy preserves an automatic window",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 0,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "Strict explicitly blocks unrelated trusted windows",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 1,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 1,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "blocked: strict-unrelated-hostname"
+          ],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "Compiled popup block retains authority over Allow policy",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 1,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 1,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "blocked: compiled-popup-filter"
+          ],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "Compiled popup exception preserves an explicitly allowed window",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: compiled-popup-filter"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Off takes precedence over an explicit compiled popup block",
+          "mode": "normal",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Off preserves a clicked cross-host window",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Off automatic control isolates the built-in blocker",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Disabling the popup feature preserves an automatic window",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart preserves a trusted cross-host link",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: trusted-navigation-target"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart preserves keyboard activation",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: trusted-navigation-target"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart preserves a slow trusted cross-host navigation",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: recent-user-gesture"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart preserves two rapid independent clicks",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 2,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            },
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "clickSpacingMs": 63,
+          "gestureSequences": [
+            1,
+            2
+          ],
+          "createdTargets": 2,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: recent-user-gesture"
+          ],
+          "serverRequestCount": 4,
+          "destinationRequestCount": 2
+        },
+        {
+          "name": "Smart blocks an automatic unrelated window",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 1,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 1,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "blocked: unrelated-hostname-without-user-gesture"
+          ],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "Smart permits one automatic directly related window",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: single-related-hostname-popup"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart blocks excess automatic related windows",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 2,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            },
+            {
+              "active": false,
+              "ever": false
+            },
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 3,
+          "closedTargets": 2,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: single-related-hostname-popup",
+            "blocked: related-hostname-popup-burst"
+          ],
+          "serverRequestCount": 5,
+          "destinationRequestCount": 3
+        },
+        {
+          "name": "A single trusted click does not authorize a popup flood",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 3,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            },
+            {
+              "active": false,
+              "ever": true
+            },
+            {
+              "active": false,
+              "ever": true
+            },
+            {
+              "active": false,
+              "ever": true
+            }
+          ],
+          "createdTargets": 4,
+          "closedTargets": 3,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: recent-user-gesture",
+            "blocked: unrelated-hostname-without-user-gesture"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart preserves a GET form in a new tab",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: trusted-navigation-target"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart preserves a POST form in a new tab",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: trusted-navigation-target"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart respects submitter formaction",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: trusted-navigation-target"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Strict recognizes the overridden same-host form target",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: strict-related-hostname-user-gesture"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Smart preserves a legitimate blank document",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "Blank then navigation keeps its trusted activation",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: recent-user-gesture"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Noopener null handle does not mean the tab was blocked",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: recent-user-gesture"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "A named iframe navigation does not create or close tabs",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 0,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Trusted child survives a later strict opener navigation",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: trusted-navigation-target"
+          ],
+          "serverRequestCount": 4,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Trusted iframe link remains usable",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: recent-user-gesture"
+          ],
+          "serverRequestCount": 4,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Basic defers contextual automatic-popup judgments",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: gesture-context-unavailable"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Allow policy preserves an automatic window",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": false,
+              "ever": false
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: site-policy-allow"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Strict explicitly blocks unrelated trusted windows",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 1,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 1,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "blocked: strict-unrelated-hostname"
+          ],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "Compiled popup block retains authority over Allow policy",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 0,
+          "successfulClosures": 1,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 1,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "blocked: compiled-popup-filter"
+          ],
+          "serverRequestCount": 2,
+          "destinationRequestCount": 0
+        },
+        {
+          "name": "Compiled popup exception preserves an explicitly allowed window",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled",
+            "allow: compiled-popup-filter"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        },
+        {
+          "name": "Off takes precedence over an explicit compiled popup block",
+          "mode": "isolated-lab",
+          "passed": true,
+          "aliveTargets": 1,
+          "successfulClosures": 0,
+          "openerAlive": true,
+          "attemptActivation": [
+            {
+              "active": true,
+              "ever": true
+            }
+          ],
+          "createdTargets": 1,
+          "closedTargets": 0,
+          "decisions": [
+            "allow: popup-filtering-disabled"
+          ],
+          "serverRequestCount": 3,
+          "destinationRequestCount": 1
+        }
+      ]
+    }
+  ]
+}

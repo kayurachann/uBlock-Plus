@@ -277,21 +277,33 @@ async function getStockPopupSnapshot() {
     return promise;
 }
 
-async function getPopupGestureContexts(tabId) {
+async function getPopupGestureContexts(tabId, sourceFrameId = -1) {
     let frames = [ { frameId: 0 } ];
     if ( webextFlavor === 'chromium' &&
         browser.webNavigation?.getAllFrames ) {
         frames = await browser.webNavigation.getAllFrames({ tabId })
             .catch(( ) => frames);
     }
-    const responses = await Promise.all(frames.slice(0, 64).map(async frame => {
+    // The opening frame can occur beyond the enumeration budget on a page
+    // with many embeds. Always ask it first, retaining the same 64-message cap.
+    const frameIds = new Set();
+    if ( Number.isSafeInteger(sourceFrameId) && sourceFrameId >= 0 ) {
+        frameIds.add(sourceFrameId);
+    }
+    for ( const frame of Array.isArray(frames) ? frames : [] ) {
+        if ( frameIds.size >= 64 ) { break; }
+        if ( Number.isSafeInteger(frame?.frameId) === false ||
+            frame.frameId < 0 ) { continue; }
+        frameIds.add(frame.frameId);
+    }
+    const responses = await Promise.all(Array.from(frameIds, async frameId => {
         const response = await browser.tabs.sendMessage(
             tabId,
             { what: 'getPopupGestureContext' },
-            { frameId: frame.frameId }
+            { frameId }
         ).catch(( ) => undefined);
         if ( response instanceof Object === false ) { return; }
-        return { ...response, frameId: frame.frameId };
+        return { ...response, frameId };
     }));
     return responses.filter(response => response !== undefined);
 }

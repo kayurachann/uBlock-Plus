@@ -35,6 +35,7 @@ This directory contains the user, architecture, security and community documenta
 | [MV3-CAPABILITY-AUDIT-2026-09-06.md](MV3-CAPABILITY-AUDIT-2026-09-06.md) | Vietnamese audit against full uBlock Origin, reproduced defects and improvements informed by AdGuard/Brave. |
 | [MV3-PARITY-IMPLEMENTATION-2026-09-06.md](MV3-PARITY-IMPLEMENTATION-2026-09-06.md) | Implemented firewall, unified logger, cross-source exceptions, exact cancellation and remaining Chrome API boundaries. |
 | [MV3-POPUP-PARITY.md](MV3-POPUP-PARITY.md) | Site power, filtering levels, popup policy and scope/recovery guarantees. |
+| [POPUP-BLOCKER-2026-09-08.md](POPUP-BLOCKER-2026-09-08.md) | Popup blocker lifecycle/gesture fixes and real Chrome tests with browser-native blocking controls. |
 | [MV3-CHROME-RETEST-2026-09-06.md](MV3-CHROME-RETEST-2026-09-06.md) | Dated local release validation and 28 + 7 scenarios on installed Google Chrome. |
 | [MV3-RETEST-2026-09-05.md](MV3-RETEST-2026-09-05.md) | Upstream issue comparisons and durability/fail-open regression coverage. |
 | [README screenshot provenance](assets/readme/README.md) | Actual Chrome image sources, build hashes, capture settings and older illustrations. |
