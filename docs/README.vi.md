@@ -23,6 +23,9 @@ uBlock Plus+ chặn các yêu cầu mạng và thành phần trang không mong m
 
 ## Mục lục
 
+> [!TIP]
+> **Cài vào Chrome:** tải [ZIP tiện ích Standard — v1.1.2](https://github.com/kayurachann/uBlock-Plus/releases/download/v1.1.2/uBlock-Plus_1.1.2.chromium.zip) cùng [file SHA-256](https://github.com/kayurachann/uBlock-Plus/releases/download/v1.1.2/uBlock-Plus_1.1.2.chromium.zip.sha256), rồi làm theo [hướng dẫn cài](#cài-bản-unpacked). **Code → Download ZIP**, **Source code (zip)** và **Source code (tar.gz)** của GitHub là mã nguồn để phát triển, cần build trước khi nạp vào Chrome.
+
 - [Tính năng và hình ảnh](#tính-năng-và-hình-ảnh)
 - [Cài đặt, cập nhật và gỡ bỏ](#quick-start)
 - [Sử dụng popup](#sử-dụng-popup)
@@ -102,6 +105,18 @@ Bản thử nghiệm **v1.1.2** bao gồm các bản sửa popup, logo dấu c�
 Để lấy bản build CI, mở [MV3 Chromium Actions](https://github.com/kayurachann/uBlock-Plus/actions/workflows/mv3-chromium.yml), chọn lần chạy thành công ứng với commit muốn dùng và tải artifact `uBlock-Plus-chromium-<commit>`. GitHub có thể yêu cầu đăng nhập. Giải nén file artifact bên ngoài trước để lấy ZIP tiện ích và checksum tương ứng. Artifact CI là bản build thử nghiệm có thời gian lưu giới hạn; chúng không tự cập nhật bản Release công khai.
 
 ### Cài bản unpacked
+
+Chọn **ZIP tiện ích Standard** ở link trên. Thư mục tên `uBlock-Plus-main` thường là mã nguồn tải từ GitHub, chưa thể nạp trực tiếp. Sau khi giải nén đúng gói tiện ích, thư mục phải có dạng:
+
+```text
+uBlock-Plus/
+  manifest.json
+  popup.html
+  js/
+  rulesets/
+```
+
+Trong Chrome, chọn chính thư mục `uBlock-Plus` này. Nếu giải nén tạo thêm thư mục bao ngoài, mở vào trong và chọn thư mục chứa trực tiếp `manifest.json`. Không lấy riêng file manifest từ cây mã nguồn để chép ra ngoài: Chrome cần cả tiện ích đã build cùng các ruleset đi kèm.
 
 1. Lấy `uBlock-Plus_*.chromium.zip` và file `.sha256` tương ứng từ trang Releases của repository này, artifact của một lần chạy CI thành công hoặc [bản build từ mã nguồn](#build-và-kiểm-tra-bản-đóng-gói).
 2. Kiểm tra checksum rồi giải nén ZIP vào một thư mục cố định. Trên Windows, đường dẫn ngắn như `C:\Extensions\uBlock-Plus` giúp tránh sự cố do đường dẫn quá dài.
@@ -326,6 +341,7 @@ Có thể dùng `make mv3-chromium` để tạo thư mục unpacked. Truyền s�
 | Triệu chứng | Cách kiểm tra |
 | --- | --- |
 | Chrome không nạp được tiện ích | Giải nén ZIP, chọn thư mục chứa `manifest.json`, kiểm tra phiên bản trình duyệt và đọc lỗi trên thẻ tiện ích. |
+| “Tệp kê khai bị thiếu hoặc không thể đọc được” khi chọn `uBlock-Plus-main` | Thường do tải nhầm ZIP mã nguồn của GitHub. Tải ZIP tiện ích Standard ở link trên, giải nén rồi chọn thư mục chứa trực tiếp `manifest.json`. Xem [cách cài](#cài-bản-unpacked). |
 | Một website hoạt động sai | Tắt bảo vệ cho trang đó rồi tải lại. Nếu trang hoạt động bình thường, kiểm tra bộ lọc cá nhân và danh sách mới bật, sau đó báo lỗi kèm cách tái hiện. |
 | Popup đăng nhập/thanh toán bị đóng | Kiểm tra chính sách của đúng tên máy chủ và các quy tắc lọc đã biên dịch. Allow chỉ đổi chính sách theo ngữ cảnh; tạm tắt bảo vệ trang là bước chẩn đoán riêng. |
 | Picker hoặc thay đổi giao diện có vẻ không hoạt động | Thử trên trang web thông thường, kiểm tra chế độ lọc và khả năng chạy tập lệnh người dùng, rồi tải lại trang. Không thể chèn script vào các trang trình duyệt bị hạn chế. |

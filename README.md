@@ -23,6 +23,9 @@ The **yellow plus** identifies this community fork. The shield turns gray when p
 
 ## Contents
 
+> [!TIP]
+> **Installing in Chrome?** Download the [Standard extension ZIP — v1.1.2](https://github.com/kayurachann/uBlock-Plus/releases/download/v1.1.2/uBlock-Plus_1.1.2.chromium.zip) and its [SHA-256 file](https://github.com/kayurachann/uBlock-Plus/releases/download/v1.1.2/uBlock-Plus_1.1.2.chromium.zip.sha256), then follow [installation](#install-an-unpacked-build). GitHub's **Code → Download ZIP**, **Source code (zip)** and **Source code (tar.gz)** contain development source, which must be built before loading into Chrome.
+
 - [Features and screenshots](#features-and-screenshots)
 - [Quick start, updates and removal](#quick-start)
 - [Using the popup](#using-the-popup)
@@ -100,6 +103,18 @@ The **v1.1.2 preview** includes the popup fixes, yellow-plus logo, firewall test
 For a CI build, open [MV3 Chromium Actions](https://github.com/kayurachann/uBlock-Plus/actions/workflows/mv3-chromium.yml), select a successful run for the desired commit, and download its `uBlock-Plus-chromium-<commit>` artifact. GitHub may require sign-in. Extract that outer artifact archive first to find the extension ZIP and matching checksum. CI artifacts are preview build outputs with limited retention; they do not update the public Release automatically.
 
 ### Install an unpacked build
+
+Use the **Standard extension ZIP** above. A folder named `uBlock-Plus-main` commonly comes from GitHub's source download and cannot be loaded directly. In the extracted extension folder, you should see this layout:
+
+```text
+uBlock-Plus/
+  manifest.json
+  popup.html
+  js/
+  rulesets/
+```
+
+Select `uBlock-Plus` itself in Chrome. If extraction creates an extra outer folder, open it and select the inner folder that directly contains `manifest.json`. Do not copy an individual manifest out of the source tree: the complete compiled extension and its rulesets are required.
 
 1. Obtain `uBlock-Plus_*.chromium.zip` and its matching `.sha256` file from this repository's Releases, a successful CI artifact, or a [source build](#build-and-validate).
 2. Verify the checksum, then extract the ZIP into a permanent folder. On Windows, a short path such as `C:\Extensions\uBlock-Plus` helps avoid long-path problems.
@@ -324,6 +339,7 @@ These are dated local results for the recorded builds, not a claim that the olde
 | Symptom | What to check |
 | --- | --- |
 | Chrome cannot load the extension | Extract the ZIP, select the folder containing `manifest.json`, check browser version and read the extension card's error. |
+| “Manifest file is missing or unreadable” after selecting `uBlock-Plus-main` | This usually means the GitHub source archive was downloaded. Download the Standard extension ZIP linked above, extract it, and select its folder containing `manifest.json`. See [installation](#install-an-unpacked-build). |
 | A website breaks | Turn protection Off for that site and reload. If it recovers, inspect custom filters and recently enabled lists, then report a reproducible case. |
 | A sign-in/payment popup closes | Review the exact hostname's policy and compiled filter rules. Allow changes the contextual policy only; temporarily turning site protection Off is a separate diagnostic step. |
 | Picker or cosmetic changes seem inactive | Use a normal web page, check filtering mode and user-script capability, then reload the page. Restricted browser pages cannot be injected. |
