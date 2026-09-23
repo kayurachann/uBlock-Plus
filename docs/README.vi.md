@@ -19,12 +19,12 @@ uBlock Plus+ chặn các yêu cầu mạng và thành phần trang không mong m
 **Dấu cộng vàng** là nhận diện của bản fork cộng đồng này. Khi tắt bảo vệ, khiên chuyển xám và dấu cộng vẫn màu vàng. [Nguồn logo và cách xuất icon](BRANDING.md).
 
 > [!IMPORTANT]
-> Đây là một bản fork cộng đồng độc lập, không phải bản phát hành chính thức của uBlock Origin hay [uBlock Origin Lite](https://github.com/uBlockOrigin/uBOL-home) và không được Raymond Hill bảo trợ. Dự án hiện được phân phối dưới dạng **bản thử nghiệm cài đặt thủ công**. MV3 chịu các giới hạn của trình duyệt; dự án không tuyên bố tương đương hoàn toàn với MV2. Bản thử nghiệm đã phát hành có thể khác mã nguồn mới nhất—xem [nên cài bản nào](#nên-cài-bản-nào).
+> Đây là một bản fork cộng đồng độc lập, không phải bản phát hành chính thức của uBlock Origin hay [uBlock Origin Lite](https://github.com/uBlockOrigin/uBOL-home) và không được Raymond Hill bảo trợ. Dự án được phân phối dưới dạng **bản thử nghiệm cài dạng unpacked**: chỉ cần cài một lần bằng Load unpacked, sau đó [trình cập nhật Windows](AUTO-UPDATE.md) tùy chọn sẽ tự cài các bản phát hành mới. MV3 chịu các giới hạn của trình duyệt; dự án không tuyên bố tương đương hoàn toàn với MV2. Bản thử nghiệm đã phát hành có thể khác mã nguồn mới nhất—xem [nên cài bản nào](#nên-cài-bản-nào).
 
 ## Mục lục
 
 > [!TIP]
-> **Cài vào Chrome:** tải [ZIP tiện ích Standard — v1.1.2](https://github.com/kayurachann/uBlock-Plus/releases/download/v1.1.2/uBlock-Plus_1.1.2.chromium.zip) cùng [file SHA-256](https://github.com/kayurachann/uBlock-Plus/releases/download/v1.1.2/uBlock-Plus_1.1.2.chromium.zip.sha256), rồi làm theo [hướng dẫn cài](#cài-bản-unpacked). **Code → Download ZIP**, **Source code (zip)** và **Source code (tar.gz)** của GitHub là mã nguồn để phát triển, cần build trước khi nạp vào Chrome.
+> **Cài vào Chrome:** tải `uBlock-Plus_<phiên bản>.chromium.zip` (Standard) mới nhất cùng file `.sha256` tại [Releases](https://github.com/kayurachann/uBlock-Plus/releases), rồi làm theo [hướng dẫn cài](#cài-bản-unpacked). Trên Windows, hãy [bật tự động cập nhật](#tự-động-cập-nhật) một lần để không phải cài đi cài lại. **Code → Download ZIP**, **Source code (zip)** và **Source code (tar.gz)** của GitHub là mã nguồn để phát triển, cần build trước khi nạp vào Chrome.
 
 - [Tính năng và hình ảnh](#tính-năng-và-hình-ảnh)
 - [Cài đặt, cập nhật và gỡ bỏ](#quick-start)
@@ -47,7 +47,7 @@ uBlock Plus+ chặn các yêu cầu mạng và thành phần trang không mong m
 | Điều khiển theo trang | Bật/tắt bảo vệ và nhớ mức lọc trước đó, các chế độ Basic/Optimal/Complete và chính sách popup theo tên máy chủ. |
 | Công cụ phần tử | Picker tạo bộ lọc giao diện lâu dài, zapper xóa tạm thời và unpicker gỡ bộ lọc cá nhân đã lưu phù hợp với phần tử được chọn. |
 | Quản lý bộ lọc | Danh sách tích hợp, nhập qua HTTPS, các gói Filter Store và catalog cộng đồng tương thích. |
-| Cài đặt | Cấu hình bảo vệ có sẵn, giao diện, mật độ hiển thị, cấu hình bộ nhớ, tùy chọn riêng tư của trình duyệt và sao lưu/khôi phục. |
+| Cài đặt | Hồ sơ bảo vệ, giao diện, mật độ hiển thị, cấu hình bộ nhớ, tùy chọn riêng tư của trình duyệt và sao lưu/khôi phục. |
 | Firewall động | Quy tắc nguồn/đích/loại với block, allow và noop đúng nghĩa; tên miền, IPv4 và IPv6; bản tạm/lâu dài, bảng tra nhanh và công cụ thử bản nháp khi cần. Chặn native cần Chrome 145+. |
 | Ngoại lệ bộ lọc | Ngoại lệ scriptlet giữa các nguồn, `$badfilter` chính xác cho imported/personal và hủy stock theo ánh xạ nguồn, gồm dựng lại phần còn lại của nhóm hostname đã chứng minh được ngữ nghĩa. |
 | Chẩn đoán | Chủ động ghi network, DNR native, cosmetic, DOM và scriptlet; có tìm kiếm, export che dữ liệu và lịch sử cục bộ giới hạn. |
@@ -100,30 +100,32 @@ Các ảnh dưới đây chụp **tiện ích thực tế được nạp dạng 
 
 Manifest khai báo yêu cầu **Chromium 130 trở lên**. Lần kiểm thử trình duyệt thực tế gần nhất được ghi nhận dùng Google Chrome 152; kết quả đó không chứng nhận mọi biến thể hoặc phiên bản Chromium. Quy trình phát hành của repository này tạo gói Chromium MV3, không tạo gói Firefox hay Safari.
 
-Bản thử nghiệm **v1.1.2** bao gồm các bản sửa popup, logo dấu cộng vàng, công cụ thử quy tắc firewall, bộ tra cứu firewall dùng chỉ mục, ngoại lệ bộ lọc giữa các nguồn và cải tiến cấu hình bộ nhớ được mô tả trong README này. Tải gói thông thường `uBlock-Plus_1.1.2.chromium.zip` cùng checksum tại [GitHub Releases](https://github.com/kayurachann/uBlock-Plus/releases). Gói riêng `experimental.chromium.zip` cần làm theo [hướng dẫn Experimental WebRequest](EXPERIMENTAL-WEBREQUEST.md). Chọn bản thử nghiệm mới nhất trên trang Releases; đường dẫn `/releases/latest` của GitHub không bao gồm pre-release.
+Các bản phát hành do [workflow Release](../.github/workflows/release.yml) xuất bản (từ 1.2.0 trở đi) được GitHub Actions build từ một commit có tag, chỉ sau khi test, lint, cả hai bản build và validator đều đạt. Các bản này có file SHA-256 và chứng thực nguồn gốc build (build provenance attestation) của GitHub, kiểm tra được bằng `gh attestation verify <zip> --repo kayurachann/uBlock-Plus`. Các bản phát hành ra đời trước workflow này (1.1.2 trở về trước) chỉ có file SHA-256, không có chứng thực và không kèm trình cập nhật Windows. Tải gói thông thường `uBlock-Plus_<phiên bản>.chromium.zip` cùng checksum tại [GitHub Releases](https://github.com/kayurachann/uBlock-Plus/releases). Gói riêng `experimental.chromium.zip` cần làm theo [hướng dẫn Experimental WebRequest](EXPERIMENTAL-WEBREQUEST.md). Chọn bản thử nghiệm mới nhất trên trang Releases; đường dẫn `/releases/latest` của GitHub không bao gồm pre-release.
 
 Để lấy bản build CI, mở [MV3 Chromium Actions](https://github.com/kayurachann/uBlock-Plus/actions/workflows/mv3-chromium.yml), chọn lần chạy thành công ứng với commit muốn dùng và tải artifact `uBlock-Plus-chromium-<commit>`. GitHub có thể yêu cầu đăng nhập. Giải nén file artifact bên ngoài trước để lấy ZIP tiện ích và checksum tương ứng. Artifact CI là bản build thử nghiệm có thời gian lưu giới hạn; chúng không tự cập nhật bản Release công khai.
 
 ### Cài bản unpacked
 
-Chọn **ZIP tiện ích Standard** ở link trên. Thư mục tên `uBlock-Plus-main` thường là mã nguồn tải từ GitHub, chưa thể nạp trực tiếp. Sau khi giải nén đúng gói tiện ích, thư mục phải có dạng:
+Chọn **ZIP tiện ích Standard** ở link trên. Thư mục tên `uBlock-Plus-main` thường là mã nguồn tải từ GitHub, chưa thể nạp trực tiếp. ZIP bản phát hành không có thư mục bao ngoài: sau khi giải nén, thư mục bạn chọn phải có dạng:
 
 ```text
-uBlock-Plus/
+%LOCALAPPDATA%\uBlockPlus\Extension\
   manifest.json
   popup.html
-  js/
-  rulesets/
+  js\
+  rulesets\
+  updater\
 ```
 
-Trong Chrome, chọn chính thư mục `uBlock-Plus` này. Nếu giải nén tạo thêm thư mục bao ngoài, mở vào trong và chọn thư mục chứa trực tiếp `manifest.json`. Không lấy riêng file manifest từ cây mã nguồn để chép ra ngoài: Chrome cần cả tiện ích đã build cùng các ruleset đi kèm.
+Trong Chrome, chọn chính thư mục này. Nếu công cụ giải nén tạo thêm thư mục bao ngoài, mở vào trong và chọn thư mục chứa trực tiếp `manifest.json`. Không lấy riêng file manifest từ cây mã nguồn để chép ra ngoài: Chrome cần cả tiện ích đã build cùng các ruleset đi kèm.
 
 1. Lấy `uBlock-Plus_*.chromium.zip` và file `.sha256` tương ứng từ trang Releases của repository này, artifact của một lần chạy CI thành công hoặc [bản build từ mã nguồn](#build-và-kiểm-tra-bản-đóng-gói).
-2. Kiểm tra checksum rồi giải nén ZIP vào một thư mục cố định. Trên Windows, đường dẫn ngắn như `C:\Extensions\uBlock-Plus` giúp tránh sự cố do đường dẫn quá dài.
+2. Kiểm tra checksum rồi giải nén ZIP vào một **thư mục mới, còn trống, nằm trong hồ sơ người dùng của bạn** và chỉ dùng riêng cho tiện ích. Trên Windows, hãy dùng `%LOCALAPPDATA%\uBlockPlus\Extension`: gõ `%LOCALAPPDATA%` vào thanh địa chỉ của File Explorer, tạo thư mục `uBlockPlus\Extension` tại đó rồi giải nén ZIP vào `Extension`. Trong PowerShell, lệnh `Expand-Archive .\uBlock-Plus_<phiên bản>.chromium.zip "$env:LOCALAPPDATA\uBlockPlus\Extension"` cho kết quả tương tự. Không dùng thư mục gốc của ổ đĩa, thư mục bạn tạo ngay dưới `C:\` hay bất kỳ thư mục nào bên trong nó (như `C:\Extensions` hoặc `C:\Extensions\uBlock-Plus`), cũng như chính các thư mục Desktop, Documents, Downloads: [trình cập nhật Windows](#tự-động-cập-nhật) sẽ từ chối các thư mục này.
 3. Mở `chrome://extensions` trong Chrome hoặc `edge://extensions` trong Edge.
-4. Bật **Developer mode/Chế độ dành cho nhà phát triển**, chọn **Load unpacked/Tải tiện ích đã giải nén**, rồi chọn thư mục chứa trực tiếp `manifest.json`. Không chọn file ZIP hoặc thư mục cha.
+4. Bật **Developer mode/Chế độ dành cho nhà phát triển**, chọn **Load unpacked/Tải tiện ích đã giải nén**, rồi chọn thư mục chứa trực tiếp `manifest.json`. Thư mục `AppData` bị ẩn, nên hãy gõ `%LOCALAPPDATA%\uBlockPlus\Extension` vào thanh địa chỉ của hộp thoại. Không chọn file ZIP hoặc thư mục cha. Sau đó luôn giữ **Developer mode** ở trạng thái bật: khi chế độ này tắt, Chrome sẽ tắt các tiện ích unpacked.
 5. Ghim tiện ích từ trình đơn Extensions/Tiện ích của trình duyệt và mở một trang HTTP/HTTPS thông thường để thử popup.
 6. Với các bộ lọc nhập vào/tập lệnh người dùng được hỗ trợ, bật khả năng chạy tập lệnh người dùng của trình duyệt khi cần. Trên Chrome 138+, mở **Details/Chi tiết → Allow User Scripts/Cho phép tập lệnh người dùng**. Chrome 130–137 sử dụng **Developer mode/Chế độ dành cho nhà phát triển**. Sau khi đổi công tắc, tải lại tiện ích để worker nhận trạng thái API mới. Xem [hướng dẫn userScripts chính thức của Chrome](https://developer.chrome.com/docs/extensions/reference/api/userScripts).
+7. Trên Windows, [thiết lập trình cập nhật](#tự-động-cập-nhật) một lần.
 
 <details>
 <summary><strong>Kiểm tra SHA-256 trên Windows</strong></summary>
@@ -131,21 +133,70 @@ Trong Chrome, chọn chính thư mục `uBlock-Plus` này. Nếu giải nén t�
 Chạy các lệnh sau trong thư mục tải xuống, thay số phiên bản nếu cần:
 
 ```powershell
-(Get-FileHash .\uBlock-Plus_1.1.2.chromium.zip -Algorithm SHA256).Hash
-Get-Content .\uBlock-Plus_1.1.2.chromium.zip.sha256
+(Get-FileHash .\uBlock-Plus_1.2.0.chromium.zip -Algorithm SHA256).Hash
+Get-Content .\uBlock-Plus_1.2.0.chromium.zip.sha256
 ```
 
 Các giá trị thập lục phân phải trùng nhau; chữ hoa hay chữ thường không ảnh hưởng. Hãy đối chiếu với checksum đi kèm **đúng bản đóng gói đó**.
 
 </details>
 
-### Cập nhật hoặc gỡ bỏ
+### Tự động cập nhật
 
-Bản cài unpacked **không tự cập nhật** qua Chrome Web Store. Xuất bản sao lưu tại **Dashboard/Bảng điều khiển → Settings/Cài đặt**, đóng các tab liên quan nếu cần, kiểm tra và giải nén bản mới, rồi thay thế nội dung trong chính thư mục tiện ích đang dùng. Giữ nguyên đường dẫn thư mục và bấm **Reload/Tải lại** trên thẻ tiện ích. Tải lại các trang web để làm mới script và bộ lọc giao diện đã được áp dụng. Không đặt bản mới vào một thư mục con bên trong bản cũ.
+Chrome Web Store không cập nhật được tiện ích unpacked, nên uBlock Plus+ có kênh cập nhật riêng. [AUTO-UPDATE.md](AUTO-UPDATE.md) (tiếng Anh) mô tả chi tiết, bảng khắc phục sự cố và mô hình tin cậy.
 
-Sau khi cập nhật bản thử nghiệm này, mục **Details/Chi tiết** tại `chrome://extensions` phải hiển thị **1.1.2**. Nếu vẫn là 1.0.0, Chrome đang nạp thư mục cũ hoặc nội dung cũ trong thư mục đó. Push mã nguồn hay xuất bản GitHub Release không tự cập nhật bản unpacked đã cài.
+**Mọi bản cài đều tự kiểm tra bản phát hành mới.** Khoảng sáu giờ một lần, tiện ích đọc danh sách bản phát hành công khai từ `api.github.com`. Việc này không gửi dữ liệu duyệt web hay mã định danh nào; GitHub chỉ thấy địa chỉ IP và user agent của trình duyệt, như với mọi yêu cầu khác. Nếu một lần kiểm tra thất bại, tiện ích thử lại sau 15 phút, rồi giãn dần khoảng cách tới tối đa một ngày. Nút **Kiểm tra ngay** chỉ dùng được tối đa một lần mỗi phút. Khi có phiên bản mới, bảng điều khiển sẽ báo và popup hiện nút **Cập nhật x.y.z** để mở **Cài đặt → Cập nhật**. Muốn tắt việc kiểm tra, bỏ chọn **Tự động kiểm tra phiên bản mới** trong **Dashboard/Bảng điều khiển → Cài đặt → Cập nhật**. Bản build cục bộ không mang số phiên bản phát hành thì không kiểm tra. Trên macOS và Linux, bảng điều khiển vẫn báo phiên bản mới, còn việc cập nhật làm thủ công như hướng dẫn bên dưới.
 
-Để gỡ cài đặt, xuất bản sao lưu nếu muốn giữ cấu hình, rồi chọn **Remove/Xóa** trên trang quản lý tiện ích của trình duyệt. Chỉ xóa thư mục mã nguồn không gỡ tiện ích khỏi trình duyệt. Cài lại từ một thư mục khác có thể tạo mã định danh unpacked khác; hãy dùng bản sao lưu khi chuyển sang bản cài mới.
+**Trên Windows, trình cập nhật sẽ cài giúp bạn.** Chỉ cần thiết lập một lần:
+
+1. Cài uBlock Plus+ 1.2.0 trở lên như hướng dẫn ở trên, vào `%LOCALAPPDATA%\uBlockPlus\Extension` hoặc một thư mục mới khác trong hồ sơ người dùng. Các bản phát hành cũ hơn không có trình cập nhật.
+2. Trong thư mục đó, nhấp đúp `updater\install-updater.cmd`; không cần quyền quản trị. Công cụ này kiểm tra thư mục, chép trình cập nhật vào `%LOCALAPPDATA%\uBlockPlus\Updater`, đăng ký nó với Chrome (và với Edge, Chromium, Brave nếu máy có cài) trong tài khoản Windows của bạn, rồi in ra thư mục, ID tiện ích và các trình duyệt đã đăng ký.
+3. Mở **Bảng điều khiển → Cài đặt → Cập nhật** và chọn **Cho phép trình cập nhật**. Chrome sẽ hỏi quyền giao tiếp với ứng dụng gốc (native messaging); hãy cho phép. Sau đó uBlock Plus+ tự khởi động lại một lần và mở lại mục Cập nhật. Nếu mục này hiện nút **Khởi động lại ngay**, hãy bấm vào nút đó.
+
+Thay vì tự tải, giải nén và chạy `install-updater.cmd`, bạn có thể mở PowerShell và chạy các lệnh dưới đây. Không cần quyền quản trị; `-ExecutionPolicy Bypass` chỉ áp dụng cho đúng tiến trình PowerShell đó. Script cài đặt và các tệp của trình cập nhật được tải từ nhánh `main` trên `raw.githubusercontent.com`. Trình cài đăng ký trình cập nhật trước, rồi tải bản phát hành mới nhất vào `%LOCALAPPDATA%\uBlockPlus\Extension`, xác minh gói và giải nén vào đó. Thư mục này phải chưa tồn tại hoặc đang trống; nếu bên trong đã có uBlock Plus+ thì lệnh chỉ cài trình cập nhật. Nếu tải về thất bại, trình cài sẽ báo lỗi và vẫn giữ phần đăng ký; hãy chạy lại lệnh. Sau đó chọn thư mục này bằng **Load unpacked/Tải tiện ích đã giải nén** và làm tiếp bước 3.
+
+```powershell
+$installer = Join-Path $env:TEMP 'install-updater.ps1'
+Invoke-WebRequest -UseBasicParsing https://raw.githubusercontent.com/kayurachann/uBlock-Plus/main/platform/mv3/updater/install-updater.ps1 -OutFile $installer
+powershell -ExecutionPolicy Bypass -File $installer
+```
+
+Từ đó, mỗi bản phát hành mới sẽ được:
+
+* tải về từ GitHub Releases (`github.com`; GitHub chuyển hướng lượt tải sang một máy chủ `githubusercontent.com`);
+* đối chiếu với file `.sha256` đã công bố (file này phải ghi đúng tên gói), và với chữ ký phát hành khi dự án đã bật ký;
+* kiểm tra đúng loại gói (Standard hoặc Experimental), đúng danh tính tiện ích và đúng là phiên bản mới hơn;
+* chép đè vào thư mục, sau khi đã sao lưu bản đang dùng;
+* rồi tiện ích tự tải lại. Các trang của tiện ích đang mở sẽ đóng; trang web giữ cách lọc hiện tại cho tới khi bạn tải lại trang.
+
+Cài đặt, bộ lọc và danh sách được giữ nguyên vì thư mục và ID tiện ích không đổi. Chọn **Chỉ thông báo** nếu muốn tự bấm **Cài đặt ngay**. **Khôi phục phiên bản …** đưa lại phiên bản đã được sao lưu trước lần cập nhật gần nhất; sau đó chế độ tự động cài sẽ bỏ qua phiên bản bạn vừa rời đi, cho tới khi có bản mới hơn hoặc bạn bấm **Cài đặt ngay**. **Kênh phát hành** có hai lựa chọn: **Xem trước (gồm bản phát hành thử)** và **Chỉ bản ổn định**; cho tới nay mọi bản phát hành đều là bản phát hành thử. Quản trị viên có thể đặt chính sách managed `autoUpdate` là `off` (không kiểm tra), `notify` (không bao giờ tự cài) hoặc `auto` (người dùng tự quyết định).
+
+Hiện dự án chưa ký các bản phát hành. Vì vậy trình cài hiển thị `not configured (checksum only)` ở dòng **Signed releases**, và gói chỉ được xác minh bằng file SHA-256. Trình cài ghim các khóa ký đi kèm với nó; khi đã có khóa được ghim, trình cập nhật yêu cầu thêm chữ ký hợp lệ từ một trong các khóa đó. Trình cập nhật không bao giờ nhận khóa mới hay bản mới của chính nó từ một gói chưa ký: hãy chạy lại `updater\install-updater.cmd` từ thư mục đã cập nhật để ghim khóa hoặc làm mới trình cập nhật.
+
+**Quy tắc về thư mục.** Trình cập nhật chỉ thay đổi thư mục mà không người dùng nào khác trên máy có thể sửa. Nó từ chối thư mục gốc của ổ đĩa hoặc đường dẫn mạng; chính các thư mục hệ thống và hồ sơ như Windows, Program Files, thư mục người dùng, Desktop, Documents hay Downloads; thư mục có chứa junction hoặc symbolic link; và thư mục mà các nhóm dùng chung như Everyone, Users hay Authenticated Users có quyền sửa. Trường hợp cuối bao gồm cả thư mục tạo ngay dưới `C:\` và mọi thư mục bên trong nó, vì mọi người dùng đã đăng nhập đều sửa được chúng. Trình cài kiểm tra y hệt như vậy trước khi đăng ký bất cứ thứ gì. Ngoài ra, trình cập nhật từ chối cập nhật hoặc khôi phục khi thư mục có những tệp mà bản đang cài không liệt kê trong `updater\package-files.json`, thay vì xóa chúng: hãy chuyển các tệp đó ra ngoài rồi thử lại. Thư mục `_metadata` của Chrome và các tệp `Thumbs.db`, `desktop.ini`, `.DS_Store` được để nguyên nếu nằm trong thư mục mà bản phát hành mới (hoặc bản sao lưu, khi khôi phục) cũng có; trong thư mục mà bản phát hành bỏ đi, chúng bị tính là tệp lạ. Chi tiết: [quy tắc về thư mục](AUTO-UPDATE.md#folder-rules) và [tệp lạ trong thư mục](AUTO-UPDATE.md#unexpected-files).
+
+Nếu trước đây bạn làm theo hướng dẫn cũ và đang dùng thư mục như `C:\Extensions\uBlock-Plus`, có hai cách:
+
+* Chuyển sang thư mục khuyến nghị. Chrome tạo ID của tiện ích unpacked từ đường dẫn thư mục, nên bản chuyển sang chỗ mới sẽ là một tiện ích mới: hãy xuất bản sao lưu trước tại **Bảng điều khiển → Cài đặt**. Nếu trình cập nhật đang quản lý thư mục cũ, mở Command Prompt và chạy `C:\Extensions\uBlock-Plus\updater\install-updater.cmd -Uninstall` (thay bằng thư mục cũ của bạn). Gỡ bản cũ khỏi trình duyệt, giải nén bản phát hành vào `%LOCALAPPDATA%\uBlockPlus\Extension`, nạp thư mục đó, khôi phục bản sao lưu, chạy thiết lập từ thư mục mới, rồi xóa thư mục cũ. Xem [chuyển một bản cài hiện có](AUTO-UPDATE.md#moving-an-existing-installation).
+* Giữ thư mục cũ và gỡ quyền dùng chung khỏi thư mục cấp trên cùng mà bạn đã tạo dưới `C:\` (ở đây là `C:\Extensions`). Chạy lệnh sau một lần trong Command Prompt (không phải PowerShell), rồi chạy lại `updater\install-updater.cmd`. Sau đó chỉ tài khoản của bạn, SYSTEM và Administrators truy cập được thư mục này cùng mọi thứ bên trong.
+
+  ```bat
+  icacls C:\Extensions /inheritance:r /grant:r "%USERNAME%:(OI)(CI)F" *S-1-5-18:(OI)(CI)F *S-1-5-32-544:(OI)(CI)F
+  ```
+
+**Nếu quá trình cập nhật bị gián đoạn** (treo máy, đăng xuất hoặc mất điện), trình cập nhật sẽ khôi phục bản sao lưu ở lần chạy kế tiếp. Trước đó, mục Cập nhật có thể báo “Lần cập nhật trước bị gián đoạn trước khi hoàn tất.” Nếu bạn mở **Cài đặt → Cập nhật** trước lần cài kế tiếp, mục này báo rằng lần cập nhật bị gián đoạn đã được hoàn tác, và uBlock Plus+ tự tải lại vào phiên bản đã khôi phục nếu cần. Nếu một lần cài chạy trước, nó hoàn tác lần cập nhật bị gián đoạn rồi cài tiếp. Nếu không còn bản sao lưu, mục Cập nhật báo “Không thể khôi phục phiên bản cũ hơn. …”. Khi đó hãy chạy trình cập nhật bằng [dòng lệnh](AUTO-UPDATE.md#command-line) với `-Rollback`: lệnh này giữ nguyên thư mục (miễn là thư mục vẫn mang một trong hai phiên bản) và xóa dấu vết của lần cập nhật dở dang. Thư mục có thể vẫn lẫn tệp của cả hai phiên bản, nên sau đó hãy chạy trình cập nhật với `-Update`, hoặc cập nhật thủ công như hướng dẫn bên dưới ([chi tiết](AUTO-UPDATE.md#interrupted-updates)).
+
+**Khi danh sách lọc đang được cập nhật**, thao tác cài, khôi phục và lần khởi động lại sau khi chọn **Cho phép trình cập nhật** sẽ chờ tối đa một phút. Nếu sau thời gian đó danh sách lọc vẫn chưa cập nhật xong, thao tác dừng lại với thông báo “Đang cập nhật danh sách bộ lọc. Hãy thử lại khi quá trình này hoàn tất.” Riêng lần cài tự động sẽ thử lại sau năm phút; thao tác bạn tự bấm thì không tự thử lại. Mỗi lúc chỉ một thao tác cập nhật hoặc khôi phục được chạy, dù bắt đầu từ trình duyệt nào hay từ dòng lệnh.
+
+Trình cập nhật cũng có thể chạy bằng dòng lệnh (`-Status`, `-Update`, `-Rollback`); xem [AUTO-UPDATE.md](AUTO-UPDATE.md#command-line).
+
+Cập nhật thủ công vẫn dùng được trên mọi hệ điều hành. Xuất bản sao lưu tại **Bảng điều khiển → Cài đặt** và kiểm tra checksum của ZIP mới. Xóa các tệp cũ trong thư mục tiện ích, giải nén ZIP mới vào chính thư mục đó, rồi bấm **Reload/Tải lại** trên thẻ tiện ích. Giữ nguyên đường dẫn thư mục. Không giải nén đè lên tệp cũ và không đặt bản mới vào thư mục con bên trong bản cũ: tệp cũ còn sót lại sẽ khiến trình cập nhật Windows từ chối các lần cập nhật sau. Tải lại các trang web để làm mới script và bộ lọc giao diện đã áp dụng. Mục **Details/Chi tiết** tại `chrome://extensions` phải hiển thị phiên bản mới. Nếu không, Chrome đang nạp một thư mục khác. Chỉ push mã nguồn thì không thay đổi bản đã cài; chỉ bản phát hành mới làm được điều đó.
+
+### Gỡ bỏ
+
+Để gỡ cài đặt, xuất bản sao lưu nếu muốn giữ cấu hình, rồi chọn **Remove/Xóa** trên trang quản lý tiện ích của trình duyệt. Chỉ xóa thư mục tiện ích không gỡ tiện ích khỏi trình duyệt. Cài lại từ một thư mục khác có thể tạo mã định danh unpacked khác; hãy dùng bản sao lưu khi chuyển sang bản cài mới.
+
+Muốn gỡ cả trình cập nhật Windows, mở Command Prompt và chạy `"%LOCALAPPDATA%\uBlockPlus\Extension\updater\install-updater.cmd" -Uninstall` (thay bằng thư mục tiện ích của bạn nếu khác), trước khi xóa thư mục đó. Nếu đang có bản cập nhật chạy, lệnh dừng lại với thông báo “An update is running; try again in a minute.” (hãy thử lại sau một phút). Nếu không, lệnh xóa bản sao lưu, bản tải về và trạng thái mà trình cập nhật lưu cho thư mục đó. Phần đăng ký với trình duyệt (các khóa registry của trình cập nhật) và `%LOCALAPPDATA%\uBlockPlus\Updater` chỉ bị xóa khi không còn bản cài nào khác đăng ký với trình cập nhật. Thư mục tiện ích không bị thay đổi.
 
 ## Sử dụng popup
 
@@ -218,29 +269,29 @@ example.com##.sponsored-card
 
 ## Cài đặt và sao lưu
 
-**Cấu hình bảo vệ có sẵn** và **cấu hình bộ nhớ** là hai thiết lập khác nhau:
+**Hồ sơ bảo vệ** và **cấu hình bộ nhớ** là hai thiết lập khác nhau:
 
 | Thiết lập | Lựa chọn | Mục đích |
 | --- | --- | --- |
-| Cấu hình bảo vệ | Baseline, Balanced, Maximum, Low memory | Áp dụng một nhóm tùy chọn lọc và hoạt động. Xem lại các thiết lập sau khi đổi cấu hình. |
+| Hồ sơ bảo vệ | Baseline/Cơ bản, Balanced/Cân bằng, Maximum/Tối đa, Low memory/RAM thấp | Áp dụng một nhóm tùy chọn lọc và hoạt động. Xem lại các thiết lập sau khi đổi cấu hình. |
 | Mức lọc | Basic, Optimal, Complete; Off cho ngoại lệ | Chọn cách lọc mặc định hoặc cho một trang. |
-| Cấu hình bộ nhớ | Auto, Balanced, Low-memory | Giới hạn biên dịch, nạp dữ liệu cosmetic đồng thời trong từng frame, cache và dọn dẹp. |
+| Cấu hình bộ nhớ | Auto/Tự động, Balanced/Cân bằng, Low memory/RAM thấp | Giới hạn biên dịch, nạp dữ liệu cosmetic đồng thời trong từng frame, cache và dọn dẹp. |
 | Giao diện | Chủ đề, màu nhấn, mật độ, chi tiết popup | Điều chỉnh cách hiển thị mà không đổi quy tắc đối chiếu bộ lọc. |
 
 > [!NOTE]
-> Số liệu lưu trữ đo dung lượng storage/cache của tiện ích, **không phải RAM đang dùng hoặc bộ nhớ tiến trình**. Low-memory chỉ nạp một dictionary cosmetic mỗi lần trong từng frame; Balanced nạp tối đa hai. Bộ lọc và ngoại lệ đã bật vẫn được giữ. Lượt lọc chưa có cache có thể chậm hơn khi giảm số tác vụ đồng thời.
+> Số liệu lưu trữ đo dung lượng storage/cache của tiện ích, **không phải RAM đang dùng hoặc bộ nhớ tiến trình**. Low memory/RAM thấp chỉ nạp một dictionary cosmetic mỗi lần trong từng frame; Balanced/Cân bằng nạp tối đa hai. Bộ lọc và ngoại lệ đã bật vẫn được giữ. Lượt lọc chưa có cache có thể chậm hơn khi giảm số tác vụ đồng thời.
 
-Với máy ít bộ nhớ, chọn **Cài đặt → Cấu hình bộ nhớ → Auto** (dùng Low-memory khi trình duyệt cung cấp mức bộ nhớ từ 4 GiB trở xuống), hoặc chọn **Low-memory** trực tiếp. Thiết lập này giữ nguyên mức bảo vệ và danh sách đang chọn. Xem [nghiên cứu hiệu suất và phép đo có thể chạy lại trên Chrome](PERFORMANCE-2026-09-06.md), tham khảo full uBO, AdGuard và Ghostery. Chưa đo trên máy vật lý 2–4 GiB hoặc chứng minh tỷ lệ giảm RAM toàn trình duyệt.
+Với máy ít bộ nhớ, chọn **Cài đặt → Cấu hình bộ nhớ → Tự động** (dùng RAM thấp khi trình duyệt cung cấp mức bộ nhớ từ 4 GiB trở xuống), hoặc chọn **RAM thấp** trực tiếp. Thiết lập này giữ nguyên mức bảo vệ và danh sách đang chọn. Xem [nghiên cứu hiệu suất và phép đo có thể chạy lại trên Chrome](PERFORMANCE-2026-09-06.md), tham khảo full uBO, AdGuard và Ghostery. Chưa đo trên máy vật lý 2–4 GiB hoặc chứng minh tỷ lệ giảm RAM toàn trình duyệt.
 
 Vào **Dashboard/Bảng điều khiển → Settings/Cài đặt** để xuất bản sao lưu trước khi đổi bản cài hoặc đặt lại tiện ích. Khi khôi phục, tiện ích kiểm tra cấu hình được hỗ trợ, bao gồm thiết lập lọc, mức lọc đã nhớ theo trang, chính sách popup, bộ lọc cá nhân và cấu hình danh sách/catalog. Giữ file sao lưu riêng tư: chúng có thể chứa tên trang, quy tắc cá nhân và URL nguồn đăng ký.
 
-Quá trình khôi phục diễn ra tuần tự, không phải một giao dịch chung cho toàn bộ cấu hình. Dữ liệu không hợp lệ sẽ không vượt qua bước kiểm tra, nhưng lỗi trình duyệt hoặc lưu trữ ở bước sau có thể xảy ra khi một số thiết lập trước đó đã được khôi phục. Kiểm tra kết quả hiển thị và những danh sách đang bật sau khi hoàn tất. **Reset/Đặt lại** đưa thiết lập về mặc định và xóa trạng thái danh sách đã nhập; thao tác này không thay thế việc sao lưu.
+Quá trình khôi phục diễn ra tuần tự, không phải một giao dịch chung cho toàn bộ cấu hình. Dữ liệu không hợp lệ sẽ không vượt qua bước kiểm tra, nhưng lỗi trình duyệt hoặc lưu trữ ở bước sau có thể xảy ra khi một số thiết lập trước đó đã được khôi phục. Kiểm tra kết quả hiển thị và những danh sách đang bật sau khi hoàn tất. **Reset to default settings…/Đặt lại về cài đặt mặc định…** đưa thiết lập về mặc định và xóa trạng thái danh sách đã nhập; thao tác này không thay thế việc sao lưu.
 
-<img src="assets/readme/dashboard-settings.png" width="960" alt="Mục Settings thực tế trên Chrome hiển thị cấu hình bảo vệ có sẵn và các tùy chọn giao diện">
+<img src="assets/readme/dashboard-settings.png" width="960" alt="Mục Settings thực tế trên Chrome hiển thị hồ sơ bảo vệ và các tùy chọn giao diện">
 
 ## Quyền truy cập và quyền riêng tư
 
-Việc lọc và lưu trữ dữ liệu chẩn đoán diễn ra cục bộ. Tiện ích không tích hợp công cụ phân tích người dùng của dự án, SDK quảng cáo hay dịch vụ tải lên lịch sử duyệt web. Tiện ích có gửi yêu cầu mạng tới nhà cung cấp danh sách/catalog để lấy nguồn đã chọn; các nhà cung cấp đó có chính sách riêng tư riêng. Mở liên kết hỗ trợ/báo lỗi cũng có thể kết nối tới trang bên ngoài.
+Việc lọc và lưu trữ dữ liệu chẩn đoán diễn ra cục bộ. Tiện ích không tích hợp công cụ phân tích người dùng của dự án, SDK quảng cáo hay dịch vụ tải lên lịch sử duyệt web. Tiện ích có gửi yêu cầu mạng tới nhà cung cấp danh sách/catalog để lấy nguồn đã chọn; các nhà cung cấp đó có chính sách riêng tư riêng. Việc kiểm tra cập nhật đọc danh sách bản phát hành công khai từ `api.github.com` khoảng sáu giờ một lần, không kèm định danh hay dữ liệu duyệt web, và có thể tắt. Mở liên kết hỗ trợ/báo lỗi cũng có thể kết nối tới trang bên ngoài.
 
 | Quyền hoặc khả năng | Mục đích sử dụng |
 | --- | --- |
@@ -253,6 +304,7 @@ Việc lọc và lưu trữ dữ liệu chẩn đoán diễn ra cục bộ. Ti�
 | `webNavigation` | Liên kết thông tin điều hướng với ngữ cảnh popup. |
 | `webRequest` tùy chọn | Quan sát request của tab được chủ động chọn ghi nhật ký; không thêm engine chặn mạng. |
 | `privacy` tùy chọn | Thay đổi một số cài đặt riêng tư của Chrome sau khi người dùng bật các tùy chọn đó; khi tắt một mục, tiện ích xóa thiết lập ghi đè của mình. |
+| `nativeMessaging` tùy chọn | Giao tiếp với trình cập nhật Windows cài riêng sau khi bạn chọn **Cho phép trình cập nhật**. Mỗi tin nhắn chỉ gồm phiên bản giao thức, một lệnh (`hello`, `stage`, `apply` hoặc `rollback`), mã yêu cầu và, khi cài đặt, số phiên bản cần cài. Tiện ích không gửi dữ liệu duyệt web. Trình cập nhật tự tải, xác minh và cài gói. |
 
 Các bản unpacked hiện tại, kể cả gói có số phiên bản, đều khai báo `declarativeNetRequestFeedback`. Logger hợp nhất hoạt động độc lập với **Developer mode** riêng của tiện ích; nguồn sự kiện DNR native vẫn phụ thuộc API Chrome và loại bản cài đặt. Bấm bắt đầu trước khi tái hiện lỗi. Quy tắc stock có thể tra về DNR đóng gói, còn dynamic/session được đọc qua API riêng, không nguyên tử với sự kiện; dữ liệu này không tái tạo đầy đủ mọi biểu thức bộ lọc gốc. Thiếu phản hồi không có nghĩa là lọc đã tắt. Chẩn đoán popup được giới hạn dung lượng và lược bỏ phần chi tiết của URL. Xem [quyền riêng tư và thời gian lưu dữ liệu](PRIVACY.md) cùng [mô hình mối đe dọa](THREAT-MODEL.md).
 
@@ -268,7 +320,7 @@ Userscript có thể mở rộng xử lý DOM và JavaScript trong trang, nhưng
 | Tường lửa động và nhật ký yêu cầu mạng | Firewall network native với noop đúng nghĩa trên Chrome 145+; logger giới hạn và chỉ ghi khi bật. Trang mới có thể cần cập nhật scope party bất đồng bộ; main-frame/inline-script và toàn bộ request browser chưa được bao phủ. |
 | `$badfilter` và ngoại lệ scriptlet | Hủy chính xác trước khi gộp imported/personal; stock hỗ trợ hủy cả rule hoặc dựng lại nhóm hostname chặn đã chứng minh được phần còn lại. Đóng góp chưa đủ bằng chứng hoặc thuộc corpus phụ vẫn hoạt động kèm cảnh báo. Ngoại lệ scriptlet dùng chung, có fallback thận trọng khi userScripts không mang được dữ liệu cần thiết. |
 | Viết lại nội dung phản hồi, kiểm tra DNS/CNAME, chặn chính xác theo kích thước phản hồi | Không có cách triển khai tương đương bằng các API MV3 công khai thông thường mà bản build này sử dụng. |
-| Cài đặt managed và engine bổ sung | Đã hỗ trợ một số cài đặt do quản trị viên cung cấp; adapter chặn managed và native companion vẫn thuộc nghiên cứu. Không đóng gói hoặc âm thầm cài native companion. |
+| Cài đặt managed và engine bổ sung | Đã hỗ trợ một số cài đặt do quản trị viên cung cấp; adapter chặn managed và native companion phục vụ lọc vẫn thuộc nghiên cứu. Thành phần native duy nhất là trình cập nhật Windows tùy chọn, chỉ chạy sau khi bạn tự cài; không có thành phần native nào được cài âm thầm. |
 
 Chrome có thể từ chối một regex ngoại lệ cho phép khi chương trình RE2 sau biên dịch vượt giới hạn của trình duyệt. Một số danh sách đóng gói có những biểu thức này, nên thay đổi lựa chọn danh sách có thể bị từ chối ngay cả khi số rule vẫn nằm trong quota. Tiện ích khôi phục cấu hình và quy tắc trước đó thay vì bỏ qua ngoại lệ. Xem [giới hạn regex native và cơ chế khôi phục](MV3-PARITY-IMPLEMENTATION-2026-09-06.md).
 
@@ -286,6 +338,9 @@ Cần Git với submodule, Node.js, npm và kết nối mạng để lấy dữ 
 git clone --recurse-submodules https://github.com/kayurachann/uBlock-Plus.git
 cd uBlock-Plus
 git submodule update --init --recursive
+
+# Windows chặn script cục bộ chưa ký theo mặc định; chỉ cho phép trong cửa sổ này.
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 npm ci
 npm test
@@ -350,6 +405,7 @@ Có thể dùng `make mv3-chromium` để tạo thư mục unpacked. Truyền s�
 | `Internal error while updating dynamic rules` khi kiểm thử trên Windows | Thử lại trong hồ sơ riêng có đường dẫn ngắn. Sự cố môi trường này đã tái hiện trong đợt kiểm thử Chrome thực tế; không xóa hồ sơ cá nhân để xử lý lỗi. |
 | Nhật ký chưa có sự kiện | Chọn tab website và bắt đầu ghi trước khi tái hiện request. Quyền quan sát mạng và DNR feedback là hai khả năng riêng; xem trạng thái nhật ký và bảng khả năng trong Settings. |
 | Popup vẫn có giao diện cũ sau cập nhật | Kiểm tra thư mục được nạp và phiên bản, tải lại tiện ích, rồi đóng và mở lại popup. Không mặc định rằng ZIP đã phát hành trước đó chứa các bản sửa mã nguồn mới hơn. |
+| Bản cập nhật tự động không được cài | Mở **Cài đặt → Cập nhật** và đọc thông báo. Nguyên nhân thường gặp: thư mục tiện ích bị từ chối (chuyển nó vào hồ sơ người dùng, xem [quy tắc về thư mục](AUTO-UPDATE.md#folder-rules)), thư mục có tệp không thuộc uBlock Plus+, trình cập nhật được cài cho thư mục khác (chạy lệnh hiển thị ở đó), hoặc danh sách lọc đang được cập nhật. Xem [bảng khắc phục sự cố cập nhật](AUTO-UPDATE.md#troubleshooting). |
 
 Khi báo lỗi, ghi rõ bản build/commit của tiện ích, phiên bản trình duyệt và hệ điều hành, URL liên quan cùng các bước tái hiện, mức lọc, danh sách tùy chỉnh đang bật, kết quả mong đợi/thực tế và ảnh chụp đã che thông tin riêng tư nếu hữu ích. Thử trong hồ sơ riêng với các tiện ích chặn khác tắt để loại trừ ảnh hưởng chéo. Không đăng URL riêng tư, dữ liệu tài khoản hoặc bản sao lưu chưa được rà soát.
 
@@ -365,6 +421,7 @@ Hướng dẫn chi tiết hiện tại được duy trì bằng [tiếng Anh](..
 | [Filter Store](FILTER-STORE.md) | Định dạng catalog, mức độ tin cậy và quy trình gửi đề xuất. |
 | [Kiến trúc](ARCHITECTURE.md) / [Power Runtime](POWER-RUNTIME.md) | Biên dịch, hạn mức quy tắc, hoạt động và trạng thái lưu bền vững. |
 | [Quyền riêng tư](PRIVACY.md) / [Mô hình mối đe dọa](THREAT-MODEL.md) | Dữ liệu, quyền truy cập và ranh giới tin cậy. |
+| [Tự động cập nhật](AUTO-UPDATE.md) | Cài trình cập nhật Windows, cài đặt, giao thức, chuỗi xác minh và cách phát hành (tiếng Anh). |
 | [So sánh với upstream](MV3-RETEST-2026-09-05.md) / [Nghiên cứu cộng đồng](COMMUNITY-RESEARCH.md) | Nguồn dẫn có thời điểm và so sánh kiểm thử hồi quy. |
 | [Lộ trình](ROADMAP.md) / [Quản trị](COMMUNITY-GOVERNANCE.md) | Công việc dự kiến, quy trình xét duyệt và trách nhiệm. |
 

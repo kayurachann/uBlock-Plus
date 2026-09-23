@@ -4,6 +4,7 @@
 ******************************************************************************/
 
 import {
+    FIREWALL_BUDGET_ERROR,
     FIREWALL_RULE_BASE,
     FIREWALL_RULE_LIMIT,
     compileFirewall,
@@ -21,12 +22,17 @@ const owned = rule => rule.id >= FIREWALL_RULE_BASE &&
 export function createFirewallManager(deps) {
     const { dnr, localRead, localWrite, sessionRead, sessionWrite,
         sessionRemove, getModes, log = () => {} } = deps;
+    // Injectable only so tests can count compilations on the learning path.
+    const compileRules = deps.compileFirewall ?? compileFirewall;
     let supported = false;
     let permanentText = '';
     let sessionText = '';
     let domains = [];
     let resolveDomain;
-    let status = { ruleCount: 0, deferredCells: 0, error: '' };
+    // omittedDomains and scopeError describe reduced party coverage only; the
+    // configured rules stay active, so they are not reported as `error`.
+    let status = { ruleCount: 0, deferredCells: 0, error: '',
+        omittedDomains: 0, scopeError: '' };
     let pending = Promise.resolve();
     const enqueue = task => {
         const result = pending.then(task);
@@ -44,9 +50,10 @@ export function createFirewallManager(deps) {
         if ( resolveDomain ) { return; }
         resolveDomain = await deps.loadDomainResolver();
     };
-    const prepare = async (text, observed = domains) => {
+    const prepare = async (text, observed = domains, recent = []) => {
         const parsed = parseFirewall(text);
         const candidateDomains = observed.slice();
+        const pinned = new Set(recent);
         if ( parsed.rules.length && supported === false ) {
             throw new Error('Dynamic firewall requires Chrome 145+ top-domain conditions');
         }
@@ -57,6 +64,7 @@ export function createFirewallManager(deps) {
                     const url = new URL(tab.url);
                     if ( [ 'http:', 'https:' ].includes(url.protocol) ) {
                         learn(url.hostname, candidateDomains);
+                        pinned.add(domainFromHostname(url.hostname));
                     }
                 } catch { /* Restricted URL. */ }
             }
@@ -64,9 +72,55 @@ export function createFirewallManager(deps) {
         const current = await dnr.getSessionRules();
         const maximum = Math.min(FIREWALL_RULE_LIMIT,
             (dnr.MAX_NUMBER_OF_SESSION_RULES ?? 5000) - current.filter(r => !owned(r)).length);
-        const plan = compileFirewall({ rules: parsed.rules, modes: await getModes(),
-            domains: candidateDomains, domainFromHostname, maximum });
-        return { ...plan, text: parsed.text, previous: current.filter(owned), domains: candidateDomains };
+        const modes = await getModes();
+        const compile = scope => compileRules({ rules: parsed.rules, modes,
+            domains: scope, domainFromHostname, maximum });
+        let kept = candidateDomains;
+        let plan;
+        try {
+            plan = compile(kept);
+        } catch ( reason ) {
+            if ( reason?.code !== FIREWALL_BUDGET_ERROR ) { throw reason; }
+            // Learned domains only refine party scope. Keep the newest that
+            // fit, evicting open tabs and the observed page last, rather than
+            // leaving every firewall cell inactive. Without any learned
+            // domain the configuration itself is too large: keep old rules.
+            const order = [
+                ...candidateDomains.filter(domain => pinned.has(domain) === false),
+                ...candidateDomains.filter(domain => pinned.has(domain) && recent.includes(domain) === false),
+                ...candidateDomains.filter(domain => recent.includes(domain)),
+            ];
+            const fit = count => {
+                const scope = new Set(order.slice(order.length - count));
+                const attempt = candidateDomains.filter(domain => scope.has(domain));
+                try {
+                    return { plan: compile(attempt), kept: attempt };
+                } catch ( retry ) {
+                    if ( retry?.code !== FIREWALL_BUDGET_ERROR ) { throw retry; }
+                }
+            };
+            // A saturated scope overflows by the one newly observed domain:
+            // try dropping only the oldest before searching every size.
+            let fitted = order.length ? fit(order.length - 1) : undefined;
+            if ( fitted === undefined ) {
+                let low = 0;
+                let high = order.length - 2;
+                while ( low <= high ) {
+                    const count = (low + high) >> 1;
+                    const attempt = fit(count);
+                    if ( attempt ) {
+                        fitted = attempt;
+                        low = count + 1;
+                    } else {
+                        high = count - 1;
+                    }
+                }
+            }
+            if ( fitted === undefined ) { throw reason; }
+            ({ plan, kept } = fitted);
+        }
+        return { ...plan, text: parsed.text, previous: current.filter(owned), domains: kept,
+            omittedDomains: candidateDomains.length - kept.length };
     };
     const activate = async plan => {
         await dnr.updateSessionRules({
@@ -74,7 +128,8 @@ export function createFirewallManager(deps) {
         });
         domains = plan.domains;
         status = { ruleCount: plan.rules.length, deferredCells: plan.deferredCells,
-            error: '', provenance: plan.provenance };
+            error: '', omittedDomains: plan.omittedDomains, scopeError: '',
+            provenance: plan.provenance };
     };
     const getState = () => ({
         supported, permanentText, sessionText, ...status,
@@ -130,7 +185,8 @@ export function createFirewallManager(deps) {
         preview: text => enqueue(async () => {
             const plan = await prepare(text);
             return { text: plan.text, ruleCount: plan.rules.length,
-                deferredCells: plan.deferredCells, supported };
+                deferredCells: plan.deferredCells, omittedDomains: plan.omittedDomains,
+                supported };
         }),
         apply: (text, permanent = false) => enqueue(async () => {
             if ( typeof permanent !== 'boolean' ) { throw new Error('Invalid save mode'); }
@@ -178,10 +234,18 @@ export function createFirewallManager(deps) {
                 if ( ![ 'http:', 'https:' ].includes(parsed.protocol) ) { return; }
                 host = parsed.hostname;
             } catch { return; }
-            await loadDomains();
-            const candidateDomains = domains.slice();
-            if ( learn(host, candidateDomains) === false ) { return; }
-            await activate(await prepare(sessionText, candidateDomains));
+            try {
+                await loadDomains();
+                const candidateDomains = domains.slice();
+                if ( learn(host, candidateDomains) === false ) { return; }
+                await activate(await prepare(sessionText, candidateDomains,
+                    [ candidateDomains.at(-1) ]));
+            } catch ( reason ) {
+                // Previously installed rules remain active; report the missing
+                // party scope without disabling layers that do not depend on it.
+                status.scopeError = reason.message;
+                throw reason;
+            }
             await sessionWrite(DOMAINS, domains);
         }),
     };

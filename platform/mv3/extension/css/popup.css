@@ -38,6 +38,8 @@ body.busy aside { animation: busy 0s step-start 1s forwards; display: grid; plac
 .popupHeader img { height: 18px; width: 18px; }
 .popupHeader strong { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #version { color: var(--ink-3); font-size: 10px; margin-inline-start: auto; }
+#updateAvailable { background: transparent; border: 1px solid currentColor; border-radius: 9px; color: var(--accent-surface-1); cursor: pointer; font: inherit; font-size: 10px; line-height: 1.4; padding: 0 6px; white-space: nowrap; }
+#updateAvailable[hidden] { display: none; }
 .protectionCard { padding: 12px var(--popup-gap) 10px; text-align: center; }
 #hostname { direction: ltr; font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; unicode-bidi: plaintext; white-space: nowrap; }
 .protectionControl { align-items: center; display: grid; grid-template-columns: 1fr 96px 1fr; margin: 7px 0; }

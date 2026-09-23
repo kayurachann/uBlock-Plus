@@ -20,9 +20,11 @@ Tài liệu này dùng cho Power Edition sideload-first và ba tầng tùy chọ
 4. **GitHub PR/dependency ↔ release branch:** contributor và package update không mặc nhiên có quyền phát hành.
 5. **CI ↔ artifact/signing:** PR workflow không được truy cập release secret.
 6. **Extension ↔ enterprise policy:** chỉ tin policy được Chrome báo qua managed API/capability probe.
-7. **Extension ↔ native companion:** process cục bộ vẫn là một principal khác, giao tiếp qua protocol versioned và allowlist.
-8. **Browser popup/tab events ↔ compiled popup matcher:** event có thể đến thiếu frame/opener context hoặc sau service-worker restart; typed cache vẫn phải được validate trước khi match.
-9. **Extension artifact ↔ custom browser build:** extension không được tin một API/patch chỉ vì browser tự xưng tương thích; build identity và capability phải probe/audit riêng.
+7. **Extension ↔ native companion:** process cục bộ vẫn là một principal khác, giao tiếp qua protocol versioned và allowlist. Phạm vi đã phát hành đầu tiên là trình cập nhật Windows (chỉ cập nhật gói), mô tả trong [AUTO-UPDATE.md](AUTO-UPDATE.md) và mục [Trình cập nhật Windows](#trình-cập-nhật-windows) bên dưới.
+8. **GitHub Releases ↔ trình cập nhật:** release list, gói, `.sha256` và `.sig` tải về là dữ liệu không tin cậy cho đến khi qua checksum, chữ ký (khi đã ghim khóa), giới hạn archive, danh tính manifest và kiểm tra phiên bản mới hơn.
+9. **Trình cập nhật ↔ thư mục extension và người dùng khác trên máy:** updater chạy với quyền của user hiện tại và chỉ thay thư mục đã đăng ký. Thư mục đó phải không bị người dùng khác sửa, và mọi file bị xóa phải thuộc gói đã cài hoặc backup.
+10. **Browser popup/tab events ↔ compiled popup matcher:** event có thể đến thiếu frame/opener context hoặc sau service-worker restart; typed cache vẫn phải được validate trước khi match.
+11. **Extension artifact ↔ custom browser build:** extension không được tin một API/patch chỉ vì browser tự xưng tương thích; build identity và capability phải probe/audit riêng.
 
 ## Adversaries và tình huống lỗi
 
@@ -36,6 +38,7 @@ Tài liệu này dùng cho Power Edition sideload-first và ba tầng tùy chọ
 - release credential bị lộ, rollback/downgrade hoặc mirror giả mạo;
 - enterprise policy cấu hình sai làm tăng quyền quan sát;
 - native companion giả mạo, command injection, IPC replay hoặc proxy/DNS làm lộ traffic;
+- người dùng khác trên cùng máy Windows sửa thư mục extension hoặc thay một thư mục bằng junction để trình cập nhật ghi, xóa sai chỗ hoặc cài code của họ;
 - lỗi thiết kế làm giữ cache/list/telemetry quá lâu và tăng RAM.
 
 Local malware hoặc browser/OS đã bị chiếm hoàn toàn nằm ngoài khả năng bảo vệ tuyệt đối, nhưng release verification và native peer validation vẫn phải giảm thiểu hậu quả.
@@ -46,7 +49,7 @@ Local malware hoặc browser/OS đã bị chiếm hoàn toàn nằm ngoài khả
 | --- | --- | --- |
 | Remote-code injection | Cấm `eval`, remote module/Wasm/scriptlet; scriptlet, matcher và redirect resource đóng gói; CSP nghiêm; filter/catalog HTTPS chỉ là hostile data qua parser hữu hạn | Bug trong packaged scriptlet/compiler. |
 | Catalog/source takeover | HTTPS, provenance/ownership review, release-pinned catalog, diff anomaly gate, quarantine/rollback | Nội dung hợp lệ về cú pháp nhưng gây false positive/allow tracking. |
-| Parser/regex/resource bomb | Size/time/count limit, streaming/chunked parse, abort, DNR validation; popup regex unbounded không neo đầu bị từ chối, glob/regex dùng cache và aggregate 65.536-step/4.096-filter/16-realm budget | List lớn hợp lệ vẫn có thể làm event fail open trên máy yếu. |
+| Parser/regex/resource bomb | Size/time/count limit, streaming/chunked parse, abort, DNR validation; popup regex unbounded không neo đầu bị từ chối, glob/regex dùng cache và aggregate 8.000.000-step/4.096-filter/16-realm budget; regex hostname của scriptlet trong imported list được ước lượng tĩnh số bước khớp tối đa trên một hostname 253 ký tự (mọi quantifier và alternation, kể cả `?`/`{0,15}`, đều nhân số nhánh; điểm bắt đầu của regex không neo cũng vậy; lookbehind tính theo chiều ngược). Regex có thể backtrack theo hàm mũ (nhóm lặp mơ hồ, backreference), dài quá 256 ký tự hoặc vượt 2^18 bước, cùng các regex vượt ngân sách chung 256 regex/2^20 bước của mọi imported list, không bao giờ tới trang: scope dương bị bỏ, exception được nới thành regex literal bắt buộc hoặc `*` (fail-open, không mất exception) và được báo trong chẩn đoán scriptlet | List lớn hợp lệ vẫn có thể làm hết budget của một event: khi một ngoại lệ còn có thể khớp thì `defer`, còn không thì block compiled chưa xét bị bỏ qua và chỉ Smart/Strict quyết định. |
 | Broad allow/priority abuse | Risk class, semantic diff, two-reviewer gate cho allow/header/scriptlet, precedence tests | Sai sót logic reviewer. |
 | DNR quota exhaustion | Static budget riêng; dynamic/session rule-count riêng nhưng regex pool dùng chung; dedupe/semantic-safe merge, quota preflight, atomic update và báo deferred/rejected | Quota khác nhau giữa browser/version; browser khác có thể từ chối regex đã qua preflight. |
 | Service-worker eviction | Listener top-level, immutable generation, persist checkpoint/state, idempotent startup/migration, không giữ truth chỉ trong memory | Task đang chạy có thể bị ngắt và phải resume; checkpoint cố ý không giữ full browsing URL lâu dài. |
@@ -54,9 +57,10 @@ Local malware hoặc browser/OS đã bị chiếm hoàn toàn nằm ngoài khả
 | Corrupt/stale compiled popup cache | Schema version, route code, condition classifier và generation pointer phải khớp; chỉ `popup-observer-runtime` được ra quyết định exact. `popup-compiler-required` block chỉ để chẩn đoán; allow được giữ tối thiểu như guard superset chỉ có thể trả `defer` | Logic validator/compiler cùng có bug hoặc storage bị browser làm hỏng. |
 | Extension-page XSS/message spoof | Không dùng HTML không sanitize; schema validate; kiểm tra `sender.id`, frame/origin và action capability | Browser bug hoặc logic thiếu case. |
 | Compromised dependency/CI | Lockfile + `npm ci`, pin action theo immutable commit, minimal permissions, dependency review, SBOM/provenance | Maintainer chủ động merge dependency độc hại. |
-| Artifact substitution | Reproducible build target, SHA-256, signed tag/release/provenance, hai người duyệt release | Key compromise; cần revocation procedure. |
+| Artifact substitution | Reproducible build target; SHA-256 kèm tên asset; từ 1.2.0 workflow Release build, attest provenance và phát hành; workflow không bao giờ thay asset đã phát hành, asset đã có mà khác bản build mới thì workflow dừng; chữ ký release khi đã công bố khóa; hai người duyệt release | Lộ khóa ký: `retire` chỉ sửa file khóa trong repo, updater đã cài vẫn tin khóa lộ cho tới khi áp dụng một release đã ký mang bộ khóa generation cao hơn không còn khóa đó (xoay khóa ngắn qua hai release: thêm khóa mới và phát hành bản ký bằng cả hai khóa, rồi `retire` khóa lộ và phát hành tiếp), hoặc người dùng chạy lại `updater\install-updater.cmd` từ gói mới hơn; updater bỏ lỡ các release đó vẫn tin khóa lộ (xem [Trình cập nhật Windows](#trình-cập-nhật-windows) và [AUTO-UPDATE.md](AUTO-UPDATE.md#release-signing-keys-for-maintainers)); release trước 1.2.0 không có attestation; khi chưa công bố khóa, updater chỉ kiểm checksum, còn attestation provenance chỉ kiểm tra thủ công được (`gh attestation verify`). |
 | Enterprise overreach | Build riêng, admin docs, capability probe, audit log cục bộ, least privilege | Tổ chức quản lý có quyền cao theo policy của họ. |
-| Native-host compromise | Cài riêng/consent, signed/version-pinned host, exact origin allowlist, bounded IPC, sandbox/service account khi có thể | Native process có quyền OS và tăng attack surface. |
+| Native-host compromise | Cài riêng/consent; host chạy với quyền user hiện tại, không cần admin, không service/scheduled task/autostart; exact origin allowlist trong host manifest và kiểm tra lại với `config.json`; IPC versioned, 4 lệnh, request tối đa 64 KiB; host chỉ tự thay mình bằng script trong gói có chữ ký đã xác minh | Host là script PowerShell không ký Authenticode, chạy với `-ExecutionPolicy Bypass`; malware cùng user sửa được nó. Native process có quyền OS của user và tăng attack surface. |
+| Kênh cập nhật tự động bị lợi dụng | Chỉ trang extension gửi được lệnh cập nhật; IPC chỉ mang lệnh và số phiên bản; host tự dựng URL HTTPS từ `config.json`; SHA-256; chữ ký RSA với khóa ghim, không trust-on-first-use; cùng edition/`key`, phiên bản phải mới hơn; kiểm tra quyền thư mục, junction/symlink và file lạ; backup và tự khôi phục; không có process chạy nền. Chi tiết: [Trình cập nhật Windows](#trình-cập-nhật-windows), [AUTO-UPDATE.md](AUTO-UPDATE.md) | Hiện chưa công bố khóa ký: tài khoản GitHub/CI bị chiếm có thể đưa code extension độc hại tới mọi bản cài tự động trong một lần kiểm tra. Khi đã bật ký: lộ khóa ký. |
 | Privacy/RAM regression | Không telemetry mạng; local counters; retention/size budget; benchmark low-memory; cleanup explicit | Chrome và website thay đổi hành vi. |
 
 ## Filter compiler safety contract
@@ -67,7 +71,7 @@ Local malware hoặc browser/OS đã bị chiếm hoàn toàn nằm ngoài khả
 - `$popup`/`$popunder` supported condition tạo route `popup-observer-runtime`, `accepted+routed` và không bị ghi như rejection. Unsupported condition tạo `popup-compiler-required` với reason cụ thể; popup-only deferred/rejected, còn resource half hợp lệ của filter kết hợp có thể accepted đúng một lần.
 - Cache chỉ chấp nhận runtime route khi `classifyPopupCondition()` xác nhận shape hỗ trợ. Compiler-required block không được masquerade thành runtime filter; compiler-required allow chỉ được dùng như uncertain guard sau khi bỏ predicate chưa hỗ trợ theo hướng match rộng hơn, nên kết quả duy nhất của guard là buộc fail-open.
 - Corpus stock phải là resource đóng gói, khớp `ruleset-details`, schema/count/provenance/classifier; lỗi hoặc vượt giới hạn phải suppress toàn corpus, không dùng một phần có thể làm mất allow exception.
-- URL popup vượt memory bound phải giữ canonical origin và completeness bit: broad/domain rule vẫn xét được, URL/regex path phải pending. Aggregate matcher budget hết thì `defer`, không block.
+- URL popup dài hơn 8 KB chỉ giữ canonical origin và completeness bit: broad/domain rule vẫn xét được; ngoại lệ chỉ phần path đã bỏ mới khớp được thì `defer`, còn block chỉ phần path đó mới khớp được thì bị bỏ qua. Matcher xét allow trước block. Khi aggregate budget (4.096 filter, 16 realm, 8.000.000 match-step) hết, kết quả là `defer` nếu một ngoại lệ còn có thể khớp, hoặc nếu một block `important` chưa xét có thể thắng ngoại lệ đã khớp. Ngoài hai trường hợp đó, block chưa xét bị bỏ qua và chính sách Smart/Strict vẫn quyết định. Matcher không bao giờ block gần đúng.
 - Compile output có namespace rule ID, deterministic ordering và checksum.
 - Update chuẩn bị đầy đủ trước khi thay state đang hoạt động; nếu lỗi, giữ last-known-good.
 - Không gửi filter, URL duyệt web hay compile report ra server dự án nếu người dùng không chủ động export.
@@ -84,6 +88,8 @@ Release nên đáp ứng các gate sau trước khi coi là stable:
 6. release credential chỉ có trong protected release environment, không có ở PR từ fork;
 7. diễn tập rollback và giữ artifact last-known-good.
 
+Hiện trạng từ 1.2.0: workflow `release.yml` build từ tag trong checkout sạch với action pin theo commit, chạy test, lint và validate trong job read-only, tạo SHA-256, ký khi đã công bố khóa, attest build provenance rồi mới phát hành (gate 3–5 một phần). Workflow chưa tạo SBOM, chưa chạy memory benchmark hay browser smoke test, và job publish chưa dùng GitHub environment riêng: secret ký chỉ được đọc trong job đó. Repository chưa có file CODEOWNERS; protected branch và review bắt buộc là cấu hình trên GitHub, không kiểm tra được từ mã nguồn.
+
 ## Các tier tùy chọn
 
 ### Managed Enterprise
@@ -92,9 +98,43 @@ Release nên đáp ứng các gate sau trước khi coi là stable:
 
 ### Native Companion / Power Mode
 
-Trước implementation cần RFC riêng mô tả threat model, IPC schema, install/uninstall, auto-update, signature verification, proxy/DNS trust, log retention và memory budget. Extension phải hoạt động hữu ích khi không có companion. Uninstall companion không được làm mất cấu hình filter core.
+Trước implementation cần RFC riêng mô tả threat model, IPC schema, install/uninstall, auto-update, signature verification, proxy/DNS trust, log retention và memory budget. RFC cho phạm vi cập nhật gói là [AUTO-UPDATE.md](AUTO-UPDATE.md); mọi capability proxy/DNS vẫn cần RFC riêng. Extension phải hoạt động hữu ích khi không có companion. Uninstall companion không được làm mất cấu hình filter core.
 
 Native host không làm extension thành policy-installed, không cấp `webRequestBlocking` và không tăng quota DNR. Nếu companion cung cấp proxy/DNS enforcement, UI phải chỉ rõ traffic nào rời browser API boundary và cách dừng hoàn toàn process đó.
+
+### Trình cập nhật Windows
+
+Đây là phần Native Companion đã phát hành từ 1.2.0. Thiết kế đầy đủ nằm ở [AUTO-UPDATE.md](AUTO-UPDATE.md); mục này ghi ranh giới tin cậy, kiểm soát và rủi ro còn lại theo code hiện tại.
+
+Ranh giới và kiểm soát:
+
+- **Trang web/content script ↔ worker:** chỉ trang của chính extension gửi được message cập nhật; worker kiểm tra `sender.id`, URL và origin. Content script và user script không gọi được.
+- **Worker ↔ host:** Chrome chỉ khởi động host `io.github.kayurachann.ublock_plus.updater` cho origin có trong `allowed_origins`. Host kiểm tra lại origin với `config.json` và từ chối một ID được đăng ký cho nhiều thư mục (`ambiguous-installation`). Request tối đa 64 KiB, chỉ có 4 lệnh `hello`, `stage`, `apply`, `rollback` và chỉ mang số phiên bản. URL, thư mục và repo lấy từ cấu hình local do installer ghi.
+- **GitHub ↔ host:** URL phải là HTTPS (HTTP chỉ cho loopback khi test) và redirect phải giữ HTTPS. Gói tối đa 256 MiB, `.sha256` 4 KiB, `.sig` 8 KiB. File `.sha256` phải có dạng `<hash>  <tên asset>`, với đúng tên asset. Archive tối đa 20.000 entry và 768 MiB giải nén, tính theo số byte thật sự ghi ra; path tuyệt đối, `..`, backslash, ký tự ổ đĩa và entry trùng bị từ chối. Manifest phải là uBlock Plus+ MV3 cùng edition và cùng `key` (extension ID không đổi), với version đúng bằng version yêu cầu và mới hơn bản đã cài.
+- **Khóa ghim:** `release-signing-keys.json` ghim khóa RSA công khai (JWK, tối thiểu 2048 bit; `generate` tạo khóa 3072 bit). `.sig` chứa tối đa 8 chữ ký RSA PKCS#1 v1.5 trên SHA-256 của gói, mỗi dòng một chữ ký; chỉ cần một dòng xác minh được với một khóa đang tin. Khi đã có khóa tin cậy, gói thiếu chữ ký hợp lệ bị từ chối (`signature-missing`, `signature-invalid`), và gói đã stage trước khi có khóa phải tải lại.
+- **Không trust-on-first-use:** updater chỉ nhận bộ khóa mới và chỉ tự thay script của mình từ một gói có chữ ký đã xác minh. Nó đọc bản staging đã kiểm tra trong `%LOCALAPPDATA%`, không đọc thư mục extension, và ghi đúng các byte đã kiểm tra. Script mới phải parse được và khai báo version cao hơn. Updater không bao giờ nhận bộ khóa rỗng. Khi chưa có khóa nào, updater không bao giờ đổi khóa hay chính nó: chỉ việc người dùng chạy lại `updater\install-updater.cmd` từ gói mới hơn mới ghim khóa và nâng cấp updater.
+- **Xoay khóa:** mỗi bộ khóa có số `generation` (thiếu thì là 0). Lệnh `generate` và `retire` của `tools/release-signing.mjs` tăng số này. Updater không bao giờ nhận bộ khóa có generation thấp hơn. Installer chỉ thay bộ khóa đang tin trong các trường hợp sau: chưa có khóa nào; bộ mới không rỗng và có generation cao hơn; hoặc cùng generation và chứa mọi khóa đang tin. `-ResetKeys` bỏ qua quy tắc này và chỉ dùng để khôi phục có chủ ý. Quy trình xoay: thêm khóa mới, ký bằng cả hai khóa trong một thời gian chồng dài, rồi `retire` khóa cũ. Nếu release trước đã có khóa mà không khóa nào của nó xác minh được gói mới, workflow phát hành dừng.
+- **Thư mục extension:** updater từ chối (`unsafe-extension-dir`):
+  - ổ đĩa gốc và mọi đường dẫn mạng UNC (`\\máy\share\…`);
+  - chính các thư mục hệ thống và thư mục hồ sơ, ví dụ `%USERPROFILE%`, `%LOCALAPPDATA%`, `%TEMP%`, Desktop, Documents, Downloads (thư mục con mới tạo bên trong vẫn được, nếu qua các kiểm tra dưới đây);
+  - thư mục chứa, hoặc nằm trong, thư mục của updater;
+  - junction hoặc symlink ở bất kỳ đâu trên đường dẫn hay trong thư mục;
+  - thư mục mà các nhóm dùng chung (Everyone, Users, Authenticated Users, Interactive, Guests, Domain Users, …) sửa được, kể cả mọi thư mục con, và thư mục có thư mục cha mà các nhóm đó đổi tên hoặc thay được.
+
+  Thư mục tạo thẳng dưới `C:\` thừa hưởng quyền Modify của Authenticated Users nên bị từ chối. Không đọc được quyền thì cũng từ chối. Installer chạy đúng hàm kiểm tra này trước khi đăng ký bất kỳ thứ gì.
+- **File lạ:** mỗi gói có `updater/package-files.json`. Update và rollback chỉ xóa file mà danh sách của gói đang cài liệt kê. Khi hoàn tác một apply bị ngắt, updater còn được xóa file mà danh sách của backup liệt kê hoặc gói đã tải (vẫn giữ trong `staging`) chứa. File khác làm thao tác dừng với `unexpected-files` và không đổi gì. `_metadata` và `Thumbs.db`, `desktop.ini`, `.DS_Store` được để nguyên trong những thư mục mà gói mới (hoặc backup) cũng có.
+- **Giao dịch:** `updater.lock` tuần tự hóa stage, apply và rollback (`update-busy`). Apply tạo và xác minh backup trước, ghi marker `applying`, chép `manifest.json` sau cùng rồi xác minh version; nếu thất bại thì khôi phục backup. Nếu apply bị ngắt giữa chừng, lần chạy sau lấy được khóa (`hello`, `stage`, `apply`, `rollback`, `-Status`, `-Update`, `-Install`, `-Rollback`) khôi phục backup. `hello` và `-Status` chỉ lấy khóa khi có việc cần hoàn tác và bỏ qua nếu khóa đang bị giữ. Khi mục **Cập nhật** (Updates) của dashboard hỏi trạng thái updater, extension báo `update-undone` và reload nếu version được khôi phục khác version đang chạy; một lần cài gặp apply bị ngắt thì để updater hoàn tác rồi cài tiếp. Nếu backup không còn, lệnh `-Rollback` trên dòng lệnh chỉ xóa marker khi thư mục vẫn là uBlock Plus+ và khai báo một trong hai version. Phía extension, cài, khôi phục và restart cho updater chờ tối đa 60 giây cho giao dịch lọc đang chạy rồi từ chối (`filters-busy`); lần cài tự động bị từ chối vì lý do này được thử lại sau 5 phút.
+- **Phát hành:** job build chạy `npm ci --ignore-scripts`, test, lint, build và validate với quyền read-only và không có secret. Job publish không cài dependency; chỉ job này thấy secret ký, OIDC token và quyền ghi release. Asset đã có trên release phải giống hệt từng byte với bản vừa build, nếu không workflow dừng.
+
+Rủi ro còn lại:
+
+- Kiểm tra link và quyền chạy ở những thời điểm cố định. Chúng chỉ đủ vì không người dùng nào khác sửa được thư mục trong lúc robocopy chạy. Chỉ entry Allow của các nhóm dùng chung được tính; entry Deny và quyền cấp riêng cho từng tài khoản khác không được xét. Kiểm tra chưa được thử trên ổ mạng được gán ký tự ổ đĩa và ổ FAT/exFAT; ổ không có ACL nhiều khả năng bị từ chối. OneDrive placeholder và các reparse point khác không phải junction hay symlink không bị coi là link (theo thiết kế), nhưng chưa được thử thực tế. Đường dẫn UNC luôn bị từ chối.
+- Hiện `release-signing-keys.json` chưa có khóa nào (`"keys": []`), nên updater chỉ kiểm tra checksum SHA-256, mà tệp này nằm cạnh gói trên cùng release; installer in `Signed releases  : not configured (checksum only)`. Attestation build provenance chỉ kiểm tra được bằng tay (`gh attestation verify`); updater, installer và extension không kiểm tra nó. Tài khoản GitHub hoặc CI bị chiếm có thể phát hành gói độc hại. Mọi bản cài ở chế độ cài tự động nhận gói đó trong một lần kiểm tra (khoảng 6 giờ), dưới dạng code extension với toàn bộ quyền host của extension. Updater không tự thay mình bằng gói chưa ký, nhưng thư mục `updater\` của extension khi đó chứa bản của kẻ tấn công: chạy lại `install-updater.cmd` từ đó sẽ cài native code và ghim khóa của kẻ tấn công.
+- Sau khi khóa được công bố, bản cài hiện có vẫn chỉ kiểm checksum cho tới khi người dùng chạy lại installer từ gói mới hơn. Bản cài bỏ lỡ giai đoạn ký kép cũng phải chạy lại installer.
+- Installer một bước tải `install-updater.ps1`, updater và khóa từ nhánh `main` qua `raw.githubusercontent.com`. Lần cài đó tin HTTPS của GitHub và nội dung nhánh tại thời điểm tải.
+- Job build vẫn chạy devDependency của bên thứ ba và tạo ZIP trước khi ký. Việc tách job bảo vệ secret và OIDC token, không bảo vệ nội dung gói trước một dependency bị compromise.
+- Release trước 1.2.0 được tải lên thủ công và không có attestation.
+- Host là script PowerShell không ký Authenticode, chạy với `-ExecutionPolicy Bypass` dưới quyền user. Malware chạy cùng user có thể sửa script, cấu hình hoặc khóa trong `%LOCALAPPDATA%\uBlockPlus\Updater`; trường hợp này nằm ngoài phạm vi bảo vệ (xem phần adversaries).
 
 ### Custom Chromium
 

@@ -1061,5 +1061,729 @@
   },
   "popupRecentBlocks": {
     "message": "이 사이트에서 최근 차단한 팝업 $1개"
+  },
+  "autoUpdateSectionLabel": {
+    "message": "업데이트",
+    "description": "Dashboard settings: heading of the automatic update section"
+  },
+  "autoUpdateDescription": {
+    "message": "uBlock Plus+는 GitHub Releases에서 새 버전을 확인하고, 선택 사항인 Windows 업데이터가 있으면 다시 설치하지 않고 설치할 수 있습니다. 확인할 때는 api.github.com에 요청 하나만 보내며 브라우징 데이터는 보내지 않습니다.",
+    "description": "Dashboard settings: explanation of automatic updates and their network use"
+  },
+  "autoUpdateCheckLabel": {
+    "message": "새 버전을 자동으로 확인",
+    "description": "Dashboard settings: checkbox to enable periodic update checks"
+  },
+  "autoUpdateInstallLabel": {
+    "message": "새 버전을 찾으면:",
+    "description": "Dashboard settings: label of the install mode selector"
+  },
+  "autoUpdateInstallAuto": {
+    "message": "자동으로 설치",
+    "description": "Dashboard settings: install mode option"
+  },
+  "autoUpdateInstallNotify": {
+    "message": "알림만 표시",
+    "description": "Dashboard settings: install mode option"
+  },
+  "autoUpdateChannelLabel": {
+    "message": "릴리스 채널:",
+    "description": "Dashboard settings: label of the release channel selector"
+  },
+  "autoUpdateChannelPreview": {
+    "message": "미리 보기(사전 릴리스 포함)",
+    "description": "Dashboard settings: release channel option"
+  },
+  "autoUpdateChannelStable": {
+    "message": "안정 릴리스만",
+    "description": "Dashboard settings: release channel option"
+  },
+  "autoUpdateCheckNow": {
+    "message": "지금 확인",
+    "description": "Dashboard settings: button that checks for updates immediately"
+  },
+  "autoUpdateInstallNow": {
+    "message": "지금 설치",
+    "description": "Dashboard settings: button that installs the available update"
+  },
+  "autoUpdateReleaseNotes": {
+    "message": "릴리스 노트",
+    "description": "Dashboard settings: link to the release page of the available version"
+  },
+  "autoUpdateGrantButton": {
+    "message": "업데이터 허용",
+    "description": "Dashboard settings: button requesting the optional nativeMessaging permission"
+  },
+  "autoUpdateSetupSteps": {
+    "message": "Windows에서 한 번만 설정: '압축해제된 확장 프로그램을 로드합니다'로 선택한 폴더를 열고 updater\\install-updater.cmd를 두 번 클릭한 다음 여기에서 '업데이터 허용'을 선택하세요. 계속 액세스가 거부되면 해당 폴더에서 다음 명령을 실행하세요:",
+    "description": "Dashboard settings: one-time setup instructions for the Windows updater"
+  },
+  "autoUpdateCopy": {
+    "message": "복사",
+    "description": "Dashboard settings: copy the setup command to the clipboard"
+  },
+  "autoUpdateCopied": {
+    "message": "복사됨",
+    "description": "Dashboard settings: confirmation after copying the setup command"
+  },
+  "autoUpdateRollback": {
+    "message": "버전 $1 복원",
+    "description": "Dashboard settings: button restoring the previous version. $1 is a version number"
+  },
+  "autoUpdateDevBuild": {
+    "message": "개발 빌드 $1: 자동 업데이트가 꺼져 있습니다.",
+    "description": "Dashboard settings: status for local development builds. $1 is the version"
+  },
+  "autoUpdateApplying": {
+    "message": "$1 설치 중…",
+    "description": "Dashboard settings: files are being replaced. $1 is the version"
+  },
+  "autoUpdatePreparing": {
+    "message": "$1 설치 준비 중…",
+    "description": "Dashboard settings: update is starting. $1 is the version"
+  },
+  "autoUpdateAvailable": {
+    "message": "버전 $1을 사용할 수 있습니다(설치됨: $2).",
+    "description": "Dashboard settings: a newer version exists. $1 new version, $2 installed version"
+  },
+  "autoUpdateUpToDate": {
+    "message": "버전 $1이 최신입니다. 마지막 확인: $2.",
+    "description": "Dashboard settings: no newer version. $1 installed version, $2 date and time of the last check"
+  },
+  "autoUpdateNeverChecked": {
+    "message": "설치된 버전: $1. 아직 업데이트를 확인하지 않았습니다.",
+    "description": "Dashboard settings: no check has run yet. $1 installed version"
+  },
+  "autoUpdateManagedInstall": {
+    "message": "이 사본은 패키지로 설치되었습니다. 업데이트는 브라우저 또는 관리자가 관리합니다.",
+    "description": "Dashboard settings: the extension was not loaded unpacked"
+  },
+  "autoUpdatePermissionNeeded": {
+    "message": "자동 설치에는 Windows 업데이터와 사용자 허가가 필요합니다.",
+    "description": "Dashboard settings: automatic installation is not set up yet"
+  },
+  "autoUpdateConnectedAuto": {
+    "message": "업데이터 $1 연결됨. 새 버전이 자동으로 설치되고 확장 프로그램이 스스로 다시 로드됩니다.",
+    "description": "Dashboard settings: updater connected, automatic mode. $1 updater version"
+  },
+  "autoUpdateConnectedNotify": {
+    "message": "업데이터 $1 연결됨. 새 버전이 있으면 '지금 설치'를 선택하세요.",
+    "description": "Dashboard settings: updater connected, notify-only mode. $1 updater version"
+  },
+  "autoUpdateUpdated": {
+    "message": "$1에서 $2(으)로 업데이트했습니다.",
+    "description": "Dashboard settings: result of the last update. $1 previous version, $2 new version"
+  },
+  "autoUpdateRolledBack": {
+    "message": "버전 $2을(를) 복원했습니다(이전: $1).",
+    "description": "Dashboard settings: result of a rollback. $1 version before, $2 restored version"
+  },
+  "autoUpdatePermissionDenied": {
+    "message": "권한이 허용되지 않았습니다.",
+    "description": "Dashboard settings: the permission request was declined"
+  },
+  "autoUpdateErrorMissing": {
+    "message": "Windows 업데이터가 아직 설치되지 않았습니다.",
+    "description": "Dashboard settings: native updater not registered"
+  },
+  "autoUpdateErrorForbidden": {
+    "message": "업데이터가 다른 확장 프로그램 폴더 또는 ID로 등록되어 있습니다. 아래 명령을 실행하세요.",
+    "description": "Dashboard settings: native updater registered for another extension ID"
+  },
+  "autoUpdateErrorFailed": {
+    "message": "업데이터가 예기치 않게 중지되었습니다. 자세한 내용은 %LOCALAPPDATA%\\uBlockPlus\\Updater\\updater.log에 있습니다.",
+    "description": "Dashboard settings: native updater crashed or exited"
+  },
+  "autoUpdateErrorChecksum": {
+    "message": "다운로드한 패키지가 게시된 체크섬과 일치하지 않아 삭제했습니다.",
+    "description": "Dashboard settings: package checksum mismatch"
+  },
+  "autoUpdateErrorRateLimited": {
+    "message": "GitHub가 요청을 제한하고 있습니다. 다음 확인까지 기다립니다.",
+    "description": "Dashboard settings: GitHub API rate limit"
+  },
+  "autoUpdateErrorNetwork": {
+    "message": "GitHub에 연결할 수 없습니다. 다음 확인 때 다시 시도합니다.",
+    "description": "Dashboard settings: network failure during a check"
+  },
+  "autoUpdateErrorReload": {
+    "message": "확장 프로그램이 다시 로드되었지만 버전이 바뀌지 않았습니다. 업데이터 로그를 확인하세요.",
+    "description": "Dashboard settings: after reload the version did not change"
+  },
+  "autoUpdateErrorInterrupted": {
+    "message": "이전 업데이트가 완료되기 전에 중단되었습니다.",
+    "description": "Dashboard settings: the previous update did not finish"
+  },
+  "autoUpdateErrorGeneric": {
+    "message": "업데이트 문제: $1",
+    "description": "Dashboard settings: other update error. $1 is the error message"
+  },
+  "autoUpdatePopupAvailable": {
+    "message": "업데이트 $1",
+    "description": "Popup: compact indicator that a newer version is available. $1 is the version"
+  },
+  "autoUpdatePopupAvailableTitle": {
+    "message": "버전 $1을 사용할 수 있습니다. 업데이트 설정을 엽니다.",
+    "description": "Popup: tooltip of the update indicator. $1 is the version"
+  },
+  "firewallTitle": {
+    "message": "동적 방화벽",
+    "description": "Dynamic firewall panel heading in Site rules"
+  },
+  "firewallDescription": {
+    "message": "한 줄에 하나: 출처 대상 유형 동작. *는 모든 호스트 이름을 뜻합니다. block은 차단, allow는 허용하며 noop은 방화벽만 건너뛰고 필터 목록은 계속 적용됩니다.",
+    "description": "Dynamic firewall rule syntax. Keep *, block, allow and noop untranslated."
+  },
+  "firewallScope": {
+    "message": "Chrome 145 이상에서 iframe을 포함한 탭 안의 네트워크 요청에 적용됩니다. ‘필터링 없음’ 모드가 우선합니다. 인라인 스크립트, 메인 페이지 탐색, 탭 밖의 요청은 제외됩니다. 1p/3p 규칙은 최상위 페이지와 Public Suffix List를 사용하며, 새 사이트에서는 Chrome이 범위를 갱신하는 동안 첫 요청이 통과할 수 있습니다.",
+    "description": "Dynamic firewall coverage and limits. Quote the no-filtering mode by its filteringMode0Name label."
+  },
+  "firewallValidate": {
+    "message": "검증",
+    "description": "Button: check the firewall draft without applying it"
+  },
+  "firewallApplySession": {
+    "message": "이번 세션에 적용",
+    "description": "Button: apply firewall rules until the browser session ends"
+  },
+  "firewallSavePermanent": {
+    "message": "영구 저장",
+    "description": "Button: save firewall rules across browser restarts"
+  },
+  "firewallLoadPermanent": {
+    "message": "영구 규칙 불러오기",
+    "description": "Button: load the saved permanent firewall rules into the editor"
+  },
+  "firewallImportFile": {
+    "message": "파일 가져오기",
+    "description": "Button: import firewall rules from a text file"
+  },
+  "firewallExportFile": {
+    "message": "파일 내보내기",
+    "description": "Button: export the firewall editor text to a file"
+  },
+  "firewallStatusRules": {
+    "message": "활성 Chrome 규칙 $1개, 이번 세션에서 인식한 도메인 $2개.",
+    "description": "Firewall status. $1: active native Chrome rules; $2: registrable domains recognized in this browser session"
+  },
+  "firewallStatusDeferred": {
+    "message": "$1개 셀은 페이지 맥락이 필요하며, 추측으로 차단하지 않습니다.",
+    "description": "Firewall status. $1: cells that need to know the top page before deciding 1p/3p"
+  },
+  "firewallStatusOmitted": {
+    "message": "Chrome 규칙 한도에 도달했습니다. 이제 1p/3p 셀은 가장 최근에 인식한 도메인 $1개에만 적용됩니다.",
+    "description": "Firewall status when Chrome's session-rule limit forced older learned domains out. $1: domains still covered"
+  },
+  "firewallStatusScopeError": {
+    "message": "새로 방문한 도메인을 1p/3p 범위에 추가하지 못했습니다: $1",
+    "description": "Firewall status when a newly visited domain could not be added to the native 1p/3p scope. $1: technical error message"
+  },
+  "firewallStatusTemporary": {
+    "message": "임시 규칙이 활성화되어 있습니다.",
+    "description": "Firewall status: session-only rules are active"
+  },
+  "firewallStatusPermanent": {
+    "message": "영구 규칙이 활성화되어 있습니다.",
+    "description": "Firewall status: saved permanent rules are active"
+  },
+  "firewallPreviewRules": {
+    "message": "검증 완료: 예상 Chrome 규칙 $1개.",
+    "description": "Result of validating a firewall draft. $1: proposed native Chrome rules"
+  },
+  "firewallPreviewOmitted": {
+    "message": "Chrome 규칙 한도에 맞추기 위해 인식된 도메인 $1개가 1p/3p 범위에서 빠집니다.",
+    "description": "Validation notice. $1: recognized domains that would leave the 1p/3p scope to fit Chrome's rule limit"
+  },
+  "firewallUnsupported": {
+    "message": "방화벽을 사용하려면 Chrome 145 이상이 필요합니다. 기존 필터링은 계속 사용할 수 있습니다.",
+    "description": "Shown when the browser lacks the native conditions the firewall needs"
+  },
+  "firewallPermanentLoaded": {
+    "message": "영구 규칙을 초안에 불러왔습니다. 활성화하려면 적용하세요.",
+    "description": "Shown after loading permanent firewall rules into the editor"
+  },
+  "firewallImportTooLarge": {
+    "message": "최대 파일 크기: 128KiB",
+    "description": "Error when an imported firewall file is too large"
+  },
+  "firewallTestTitle": {
+    "message": "규칙 테스트 및 설명",
+    "description": "Heading of the firewall request tester"
+  },
+  "firewallTestScope": {
+    "message": "현재 ‘필터링 없음’ 설정으로 편집기 초안을 테스트합니다. 요청을 보내지 않고 URL을 저장하지 않으며 보호 상태도 바뀌지 않습니다. 방화벽만 설명하며 모든 필터 목록, 브라우저 권한, 할당량, 적용 시점은 시뮬레이션하지 않습니다.",
+    "description": "Explains what the firewall tester does and does not simulate. Quote the no-filtering mode by its filteringMode0Name label."
+  },
+  "firewallTestSource": {
+    "message": "최상위 페이지: 호스트 이름 또는 HTTP(S) URL",
+    "description": "Firewall tester field label for the top-level page"
+  },
+  "firewallTestDestination": {
+    "message": "대상 리소스: 호스트 이름 또는 HTTP(S) URL",
+    "description": "Firewall tester field label for the requested resource"
+  },
+  "firewallTestType": {
+    "message": "요청 유형",
+    "description": "Firewall tester field label for the request type"
+  },
+  "firewallTestRequest": {
+    "message": "요청 테스트",
+    "description": "Button: run the firewall tester"
+  },
+  "firewallTestChanged": {
+    "message": "입력이 바뀌었습니다. 다시 테스트하세요.",
+    "description": "Firewall tester: inputs changed while a test was running"
+  },
+  "firewallTestFirstParty": {
+    "message": "퍼스트 파티(1p)",
+    "description": "Firewall tester result: same party as the top page"
+  },
+  "firewallTestThirdParty": {
+    "message": "서드 파티(3p)",
+    "description": "Firewall tester result: different party from the top page"
+  },
+  "firewallOutcomeBlock": {
+    "message": "초안: block — 우선 적용된 셀이 차단을 요청합니다.",
+    "description": "Firewall tester outcome. Keep block untranslated."
+  },
+  "firewallOutcomeAllow": {
+    "message": "초안: allow — 우선 적용된 셀이 허용을 요청합니다.",
+    "description": "Firewall tester outcome. Keep allow untranslated."
+  },
+  "firewallOutcomeNoop": {
+    "message": "초안: noop — 방화벽을 건너뜁니다. 필터 목록은 여전히 차단할 수 있습니다.",
+    "description": "Firewall tester outcome. Keep noop untranslated."
+  },
+  "firewallOutcomeNoMatch": {
+    "message": "일치하는 방화벽 셀이 없습니다. 필터 목록은 여전히 차단할 수 있습니다.",
+    "description": "Firewall tester outcome when no cell matches"
+  },
+  "firewallOutcomeOff": {
+    "message": "이 페이지에는 ‘필터링 없음’이 적용되며 방화벽 초안보다 우선합니다.",
+    "description": "Firewall tester outcome when the site is in the no-filtering mode. Quote the mode by its filteringMode0Name label."
+  },
+  "firewallOutcomeUnknown": {
+    "message": "모드 또는 도메인 맥락을 알 수 없어 추측으로 판단하지 않습니다(fail-open).",
+    "description": "Firewall tester outcome when mode or party information is unavailable"
+  },
+  "loggerTitle": {
+    "message": "로거",
+    "description": "Logger page title"
+  },
+  "loggerIntro": {
+    "message": "탭 하나의 진단 정보를 수집합니다. 기록은 이 확장 프로그램 세션 안에만 남으며 마지막 로거를 닫으면 지워집니다. 업로드하거나 방문 기록을 저장하지 않습니다.",
+    "description": "Logger page introduction"
+  },
+  "loggerTab": {
+    "message": "탭",
+    "description": "Logger label for the browser tab selector"
+  },
+  "loggerStart": {
+    "message": "수집 시작",
+    "description": "Logger button: start capturing"
+  },
+  "loggerPause": {
+    "message": "일시 중지",
+    "description": "Logger button: pause capturing"
+  },
+  "loggerClear": {
+    "message": "지우기",
+    "description": "Logger button: clear records"
+  },
+  "loggerExport": {
+    "message": "민감 정보를 제거한 JSON 내보내기",
+    "description": "Logger button: export redacted records as JSON"
+  },
+  "loggerSearch": {
+    "message": "검색",
+    "description": "Logger search field label"
+  },
+  "loggerSearchPlaceholder": {
+    "message": "URL, 규칙 ID, 선택자 또는 출처",
+    "description": "Logger search field placeholder"
+  },
+  "loggerKind": {
+    "message": "종류",
+    "description": "Logger event-kind filter label"
+  },
+  "loggerKindAll": {
+    "message": "모든 이벤트",
+    "description": "Logger event-kind filter: all events"
+  },
+  "loggerKindNetwork": {
+    "message": "네트워크",
+    "description": "Logger event kind: browser network observation"
+  },
+  "loggerKindDnr": {
+    "message": "네이티브 DNR 일치",
+    "description": "Logger event kind: native declarativeNetRequest rule matches"
+  },
+  "loggerKindCosmetic": {
+    "message": "코스메틱",
+    "description": "Logger event kind: cosmetic filtering"
+  },
+  "loggerKindDom": {
+    "message": "DOM",
+    "description": "Logger event kind: DOM diagnostics"
+  },
+  "loggerKindScriptlet": {
+    "message": "스크립틀릿",
+    "description": "Logger event kind: scriptlets"
+  },
+  "loggerKindSystem": {
+    "message": "시스템",
+    "description": "Logger event kind: system events"
+  },
+  "loggerColumnKind": {
+    "message": "종류 / 단계",
+    "description": "Logger table column: event kind and phase"
+  },
+  "loggerColumnSource": {
+    "message": "증거 출처",
+    "description": "Logger table column: which API produced the evidence"
+  },
+  "loggerColumnDetail": {
+    "message": "요청 / 진단",
+    "description": "Logger table column: request or diagnostic details"
+  },
+  "loggerInitial": {
+    "message": "수집이 꺼져 있습니다. 탭을 선택하고 시작하세요.",
+    "description": "Logger status before capture starts"
+  },
+  "loggerSummary": {
+    "message": "이 로거가 증명할 수 있는 것",
+    "description": "Logger heading of the evidence explanation"
+  },
+  "loggerDetailNetwork": {
+    "message": "네트워크는 완료된 요청을 포함한 브라우저의 읽기 전용 관찰입니다. 오류만으로는 어떤 확장 프로그램이 차단했는지 알 수 없습니다. 브라우저가 숨긴 요청이나 관찰 전에 가로챈 일부 요청은 없을 수 있습니다.",
+    "description": "Logger evidence explanation: network events"
+  },
+  "loggerDetailDnr": {
+    "message": "네이티브 DNR 일치는 Chrome이 선택한 이 확장 프로그램의 규칙을 알려 줍니다. 규칙 본문 조회는 별도로 이루어지며 원자적이지 않습니다. 사용 가능 여부는 Chrome의 피드백 API와 설치 유형에 따라 다릅니다.",
+    "description": "Logger evidence explanation: native DNR matches"
+  },
+  "loggerDetailCosmetic": {
+    "message": "코스메틱은 스타일시트가 삽입되었다는 뜻일 뿐 요소가 숨겨졌다는 증거는 아닙니다. DOM은 실제로 적용된 절차적 필터와 CSS 선택자에 일치하는 요소가 있다는 단순 스냅숏을 구분합니다. 스냅숏은 스타일시트마다 최대 32개 선택자 그룹만 검사하며 표시 여부나 미디어 조건 활성화를 증명하지 않습니다. 보고는 프레임당 초당 32건으로 제한되며, 관찰자가 로드되기 전의 효과는 포함되지 않습니다.",
+    "description": "Logger evidence explanation: cosmetic and DOM events"
+  },
+  "loggerDetailScriptlet": {
+    "message": "스크립틀릿 보고는 등록과 예외·대체 처리에 관한 것입니다. 이 빌드는 실행 시도 보고를 내보내지 않으며 개별 스크립틀릿의 효과도 확인하지 않습니다. 페이지 메시지는 MAIN 월드 실행의 신뢰할 수 있는 증거가 아닙니다. 전역 등록 이벤트는 탭 −1을 사용합니다.",
+    "description": "Logger evidence explanation: scriptlets"
+  },
+  "loggerDetailCapture": {
+    "message": "수집을 시작하면 선택적 네트워크 관찰 권한을 요청합니다. 거부해도 사용 가능한 DNR 및 콘텐츠 진단은 계속 쓸 수 있습니다. 최대 네 개의 로거 창에 걸쳐 최대 512개 기록을 보관합니다. 탭을 닫거나 일시 중지하면 수집이 멈추고, 로거 창을 닫으면 다른 열린 로거 창에 표시되지 않는 기록이 지워집니다. Chrome이 워커를 중단하고 이 임시 기록을 지울 수 있습니다.",
+    "description": "Logger evidence explanation: permission, limits and record lifetime"
+  },
+  "loggerDetailExport": {
+    "message": "실시간 URL에는 개인적인 쿼리 문자열이 포함될 수 있습니다. 내보내기는 자격 증명, 쿼리 문자열, 프래그먼트, 진단 자유 텍스트를 제거하지만 URL 경로에는 개인 식별자가 남을 수 있습니다. 공유하기 전에 내보낸 파일을 검토하세요.",
+    "description": "Logger evidence explanation: private data and export redaction"
+  },
+  "loggerEmpty": {
+    "message": "아직 이벤트가 없습니다. 수집을 시작한 다음 선택한 페이지를 새로 고치거나 페이지를 조작하세요.",
+    "description": "Logger placeholder when there are no events"
+  },
+  "loggerCapturing": {
+    "message": "수집 중입니다.",
+    "description": "Logger status: capturing"
+  },
+  "loggerPaused": {
+    "message": "일시 중지됨.",
+    "description": "Logger status: paused"
+  },
+  "loggerNetworkAttached": {
+    "message": "네트워크 관찰: 연결됨.",
+    "description": "Logger state: browser network observation is attached"
+  },
+  "loggerNetworkUnavailable": {
+    "message": "네트워크 관찰: 사용할 수 없음.",
+    "description": "Logger state: browser network observation is unavailable"
+  },
+  "loggerNativeAttached": {
+    "message": "네이티브 DNR 리스너: 연결됨.",
+    "description": "Logger state: native DNR match listener is attached"
+  },
+  "loggerNativeUnavailable": {
+    "message": "네이티브 DNR 리스너: 사용할 수 없음.",
+    "description": "Logger state: native DNR match listener is unavailable"
+  },
+  "loggerRecordCount": {
+    "message": "기록 $1/$2개, 버린 이전 기록 $3개.",
+    "description": "Logger counters. $1: records shown; $2: record limit; $3: older records discarded"
+  },
+  "loggerTabFrame": {
+    "message": "탭 $1, 프레임 $2",
+    "description": "Logger row context. $1: browser tab ID; $2: frame ID"
+  },
+  "loggerPermissionRefused": {
+    "message": "네트워크 권한이 허용되지 않았습니다. 다른 진단은 계속 사용할 수 있습니다.",
+    "description": "Logger status when the optional network permission was refused"
+  },
+  "loggerDisconnected": {
+    "message": "로거 연결이 끝났습니다. 임시 기록이 지워졌습니다. 다시 연결하려면 수집을 시작하세요.",
+    "description": "Logger status after the connection to the extension ended"
+  },
+  "loggerPhaseRequested": {
+    "message": "요청 시작",
+    "description": "Logger event phase: a network request started (English keeps the technical phase name)"
+  },
+  "loggerPhaseCompleted": {
+    "message": "완료",
+    "description": "Logger event phase: a network request completed (English keeps the technical phase name)"
+  },
+  "loggerPhaseError": {
+    "message": "오류",
+    "description": "Logger event phase: a network request failed (English keeps the technical phase name)"
+  },
+  "loggerPhaseRedirected": {
+    "message": "리디렉션",
+    "description": "Logger event phase: a network request was redirected (English keeps the technical phase name)"
+  },
+  "loggerPhaseBlocked": {
+    "message": "차단됨",
+    "description": "Logger event phase: the optional webRequest firewall supplement canceled a network request (English keeps the technical phase name)"
+  },
+  "loggerPhaseMatched": {
+    "message": "규칙 일치",
+    "description": "Logger event phase: a native rule matched (English keeps the technical phase name)"
+  },
+  "loggerPhaseStylesheetInserted": {
+    "message": "스타일시트 삽입됨",
+    "description": "Logger event phase: a cosmetic stylesheet was inserted (English keeps the technical phase name)"
+  },
+  "loggerPhaseSelectorPresent": {
+    "message": "선택자 일치 요소 있음",
+    "description": "Logger event phase: a CSS selector matched elements in a snapshot (English keeps the technical phase name)"
+  },
+  "loggerPhaseProceduralApplied": {
+    "message": "절차적 필터 적용됨",
+    "description": "Logger event phase: a procedural cosmetic filter was applied (English keeps the technical phase name)"
+  },
+  "loggerPhaseRegistered": {
+    "message": "등록됨",
+    "description": "Logger event phase: scriptlets were registered (English keeps the technical phase name)"
+  },
+  "loggerPhaseExceptionApplied": {
+    "message": "예외 적용됨",
+    "description": "Logger event phase: a scriptlet exception was applied (English keeps the technical phase name)"
+  },
+  "loggerRequestId": {
+    "message": "요청 $1",
+    "description": "Logger row detail. $1: browser request ID"
+  },
+  "loggerLanguageTag": {
+    "message": "ko",
+    "description": "Not displayed. BCP 47 language tag of this catalog, used as the lang attribute of the logger page"
+  },
+  "pickerQuit": {
+    "message": "종료",
+    "description": "Tooltip and accessible name for the close button of the element picker and custom-filter remover (unpicker) panels"
+  },
+  "restoreSucceeded": {
+    "message": "설정을 복원했습니다.",
+    "description": "Dashboard status after a backup file was restored"
+  },
+  "restoreFailed": {
+    "message": "설정을 복원할 수 없습니다: $1",
+    "description": "Dashboard status when restoring a backup failed; $1 is the technical reason"
+  },
+  "backupFailed": {
+    "message": "백업을 만들 수 없습니다: $1",
+    "description": "Dashboard status when creating a backup file failed; $1 is the technical reason"
+  },
+  "resetSucceeded": {
+    "message": "기본 설정으로 되돌렸습니다.",
+    "description": "Dashboard status after all settings were reset to their defaults"
+  },
+  "resetFailed": {
+    "message": "설정을 초기화할 수 없습니다: $1",
+    "description": "Dashboard status when resetting settings failed; $1 is the technical reason"
+  },
+  "restoreFirewallUnsupported": {
+    "message": "방화벽 규칙은 복원되지 않았습니다. 이 브라우저는 해당 기능을 지원하지 않습니다(Chrome 145 이상 필요).",
+    "description": "Restore warning: the backup contains firewall rules, which this browser version cannot use"
+  },
+  "restoreImportedListsDisabled": {
+    "message": "가져온 목록 $1개를 복원했지만 사용 안 함 상태로 두었습니다. 사용 중인 목록의 원본 데이터는 20MiB로 제한됩니다.",
+    "description": "Restore warning; $1 is the number of imported filter lists which were restored but not enabled"
+  },
+  "restoreImportedListsSkipped": {
+    "message": "가져온 목록 $1개를 복원할 수 없습니다. 자격 증명이 없는 HTTPS 주소의 목록만 최대 32개까지 지원됩니다.",
+    "description": "Restore warning; $1 is the number of imported filter lists which could not be restored"
+  },
+  "restoreFilteringModesLocked": {
+    "message": "필터링 모드는 변경되지 않았습니다. 관리자가 관리합니다.",
+    "description": "Restore or reset warning: the managed disabledFeatures policy includes filteringMode, so the site filtering modes were not changed"
+  },
+  "restoreDeveloperLocked": {
+    "message": "개발자 모드와 사용자 지정 DNR 규칙은 변경되지 않았습니다. 관리자가 개발자 기능을 비활성화했습니다.",
+    "description": "Restore or reset warning: the managed disabledFeatures policy includes develop, so developer mode and custom DNR rules were not changed"
+  },
+  "defaultFilteringModeFailed": {
+    "message": "기본 필터링 모드를 변경할 수 없습니다: $1",
+    "description": "Dashboard status when changing the default filtering mode failed; $1 is the technical reason"
+  },
+  "customFiltersSaveFailed": {
+    "message": "사용자 필터를 저장할 수 없습니다: $1",
+    "description": "Dashboard status when saving My filters or the filter sandbox failed; $1 is the technical reason"
+  },
+  "siteRulesInvalidHostname": {
+    "message": "‘$1’은(는) 올바른 호스트 이름이 아닙니다. 와일드카드, 경로, ‘https://’ 없이 한 줄에 호스트 이름 하나를 입력하세요.",
+    "description": "Site rules validation error; $1 is the rejected line exactly as typed"
+  },
+  "siteRulesDuplicateHostname": {
+    "message": "‘$1’이(가) 둘 이상의 필터링 수준에 있습니다. 하나의 호스트 이름은 한 수준에만 포함될 수 있습니다.",
+    "description": "Site rules validation error; $1 is a hostname listed in more than one filtering level"
+  },
+  "siteRulesDefaultRequired": {
+    "message": "‘$1’ 줄을 정확히 하나만 유지하세요. 이 줄이 다른 모든 사이트의 기본 필터링 수준을 정합니다.",
+    "description": "Site rules validation error; $1 is the literal token all-urls, which must not be translated"
+  },
+  "siteRulesChangedElsewhere": {
+    "message": "이 페이지에서 불러온 뒤 사이트별 규칙이 다른 곳에서 변경되었습니다. 편집한 내용은 유지됩니다. 다시 저장하면 해당 변경 사항을 덮어쓰고, 페이지를 새로 고치면 편집한 내용이 취소됩니다.",
+    "description": "Site rules conflict: the stored rules changed after the page loaded them; the user's edits were not saved"
+  },
+  "siteRulesSaveFailed": {
+    "message": "사이트별 규칙을 저장할 수 없습니다: $1",
+    "description": "Dashboard status when valid site rules could not be saved; $1 is the technical reason"
+  },
+  "webRequestSetupTitle": {
+    "message": "실험적 네트워크 방화벽",
+    "description": "Diagnostics panel title for the optional Experimental WebRequest package"
+  },
+  "webRequestSetupExperimental": {
+    "message": "확장 프로그램 폴더의 start-experimental-chrome.cmd로 Chrome을 여세요. 처음에는 ‘압축해제된 확장 프로그램을 로드합니다’로 해당 폴더를 로드하세요. 실행기는 별도의 프로필을 사용합니다. 여기로 돌아와 ‘진단 새로고침’을 눌러 권한을 확인하세요.",
+    "description": "Diagnostics setup steps shown in the Experimental WebRequest package; keep start-experimental-chrome.cmd unchanged"
+  },
+  "webRequestSetupStandard": {
+    "message": "Experimental WebRequest 패키지는 새로 방문한 도메인을 포함해 방화벽의 직접 차단 기능을 추가합니다. 별도 패키지를 설치하고 포함된 실행기로 Chrome을 여세요.",
+    "description": "Diagnostics note in the standard package about the separate Experimental WebRequest package; keep the package name unchanged"
+  },
+  "webRequestSetupLimits": {
+    "message": "DNR 필터링, allow, noop은 계속 적용됩니다. 이 기능은 할당량을 없애거나 uBO 엔진 전체를 복원하지 않으며, 확장 프로그램이 Chrome 실행 인수를 직접 변경할 수는 없습니다.",
+    "description": "Diagnostics note on the limits of the experimental firewall; keep DNR, allow, noop and uBO unchanged"
+  },
+  "webRequestSetupGuide": {
+    "message": "설치, 확인 및 제거 가이드",
+    "description": "Link text to the Experimental WebRequest documentation"
+  },
+  "reportGitHubConfirm": {
+    "message": "사이트 출처와 이 페이지에 표시된 문제 해결 정보가 미리 입력된 신고를 GitHub에서 엽니다. GitHub에서 제출하기 전까지는 아무것도 공개되지 않습니다. 계속하시겠습니까?",
+    "description": "Confirmation shown before the report page opens a prefilled public GitHub issue"
+  },
+  "reportIssueTrackerInfo": {
+    "message": "특정 웹사이트에서 발생하는 필터 문제는 <a href=\"https://github.com/kayurachann/uBlock-Plus/issues\"><code>uBlock Plus+</code> 이슈 트래커</a>에 신고하세요. <u>GitHub 계정이 필요합니다.</u>",
+    "description": "Report page introduction; replaces supportS3P1, which names the upstream uAssets tracker. Keep the HTML markup, including the <a href> link, and the URL unchanged"
+  },
+  "protectionProfileSelectRequired": {
+    "message": "적용할 보호 프로필을 선택하세요.",
+    "description": "Dashboard status when Apply profile is clicked while no protection profile is selected"
+  },
+  "editorApplyFailed": {
+    "message": "변경 사항을 적용하지 못했습니다: $1",
+    "description": "Dashboard Advanced editors: applying the edited text failed. $1 is the error message"
+  },
+  "autoUpdateRestartRequired": {
+    "message": "권한이 허용되었습니다. 업데이터에 연결하기 위해 uBlock Plus+가 한 번 다시 시작됩니다.",
+    "description": "Dashboard settings: permission granted, the extension must restart once"
+  },
+  "autoUpdateRestartNow": {
+    "message": "지금 다시 시작",
+    "description": "Dashboard settings: button restarting the extension to enable the updater connection"
+  },
+  "autoUpdateRestarting": {
+    "message": "다시 시작하는 중… 이 페이지가 자동으로 다시 열립니다.",
+    "description": "Dashboard settings: the extension is restarting; this page reopens automatically"
+  },
+  "autoUpdateDownloadingVersion": {
+    "message": "$1 다운로드 중…",
+    "description": "Dashboard settings, Updates: live status while a new version downloads. $1 is the version"
+  },
+  "autoUpdateProgress": {
+    "message": "$2MiB 중 $1MiB",
+    "description": "Dashboard settings, Updates: download progress. $1 is the downloaded size, $2 the total size, both in MiB"
+  },
+  "autoUpdateHeld": {
+    "message": "이전 버전을 복원했으므로 버전 $1은(는) 자동으로 설치되지 않습니다. 그래도 설치하려면 '지금 설치'를 선택하세요.",
+    "description": "Dashboard settings, Updates: after the user restored an earlier version, automatic installation skips the version restored from. $1 is that version"
+  },
+  "autoUpdateCheckThrottled": {
+    "message": "마지막 확인 후 1분이 지나지 않았습니다. $1초 후에 다시 시도하세요.",
+    "description": "Dashboard settings, Updates: Check now was used again within a minute. $1 is a number of seconds"
+  },
+  "autoUpdateIncognito": {
+    "message": "업데이트는 시크릿 창이 아닌 일반 창에서 관리하세요.",
+    "description": "Dashboard settings, Updates: the page is open in an incognito window, where update controls are disabled"
+  },
+  "autoUpdateManualOnly": {
+    "message": "자동 설치는 Windows에서만 작동합니다. 업데이트하려면 확장 프로그램 폴더의 파일을 새 릴리스의 파일로 바꾼 다음 확장 프로그램 페이지에서 uBlock Plus+를 새로고침하세요.",
+    "description": "Dashboard settings, Updates: the native updater exists only for Windows; on other systems the user updates by hand"
+  },
+  "autoUpdatePolicyOff": {
+    "message": "관리자가 업데이트 확인을 껐습니다.",
+    "description": "Dashboard settings, Updates: managed storage autoUpdate is \"off\""
+  },
+  "autoUpdatePolicyNotify": {
+    "message": "관리자가 업데이트 알림만 허용합니다. 새 버전은 자동으로 설치되지 않습니다.",
+    "description": "Dashboard settings, Updates: managed storage allows notifications only (autoUpdate \"notify\", or the dashboard is locked)"
+  },
+  "autoUpdateErrorPolicy": {
+    "message": "관리자가 허용하지 않는 작업입니다.",
+    "description": "Dashboard settings, Updates: an action or setting was refused by the administrator policy"
+  },
+  "autoUpdateErrorFiltersBusy": {
+    "message": "필터 목록을 업데이트하는 중입니다. 완료된 후 다시 시도하세요.",
+    "description": "Dashboard settings, Updates: an install, restore or restart was refused because a filter list update is running"
+  },
+  "autoUpdateErrorUpdateBusy": {
+    "message": "다른 업데이트가 이미 진행 중입니다. 잠시 후 다시 시도하세요.",
+    "description": "Dashboard settings, Updates: another install or restore (in this browser or from the command-line updater) is running"
+  },
+  "autoUpdateErrorSignature": {
+    "message": "패키지가 신뢰할 수 있는 uBlock Plus+ 릴리스 키로 서명되지 않아 설치하지 않았습니다.",
+    "description": "Dashboard settings, Updates: the updater found no valid signature from a trusted release key"
+  },
+  "autoUpdateErrorPackage": {
+    "message": "다운로드한 패키지가 이 사본에 맞는 유효한 uBlock Plus+ 릴리스가 아니어서 설치하지 않았습니다.",
+    "description": "Dashboard settings, Updates: the downloaded package is invalid, too large, not staged, or not the expected edition or version"
+  },
+  "autoUpdateErrorUnexpectedFiles": {
+    "message": "확장 프로그램 폴더에 uBlock Plus+에 속하지 않는 파일이 있습니다. 해당 파일을 폴더 밖으로 옮긴 후 다시 시도하세요. 아무것도 변경되지 않았습니다.",
+    "description": "Dashboard settings, Updates: the updater refused to replace a folder containing files which are not part of the extension"
+  },
+  "autoUpdateErrorNoBackup": {
+    "message": "복원할 이전 버전이 없습니다.",
+    "description": "Dashboard settings, Updates: restore failed because the updater has no backup of an earlier version"
+  },
+  "autoUpdateErrorRollbackFailed": {
+    "message": "이전 버전을 복원하지 못했습니다. 자세한 내용은 %LOCALAPPDATA%\\uBlockPlus\\Updater\\updater.log에 있습니다.",
+    "description": "Dashboard settings, Updates: the updater could not restore the earlier version"
+  },
+  "autoUpdateErrorApplyFailed": {
+    "message": "새 버전을 설치하지 못했습니다. 자세한 내용은 %LOCALAPPDATA%\\uBlockPlus\\Updater\\updater.log에 있습니다.",
+    "description": "Dashboard settings, Updates: the updater could not back up the installed version or replace the extension files"
+  },
+  "autoUpdateErrorUnsafeFolder": {
+    "message": "업데이터는 이 확장 프로그램 폴더를 변경하지 않습니다. 드라이브 루트이거나 시스템 또는 프로필 폴더이거나, 링크가 포함되어 있거나, 이 PC의 다른 사용자가 변경할 수 있기 때문입니다. uBlock Plus+를 사용자 프로필 안(예: %LOCALAPPDATA%\\uBlockPlus\\Extension)으로 옮기고 그곳에서 다시 로드한 다음 설정을 다시 진행하세요.",
+    "description": "Dashboard settings, Updates: the updater refuses to manage the extension folder (drive root, system or profile folder, links)"
+  },
+  "autoUpdateErrorFolderMismatch": {
+    "message": "업데이터가 관리하는 폴더에 이 확장 프로그램과 다른 버전이 있습니다. '압축해제된 확장 프로그램을 로드합니다'로 불러온 폴더에서 설정 명령을 실행하세요.",
+    "description": "Dashboard settings, Updates: the folder the updater manages holds another (older or unknown) version than the running extension"
+  },
+  "autoUpdateErrorNotOffered": {
+    "message": "이 버전은 선택한 릴리스 채널에서 제공되지 않습니다.",
+    "description": "Dashboard settings, Updates: Install now asked for a version which the selected release channel does not offer"
+  },
+  "autoUpdateErrorAmbiguous": {
+    "message": "업데이터가 이 확장 프로그램 ID로 여러 폴더에 등록되어 있습니다. '압축해제된 확장 프로그램을 로드합니다'로 불러온 폴더에서 updater\\install-updater.cmd -Replace를 실행하세요.",
+    "description": "Dashboard settings, Updates: the updater has several folders registered for this extension ID and cannot tell which one to update"
+  },
+  "autoUpdateErrorUpdater": {
+    "message": "업데이터가 오류를 보고했습니다. 자세한 내용은 %LOCALAPPDATA%\\uBlockPlus\\Updater\\updater.log에 있습니다.",
+    "description": "Dashboard settings, Updates: the native updater reported an error without a more specific explanation (invalid configuration, internal error, unexpected reply)"
+  },
+  "autoUpdateErrorUndone": {
+    "message": "중단된 업데이트를 취소하고 이전 버전을 복원했습니다. 다른 것은 변경하지 않았습니다.",
+    "description": "Dashboard settings: the updater restored the previous version after an interrupted update"
   }
 }

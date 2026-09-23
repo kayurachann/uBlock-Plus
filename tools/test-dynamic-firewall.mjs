@@ -2,6 +2,7 @@
 import {
     FIREWALL_RULE_BASE,
     compileFirewall,
+    evaluateFirewall,
     parseFirewall,
     within,
 } from '../platform/mv3/extension/js/firewall-core.js';
@@ -221,4 +222,117 @@ assert.equal(sessionRules.some(rule => rule.id >= FIREWALL_RULE_BASE), false);
 deps.dnr.RuleConditionKeys = undefined;
 manager = createFirewallManager(deps); await manager.initialize();
 await assert.rejects(manager.apply('* * * block'), /Chrome 145/);
+deps.dnr.RuleConditionKeys = { TOP_DOMAINS: 'topDomains' };
+
+// Learned domains and Site-rules hosts add native rules only where their
+// decision differs from the enclosing scope, so the budget does not scale
+// with (domains x destination cells).
+const hostnameCells = Array.from({ length: 64 }, (_, i) => `* ad${i}.net * block`).join('\n');
+const manyDomains = Array.from({ length: 128 }, (_, i) => `site${i}.com`);
+const scaled = compile(hostnameCells, { domains: manyDomains });
+assert.equal(scaled.rules.length, 64, 'Party-independent cells are emitted once');
+const partyCells = '* * 3p-script block\n* * 3p-frame block\n' +
+    Array.from({ length: 60 }, (_, i) => `* tracker${i}.example * block`).join('\n');
+const partyScaled = compile(partyCells, { domains: manyDomains });
+assert.ok(partyScaled.rules.length <= 60 + 2 * 128, 'Each learned domain adds only its party cells');
+for ( const [ plan, text ] of [ [ scaled, hostnameCells ], [ partyScaled, partyCells ] ] ) {
+    const rules = parseFirewall(text).rules;
+    for ( const source of [ 'www.site3.com', 'site127.com', 'unseen.net' ] ) {
+        const domain = domainFromHostname(source);
+        const decide = (destination, type, thirdParty) =>
+            evaluateFirewall(rules, source, destination, type, thirdParty)?.action ?? 'noop';
+        for ( const destination of [ 'tracker7.example', 'ad9.net', 'cdn.other.net', domain ] ) {
+            for ( const type of [ 'script', 'sub_frame', 'image' ] ) {
+                const thirdParty = decide(destination, type, true);
+                const expected = manyDomains.includes(domain)
+                    ? decide(destination, type, within(destination, domain) === false)
+                    : thirdParty === decide(destination, type, false) ? thirdParty : 'noop';
+                assert.equal(nativeDecision(plan, source, destination, type), expected,
+                    `Scaled plan: ${source} -> ${destination} ${type}`);
+            }
+        }
+    }
+}
+const modeScaled = compile(Array.from({ length: 41 }, (_, i) => `* dest${i}.net * block`).join('\n'), {
+    modes: { ...modes, complete: Array.from({ length: 100 }, (_, i) => `mode${i}.example`) },
+});
+assert.equal(modeScaled.rules.length, 41, 'Site-rules hosts with inherited decisions add no rules');
+
+const scopeDeps = { ...deps, dnr: { ...deps.dnr } };
+sessionRules = [];
+local.clear(); session.clear();
+openTabs = Array.from({ length: 70 }, (_, i) => ({ url: `https://www.restored${i}.com/` }));
+local.set('firewall.permanent', hostnameCells);
+manager = createFirewallManager(scopeDeps);
+await manager.initialize();
+assert.equal(manager.getState().error, '', 'Browser restart with many tabs keeps the firewall active');
+assert.equal(sessionRules.filter(rule => rule.id >= FIREWALL_RULE_BASE).length, 64);
+assert.equal(manager.getState().learnedDomains, 70);
+
+openTabs = [ { url: 'https://www.bank.example/' } ];
+await manager.apply(partyCells);
+for ( let i = 0; i < 140; i++ ) { await manager.observe(`http://10.0.0.${i}/`); }
+await manager.observe('https://www.bank.example/');
+await manager.observe('https://news.example.org/');
+active = { rules: sessionRules.filter(r => r.id >= FIREWALL_RULE_BASE) };
+assert.ok(active.rules.some(rule => rule.condition.topDomains?.includes('example.org') &&
+    rule.action.type === 'block' && rule.condition.resourceTypes.includes('script')),
+'Learning never stalls after many visited sites');
+assert.equal(nativeDecision(active, 'news.example.org', 'cdn.other.net', 'script'), 'block');
+assert.equal(nativeDecision(active, 'www.bank.example', 'cdn.other.net', 'sub_frame'), 'block');
+assert.ok(manager.getState().learnedDomains <= 128);
+assert.deepEqual([ manager.getState().error, manager.getState().omittedDomains ], [ '', 0 ]);
+await manager.refresh();
+
+// When learned party scopes still exceed the native budget, the oldest are
+// evicted first and open tabs and the observed page are kept longest.
+const perSite = '* * 3p-script block\n' +
+    Array.from({ length: 30 }, (_, i) => `blog.example ads${i}.net * block`).join('\n');
+scopeDeps.dnr.MAX_NUMBER_OF_SESSION_RULES = 200;
+let compiles = 0;
+scopeDeps.compileFirewall = options => { compiles += 1; return compileFirewall(options); };
+sessionRules = [];
+openTabs = [ { url: 'https://first.example/' } ];
+manager = createFirewallManager(scopeDeps);
+await manager.initialize();
+await manager.apply(perSite);
+for ( let i = 0; i < 12; i++ ) { await manager.observe(`https://visit${i}.org/`); }
+let state = manager.getState();
+assert.equal(state.error, '');
+assert.ok(state.omittedDomains > 0 && state.learnedDomains < 13, 'The learned scope shrinks to fit');
+assert.ok(state.ruleCount <= 200);
+active = { rules: sessionRules.filter(r => r.id >= FIREWALL_RULE_BASE) };
+for ( const source of [ 'first.example', 'visit11.org' ] ) {
+    assert.equal(nativeDecision(active, source, 'ads3.net', 'script'), 'block',
+        `${source} keeps its party scope`);
+}
+assert.equal(nativeDecision(active, 'visit0.org', 'ads3.net', 'script'), 'noop',
+    'The oldest learned domain is evicted first and fails open');
+// At saturation each new site displaces one old domain. That common case
+// costs the failed full compile plus one retry, not a whole search.
+for ( let i = 12; i < 20; i++ ) {
+    compiles = 0;
+    await manager.observe(`https://visit${i}.org/`);
+    assert.ok(compiles > 0 && compiles <= 2, `Saturated learning compiled ${compiles} times`);
+    assert.deepEqual([ manager.getState().learnedDomains, manager.getState().omittedDomains ],
+        [ state.learnedDomains, 1 ], 'The largest fitting scope is still kept');
+}
+active = { rules: sessionRules.filter(r => r.id >= FIREWALL_RULE_BASE) };
+assert.equal(nativeDecision(active, 'visit19.org', 'ads3.net', 'script'), 'block');
+assert.equal(nativeDecision(active, 'first.example', 'ads3.net', 'script'), 'block');
+const tooLarge = Array.from({ length: 250 }, (_, i) => `* big${i}.net * block`).join('\n');
+const beforeOverflow = structuredClone(sessionRules);
+await assert.rejects(manager.apply(tooLarge), /available native rules/);
+assert.deepEqual(sessionRules, beforeOverflow, 'A configuration too large by itself keeps previous rules');
+
+// A failed scope update is reported without marking the active firewall
+// as failed, which would disable the synchronous supplement.
+rejectNative = true;
+await assert.rejects(manager.observe('https://late.example/'), /native quota/);
+rejectNative = false;
+state = manager.getState();
+assert.equal(state.error, '');
+assert.match(state.scopeError, /native quota/);
+await manager.observe('https://later.example/');
+assert.equal(manager.getState().scopeError, '', 'A later successful update clears the scope warning');
 console.log(`Dynamic firewall: ${comparisons} full-uBO differential cases plus scope, noop, quota, rollback and restart regressions passed`);

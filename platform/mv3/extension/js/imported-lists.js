@@ -23,6 +23,9 @@
 
 import {
     applyFreshImportedListMetadata,
+    applyImportedListRefreshFailure,
+    importedListRefreshTime,
+    isImportedListRefreshDue,
     pendingImportedMetadataKey,
 } from './imported-list-metadata.js';
 
@@ -42,7 +45,6 @@ import { ublockPlusLog } from './debug.js';
 
 /******************************************************************************/
 
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const MAX_PINNED_SOURCE_BYTES = 5 * 1024 * 1024;
 const MAX_FILTER_SOURCE_FETCHES = 32;
 const SHA256_PATTERN = /^[a-f0-9]{64}$/;
@@ -91,7 +93,8 @@ async function scheduleImportedListsUpdate(lists) {
     let earlierTime = 0;
     for ( const list of lists ) {
         if ( list.enabled !== true ) { continue; }
-        const updateTime = list.time.updated + list.expires * MS_PER_DAY;
+        const updateTime = importedListRefreshTime(list);
+        if ( Number.isFinite(updateTime) === false ) { continue; }
         if ( earlierTime !== 0 && earlierTime < updateTime ) { continue; }
         earlierTime = updateTime;
     }
@@ -447,6 +450,12 @@ export function commitImportedListUpdates(updates, options = {}) {
                 modified = true;
             }
 
+            if ( applyImportedListRefreshFailure(list, update) ) {
+                ublockPlusLog(`Kept cached ${list.id} after a failed refresh: ${update.message}`);
+                modified = true;
+                continue;
+            }
+
             // Only a freshly fetched/compiled list carries a metadata token.
             // Integrity-only provenance updates must not postpone the list's
             // next scheduled refresh.
@@ -481,20 +490,16 @@ export function commitImportedListUpdates(updates, options = {}) {
 
 /******************************************************************************/
 
+// The compiler refetches due lists itself and keeps each cached compilation
+// until its replacement compiled. Deleting caches here would turn one
+// unreachable list into a failure of every later compilation.
 export async function updateImportedLists() {
     const lists = await getEnabledImportedLists();
     const now = Date.now();
-    const toUpdate = [];
-    for ( const list of lists ) {
-        const updateTime = list.time.updated + list.expires * MS_PER_DAY;
-        if ( updateTime > now ) { continue; }
-        toUpdate.push(list.id);
-    }
+    const toUpdate = lists
+        .filter(list => isImportedListRefreshDue(list, now))
+        .map(list => list.id);
     if ( toUpdate.length === 0 ) { return 0; }
-    await localRemove(toUpdate.flatMap(listid => [
-        `rulesets.imported.compiled.${listid}`,
-        pendingImportedMetadataKey(listid),
-    ]));
     ublockPlusLog(`Will update imported filter lists: ${toUpdate.join()}`);
     return toUpdate.length;
 }

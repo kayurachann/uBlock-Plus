@@ -534,7 +534,7 @@ async function renderRepositories() {
             message('filterStoreRemoveRepository', 'Remove')
         );
         button.type = 'button';
-        button.dataset.repositoryURL = url;
+        button.dataset.repositoryUrl = url;
         button.disabled = working;
         item.append(label, button);
         fragment.append(item);
@@ -904,7 +904,7 @@ function listen() {
     qs('#filterStoreRepositoryList').addEventListener('click', ev => {
         const button = ev.target.closest('button[data-repository-url]');
         if ( button === null ) { return; }
-        withWorkingState(( ) => removeRepository(button.dataset.repositoryURL));
+        withWorkingState(( ) => removeRepository(button.dataset.repositoryUrl));
     });
     const broadcast = new self.BroadcastChannel('uBlockPlus');
     broadcast.onmessage = ev => {

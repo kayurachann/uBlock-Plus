@@ -489,6 +489,7 @@ export async function getRegisteredContentScripts() {
 /******************************************************************************/
 
 let pendingCSSCachePrune;
+let queuedCSSCachePrune;
 
 async function pruneCSSCacheNow(options = {}) {
     const memoryProfile = await getMemoryProfileConfig();
@@ -531,7 +532,16 @@ async function pruneCSSCacheNow(options = {}) {
 }
 
 export function pruneCSSCache(options = {}) {
-    if ( pendingCSSCachePrune ) { return pendingCSSCachePrune; }
+    if ( pendingCSSCachePrune ) {
+        if ( options.force !== true ) { return pendingCSSCachePrune; }
+        // The pending prune read the memory profile before this call and may
+        // have skipped trimming: force another one once it settles.
+        queuedCSSCachePrune ??= pendingCSSCachePrune.catch(( ) => { }).then(( ) => {
+            queuedCSSCachePrune = undefined;
+            return pruneCSSCache(options);
+        });
+        return queuedCSSCachePrune;
+    }
     const result = pruneCSSCacheNow(options);
     pendingCSSCachePrune = result.finally(( ) => {
         pendingCSSCachePrune = undefined;

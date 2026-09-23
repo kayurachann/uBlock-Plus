@@ -144,6 +144,12 @@ async function startUnpicker() {
     dom.on('#minimize', 'click', onMinimizeClicked);
     dom.on('#customFilters', 'click', onFilterClicked);
     dom.on('#quit', 'click', quitUnpicker);
+    // The close control is a focusable role="button" element.
+    dom.on('#quit', 'keydown', ev => {
+        if ( ev.key !== 'Enter' && ev.key !== ' ' ) { return; }
+        ev.preventDefault();
+        quitUnpicker();
+    });
 }
 
 /******************************************************************************/

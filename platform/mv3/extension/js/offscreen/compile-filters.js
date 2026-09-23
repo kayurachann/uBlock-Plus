@@ -44,13 +44,18 @@ import {
     compiledStorageKey,
     newCompiledGeneration,
 } from '../compiled-storage.js';
+import {
+    isImportedListRefreshDue,
+    isPendingImportedRefreshStale,
+    pendingImportedMetadataKey,
+} from '../imported-list-metadata.js';
 import { createCompilerStorageClient } from '../offscreen-storage.js';
 import { fetchList } from './fetch-list.js';
 import { isCredentialFreeHTTPS } from '../imported-fetch-policy.js';
 import { isVerifiedSourceKey } from '../verified-source-handoff.js';
 import { makeCosmeticScripts } from './make-cosmetic-filters.js';
-import { pendingImportedMetadataKey } from '../imported-list-metadata.js';
 import { safeReplace } from './safe-replace.js';
+import { sanitizeUntrustedScriptletDetails } from './scriptlet-regex-safety.js';
 import { validateFilterConditionalStructure } from './filter-conditional-structure.js';
 
 /******************************************************************************/
@@ -83,9 +88,12 @@ function reportProgress(stage, listid = '') {
     pending?.catch?.(( ) => { });
 }
 
-function stageImportedListUpdate(update) {
-    if ( typeof update?.listid !== 'string' ) { return; }
-    if ( /^[a-f0-9]{32}$/.test(update.metadataToken) === false ) { return; }
+function stageImportedListUpdate(pendingMetadata) {
+    if ( typeof pendingMetadata?.listid !== 'string' ) { return; }
+    if ( /^[a-f0-9]{32}$/.test(pendingMetadata.metadataToken) === false ) { return; }
+    // The previously activated compilation stays in storage.
+    const update = { ...pendingMetadata };
+    delete update.previous;
     const index = importedListUpdates.findIndex(
         candidate => candidate.listid === update.listid
     );
@@ -94,6 +102,17 @@ function stageImportedListUpdate(update) {
     } else {
         importedListUpdates[index] = update;
     }
+}
+
+// The cached compilation stays active. The service worker backs off the next
+// attempt once this generation has activated.
+function stageImportedListRefreshFailure(list, reason) {
+    importedListUpdates.push({
+        listid: list.id,
+        refreshFailed: true,
+        failedAt: Date.now(),
+        message: reason?.message || `${reason}`,
+    });
 }
 
 function stageCompiledIntegrity(list) {
@@ -540,13 +559,9 @@ async function fetchPinnedText(list) {
         isCredentialFreeHTTPS(response.url) === false ) {
         throw new Error('Pinned filter source could not be fetched over HTTPS');
     }
-    const contentLength = response.headers.get('content-length');
-    if ( contentLength !== null ) {
-        const declaredSize = Number(contentLength);
-        if ( Number.isFinite(declaredSize) && declaredSize !== integrity.bytes ) {
-            throw new Error('Pinned filter response has an unexpected size');
-        }
-    }
+    // Content-Length counts encoded bytes: a gzip response declares less
+    // than its decoded body. The streamed cap, byte count and digest below
+    // are the authoritative checks.
     const bytes = await readPinnedResponse(response, integrity.bytes);
     if ( bytes.byteLength !== integrity.bytes ) {
         throw new Error('Pinned filter response has an unexpected size');
@@ -569,34 +584,32 @@ async function fetchPinnedText(list) {
 
 /******************************************************************************/
 
-async function updateList(list) {
+// Throws on any fetch or compile failure. Callers decide whether the list's
+// cached compilation can stand in for it. `previous` is the envelope of the
+// compilation which last activated, kept until the refresh activates.
+async function updateList(list, previous) {
     const context = {
         env: filterEnvironment,
     };
     let text;
-    try {
-        if ( list.sourceIntegrity ) {
-            text = await fetchPinnedText(list);
-        } else {
-            const asset = {
-                urls: [ list.id ],
-                maxBytes: list.maxSourceBytes,
-                maxFetches: list.maxSourceFetches,
-                requireHTTPS: true,
-            };
-            text = await fetchList(context, asset, ( ) => {
-                browser.runtime.sendMessage({ what: 'keepAlive' });
-            });
-        }
-        if ( Boolean(text) === false ) {
-            throw new Error('Filter source returned no usable data');
-        }
-    } catch ( reason ) {
-        compilationErrors.push({
-            listid: list.id,
-            message: reason?.message || `${reason}`,
+    if ( list.sourceIntegrity ) {
+        text = await fetchPinnedText(list);
+    } else {
+        const asset = {
+            urls: [ list.id ],
+            // A Filter Store batch share bounds the first fetch of a list.
+            // Refreshes use the per-list limit, so a list which grows after
+            // installation keeps updating.
+            maxBytes: list.time?.updated > 0 ? undefined : list.maxSourceBytes,
+            maxFetches: list.maxSourceFetches,
+            requireHTTPS: true,
+        };
+        text = await fetchList(context, asset, ( ) => {
+            browser.runtime.sendMessage({ what: 'keepAlive' });
         });
-        return;
+    }
+    if ( Boolean(text) === false ) {
+        throw new Error('Filter source returned no usable data');
     }
 
     const metadata = extractMetadataFromList(text, [
@@ -612,12 +625,15 @@ async function updateList(list) {
         nativeCssHas: true,
         sourceIsExpanded: list.sourceIntegrity === undefined,
     });
-    if ( Boolean(compiled) === false ) { return; }
+    if ( Boolean(compiled) === false ) {
+        throw new Error('Filter source returned no usable data');
+    }
 
     const cacheKey = `rulesets.imported.compiled.${list.id}`;
     const pendingMetadata = {
         listid: list.id,
         metadataToken: newCompiledGeneration(),
+        fetchedAt: Date.now(),
         title: metadata.title,
         homeURL: metadata.homepage,
         expires: metadata.expires || 7,
@@ -626,6 +642,7 @@ async function updateList(list) {
         ruleStats: compiled.ruleStats,
         rejections: compiled.rejections,
     };
+    if ( previous !== undefined ) { pendingMetadata.previous = previous; }
     const metadataKey = pendingImportedMetadataKey(list.id);
     await compilerStorage.set({
         [cacheKey]: {
@@ -634,10 +651,10 @@ async function updateList(list) {
             sourceDigest: list.sourceIntegrity?.digest || '',
             sourceBytes: list.sourceIntegrity?.bytes ?? null,
             // A compile can fail after this individual list was refreshed.
-            // The envelope points to a small metadata sidecar so the next
-            // attempt can stage it without fetching again. Keeping the
-            // sidecar separate avoids rewriting a multi-MiB cache entry when
-            // the service worker commits metadata.
+            // The envelope points to a metadata sidecar so the next attempt
+            // can stage it without fetching again. The sidecar also holds the
+            // envelope which last activated, if any. Committing only removes
+            // the sidecar and never rewrites a multi-MiB cache entry.
             pendingMetadataToken: pendingMetadata.metadataToken,
         },
         [metadataKey]: pendingMetadata,
@@ -650,48 +667,113 @@ async function updateList(list) {
     return compiled;
 }
 
+function reportListError(list, reason) {
+    compilationErrors.push({
+        listid: list.id,
+        message: reason?.message || `${reason}`,
+    });
+}
+
+async function updateListOrReport(list) {
+    try {
+        return await updateList(list);
+    } catch ( reason ) {
+        reportListError(list, reason);
+    }
+}
+
 /******************************************************************************/
 
 async function getCompiledListData(list) {
     const cacheKey = `rulesets.imported.compiled.${list.id}`;
     const metadataKey = pendingImportedMetadataKey(list.id);
     const bin = await compilerStorage.get(cacheKey);
-    const cached = bin?.[cacheKey];
-    if ( cached?.compilerRevision !== COMPILED_FILTERS_REVISION ) {
-        return updateList(list);
+    let cached = bin?.[cacheKey];
+    if ( isCurrentListEnvelope(list, cached) === false ) {
+        return updateListOrReport(list);
     }
-    const serialized = typeof cached === 'string'
-        ? cached
-        : cached?.serialized;
-    if ( Boolean(serialized) === false ) {
-        return updateList(list);
-    }
-    if ( list.sourceIntegrity ) {
-        if ( cached?.sourceDigest !== list.sourceIntegrity.digest ||
-            cached?.sourceBytes !== list.sourceIntegrity.bytes ) {
-            return updateList(list);
-        }
-    }
-    const compiled = await deserializeCompiledListOr(
-        serialized,
-        s14e.deserialize,
-        async ( ) => {
-            await compilerStorage.remove([ cacheKey, metadataKey ]);
-            return updateList(list);
-        }
-    );
-    if ( Boolean(compiled) === false ) { return; }
-    if ( list.sourceIntegrity ) { stageCompiledIntegrity(list); }
-    const pendingMetadataToken = cached?.pendingMetadataToken;
+    let pendingMetadata;
+    const pendingMetadataToken = cached.pendingMetadataToken;
     if ( pendingMetadataToken !== list.compiledMetadataToken &&
         /^[a-f0-9]{32}$/.test(pendingMetadataToken) ) {
         const metadataBin = await compilerStorage.get(metadataKey);
-        const pendingMetadata = metadataBin?.[metadataKey];
-        if ( pendingMetadata?.metadataToken === pendingMetadataToken ) {
-            stageImportedListUpdate(pendingMetadata);
+        if ( metadataBin?.[metadataKey]?.metadataToken === pendingMetadataToken ) {
+            pendingMetadata = metadataBin[metadataKey];
         }
     }
+    // An expired list keeps its last complete compilation until a
+    // replacement has been fetched and compiled. A refresh which is still
+    // waiting for its metadata commit is current, unless generations with it
+    // have not activated for a while: it may be what prevents activation,
+    // for example by exceeding a DNR quota.
+    let refreshFailure;
+    let restored = false;
+    if ( pendingMetadata === undefined ) {
+        if ( isImportedListRefreshDue(list) ) {
+            const committed = cached.pendingMetadataToken === list.compiledMetadataToken;
+            try {
+                return await updateList(list, committed ? cached : undefined);
+            } catch ( reason ) {
+                refreshFailure = reason;
+            }
+        }
+    } else if ( isPendingImportedRefreshStale(pendingMetadata) ) {
+        const { previous } = pendingMetadata;
+        if ( isCurrentListEnvelope(list, previous) ) {
+            // Restore the compilation which last activated. The refresh is
+            // retried after the usual backoff, once this generation commits.
+            await compilerStorage.set({ [cacheKey]: previous });
+            await compilerStorage.remove(metadataKey);
+            cached = previous;
+            pendingMetadata = undefined;
+            restored = true;
+            refreshFailure = new Error(
+                'The updated list could not be activated; the previous version stays active'
+            );
+        } else if ( list.sourceIntegrity === undefined ) {
+            // Nothing activated before it. Pinned bytes cannot change, but
+            // a newer upstream version may activate.
+            try {
+                return await updateList(list);
+            } catch {
+                // Keep trying the version fetched before.
+            }
+        }
+    }
+    let cacheUsed = true;
+    const compiled = await deserializeCompiledListOr(
+        cached.serialized,
+        s14e.deserialize,
+        async ( ) => {
+            cacheUsed = false;
+            await compilerStorage.remove([ cacheKey, metadataKey ]);
+            if ( refreshFailure === undefined || restored ) {
+                return updateListOrReport(list);
+            }
+            reportListError(list, refreshFailure);
+        }
+    );
+    if ( cacheUsed === false || Boolean(compiled) === false ) {
+        return compiled;
+    }
+    if ( refreshFailure !== undefined ) {
+        stageImportedListRefreshFailure(list, refreshFailure);
+    }
+    if ( list.sourceIntegrity ) { stageCompiledIntegrity(list); }
+    if ( pendingMetadata !== undefined ) {
+        stageImportedListUpdate(pendingMetadata);
+    }
     return compiled;
+}
+
+// A cache envelope holds either the compilation which last activated, or a
+// refresh whose sidecar keeps that compilation until the refresh activates.
+function isCurrentListEnvelope(list, envelope) {
+    if ( envelope?.compilerRevision !== COMPILED_FILTERS_REVISION ) { return false; }
+    if ( Boolean(envelope.serialized) === false ) { return false; }
+    if ( list.sourceIntegrity === undefined ) { return true; }
+    return envelope.sourceDigest === list.sourceIntegrity.digest &&
+        envelope.sourceBytes === list.sourceIntegrity.bytes;
 }
 
 /******************************************************************************/
@@ -885,6 +967,10 @@ async function runCompiler() {
         { badfilterKeys: stockBadfilterKeys } ]);
     const sandboxCompiled = await toMv3Data('sandbox', sandboxResult) ?? {};
     reportProgress('sandbox-conversion-complete');
+    // Cached compilations predate this check, so it runs on every compile.
+    const unsafeScriptletRegexes = sanitizeUntrustedScriptletDetails(
+        importedResult?.scriptletDetails
+    );
     const importedCompiled = await toMv3Data('imported', importedResult) ?? {};
     reportProgress('imported-conversion-complete');
     if ( compilationErrors.length ) {
@@ -900,6 +986,21 @@ async function runCompiler() {
         [compiledStorageKey(compiledGeneration, 'scriptletExceptions.schema')]: 1,
     };
     const toRemove = [];
+    const scriptletWarningsKey = compiledStorageKey(
+        compiledGeneration, 'importedFilters.scriptletWarnings'
+    );
+    if ( unsafeScriptletRegexes.length !== 0 ) {
+        const shown = unsafeScriptletRegexes.slice(0, 3)
+            .map(pattern => pattern.length > 80 ? `${pattern.slice(0, 79)}…` : pattern);
+        values[scriptletWarningsKey] = [
+            `Imported lists contain ${unsafeScriptletRegexes.length} scriptlet ` +
+            `regex hostname(s) which could stall pages: ${shown.join(' ')}. ` +
+            'Scriptlets scoped by them are skipped, and exceptions using ' +
+            'them apply to a broader scope.',
+        ];
+    } else {
+        toRemove.push(scriptletWarningsKey);
+    }
     for ( const [ id, compiled ] of [
         [ 'sandbox', sandboxCompiled ],
         [ 'imported', importedCompiled ],

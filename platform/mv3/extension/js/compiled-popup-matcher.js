@@ -32,10 +32,19 @@ const MAX_DOMAINS_PER_LIST = 128;
 const MAX_DOMAINS_PER_CONDITION = 256;
 const MAX_REALMS_PER_EVALUATION = 16;
 const MAX_FILTERS_PER_EVALUATION = 4096;
-const MAX_MATCH_STEPS_PER_EVALUATION = 65536;
+// Sized for every stock popup filter against a maximal 8 KB URL. The
+// aggregate bounds worst-case work; it must not be reachable by ordinary
+// long landing URLs, or padding a URL would switch off popup protection.
+const MAX_MATCH_STEPS_PER_EVALUATION = 8_000_000;
+// One glob comparison scans each character a small constant number of times
+// unless the pattern overlaps itself (the classic `*aaaa...b` case). That
+// comparison is abandoned once it exceeds this linear allowance.
+const MATCH_STEPS_PER_FILTER_CHARACTER = 4;
+const MATCH_STEPS_PER_FILTER_BASE = 64;
 
 const BUDGET_EXHAUSTED_REASON =
     'compiled-popup-evaluation-budget-exhausted';
+const TARGET_TRUNCATED_REASON = 'compiled-popup-target-truncated';
 const invalidRuntimeFilter = Symbol('invalid-runtime-filter');
 const runtimeFilterCache = new WeakMap();
 
@@ -494,21 +503,38 @@ function urlFilterDetails(rawPattern) {
     if ( rightAnchor === false ) {
         tokens.push({ type: 'star', value: '*' });
     }
-    return { domainAnchor, tokens };
+    // The hostname characters a domain-anchored pattern starts with. None of
+    // them can match the `:`, `/`, `?` or `#` which follows a hostname.
+    let hostLiteral = '';
+    if ( domainAnchor ) {
+        for ( const token of tokens ) {
+            if ( token.type !== 'text' || /^[\w.-]$/.test(token.value) === false ) {
+                break;
+            }
+            hostLiteral += token.valueLower;
+        }
+    }
+    return { domainAnchor, hostLiteral, tokens };
 }
 
 function isSeparator(char) {
     return char !== undefined && /[^%.0-9a-z_-]/i.test(char);
 }
 
-function matchUrlFilterTokens(input, tokens, caseSensitive, budget) {
-    const text = caseSensitive ? input : input.toLowerCase();
-    let inputIndex = 0;
+// `text` is already lowercased by the caller for case-insensitive filters.
+function matchUrlFilterTokens(text, start, tokens, caseSensitive, budget) {
+    const stepLimit = budget.matchSteps + MATCH_STEPS_PER_FILTER_BASE +
+        MATCH_STEPS_PER_FILTER_CHARACTER * (text.length - start + tokens.length);
+    let inputIndex = start;
     let tokenIndex = 0;
     let starIndex = -1;
     let starInputIndex = -1;
     while ( inputIndex < text.length ) {
         if ( consumeMatchSteps(budget) === false ) { return false; }
+        if ( budget.matchSteps > stepLimit ) {
+            budget.filterOverrun = true;
+            return false;
+        }
         const token = tokens[tokenIndex];
         if ( token?.type === 'star' ) {
             starIndex = tokenIndex++;
@@ -538,38 +564,64 @@ function matchUrlFilterTokens(input, tokens, caseSensitive, budget) {
     return tokenIndex === tokens.length;
 }
 
-function matchesUrlFilter(urlString, url, details, caseSensitive, budget) {
+function matchesUrlFilter(target, details, caseSensitive, budget) {
     const { domainAnchor, tokens } = details;
     if ( domainAnchor === false ) {
         return matchUrlFilterTokens(
-            urlString,
+            caseSensitive ? target.value : target.valueLower,
+            0,
             tokens,
             caseSensitive,
             budget
         );
     }
-    if ( url === undefined ) { return false; }
     const startsWithDot = tokens[0]?.type === 'text' &&
         tokens[0].value === '.';
-    const hostname = url.hostname;
+    const hostname = target.url.hostname;
     if ( hostname === '' ) { return false; }
-    const tail = `${url.port === '' ? '' : `:${url.port}`}` +
-        `${url.pathname}${url.search}${url.hash}`;
+    const text = caseSensitive ? target.hostTail : target.hostTailLower;
     let index = 0;
     for (;;) {
         if ( consumeMatchSteps(budget) === false ) { return false; }
-        const candidate =
-            `${startsWithDot && index !== 0 ? '.' : ''}` +
-            `${hostname.slice(index)}${tail}`;
+        // Each suffix starts after a label dot, which a dot-prefixed pattern
+        // must also see; hostTail keeps that dot at index - 1.
         if ( matchUrlFilterTokens(
-            candidate,
+            text,
+            startsWithDot && index !== 0 ? index - 1 : index,
             tokens,
             caseSensitive,
             budget
         ) ) {
             return true;
         }
-        if ( budget.exhausted || isIPAddress(hostname) ) { return false; }
+        if ( budget.exhausted || budget.filterOverrun ||
+            isIPAddress(hostname) ) {
+            return false;
+        }
+        const dot = hostname.indexOf('.', index);
+        if ( dot === -1 ) { return false; }
+        index = dot + 1;
+    }
+}
+
+// A truncated target keeps its hostname but not its path. A domain-anchored
+// pattern starts at a label of that hostname, so a pattern whose leading
+// hostname characters cannot start at any label is decided without the path.
+function hostCanBeginUrlFilter(target, details, budget) {
+    const { hostLiteral } = details;
+    if ( hostLiteral === '' ) { return true; }
+    const hostname = target.url.hostname.toLowerCase();
+    if ( hostname === '' ) { return false; }
+    const startsWithDot = hostLiteral.startsWith('.');
+    let index = 0;
+    for (;;) {
+        if ( consumeMatchSteps(budget) === false ) { return false; }
+        if ( hostname.startsWith(
+            hostLiteral,
+            startsWithDot && index !== 0 ? index - 1 : index
+        ) ) {
+            return true;
+        }
         const dot = hostname.indexOf('.', index);
         if ( dot === -1 ) { return false; }
         index = dot + 1;
@@ -586,18 +638,50 @@ function matchesRegexFilter(url, regex, budget) {
     return regex.test(url);
 }
 
-function matchesCondition(condition, input, budget) {
+// Parse and lowercase the event URLs once. Every filter of every realm is
+// matched against the same immutable values.
+function evaluationContext(input) {
     const target = urlContext(
         input.targetURL,
         input.targetURLComplete !== false
     );
+    if ( target.url !== undefined ) {
+        const { url } = target;
+        target.hostname = hostnameFromParsedURL(url);
+        target.valueLower = target.value.toLowerCase();
+        target.hostTail = `${url.hostname}` +
+            `${url.port === '' ? '' : `:${url.port}`}` +
+            `${url.pathname}${url.search}${url.hash}`;
+        target.hostTailLower = target.hostTail.toLowerCase();
+    }
+    // The caller replaced a URL too long to keep by its origin. Unlike a
+    // context which is still being resolved, the dropped path never arrives.
+    // The matcher's own cut of an oversized value is not trusted for this: a
+    // prefix of a URL can name another host.
+    target.truncated = input.targetURLTruncated === true &&
+        target.url !== undefined && target.pending &&
+        target.value === input.targetURL;
+    const initiator = urlContext(input.initiatorURL);
+    const top = urlContext(input.topURL);
+    return {
+        target,
+        initiatorHostname: initiator.url !== undefined
+            ? hostnameFromParsedURL(initiator.url)
+            : undefined,
+        topHostname: top.url !== undefined
+            ? hostnameFromParsedURL(top.url)
+            : undefined,
+    };
+}
+
+function matchesCondition(condition, input, context, budget) {
+    const { target } = context;
     if ( target.url === undefined ) {
         return target.pending ? 'context-pending' : 'no-match';
     }
-    const targetHostname = hostnameFromParsedURL(target.url);
 
     if ( matchesDomainConditions(
-        targetHostname,
+        target.hostname,
         condition.requestDomains,
         condition.excludedRequestDomains,
         budget
@@ -617,10 +701,11 @@ function matchesCondition(condition, input, budget) {
         if ( input.initiatorContextComplete !== true ) {
             initiatorPending = true;
         } else {
-            const initiator = urlContext(input.initiatorURL);
-            if ( initiator.url === undefined ) { return 'no-match'; }
+            if ( context.initiatorHostname === undefined ) {
+                return 'no-match';
+            }
             if ( matchesDomainConditions(
-                hostnameFromParsedURL(initiator.url),
+                context.initiatorHostname,
                 condition.initiatorDomains,
                 condition.excludedInitiatorDomains,
                 budget
@@ -632,10 +717,9 @@ function matchesCondition(condition, input, budget) {
     }
     if ( condition.topDomains !== undefined ||
         condition.excludedTopDomains !== undefined ) {
-        const top = urlContext(input.topURL);
-        if ( top.url === undefined ) { return 'no-match'; }
+        if ( context.topHostname === undefined ) { return 'no-match'; }
         if ( matchesDomainConditions(
-            hostnameFromParsedURL(top.url),
+            context.topHostname,
             condition.topDomains,
             condition.excludedTopDomains,
             budget
@@ -645,17 +729,27 @@ function matchesCondition(condition, input, budget) {
         }
     }
     const caseSensitive = condition.isUrlFilterCaseSensitive === true;
+    let targetPending = false;
     if ( condition.urlFilterDetails !== undefined ) {
         if ( target.complete === false ) {
-            initiatorPending = true;
+            if ( target.truncated && hostCanBeginUrlFilter(
+                target,
+                condition.urlFilterDetails,
+                budget
+            ) === false ) {
+                if ( budget.exhausted ) { return 'budget-exhausted'; }
+                return 'no-match';
+            }
+            targetPending = true;
         } else if ( matchesUrlFilter(
-            target.value,
-            target.url,
+            target,
             condition.urlFilterDetails,
             caseSensitive,
             budget
         ) === false ) {
-            if ( budget.exhausted ) { return 'budget-exhausted'; }
+            if ( budget.exhausted || budget.filterOverrun ) {
+                return 'budget-exhausted';
+            }
             return 'no-match';
         } else if ( condition.urlFilterDetails.domainAnchor ) {
             hasTargetHostnameEvidence = true;
@@ -663,7 +757,7 @@ function matchesCondition(condition, input, budget) {
     }
     if ( condition.regex !== undefined ) {
         if ( target.complete === false ) {
-            initiatorPending = true;
+            targetPending = true;
         } else if ( matchesRegexFilter(
             target.value,
             condition.regex,
@@ -673,11 +767,17 @@ function matchesCondition(condition, input, budget) {
             return 'no-match';
         }
     }
+    let pending;
+    if ( initiatorPending ) {
+        pending = 'context-pending';
+    } else if ( targetPending ) {
+        pending = target.truncated ? 'target-truncated' : 'context-pending';
+    }
     if ( input.requireTargetHostnameMatch === true &&
         hasTargetHostnameEvidence === false ) {
-        return initiatorPending ? 'context-pending' : 'no-match';
+        return pending ?? 'no-match';
     }
-    return initiatorPending ? 'context-pending' : 'match';
+    return pending ?? 'match';
 }
 
 function filterPriority(filter) {
@@ -748,79 +848,118 @@ function preferredMatch(candidate, current) {
     return candidate.filter.lineNumber < current.filter.lineNumber;
 }
 
-function evaluateRealm(realms, realmIds, input, budget) {
+function evaluateRealm(realms, realmIds, input, context, budget) {
     let best;
     let pendingAllow;
     let pendingBlock;
     let uncertainAllow;
-    for ( const realm of realms ) {
-        if ( realmIds.includes(realm?.id) === false ||
-            Array.isArray(realm.filters) === false ) {
-            continue;
-        }
-        for ( const filter of realm.filters ) {
-            budget.filterCount += 1;
-            if ( budget.filterCount > MAX_FILTERS_PER_EVALUATION ) {
-                budget.exhausted = true;
-                break;
-            }
-            const compiled = compileRuntimeFilter(filter);
-            if ( compiled === invalidRuntimeFilter ||
-                compiled.kind !== input.kind ) {
-                continue;
-            }
-            const conditionMatch = matchesCondition(
-                compiled.condition,
-                input,
-                budget
-            );
-            if ( conditionMatch === 'budget-exhausted' ) { break; }
-            if ( conditionMatch === 'no-match' ) {
-                continue;
-            }
-            if ( compiled.uncertainAllow ) {
-                const candidate = {
-                    filter: compiled,
-                    priority: filterPriority(compiled),
-                    realmId: realm.id,
-                };
-                if ( preferredMatch(candidate, uncertainAllow) ) {
-                    uncertainAllow = candidate;
-                }
-                continue;
-            }
-            // A missing opener/frame context can hide a matching exception.
-            // Keep the candidate pending until webNavigation supplies that
-            // context; otherwise the heuristic layer could close a popup
-            // before a constrained compiled allow rule gets evaluated.
-            if ( conditionMatch === 'context-pending' ||
-                (compiled.action === 'block' &&
-                input.initiatorContextComplete !== true) ) {
-                const candidate = {
-                    filter: compiled,
-                    priority: filterPriority(compiled),
-                    realmId: realm.id,
-                };
-                if ( compiled.action === 'allow' ) {
-                    if ( preferredMatch(candidate, pendingAllow) ) {
-                        pendingAllow = candidate;
+    // The highest-ranked block which cannot be decided: the work budget ran
+    // out, or only the dropped path of a truncated target could match it.
+    let unresolvedBlock;
+    const selectedRealms = realms.filter(realm =>
+        realmIds.includes(realm?.id) && Array.isArray(realm.filters)
+    );
+    // Exceptions are evaluated first. Running out of budget while one of them
+    // may still match defers the decision. Once every exception is ruled out,
+    // an unevaluated block can only fail to close the popup, so it must not
+    // also switch off the contextual policy: otherwise padding a URL would
+    // bypass every popup protection.
+    for ( const action of [ 'allow', 'block' ] ) {
+        for ( const realm of selectedRealms ) {
+            for ( const filter of realm.filters ) {
+                if ( action === 'allow' ) {
+                    budget.filterCount += 1;
+                    if ( budget.filterCount > MAX_FILTERS_PER_EVALUATION ) {
+                        budget.exhausted = true;
+                        break;
                     }
-                } else if ( preferredMatch(candidate, pendingBlock) ) {
-                    pendingBlock = candidate;
                 }
-                continue;
+                const compiled = compileRuntimeFilter(filter);
+                if ( compiled === invalidRuntimeFilter ||
+                    compiled.kind !== input.kind ||
+                    compiled.action !== action ) {
+                    continue;
+                }
+                const candidate = {
+                    filter: compiled,
+                    priority: filterPriority(compiled),
+                    realmId: realm.id,
+                };
+                // Once the aggregate budget is gone, the remaining blocks
+                // are still ranked, but no longer matched.
+                let conditionMatch = 'budget-exhausted';
+                if ( budget.exhausted === false ) {
+                    budget.filterOverrun = false;
+                    conditionMatch = matchesCondition(
+                        compiled.condition,
+                        input,
+                        context,
+                        budget
+                    );
+                }
+                if ( conditionMatch === 'budget-exhausted' ) {
+                    if ( action === 'allow' ) {
+                        budget.exhausted = true;
+                        break;
+                    }
+                    // A single self-overlapping pattern only forfeits its own
+                    // verdict; the remaining blocks still run.
+                    candidate.reason = BUDGET_EXHAUSTED_REASON;
+                    if ( preferredMatch(candidate, unresolvedBlock) ) {
+                        unresolvedBlock = candidate;
+                    }
+                    continue;
+                }
+                if ( conditionMatch === 'no-match' ) {
+                    continue;
+                }
+                if ( compiled.uncertainAllow ) {
+                    if ( preferredMatch(candidate, uncertainAllow) ) {
+                        uncertainAllow = candidate;
+                    }
+                    continue;
+                }
+                // The dropped path of a truncated target never arrives, so a
+                // block which only that path could match is undecided rather
+                // than pending. An exception keeps deferring below.
+                if ( conditionMatch === 'target-truncated' &&
+                    compiled.action === 'block' &&
+                    input.initiatorContextComplete === true ) {
+                    candidate.reason = TARGET_TRUNCATED_REASON;
+                    if ( preferredMatch(candidate, unresolvedBlock) ) {
+                        unresolvedBlock = candidate;
+                    }
+                    continue;
+                }
+                // A missing opener/frame context can hide a matching exception.
+                // Keep the candidate pending until webNavigation supplies that
+                // context; otherwise the heuristic layer could close a popup
+                // before a constrained compiled allow rule gets evaluated.
+                if ( conditionMatch !== 'match' ||
+                    (compiled.action === 'block' &&
+                    input.initiatorContextComplete !== true) ) {
+                    if ( compiled.action === 'allow' ) {
+                        if ( preferredMatch(candidate, pendingAllow) ) {
+                            pendingAllow = candidate;
+                        }
+                    } else if ( preferredMatch(candidate, pendingBlock) ) {
+                        pendingBlock = candidate;
+                    }
+                    continue;
+                }
+                if ( preferredMatch(candidate, best) ) { best = candidate; }
             }
-            const candidate = {
-                filter: compiled,
-                priority: filterPriority(compiled),
-                realmId: realm.id,
-            };
-            if ( preferredMatch(candidate, best) ) { best = candidate; }
+            if ( budget.exhausted && action === 'allow' ) { break; }
         }
-        if ( budget.exhausted ) { break; }
+        if ( budget.exhausted && action === 'allow' ) {
+            return { action: 'defer', reason: BUDGET_EXHAUSTED_REASON };
+        }
     }
-    if ( budget.exhausted ) {
-        return { action: 'defer', reason: BUDGET_EXHAUSTED_REASON };
+    // An undecided block can only add a block. Against a matching exception
+    // it matters only when it would outrank it, i.e. an important block.
+    if ( best?.filter.action === 'allow' && unresolvedBlock !== undefined &&
+        preferredMatch(unresolvedBlock, best) ) {
+        return { action: 'defer', reason: unresolvedBlock.reason };
     }
     if ( best === undefined ) {
         if ( uncertainAllow !== undefined ) {
@@ -834,6 +973,10 @@ function evaluateRealm(realms, realmIds, input, budget) {
                 action: 'defer',
                 reason: 'compiled-popup-context-pending',
             };
+        }
+        // No exception can apply: the contextual policy still judges.
+        if ( unresolvedBlock !== undefined ) {
+            budget.unresolvedBlockReason = unresolvedBlock.reason;
         }
         return;
     }
@@ -880,8 +1023,11 @@ export function evaluateCompiledPopupFilters(realms, input) {
     const budget = {
         exhausted: false,
         filterCount: 0,
+        filterOverrun: false,
         matchSteps: 0,
+        unresolvedBlockReason: undefined,
     };
+    const context = evaluationContext(input);
     const filteringMode = Number.isFinite(input.filteringMode)
         ? input.filteringMode
         : 0;
@@ -890,6 +1036,7 @@ export function evaluateCompiledPopupFilters(realms, input) {
             realms,
             [ 'sandbox' ],
             input,
+            context,
             budget
         );
         if ( sandboxMatch !== undefined ) { return sandboxMatch; }
@@ -899,12 +1046,24 @@ export function evaluateCompiledPopupFilters(realms, input) {
             realms,
             [ 'imported', 'stock' ],
             input,
+            context,
             budget
         );
         if ( importedMatch !== undefined ) { return importedMatch; }
     } else if ( filteringMode >= 1 ) {
-        const stockMatch = evaluateRealm(realms, [ 'stock' ], input, budget);
+        const stockMatch = evaluateRealm(
+            realms,
+            [ 'stock' ],
+            input,
+            context,
+            budget
+        );
         if ( stockMatch !== undefined ) { return stockMatch; }
+    }
+    // Some blocks could not be decided, but no exception can apply: report
+    // no compiled decision so the contextual policy still judges the popup.
+    if ( budget.unresolvedBlockReason !== undefined ) {
+        return { action: 'none', reason: budget.unresolvedBlockReason };
     }
     return noMatch;
 }

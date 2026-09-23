@@ -22,6 +22,7 @@
 */
 
 import { browser } from './ext.js';
+import { getFilteringModeDetails } from './mode-manager.js';
 import { matchesFromHostnames } from './utils.js';
 
 /******************************************************************************/
@@ -62,7 +63,28 @@ function enableToolbarIcon(tabId) {
 
 /******************************************************************************/
 
-export function toggleToolbarIcon(tabId) {
+// `reverseMode` lives only as long as this worker. Chrome restarts an evicted
+// worker without registering content scripts again, so derive the mode from
+// the stored filtering modes instead of trusting the in-memory default.
+export async function syncToolbarIconMode() {
+    let details;
+    try {
+        details = await getFilteringModeDetails();
+    } catch {
+        return;
+    }
+    const reverseModeAfter = details.none.has('all-urls');
+    if ( reverseModeAfter === reverseMode ) { return; }
+    if ( reverseModeAfter ) {
+        disableToolbarIcon();
+    } else {
+        enableToolbarIcon();
+    }
+    reverseMode = reverseModeAfter;
+}
+
+export async function toggleToolbarIcon(tabId) {
+    await syncToolbarIconMode();
     if ( reverseMode ) {
         enableToolbarIcon(tabId);
     } else {

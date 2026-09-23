@@ -11,6 +11,9 @@ const __dirname = path.dirname(__filename);
 const gitignorePath = path.resolve(__dirname, ".gitignore");
 
 export default [ includeIgnoreFile(gitignorePath), {
+    // Unused upstream publishing submodule and scratch space.
+    ignores: [ "publish-extension/**", "tmp/**" ],
+}, {
     files: ["**/*.js", "**/*.mjs"],
     ...js.configs.recommended,
 }, {
@@ -18,6 +21,8 @@ export default [ includeIgnoreFile(gitignorePath), {
     languageOptions: {
         globals: {
             ...globals.browser,
+            browser: "readonly",
+            chrome: "readonly",
             vAPI: "readonly",
         },
         sourceType: "module",
@@ -43,7 +48,7 @@ export default [ includeIgnoreFile(gitignorePath), {
     },
 }, {
     files: ["**/*.json"],
-    ignores: ["package-lock.json"],
+    ignores: ["**/package-lock.json"],
     language: "json/json",
     ...json.configs.recommended,
 } ];

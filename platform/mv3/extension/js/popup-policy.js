@@ -145,7 +145,7 @@ function webURLDetails(raw) {
 // need a Public Suffix List to establish a shared registrable owner safely;
 // treating every shared textual suffix as a site boundary would merge tenants
 // on private suffixes such as github.io.
-function directHostnameLineage(a, b) {
+export function directHostnameLineage(a, b) {
     if ( a === '' || b === '' ) { return false; }
     return a === b || a.endsWith(`.${b}`) || b.endsWith(`.${a}`);
 }

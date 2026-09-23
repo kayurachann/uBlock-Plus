@@ -31,6 +31,8 @@ export function createLoggerService(api, options = {}) {
         return false;
     };
     const anyCapture = ( ) => Array.from(clients.values()).some(c => c.capturing);
+    // Paused windows still display their tab's records.
+    const shown = tabId => Array.from(clients.values()).some(c => c.tabId === tabId);
     const readPackagedRules = options.readPackagedRules || (async path => {
         const response = await fetch(api.runtime.getURL(`/${path}`));
         if ( response.ok !== true ) { throw new Error('Packaged rules unavailable'); }
@@ -240,11 +242,16 @@ export function createLoggerService(api, options = {}) {
         clients.delete(port);
         if ( client !== undefined && captured(client.tabId) === false ) {
             stopContent(client.tabId);
-            clear(client.tabId, anyCapture() === false);
+        }
+        // Records shared with an open window, paused or not, survive until
+        // the last logger window closes.
+        if ( client !== undefined && client.tabId >= 0 && shown(client.tabId) === false ) {
+            clear(client.tabId, false);
         }
         await configure();
-        if ( anyCapture() === false ) {
+        if ( clients.size === 0 ) {
             records.length = 0;
+            discarded = 0;
             generation += 1;
         }
     });
@@ -282,7 +289,9 @@ export function createLoggerService(api, options = {}) {
                         client.capturing = true;
                         if ( previous !== client.tabId && captured(previous) === false ) {
                             stopContent(previous);
-                            clear(previous, false);
+                            if ( previous >= 0 && shown(previous) === false ) {
+                                clear(previous, false);
+                            }
                         }
                         await configure();
                         await injectObserver(client.tabId);

@@ -52,11 +52,17 @@ export function supportsUserScripts() {
 // state or report an actionable error. Automatic retries are intentionally
 // avoided because a response can be lost after a mutation already committed.
 
+// Typed failures the UI maps to localized text: the filtering-scope error and
+// lower-case kebab-case codes (such as update error codes).
+const isPublicErrorCode = code =>
+    code === 'ERR_FILTERING_MODE_PARENT_SCOPE' ||
+    typeof code === 'string' && /^[a-z][a-z0-9-]{0,39}$/.test(code);
+
 export function sendMessage(msg) {
     return runtime.sendMessage(msg).then(response => {
         if ( typeof response?.__ublockPlusError === 'string' ) {
             const error = new Error(response.__ublockPlusError);
-            if ( response.__ublockPlusErrorCode === 'ERR_FILTERING_MODE_PARENT_SCOPE' ) {
+            if ( isPublicErrorCode(response.__ublockPlusErrorCode) ) {
                 error.code = response.__ublockPlusErrorCode;
             }
             throw error;

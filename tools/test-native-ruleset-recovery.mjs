@@ -112,6 +112,7 @@ function fixture() {
         updateUserRules: async ( ) => { throw new Error('Compiled rollback must restore native data without rebuilding'); },
         broadcastMessage: ( ) => { events.push('broadcast'); },
         ublockPlusErr: ( ) => {},
+        ublockPlusLog: ( ) => {},
     });
     vm.runInContext(rollbackSource, context);
     const mutate = ( ) => {
@@ -170,14 +171,102 @@ for ( const fault of [ 'static-selection', 'session-remove', 'dynamic', 'session
     checkRestored(f);
 }
 
+// The worker stopped mid-transaction, then an update (for example the
+// auto-updater's reload) replaced the package. Old static IDs are never
+// replayed, but the package-independent state is rolled back so that every
+// later start is not aborted by the same stale journal.
+const nativeReplayEvents = [ 'static-selection', 'static-ids', 'dynamic', 'session-add', 'session-remove' ];
+const selectionRecorder = (f, error = '') => {
+    const selections = [];
+    f.context.enableRulesets = async ids => {
+        f.events.push('enable-rulesets');
+        selections.push(Array.from(ids));
+        if ( error ) { return { error }; }
+        f.state.enabled = Array.from(ids);
+        return {};
+    };
+    return selections;
+};
 for ( const mismatch of [ 'version', 'digest' ] ) {
     const f = await prepared();
     if ( mismatch === 'version' ) { f.state.package.version = '2.0.0'; }
     else { f.state.package.resources[0].digest = 'new-main-corpus'; }
-    await assert.rejects(f.context.rollbackRulesetTransaction(f.transaction), /different package.*not replayed/);
-    assert.deepEqual(f.events, [], 'stale package recovery must reject before any native or metadata mutation');
-    assert.equal(f.values.has(OUTER), true, 'package mismatch remains explicitly pending');
+    await assert.rejects(f.adapter.restore(f.transaction.nativeState), error =>
+        error.code === 'ERR_NATIVE_PACKAGE_MISMATCH' && /different package.*not replayed/.test(error.message));
+    assert.deepEqual(f.events, [], 'stale package snapshot must reject before any native mutation');
+    const updatedNative = { dynamic: sorted(f.state.dynamic), session: sorted(f.state.session),
+        disabled: clone(f.state.disabled) };
+    const rebuilt = [];
+    f.context.updateUserRules = async generation => {
+        f.events.push('user-rules');
+        rebuilt.push(generation);
+        return { errors: [] };
+    };
+    const selections = selectionRecorder(f);
+    // The config selection, not the old package's native one, is restored.
+    f.transaction.previousRulesets = [ 'stock-a', 'stock-b' ];
+    await f.context.rollbackRulesetTransaction(f.transaction);
+    assert.equal(f.events.some(event => nativeReplayEvents.includes(event)), false,
+        `${mismatch}: old static IDs and snapshot rules must not be replayed into a new package`);
+    assert.deepEqual({ dynamic: sorted(f.state.dynamic), session: sorted(f.state.session),
+        disabled: f.state.disabled }, updatedNative);
+    assert.deepEqual(selections, [ [ 'stock-a' ] ],
+        `${mismatch}: the restored selection is applied to the new package without startSession()`);
+    assert.deepEqual(f.state.enabled, [ 'stock-a' ]);
+    assert.deepEqual(rebuilt, [ 'old-generation' ], 'user DNR rules are rebuilt from the previous generation');
+    assert.equal(f.state.generation, 'old-generation');
+    assert.equal(f.state.scriptGeneration, 'old-generation');
+    assert.deepEqual(Array.from(f.context.rulesetConfig.enabledRulesets), [ 'stock-a' ]);
+    assert.ok(f.events.indexOf('restore-imported') < f.events.indexOf('enable-rulesets'));
+    assert.ok(f.events.indexOf('enable-rulesets') < f.events.indexOf('user-rules'),
+        'the stock-badfilter plan is computed against the restored selection');
+    assert.ok(f.events.indexOf('user-rules') < f.events.indexOf('config'));
+    assert.ok(f.events.includes('content') && f.events.includes('broadcast'));
+    assert.equal(f.values.has(OUTER), false, `${mismatch}: stale journal must not abort every later start`);
+    assert.equal(f.values.has(INNER), false);
+    assert.equal(f.values.has(STOCK_BADFILTER_JOURNAL), false);
+    assert.notDeepEqual(f.values.get(STOCK_BADFILTER_STATE), f.transaction.nativeState.managed,
+        'old-package badfilter ownership is not restored');
 }
+
+// The first post-update start fails the rollback, so startSession() applies
+// the in-flight selection. A retry on a later worker wake is not followed by
+// startSession() and must apply the restored selection itself.
+const staleDNR = await prepared();
+staleDNR.state.package.version = '2.0.0';
+staleDNR.context.updateUserRules = async ( ) => ({ fatalError: 'Injected DNR rebuild failure' });
+const staleSelections = selectionRecorder(staleDNR);
+await assert.rejects(staleDNR.context.rollbackRulesetTransaction(staleDNR.transaction), /DNR rollback failed/);
+assert.equal(staleDNR.values.has(OUTER), true, 'a failed package-independent rollback keeps its journal for retry');
+assert.equal(staleDNR.values.has(INNER), true);
+staleDNR.state.enabled = [ 'stock-b' ];
+staleDNR.context.updateUserRules = async ( ) => ({ errors: [] });
+await staleDNR.context.rollbackRulesetTransaction(clone(staleDNR.values.get(OUTER)));
+assert.deepEqual(staleSelections.at(-1), [ 'stock-a' ]);
+assert.deepEqual(staleDNR.state.enabled, [ 'stock-a' ], 'native static selection matches the restored config');
+assert.deepEqual(Array.from(staleDNR.context.rulesetConfig.enabledRulesets), [ 'stock-a' ]);
+assert.equal(staleDNR.values.has(OUTER), false);
+
+// A journal without a config selection falls back to the native one, and a
+// failed selection keeps every journal for the next start.
+const legacySelection = await prepared();
+legacySelection.state.package.version = '2.0.0';
+delete legacySelection.transaction.previousConfigEnabledRulesets;
+legacySelection.transaction.previousRulesets = [ 'stock-a', 'stock-b' ];
+legacySelection.context.updateUserRules = async ( ) => ({ errors: [] });
+const fallbackSelections = selectionRecorder(legacySelection);
+await legacySelection.context.rollbackRulesetTransaction(legacySelection.transaction);
+assert.deepEqual(fallbackSelections, [ [ 'stock-a', 'stock-b' ] ]);
+assert.deepEqual(Array.from(legacySelection.context.rulesetConfig.enabledRulesets), [ 'stock-a', 'stock-b' ]);
+const staleSelection = await prepared();
+staleSelection.state.package.version = '2.0.0';
+staleSelection.context.updateUserRules = async ( ) => { throw new Error('User rules must wait for the selection'); };
+selectionRecorder(staleSelection, 'Injected selection failure');
+await assert.rejects(staleSelection.context.rollbackRulesetTransaction(staleSelection.transaction),
+    /Static ruleset rollback failed: Injected selection failure/);
+assert.equal(staleSelection.values.has(OUTER), true);
+assert.equal(staleSelection.values.has(INNER), true);
+assert.equal(staleSelection.values.has(STOCK_BADFILTER_JOURNAL), true);
 
 const foreign = await prepared();
 const changedOff = { ...regular(8000001), priority: 200 };

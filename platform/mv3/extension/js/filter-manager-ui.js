@@ -21,9 +21,9 @@
     Home: https://github.com/gorhill/uBlock
 */
 
-import { browser, sendMessage } from './ext.js';
+import { browser, i18n, sendMessage } from './ext.js';
 import { dom, qs$, qsa$ } from './dom.js';
-import { nodeFromTemplate } from './dashboard.js';
+import { nodeFromTemplate, setOperationStatus } from './dashboard.js';
 import punycode from './punycode.js';
 
 /******************************************************************************/
@@ -89,6 +89,37 @@ function selectorsFromNode(node, all = false) {
 
 /******************************************************************************/
 
+function reportCustomFiltersError(reason) {
+    console.error(reason);
+    const detail = reason?.message || `${reason}`;
+    setOperationStatus(
+        i18n.getMessage('customFiltersSaveFailed', detail) || detail,
+        'error'
+    );
+}
+
+// Lock the view while storage is mutated, then always unlock it and render
+// from storage. A rejected request may still have committed: the compiled
+// filter flush runs after the storage write. Resolves to success.
+async function commitCustomFilters(mutation) {
+    dom.cl.add(dom.body, 'committing');
+    updateContentEditability(false);
+    let succeeded = false;
+    try {
+        await mutation();
+        succeeded = true;
+    } catch ( reason ) {
+        reportCustomFiltersError(reason);
+    } finally {
+        await debounceRenderCustomFilters();
+        updateContentEditability(true);
+        dom.cl.remove(dom.body, 'committing');
+    }
+    return succeeded;
+}
+
+/******************************************************************************/
+
 async function removeSelectorsFromHostname(node) {
     const hostnameNode = node.closest('li.hostname');
     if ( hostnameNode === null ) { return; }
@@ -98,12 +129,9 @@ async function removeSelectorsFromHostname(node) {
         qsa$(hostnameNode, 'li.selector.removed:not([data-ugly=""])')
     ).map(a => a.dataset.ugly);
     if ( selectors.length === 0 ) { return; }
-    dom.cl.add(dom.body, 'committing');
-    updateContentEditability(false);
-    await sendMessage({ what: 'removeCustomFilters', hostname, selectors });
-    await debounceRenderCustomFilters();
-    updateContentEditability(true);
-    dom.cl.remove(dom.body, 'committing');
+    await commitCustomFilters(( ) =>
+        sendMessage({ what: 'removeCustomFilters', hostname, selectors })
+    );
 }
 
 async function unremoveSelectorsFromHostname(node) {
@@ -113,12 +141,9 @@ async function unremoveSelectorsFromHostname(node) {
     if ( hostname === undefined ) { return; }
     const selectors = selectorsFromNode(hostnameNode);
     if ( selectors.length === 0 ) { return; }
-    dom.cl.add(dom.body, 'committing');
-    updateContentEditability(false);
-    await sendMessage({ what: 'addCustomFilters', hostname, selectors });
-    await debounceRenderCustomFilters();
-    updateContentEditability(true);
-    dom.cl.remove(dom.body, 'committing');
+    await commitCustomFilters(( ) =>
+        sendMessage({ what: 'addCustomFilters', hostname, selectors })
+    );
 }
 
 /******************************************************************************/
@@ -219,7 +244,10 @@ async function debounceRenderCustomFilters() {
     debouncer.timer = self.setTimeout(( ) => {
         const { resolve } = debounceRenderCustomFilters.debouncer;
         debounceRenderCustomFilters.debouncer = undefined;
-        renderCustomFilters().then(resolve);
+        // Always settle: callers unlock the view after the render.
+        renderCustomFilters().catch(reason => {
+            console.error(reason);
+        }).then(resolve);
     }, 151);
     return debouncer.promise;
 }
@@ -287,22 +315,21 @@ async function onHostnameChanged(target, before, after) {
         return;
     }
 
-    dom.cl.add(dom.body, 'committing');
-    // Remove old hostname from storage
-    if ( hostnameNode.dataset.ugly ) {
-        await sendMessage({ what: 'removeAllCustomFilters',
-            hostname: hostnameNode.dataset.ugly,
+    await commitCustomFilters(async ( ) => {
+        // Remove old hostname from storage
+        if ( hostnameNode.dataset.ugly ) {
+            await sendMessage({ what: 'removeAllCustomFilters',
+                hostname: hostnameNode.dataset.ugly,
+            });
+        }
+        // Add selectors under new hostname to storage
+        hostnameNode.dataset.ugly = uglyAfter;
+        hostnameNode.dataset.pretty = after;
+        await sendMessage({ what: 'addCustomFilters',
+            hostname: hostnameFromNode(target),
+            selectors: selectorsFromNode(target),
         });
-    }
-    // Add selectors under new hostname to storage
-    hostnameNode.dataset.ugly = uglyAfter;
-    hostnameNode.dataset.pretty = after;
-    await sendMessage({ what: 'addCustomFilters',
-        hostname: hostnameFromNode(target),
-        selectors: selectorsFromNode(target),
     });
-    await debounceRenderCustomFilters();
-    dom.cl.remove(dom.body, 'committing');
 }
 
 async function onSelectorChanged(target, before, after) {
@@ -318,22 +345,21 @@ async function onSelectorChanged(target, before, after) {
         return;
     }
 
-    dom.cl.add(dom.body, 'committing');
     const hostname = hostnameFromNode(target);
-    // Remove old selector from storage
-    await sendMessage({ what: 'removeCustomFilters',
-        hostname,
-        selectors: [ selectorNode.dataset.ugly ],
+    await commitCustomFilters(async ( ) => {
+        // Remove old selector from storage
+        await sendMessage({ what: 'removeCustomFilters',
+            hostname,
+            selectors: [ selectorNode.dataset.ugly ],
+        });
+        // Add new selector to storage
+        selectorNode.dataset.ugly = ugly;
+        selectorNode.dataset.pretty = pretty;
+        await sendMessage({ what: 'addCustomFilters',
+            hostname,
+            selectors: [ ugly ],
+        });
     });
-    // Add new selector to storage
-    selectorNode.dataset.ugly = ugly;
-    selectorNode.dataset.pretty = pretty;
-    await sendMessage({ what: 'addCustomFilters',
-        hostname,
-        selectors: [ ugly ],
-    });
-    await debounceRenderCustomFilters();
-    dom.cl.remove(dom.body, 'committing');
 }
 
 async function onTextChanged(target) {
@@ -353,13 +379,15 @@ async function onTextChanged(target) {
 
     updateContentEditability(false);
 
-    if ( target.matches('.hostname') ) {
-        await onHostnameChanged(target, before, after);
-    } else if ( target.matches('.selector') ) {
-        await onSelectorChanged(target, before, after);
+    try {
+        if ( target.matches('.hostname') ) {
+            await onHostnameChanged(target, before, after);
+        } else if ( target.matches('.selector') ) {
+            await onSelectorChanged(target, before, after);
+        }
+    } finally {
+        updateContentEditability(true);
     }
-
-    updateContentEditability(true);
 }
 
 /******************************************************************************/
@@ -516,23 +544,21 @@ async function importFromText(text) {
 
     if ( hostnameToSelectorsMap.size === 0 ) { return false; }
 
-    updateContentEditability(false);
-
-    const promises = [];
-    for ( const [ hostname, selectors ] of hostnameToSelectorsMap ) {
-        promises.push(
-            sendMessage({ what: 'addCustomFilters',
-                hostname,
-                selectors: Array.from(selectors),
-            })
-        );
-    }
-    await Promise.all(promises);
-    await debounceRenderCustomFilters();
-
-    updateContentEditability(true);
-
-    return true;
+    return commitCustomFilters(async ( ) => {
+        const promises = [];
+        for ( const [ hostname, selectors ] of hostnameToSelectorsMap ) {
+            promises.push(
+                sendMessage({ what: 'addCustomFilters',
+                    hostname,
+                    selectors: Array.from(selectors),
+                })
+            );
+        }
+        // Let every request settle before the view is rendered again.
+        const results = await Promise.allSettled(promises);
+        const failure = results.find(result => result.status === 'rejected');
+        if ( failure !== undefined ) { throw failure.reason; }
+    });
 }
 
 /******************************************************************************/
@@ -600,7 +626,13 @@ async function startsSandboxEditor() {
     const SandboxFilterEditor = class extends FilterEditor {
         async saveContent() {
             if ( this.contentChanged() === false ) { return; }
-            await sendMessage({ what: 'setSandboxFilters', text:  this.getContent() });
+            try {
+                await sendMessage({ what: 'setSandboxFilters', text:  this.getContent() });
+            } catch ( reason ) {
+                // Keep the draft unsaved so that Apply remains available.
+                reportCustomFiltersError(reason);
+                return;
+            }
             await super.saveContent();
         }
         async loadContent() {

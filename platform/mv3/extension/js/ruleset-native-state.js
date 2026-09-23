@@ -51,8 +51,11 @@ export function createRulesetNativeState({ dnr, read, write, remove,
         const packageState = await getPackageState();
         if ( JSON.stringify(state.packageState) !== JSON.stringify(packageState) ) {
             // Static numeric IDs can refer to different predicates after an
-            // extension update. Leave the journal pending for explicit repair.
-            throw new Error('Native ruleset recovery belongs to a different package; old static IDs were not replayed');
+            // extension update. Nothing is replayed; the caller rebuilds from
+            // its package-independent journal state instead.
+            const error = new Error('Native ruleset recovery belongs to a different package; old static IDs were not replayed');
+            error.code = 'ERR_NATIVE_PACKAGE_MISMATCH';
+            throw error;
         }
         const declared = new Set(packageState.resources.map(resource => resource.id));
         if ( state.enabledRulesets.some(id => declared.has(id) === false) ||

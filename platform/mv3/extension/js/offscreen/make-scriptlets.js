@@ -120,10 +120,14 @@ export function invocationTokens(details) {
         .map(entry => JSON.stringify(normalizeScriptletArgs(entry.args)))));
 }
 
+// Origin-only copies are registered for every frame but run only in frames
+// without a web origin (about:, data:, blob:). Keeping the body in a function
+// that is called after the protocol check lets V8 skip compiling it in the
+// common http(s) frame, where it would exit immediately.
 export function originOnlyCode(code) {
     return `(function uBlockPlus_originScriptlets() {\n` +
         `if ( /^(?:https?|file):$/.test(document.location.protocol) ) { return; }\n` +
-        `${code}\n})();\n`;
+        `const run = function() {\n${code}\n};\nrun();\n})();\n`;
 }
 
 /******************************************************************************/

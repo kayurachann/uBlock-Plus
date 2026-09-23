@@ -5,7 +5,7 @@
 
 <img src="assets/readme/hero.png" alt="Illustration d'un bouclier filtrant les publicités, les traqueurs, les cookies et d'autres requêtes web indésirables avant le chargement des pages Chromium" width="1100">
 
-<sub>Illustration conceptuelle · v1.0.0 est une préversion installée et mise à jour manuellement</sub>
+<sub>Illustration conceptuelle · préversion installée manuellement, avec mises à jour automatiques facultatives sous Windows</sub>
 
 # uBlock Plus+
 
@@ -30,7 +30,7 @@
 uBlock Plus+ est un bloqueur de contenu indépendant pour Chromium MV3, distribué sous licence GPL. Il associe une base éprouvée de filtrage et de compilation issue du projet d'origine à un Filter Store communautaire, une configuration portable, des commandes explicites pour les utilisateurs avancés et un fonctionnement attentif à la mémoire, sans service de télémétrie du projet ni code exécutable distant.
 
 > [!IMPORTANT]
-> **État de la version :** v1.0.0 est une préversion destinée à l'installation manuelle et ne se met pas à jour automatiquement. uBlock Plus+ est un fork indépendant, pas une version officielle d'uBlock Origin, et n'est pas approuvé par Raymond Hill. Chrome MV3 n'expose pas tous les mécanismes de blocage disponibles dans l'extension MV2 d'origine. L'installation manuelle évite la politique de distribution du Chrome Web Store, mais ne supprime **ni** les quotas DNR, ni les règles de cycle de vie des service workers, ni les limites de sécurité du navigateur. Consultez la [matrice de compatibilité transparente](FEATURE-MATRIX.md).
+> **État de la version :** La distribution se fait sous forme de préversion à installer une seule fois avec **Charger l'extension non empaquetée** ; le [programme de mise à jour facultatif pour Windows](AUTO-UPDATE.md) installe ensuite automatiquement les versions suivantes. uBlock Plus+ est un fork indépendant, pas une version officielle d'uBlock Origin, et n'est pas approuvé par Raymond Hill. Chrome MV3 n'expose pas tous les mécanismes de blocage disponibles dans l'extension MV2 d'origine. L'installation manuelle évite la politique de distribution du Chrome Web Store, mais ne supprime **ni** les quotas DNR, ni les règles de cycle de vie des service workers, ni les limites de sécurité du navigateur. Consultez la [matrice de compatibilité transparente](FEATURE-MATRIX.md).
 
 ## Conçu autour de vos choix
 
@@ -112,7 +112,7 @@ Parcourez les entrées communautaires, examinez leur impact sur les quotas et ac
 <img src="assets/readme/memory-settings.png" alt="Les véritables paramètres Memory Profile d'uBlock Plus+ affichant le mode Auto, Effective Balanced et les diagnostics de stockage local">
 
 <strong>Memory Profile</strong><br>
-Sélectionnez Auto, Balanced ou Low-memory et consultez les mesures locales de cache et de stockage, pas la mémoire vive en temps réel.
+Sélectionnez Auto, Balanced ou Low memory et consultez les mesures locales de cache et de stockage, pas la mémoire vive en temps réel.
 
 </td>
 </tr>
@@ -131,20 +131,28 @@ Sélectionnez Auto, Balanced ou Low-memory et consultez les mesures locales de c
 ### Installer une version
 
 1. Téléchargez `uBlock-Plus_*.chromium.zip` et le fichier `.sha256` correspondant depuis les [versions GitHub](https://github.com/kayurachann/uBlock-Plus/releases).
-2. Vérifiez la somme de contrôle, puis extrayez l'archive ZIP dans un dossier permanent.
+2. Vérifiez la somme de contrôle, puis extrayez l'archive ZIP dans un nouveau dossier vide de votre profil utilisateur, réservé à l'extension ; sous Windows, par exemple `%LOCALAPPDATA%\uBlockPlus\Extension`. N'utilisez ni la racine d'un lecteur, ni un dossier créé directement sous `C:\`, ni un dossier qu'il contient (comme `C:\Extensions` ou `C:\Extensions\uBlock-Plus`) : le programme de mise à jour pour Windows refuse les racines de lecteur, les dossiers système et de profil eux-mêmes, ainsi que les dossiers que d'autres utilisateurs du PC peuvent modifier. Si votre installation se trouve déjà dans un tel dossier, déplacez-la vers `%LOCALAPPDATA%\uBlockPlus\Extension` ; voir les [règles sur les dossiers](AUTO-UPDATE.md#folder-rules) et [déplacer une installation existante](AUTO-UPDATE.md#moving-an-existing-installation).
 3. Ouvrez `chrome://extensions` ou `edge://extensions`.
-4. Activez le **Mode développeur**, choisissez **Charger l'extension non empaquetée**, puis sélectionnez le dossier extrait qui contient `manifest.json`.
+4. Activez le **Mode développeur**, choisissez **Charger l'extension non empaquetée**, puis sélectionnez le dossier extrait qui contient `manifest.json`. Laissez ensuite le **Mode développeur** activé : sans lui, Chrome désactive les extensions non empaquetées.
 5. Sous Chrome 138 ou une version ultérieure, ouvrez la page **Détails** de l'extension et activez **Autoriser les User Scripts**. Chrome 130–137 utilise à la place le commutateur global **Mode développeur**. Si vous modifiez l'un de ces commutateurs après l'installation, cliquez sur **Actualiser** sur la fiche de l'extension afin que le contexte du service worker reconnaisse le nouvel état de l'API. Les filtres cosmétiques importés compatibles et les scriptlets intégrés à la liste d'autorisation peuvent ainsi s'enregistrer. Consultez les [instructions de Chrome sur `userScripts`](https://developer.chrome.com/docs/extensions/reference/api/userScripts).
 
 > [!NOTE]
-> Une extension installée manuellement n'est pas mise à jour par le Chrome Web Store. Suivez les [versions publiées](https://github.com/kayurachann/uBlock-Plus/releases) et remplacez la compilation décompressée lorsqu'une nouvelle version paraît. N'installez que les artefacts de ce dépôt et vérifiez la somme de contrôle SHA-256 fournie.
+> Chaque installation vérifie environ toutes les six heures, via `api.github.com`, la présence de nouvelles versions ; aucune donnée de navigation n'est envoyée. Sous Windows, le programme de mise à jour fourni à partir de la version 1.2.0 installe automatiquement les nouvelles versions. Configurez-le une seule fois : double-cliquez sur `updater\install-updater.cmd` dans le dossier de l'extension chargée (aucun droit d'administrateur requis), puis sélectionnez **Autoriser le programme de mise à jour** dans **Tableau de bord → Paramètres → Mises à jour**. Chrome demande l'autorisation de communiquer avec des applications natives ; uBlock Plus+ redémarre ensuite une fois et rouvre la section **Mises à jour**. Si **Redémarrer maintenant** s'affiche à la place, sélectionnez ce bouton. Chaque nouvelle version est alors téléchargée, vérifiée grâce à sa somme SHA-256 et à son identité, puis installée après une sauvegarde de la version précédente. Tant que le dossier contient des fichiers qui n'appartiennent pas à uBlock Plus+, le programme de mise à jour ne modifie rien. Sans programme de mise à jour, par exemple sous macOS ou Linux, suivez les [versions publiées](https://github.com/kayurachann/uBlock-Plus/releases), remplacez le contenu du dossier par la nouvelle version et actualisez l'extension. Pour retirer le programme de mise à jour de ce dossier, ouvrez l'invite de commandes et exécutez `"%LOCALAPPDATA%\uBlockPlus\Extension\updater\install-updater.cmd" -Uninstall` (avec le chemin de votre dossier s'il est différent) ; l'enregistrement auprès du navigateur n'est supprimé que lorsqu'aucune autre installation n'est enregistrée. N'installez que les artefacts de ce dépôt et vérifiez la somme de contrôle SHA-256 fournie. Détails et dépannage dans [AUTO-UPDATE.md](AUTO-UPDATE.md).
+
+Vous pouvez aussi effectuer les étapes 1 et 2 et installer le programme de mise à jour avec ces commandes PowerShell. Elles téléchargent la version la plus récente dans `%LOCALAPPDATA%\uBlockPlus\Extension`, qui doit être vide ou ne pas encore exister. Chargez ensuite ce dossier comme extension non empaquetée et sélectionnez **Autoriser le programme de mise à jour**.
+
+```powershell
+$installer = Join-Path $env:TEMP 'install-updater.ps1'
+Invoke-WebRequest -UseBasicParsing https://raw.githubusercontent.com/kayurachann/uBlock-Plus/main/platform/mv3/updater/install-updater.ps1 -OutFile $installer
+powershell -ExecutionPolicy Bypass -File $installer
+```
 
 <details>
 <summary><strong>Vérifier la somme de contrôle de la version sous Windows</strong></summary>
 
 ```powershell
-(Get-FileHash .\uBlock-Plus_1.0.0.chromium.zip -Algorithm SHA256).Hash
-Get-Content .\uBlock-Plus_1.0.0.chromium.zip.sha256
+(Get-FileHash .\uBlock-Plus_1.2.0.chromium.zip -Algorithm SHA256).Hash
+Get-Content .\uBlock-Plus_1.2.0.chromium.zip.sha256
 ```
 
 Les empreintes hexadécimales doivent être identiques ; la casse n'a pas d'importance.
@@ -161,6 +169,8 @@ Prérequis : Chrome/Chromium ou Edge 130+, Git avec les sous-modules, Node.js 22
 ```powershell
 git clone --recurse-submodules https://github.com/kayurachann/uBlock-Plus.git
 cd uBlock-Plus
+# Windows bloque par défaut les scripts locaux non signés ; les autoriser pour cette fenêtre seulement.
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 $version = (Get-Content -Raw package.json | ConvertFrom-Json).version
 .\tools\make-mv3.ps1 -Platform chromium -Version $version
 ```
@@ -206,7 +216,7 @@ Chargez `dist/build/uBlockPlus.chromium` depuis la page des extensions du naviga
 | Sources distantes | Les catalogues et listes HTTPS sont analysés comme des données de taille limitée ; les redirections, les schémas incorrects et les charges utiles exécutables sont rejetés. |
 | Confiance du Filter Store | Les entrées intégrées et personnalisées affichent leur niveau de confiance. La popularité auprès de la communauté ne fait jamais passer à elle seule une entrée au niveau `verified`. |
 | Code de l'extension | Le JavaScript, les scriptlets et les ressources de redirection sont livrés dans le paquet d'extension examiné, jamais depuis une URL au moment de l'exécution. |
-| Autorisations | Les autorisations du filtrage principal sont documentées. L'autorisation `privacy` de Chrome n'est demandée que lorsque l'utilisateur active ces contrôles et peut être révoquée. |
+| Autorisations | Les autorisations du filtrage principal sont documentées. L'autorisation `privacy` de Chrome n'est demandée que lorsque l'utilisateur active ces contrôles et peut être révoquée. L'autorisation facultative `nativeMessaging` n'est demandée que lorsque l'utilisateur sélectionne **Autoriser le programme de mise à jour**. |
 | Données locales | Les paramètres, les filtres compilés et les diagnostics de taille du stockage restent sur l'appareil, sauf si l'utilisateur les exporte explicitement. |
 | Intégrité de la version | La CI compile et valide l'artefact Chromium ; les versions publiées comportent une somme de contrôle SHA-256. |
 
@@ -216,7 +226,7 @@ Les problèmes de sécurité doivent être signalés en privé via les [avis de 
 
 | Disponible aujourd'hui | Limité par MV3 | Recherche future, facultative |
 | --- | --- | --- |
-| Blocage réseau DNR, filtrage cosmétique, scriptlets intégrés, listes personnalisées/importées, Filter Store, sélecteur/zapper, politiques contextuelles de fenêtres surgissantes par hôte, application par l'observateur des règles `$popup` stock empaquetées et du sous-ensemble pris en charge des filtres `$popup`/`$popunder` importés avec provenance expurgée espace/ligne source/type, et sauvegarde/restauration | La journalisation des requêtes en direct, les filtres procéduraux, l'observation asynchrone des fenêtres surgissantes, la sémantique du pare-feu dynamique, les opérations sur les en-têtes de réponse et le comportement des redirections n'offrent pas une parité exacte avec MV2 | Des adaptateurs Enterprise administrés et un compagnon natif open source installé indépendamment, sous réserve d'une RFC, du consentement et d'un examen de sécurité |
+| Blocage réseau DNR, filtrage cosmétique, scriptlets intégrés, listes personnalisées/importées, Filter Store, sélecteur/zapper, politiques contextuelles de fenêtres surgissantes par hôte, application par l'observateur des règles `$popup` stock empaquetées et du sous-ensemble pris en charge des filtres `$popup`/`$popunder` importés avec provenance expurgée espace/ligne source/type, et sauvegarde/restauration | La journalisation des requêtes en direct, les filtres procéduraux, l'observation asynchrone des fenêtres surgissantes, la sémantique du pare-feu dynamique, les opérations sur les en-têtes de réponse et le comportement des redirections n'offrent pas une parité exacte avec MV2 | Des adaptateurs Enterprise administrés et un compagnon natif open source de filtrage (par exemple DNS/proxy) installé indépendamment, sous réserve d'une RFC, du consentement et d'un examen de sécurité. Le seul composant natif publié est le programme de mise à jour facultatif pour Windows (depuis 1.2.0), que vous installez vous-même. |
 
 Le sous-ensemble pris en charge des filtres de fenêtres surgissantes importés est désormais appliqué par le runtime d'observation. Les conditions impossibles à représenter exactement—par exemple celles de type de domaine, de méthode de requête ou d'en-tête de réponse—restent explicitement différées au lieu d'être approximées. Les conditions `allow` différées sont conservées comme garde-fous conservateurs en échec ouvert (*fail-open*) : un tel garde-fou peut seulement différer la décision, jamais autoriser ou bloquer par approximation. Comme l'application suit les événements asynchrones d'onglet et de navigation de MV3, elle ne reproduit pas exactement l'exécution synchrone de MV2. Les règles DNR dynamiques et de session partagent un même quota de 1 000 regex ; elles ne disposent pas chacune de 1 000 règles.
 
@@ -250,7 +260,7 @@ La réécriture arbitraire du corps des réponses, une visibilité DNS/CNAME éq
 <td valign="top">
 
 - Adaptateur Enterprise administré
-- Recherche facultative sur un compagnon natif
+- Recherche facultative sur un compagnon natif de filtrage
 - Provenance signée du catalogue et révocation
 
 </td>

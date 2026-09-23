@@ -329,7 +329,8 @@ await check('Old imported compiler caches are refreshed', async () => {
         COMPILED_FILTERS_REVISION,
         compilerStorage: { get: async key => ({ [key]: cached }) },
         pendingImportedMetadataKey: id => `metadata.${id}`,
-        updateList: async () => { refreshes += 1; return fresh; },
+        isImportedListRefreshDue: () => false,
+        updateListOrReport: async () => { refreshes += 1; return fresh; },
         deserializeCompiledListOr: async () => current,
         s14e: { deserialize: () => current },
     });

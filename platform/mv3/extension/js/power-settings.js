@@ -18,32 +18,32 @@ import { browser, i18n, sendMessage } from './ext.js';
 import { dom, qs$, qsa$ } from './dom.js';
 import {
     getPowerUISettings,
+    listenForPowerUISettings,
     setPowerUISettings,
 } from './power-ui.js';
+import {
+    normalizeFilteringModes,
+    normalizeModeHostname,
+} from './backup-schema.js';
 import { capabilityDetailsRows } from './runtime-capabilities-ui.js';
+import { setOperationStatus } from './dashboard.js';
 
-let operationTimer;
-let profileState;
 let siteRulesLoaded = false;
+let siteRulesLoading = false;
+let siteRulesSaving = false;
 let diagnosticsLoaded = false;
 let diagnosticsLoading = false;
+let protectionRefreshTimer;
+// Profile whose radio this page last checked to show the live settings. Any
+// other checked radio, or none, is a choice the user has not applied yet.
+let renderedProfile;
+
+// Text of each Site Rules textarea as last loaded or saved, to tell a user
+// draft apart from rules changed elsewhere.
+const siteRulesBaseline = new Map();
 
 function message(key, substitutions) {
     return i18n.getMessage(key, substitutions) || key;
-}
-
-function setOperationStatus(text, level = 'info') {
-    const node = qs$('#operationStatus');
-    if ( node === null ) { return; }
-    self.clearTimeout(operationTimer);
-    node.dataset.level = level;
-    dom.text(node, text);
-    if ( text !== '' ) {
-        operationTimer = self.setTimeout(( ) => {
-            dom.text(node, '');
-            delete node.dataset.level;
-        }, level === 'error' ? 9000 : 5000);
-    }
 }
 
 async function readProtectionState() {
@@ -65,12 +65,15 @@ async function readProtectionState() {
     };
 }
 
-function renderProtectionProfile(state) {
-    profileState = state;
+function renderProtectionProfile(state, { keepChoice = false } = {}) {
     const matched = matchingPowerProfile(state.comparable);
-    const input = qs$(`input[name="powerProfile"][value="${matched}"]`);
-    for ( const node of qsa$('input[name="powerProfile"]') ) {
-        node.checked = node === input;
+    const checked = qs$('input[name="powerProfile"]:checked')?.value ?? 'custom';
+    if ( keepChoice === false || checked === renderedProfile ) {
+        const input = qs$(`input[name="powerProfile"][value="${matched}"]`);
+        for ( const node of qsa$('input[name="powerProfile"]') ) {
+            node.checked = node === input;
+        }
+        renderedProfile = matched;
     }
     const label = matched === 'custom'
         ? message('protectionProfileCustomActive')
@@ -107,20 +110,18 @@ async function writeProtectionState(state) {
 
 async function applyProtectionProfile(name) {
     const profile = POWER_PROFILES[name];
-    if ( profile === undefined ) { return; }
+    if ( profile === undefined ) {
+        setOperationStatus(message('protectionProfileSelectRequired'), 'error');
+        return;
+    }
     const button = qs$('#applyProtectionProfile');
     button.disabled = true;
     setOperationStatus(message('protectionProfileApplying'));
     let before;
     try {
-        if ( profileState === undefined ) {
-            renderProtectionProfile(await readProtectionState());
-        }
-        before = { ...profileState.comparable };
-        if (
-            profile.defaultFilteringMode > 1 &&
-            profileState.options.hasOmnipotence !== true
-        ) {
+        // Ask while the click is still a user gesture. Chrome resolves at
+        // once, without a prompt, when access is already granted.
+        if ( profile.defaultFilteringMode > 1 ) {
             const granted = await browser.permissions.request({
                 origins: [ '<all_urls>' ],
             }).catch(( ) => false);
@@ -128,6 +129,11 @@ async function applyProtectionProfile(name) {
                 throw new Error(message('protectionProfilePermissionDenied'));
             }
         }
+        // Roll back only once a write may have happened, and only to the
+        // live settings: the Settings pane or popup may have changed them
+        // since this page rendered the profile.
+        const current = await readProtectionState();
+        before = { ...current.comparable };
         await writeProtectionState(profile);
         renderProtectionProfile(await readProtectionState());
         setOperationStatus(message('protectionProfileApplied'));
@@ -153,24 +159,38 @@ dom.on('#applyProtectionProfile', 'click', ( ) => {
     applyProtectionProfile(selected);
 });
 
-async function renderAppearanceSettings() {
-    const settings = await getPowerUISettings();
+// Settings, popup, restore and reset change the same values. Coalesce their
+// notifications into one read of the live state. The label always follows
+// it; a radio the user checked but has not applied yet stays checked.
+function refreshProtectionProfileSoon() {
+    self.clearTimeout(protectionRefreshTimer);
+    protectionRefreshTimer = self.setTimeout(( ) => {
+        readProtectionState().then(state => {
+            renderProtectionProfile(state, { keepChoice: true });
+        }).catch(reason => {
+            console.error(reason);
+        });
+    }, 50);
+}
+
+async function renderAppearanceSettings(settings) {
+    settings ??= await getPowerUISettings();
     for ( const select of qsa$('[data-power-ui]') ) {
         select.value = settings[select.dataset.powerUi];
     }
 }
 
-dom.on('#appearanceSettings', 'change', '[data-power-ui]', async ( ) => {
-    const settings = await getPowerUISettings();
-    for ( const select of qsa$('[data-power-ui]') ) {
-        settings[select.dataset.powerUi] = select.value;
-    }
+dom.on('#appearanceSettings', 'change', '[data-power-ui]', async ev => {
+    // Write only the changed preference over the stored ones: the popup
+    // layout toggle and backup restore also write this storage entry.
+    const key = ev.target.dataset.powerUi;
     try {
-        await setPowerUISettings(settings);
+        const current = await getPowerUISettings({ refresh: true });
+        await setPowerUISettings({ ...current, [key]: ev.target.value });
         setOperationStatus(message('appearanceSettingsSaved'));
     } catch {
         setOperationStatus(message('appearanceSettingsSaveFailed'), 'error');
-        renderAppearanceSettings();
+        renderAppearanceSettings(await getPowerUISettings({ refresh: true }));
     }
 });
 
@@ -265,71 +285,171 @@ dom.on('#popupPolicyRows', 'click', 'button[data-remove-hostname]', async ev => 
 });
 
 function textFromHostnames(hostnames) {
-    return Array.isArray(hostnames) ? hostnames.join('\n') : '';
+    // Broadcast mode details carry Sets, message responses carry arrays.
+    return Array.from(hostnames || []).join('\n');
 }
 
-function hostnamesFromText(text) {
-    const out = [];
-    for ( const raw of text.split(/\r?\n/) ) {
-        const hostname = raw.trim().toLowerCase();
-        if ( hostname === '' || hostname.startsWith('#') ) { continue; }
-        if ( hostname.length > 1024 || /\s/.test(hostname) ) {
-            throw new TypeError('invalid hostname');
-        }
-        if ( out.includes(hostname) === false ) { out.push(hostname); }
-        if ( out.length > 100000 ) { throw new RangeError('too many rules'); }
+class SiteRulesError extends Error {
+    constructor(key, detail) {
+        super(`${key}: ${detail}`);
+        this.key = key;
+        this.detail = detail;
     }
-    return out;
+}
+
+function siteRuleTextareas() {
+    return Array.from(qsa$('#filteringSiteRules textarea[data-mode]'));
+}
+
+// Apply the rules of the Advanced modes editor and of backups, so that saved
+// site rules can always be restored: canonical hostnames (punycode, no
+// wildcards or URLs) and exactly one `all-urls` global default.
+function modesFromSiteRuleTexts(texts) {
+    const modes = {};
+    const seen = new Map();
+    let defaults = 0;
+    for ( const [ mode, text ] of texts ) {
+        const hostnames = [];
+        for ( const raw of text.split(/\r?\n/) ) {
+            const line = raw.trim();
+            if ( line === '' || line.startsWith('#') ) { continue; }
+            let hostname;
+            try {
+                hostname = normalizeModeHostname(line.toLowerCase());
+            } catch {
+                throw new SiteRulesError('siteRulesInvalidHostname', line);
+            }
+            const seenIn = seen.get(hostname);
+            if ( seenIn === mode ) { continue; }
+            if ( seenIn !== undefined ) {
+                throw new SiteRulesError('siteRulesDuplicateHostname', line);
+            }
+            seen.set(hostname, mode);
+            hostnames.push(hostname);
+            if ( hostname === 'all-urls' ) { defaults += 1; }
+        }
+        modes[mode] = hostnames;
+    }
+    if ( defaults !== 1 ) {
+        throw new SiteRulesError('siteRulesDefaultRequired', 'all-urls');
+    }
+    try {
+        return normalizeFilteringModes(modes);
+    } catch ( reason ) {
+        // For example, more hostnames than a backup may contain.
+        throw new SiteRulesError('siteRulesInvalid', reason.message);
+    }
+}
+
+function renderFilteringSiteRules(modes) {
+    for ( const textarea of siteRuleTextareas() ) {
+        const text = textFromHostnames(modes?.[textarea.dataset.mode]);
+        textarea.value = text;
+        siteRulesBaseline.set(textarea.dataset.mode, text);
+    }
+}
+
+function siteRulesDirty() {
+    return siteRuleTextareas().some(textarea =>
+        textarea.value !== (siteRulesBaseline.get(textarea.dataset.mode) ?? '')
+    );
+}
+
+function sameSiteRules(a, b) {
+    return siteRuleTextareas().every(textarea =>
+        textFromHostnames(a?.[textarea.dataset.mode]) ===
+            textFromHostnames(b?.[textarea.dataset.mode])
+    );
+}
+
+function siteRulesMatchBaseline(modes) {
+    return siteRuleTextareas().every(textarea =>
+        textFromHostnames(modes?.[textarea.dataset.mode]) ===
+            (siteRulesBaseline.get(textarea.dataset.mode) ?? '')
+    );
 }
 
 async function refreshFilteringSiteRules() {
-    const modes = await sendMessage({ what: 'getFilteringModeDetails' });
-    for ( const textarea of qsa$('#filteringSiteRules textarea[data-mode]') ) {
-        textarea.value = textFromHostnames(modes[textarea.dataset.mode]);
-    }
+    renderFilteringSiteRules(
+        await sendMessage({ what: 'getFilteringModeDetails' })
+    );
+}
+
+// Committed mode changes from the popup, a restore or another editor.
+function onFilteringModeDetailsChanged(modes) {
+    if ( siteRulesLoaded === false || siteRulesSaving ) { return; }
+    if ( siteRulesDirty() ) { return; }
+    renderFilteringSiteRules(modes);
 }
 
 dom.on('#saveFilteringSiteRules', 'click', async ev => {
     ev.target.disabled = true;
+    siteRulesSaving = true;
     try {
-        const modes = {};
-        const seen = new Set();
-        for ( const textarea of qsa$('#filteringSiteRules textarea[data-mode]') ) {
-            const hostnames = hostnamesFromText(textarea.value);
-            for ( const hostname of hostnames ) {
-                if ( seen.has(hostname) ) {
-                    throw new TypeError('duplicate hostname');
-                }
-                seen.add(hostname);
+        const modes = modesFromSiteRuleTexts(siteRuleTextareas().map(
+            textarea => [ textarea.dataset.mode, textarea.value ]
+        ));
+        // A save replaces every site mode. Do not silently undo a change
+        // made elsewhere after this draft was loaded: warn, keep the draft,
+        // and let a second Save overwrite deliberately.
+        const current = await sendMessage({ what: 'getFilteringModeDetails' });
+        // Already stored, e.g. by a save whose response was an error from a
+        // later step.
+        if ( sameSiteRules(current, modes) ) {
+            renderFilteringSiteRules(current);
+            setOperationStatus(message('siteRulesSaved'));
+            return;
+        }
+        if ( siteRulesMatchBaseline(current) === false ) {
+            for ( const textarea of siteRuleTextareas() ) {
+                siteRulesBaseline.set(
+                    textarea.dataset.mode,
+                    textFromHostnames(current?.[textarea.dataset.mode])
+                );
             }
-            modes[textarea.dataset.mode] = hostnames;
+            setOperationStatus(message('siteRulesChangedElsewhere'), 'error');
+            return;
         }
         const saved = await sendMessage({
             what: 'setFilteringModeDetails',
             modes,
         });
-        for ( const textarea of qsa$('#filteringSiteRules textarea[data-mode]') ) {
-            textarea.value = textFromHostnames(saved[textarea.dataset.mode]);
-        }
+        renderFilteringSiteRules(saved);
         setOperationStatus(message('siteRulesSaved'));
-    } catch {
-        setOperationStatus(message('siteRulesInvalid'), 'error');
+    } catch ( reason ) {
+        if ( reason instanceof SiteRulesError ) {
+            setOperationStatus(
+                i18n.getMessage(reason.key, [ reason.detail ]) ||
+                    message('siteRulesInvalid'),
+                'error'
+            );
+        } else {
+            const detail = reason?.message || `${reason}`;
+            setOperationStatus(
+                i18n.getMessage('siteRulesSaveFailed', [ detail ]) || detail,
+                'error'
+            );
+        }
     } finally {
+        siteRulesSaving = false;
         ev.target.disabled = false;
     }
 });
 
+// Reload on every visit, but never replace an unsaved draft.
 async function loadSiteRules() {
-    if ( siteRulesLoaded ) { return; }
-    siteRulesLoaded = true;
+    if ( siteRulesLoading ) { return; }
+    siteRulesLoading = true;
     try {
         await Promise.all([
             refreshPopupPolicies(),
-            refreshFilteringSiteRules(),
+            siteRulesDirty() ? undefined : refreshFilteringSiteRules(),
         ]);
+        siteRulesLoaded = true;
     } catch {
-        siteRulesLoaded = false;
         setOperationStatus(message('siteRulesLoadFailed'), 'error');
+    } finally {
+        siteRulesLoading = false;
     }
 }
 
@@ -377,34 +497,39 @@ function renderWebRequestSetup(capabilities) {
         panel.className = 'powerPanel';
         qs$('section[data-pane="diagnostics"]').append(panel);
     }
-    const vi = (i18n.getUILanguage?.() || navigator.language).startsWith('vi');
     const experimental = capabilities.productEdition === 'experimental-webrequest';
     const title = document.createElement('h3');
-    title.textContent = vi ? 'Firewall mạng thử nghiệm' : 'Experimental network firewall';
+    title.textContent = message('webRequestSetupTitle');
     const description = document.createElement('p');
-    description.textContent = experimental
-        ? vi
-            ? 'Mở Chrome bằng start-experimental-chrome.cmd trong thư mục extension. Lần đầu, nạp thư mục này qua Load unpacked. Launcher dùng profile riêng; quay lại đây và bấm Làm mới để kiểm tra quyền.'
-            : 'Open Chrome using start-experimental-chrome.cmd in the extension folder. On first use, load that folder with Load unpacked. The launcher uses a separate profile; return here and Refresh to check access.'
-        : vi
-            ? 'Gói Experimental WebRequest bổ sung quyết định chặn firewall trực tiếp, kể cả trên miền mới. Cần cài gói riêng và mở Chrome bằng launcher đi kèm.'
-            : 'The Experimental WebRequest package adds direct firewall blocking, including newly visited domains. Install the separate package and open Chrome with its included launcher.';
+    description.textContent = message(experimental
+        ? 'webRequestSetupExperimental'
+        : 'webRequestSetupStandard'
+    );
     const limits = document.createElement('p');
-    limits.textContent = vi
-        ? 'Bộ lọc DNR, allow và noop vẫn được áp dụng. Tính năng này không gỡ quota hoặc khôi phục toàn bộ engine uBO; extension không tự thay đổi tham số Chrome.'
-        : 'DNR filtering, allow and noop still apply. This feature does not remove quotas or restore the full uBO engine; the extension cannot change Chrome launch arguments itself.';
+    limits.textContent = message('webRequestSetupLimits');
     const guide = document.createElement('a');
     guide.href = 'https://github.com/kayurachann/uBlock-Plus/blob/main/docs/EXPERIMENTAL-WEBREQUEST.md';
-    guide.textContent = vi ? 'Hướng dẫn cài đặt, kiểm tra và gỡ bỏ' : 'Installation, verification and removal guide';
+    guide.textContent = message('webRequestSetupGuide');
     guide.target = '_blank';
     guide.rel = 'noopener';
     panel.replaceChildren(title, description, limits, guide);
 }
 
+const memoryProfileKeys = new Map([
+    [ 'auto', 'memoryProfileAuto' ],
+    [ 'balanced', 'memoryProfileBalanced' ],
+    [ 'low-memory', 'memoryProfileLow' ],
+]);
+
+function memoryProfileName(value) {
+    const key = memoryProfileKeys.get(value);
+    return key !== undefined ? message(key) : value || '—';
+}
+
 function renderPerformance(profile) {
     appendDefinitionList(qs$('#performanceDetails'), [
-        [ message('performanceSelectedProfile'), profile.selected || '—' ],
-        [ message('performanceEffectiveProfile'), profile.effective || '—' ],
+        [ message('performanceSelectedProfile'), memoryProfileName(profile.selected) ],
+        [ message('performanceEffectiveProfile'), memoryProfileName(profile.effective) ],
         [ message('performanceDeviceMemory'), profile.deviceMemoryGiB === null
             ? '—'
             : `${profile.deviceMemoryGiB} GiB` ],
@@ -497,7 +622,40 @@ new MutationObserver(loadActivePane).observe(dom.body, {
     attributeFilter: [ 'data-pane' ],
 });
 
+const protectionStateKeys = [
+    'autoReload',
+    'defaultFilteringMode',
+    'hasOmnipotence',
+    'popupBlockMode',
+    'showBlockedCount',
+    'strictBlockMode',
+];
+
+function listen() {
+    const bc = new self.BroadcastChannel('uBlockPlus');
+    bc.onmessage = ev => {
+        const data = ev.data;
+        if ( data instanceof Object === false ) { return; }
+        if ( protectionStateKeys.some(key => data[key] !== undefined) ) {
+            refreshProtectionProfileSoon();
+        }
+        if ( data.filteringModeDetails !== undefined ) {
+            onFilteringModeDetailsChanged(data.filteringModeDetails);
+        }
+    };
+    // The memory profile is part of every protection profile but is not
+    // broadcast; follow its stored value instead.
+    browser.storage.local.onChanged.addListener(changes => {
+        if ( changes?.memoryProfile === undefined ) { return; }
+        refreshProtectionProfileSoon();
+    });
+    listenForPowerUISettings(settings => {
+        renderAppearanceSettings(settings);
+    });
+}
+
 async function init() {
+    listen();
     try {
         await Promise.all([
             readProtectionState().then(renderProtectionProfile),

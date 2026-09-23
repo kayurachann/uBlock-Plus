@@ -1061,5 +1061,729 @@
   },
   "popupRecentBlocks": {
     "message": "$1 ventanas emergentes bloqueadas recientemente en este sitio"
+  },
+  "autoUpdateSectionLabel": {
+    "message": "Actualizaciones",
+    "description": "Dashboard settings: heading of the automatic update section"
+  },
+  "autoUpdateDescription": {
+    "message": "uBlock Plus+ puede buscar nuevas versiones en GitHub Releases y, con el actualizador opcional para Windows, instalarlas sin reinstalar. Cada comprobación envía una solicitud a api.github.com; no se envían datos de navegación.",
+    "description": "Dashboard settings: explanation of automatic updates and their network use"
+  },
+  "autoUpdateCheckLabel": {
+    "message": "Buscar nuevas versiones automáticamente",
+    "description": "Dashboard settings: checkbox to enable periodic update checks"
+  },
+  "autoUpdateInstallLabel": {
+    "message": "Cuando se encuentre una nueva versión:",
+    "description": "Dashboard settings: label of the install mode selector"
+  },
+  "autoUpdateInstallAuto": {
+    "message": "Instalarla automáticamente",
+    "description": "Dashboard settings: install mode option"
+  },
+  "autoUpdateInstallNotify": {
+    "message": "Solo avisarme",
+    "description": "Dashboard settings: install mode option"
+  },
+  "autoUpdateChannelLabel": {
+    "message": "Canal de versiones:",
+    "description": "Dashboard settings: label of the release channel selector"
+  },
+  "autoUpdateChannelPreview": {
+    "message": "Vista previa (incluye versiones preliminares)",
+    "description": "Dashboard settings: release channel option"
+  },
+  "autoUpdateChannelStable": {
+    "message": "Solo versiones estables",
+    "description": "Dashboard settings: release channel option"
+  },
+  "autoUpdateCheckNow": {
+    "message": "Comprobar ahora",
+    "description": "Dashboard settings: button that checks for updates immediately"
+  },
+  "autoUpdateInstallNow": {
+    "message": "Instalar ahora",
+    "description": "Dashboard settings: button that installs the available update"
+  },
+  "autoUpdateReleaseNotes": {
+    "message": "Notas de la versión",
+    "description": "Dashboard settings: link to the release page of the available version"
+  },
+  "autoUpdateGrantButton": {
+    "message": "Permitir el actualizador",
+    "description": "Dashboard settings: button requesting the optional nativeMessaging permission"
+  },
+  "autoUpdateSetupSteps": {
+    "message": "Configuración única en Windows: abre la carpeta que elegiste con «Cargar descomprimida», haz doble clic en updater\\install-updater.cmd y luego selecciona «Permitir el actualizador» aquí. Si el acceso sigue denegado, ejecuta este comando en esa carpeta:",
+    "description": "Dashboard settings: one-time setup instructions for the Windows updater"
+  },
+  "autoUpdateCopy": {
+    "message": "Copiar",
+    "description": "Dashboard settings: copy the setup command to the clipboard"
+  },
+  "autoUpdateCopied": {
+    "message": "Copiado",
+    "description": "Dashboard settings: confirmation after copying the setup command"
+  },
+  "autoUpdateRollback": {
+    "message": "Restaurar la versión $1",
+    "description": "Dashboard settings: button restoring the previous version. $1 is a version number"
+  },
+  "autoUpdateDevBuild": {
+    "message": "Compilación de desarrollo $1: las actualizaciones automáticas están desactivadas.",
+    "description": "Dashboard settings: status for local development builds. $1 is the version"
+  },
+  "autoUpdateApplying": {
+    "message": "Instalando $1…",
+    "description": "Dashboard settings: files are being replaced. $1 is the version"
+  },
+  "autoUpdatePreparing": {
+    "message": "Preparando la instalación de $1…",
+    "description": "Dashboard settings: update is starting. $1 is the version"
+  },
+  "autoUpdateAvailable": {
+    "message": "La versión $1 está disponible (instalada: $2).",
+    "description": "Dashboard settings: a newer version exists. $1 new version, $2 installed version"
+  },
+  "autoUpdateUpToDate": {
+    "message": "La versión $1 está actualizada. Última comprobación: $2.",
+    "description": "Dashboard settings: no newer version. $1 installed version, $2 date and time of the last check"
+  },
+  "autoUpdateNeverChecked": {
+    "message": "Versión instalada: $1. Aún no se ha buscado ninguna actualización.",
+    "description": "Dashboard settings: no check has run yet. $1 installed version"
+  },
+  "autoUpdateManagedInstall": {
+    "message": "Esta copia se instaló como paquete; tu navegador o tu administrador gestiona sus actualizaciones.",
+    "description": "Dashboard settings: the extension was not loaded unpacked"
+  },
+  "autoUpdatePermissionNeeded": {
+    "message": "La instalación automática necesita el actualizador de Windows y tu permiso.",
+    "description": "Dashboard settings: automatic installation is not set up yet"
+  },
+  "autoUpdateConnectedAuto": {
+    "message": "Actualizador $1 conectado. Las nuevas versiones se instalan automáticamente y la extensión se recarga sola.",
+    "description": "Dashboard settings: updater connected, automatic mode. $1 updater version"
+  },
+  "autoUpdateConnectedNotify": {
+    "message": "Actualizador $1 conectado. Selecciona «Instalar ahora» cuando haya una nueva versión.",
+    "description": "Dashboard settings: updater connected, notify-only mode. $1 updater version"
+  },
+  "autoUpdateUpdated": {
+    "message": "Actualizado de $1 a $2.",
+    "description": "Dashboard settings: result of the last update. $1 previous version, $2 new version"
+  },
+  "autoUpdateRolledBack": {
+    "message": "Se restauró la versión $2 (antes $1).",
+    "description": "Dashboard settings: result of a rollback. $1 version before, $2 restored version"
+  },
+  "autoUpdatePermissionDenied": {
+    "message": "No se concedió el permiso.",
+    "description": "Dashboard settings: the permission request was declined"
+  },
+  "autoUpdateErrorMissing": {
+    "message": "El actualizador de Windows aún no está instalado.",
+    "description": "Dashboard settings: native updater not registered"
+  },
+  "autoUpdateErrorForbidden": {
+    "message": "El actualizador está registrado para otra carpeta o ID de extensión. Ejecuta el comando de abajo.",
+    "description": "Dashboard settings: native updater registered for another extension ID"
+  },
+  "autoUpdateErrorFailed": {
+    "message": "El actualizador se detuvo inesperadamente. Los detalles están en %LOCALAPPDATA%\\uBlockPlus\\Updater\\updater.log.",
+    "description": "Dashboard settings: native updater crashed or exited"
+  },
+  "autoUpdateErrorChecksum": {
+    "message": "El paquete descargado no coincidía con su suma de verificación publicada y se descartó.",
+    "description": "Dashboard settings: package checksum mismatch"
+  },
+  "autoUpdateErrorRateLimited": {
+    "message": "GitHub está limitando las solicitudes; la próxima comprobación esperará.",
+    "description": "Dashboard settings: GitHub API rate limit"
+  },
+  "autoUpdateErrorNetwork": {
+    "message": "No se pudo acceder a GitHub. La próxima comprobación lo intentará de nuevo.",
+    "description": "Dashboard settings: network failure during a check"
+  },
+  "autoUpdateErrorReload": {
+    "message": "La extensión se recargó pero su versión no cambió. Revisa el registro del actualizador.",
+    "description": "Dashboard settings: after reload the version did not change"
+  },
+  "autoUpdateErrorInterrupted": {
+    "message": "La actualización anterior se interrumpió antes de terminar.",
+    "description": "Dashboard settings: the previous update did not finish"
+  },
+  "autoUpdateErrorGeneric": {
+    "message": "Problema de actualización: $1",
+    "description": "Dashboard settings: other update error. $1 is the error message"
+  },
+  "autoUpdatePopupAvailable": {
+    "message": "Actualizar a $1",
+    "description": "Popup: compact indicator that a newer version is available. $1 is the version"
+  },
+  "autoUpdatePopupAvailableTitle": {
+    "message": "La versión $1 está disponible. Abrir la configuración de actualizaciones.",
+    "description": "Popup: tooltip of the update indicator. $1 is the version"
+  },
+  "firewallTitle": {
+    "message": "Cortafuegos dinámico",
+    "description": "Dynamic firewall panel heading in Site rules"
+  },
+  "firewallDescription": {
+    "message": "Una fila: origen destino tipo acción. Usa * para todos los nombres de host; block bloquea, allow permite y noop omite solo el cortafuegos, mientras las listas de filtros siguen aplicándose.",
+    "description": "Dynamic firewall rule syntax. Keep *, block, allow and noop untranslated."
+  },
+  "firewallScope": {
+    "message": "Solicitudes de red dentro de pestañas, incluidos iframes, en Chrome 145 o posterior. El modo «sin filtrado» tiene prioridad. Se excluyen los scripts en línea, la navegación de la página principal y las solicitudes fuera de pestañas. Las reglas 1p/3p usan la página superior y la Public Suffix List; las primeras solicitudes en un sitio nuevo pueden pasar mientras Chrome actualiza su alcance.",
+    "description": "Dynamic firewall coverage and limits. Quote the no-filtering mode by its filteringMode0Name label."
+  },
+  "firewallValidate": {
+    "message": "Validar",
+    "description": "Button: check the firewall draft without applying it"
+  },
+  "firewallApplySession": {
+    "message": "Aplicar en esta sesión",
+    "description": "Button: apply firewall rules until the browser session ends"
+  },
+  "firewallSavePermanent": {
+    "message": "Guardar de forma permanente",
+    "description": "Button: save firewall rules across browser restarts"
+  },
+  "firewallLoadPermanent": {
+    "message": "Cargar reglas permanentes",
+    "description": "Button: load the saved permanent firewall rules into the editor"
+  },
+  "firewallImportFile": {
+    "message": "Importar archivo",
+    "description": "Button: import firewall rules from a text file"
+  },
+  "firewallExportFile": {
+    "message": "Exportar archivo",
+    "description": "Button: export the firewall editor text to a file"
+  },
+  "firewallStatusRules": {
+    "message": "$1 reglas de Chrome activas; $2 dominios reconocidos en esta sesión.",
+    "description": "Firewall status. $1: active native Chrome rules; $2: registrable domains recognized in this browser session"
+  },
+  "firewallStatusDeferred": {
+    "message": "$1 celdas necesitan el contexto de la página; no se bloquea de forma especulativa.",
+    "description": "Firewall status. $1: cells that need to know the top page before deciding 1p/3p"
+  },
+  "firewallStatusOmitted": {
+    "message": "Se alcanzó el límite de reglas de Chrome: las celdas 1p/3p solo se aplican ahora a los $1 dominios reconocidos más recientemente.",
+    "description": "Firewall status when Chrome's session-rule limit forced older learned domains out. $1: domains still covered"
+  },
+  "firewallStatusScopeError": {
+    "message": "No se pudo añadir un dominio visitado recientemente al alcance 1p/3p: $1",
+    "description": "Firewall status when a newly visited domain could not be added to the native 1p/3p scope. $1: technical error message"
+  },
+  "firewallStatusTemporary": {
+    "message": "Reglas temporales activas.",
+    "description": "Firewall status: session-only rules are active"
+  },
+  "firewallStatusPermanent": {
+    "message": "Reglas permanentes activas.",
+    "description": "Firewall status: saved permanent rules are active"
+  },
+  "firewallPreviewRules": {
+    "message": "Validado: $1 reglas de Chrome propuestas.",
+    "description": "Result of validating a firewall draft. $1: proposed native Chrome rules"
+  },
+  "firewallPreviewOmitted": {
+    "message": "$1 dominios reconocidos saldrían del alcance 1p/3p para ajustarse al límite de reglas de Chrome.",
+    "description": "Validation notice. $1: recognized domains that would leave the 1p/3p scope to fit Chrome's rule limit"
+  },
+  "firewallUnsupported": {
+    "message": "El cortafuegos requiere Chrome 145 o posterior. El filtrado existente sigue disponible.",
+    "description": "Shown when the browser lacks the native conditions the firewall needs"
+  },
+  "firewallPermanentLoaded": {
+    "message": "Reglas permanentes cargadas en el borrador; aplícalas para activarlas.",
+    "description": "Shown after loading permanent firewall rules into the editor"
+  },
+  "firewallImportTooLarge": {
+    "message": "Tamaño máximo de archivo: 128 KiB",
+    "description": "Error when an imported firewall file is too large"
+  },
+  "firewallTestTitle": {
+    "message": "Probar y explicar una regla",
+    "description": "Heading of the firewall request tester"
+  },
+  "firewallTestScope": {
+    "message": "Prueba el borrador del editor con la configuración actual de «sin filtrado». No se envía ninguna solicitud, no se guarda ninguna URL y la protección no cambia. Solo explica el cortafuegos; no simula todas las listas de filtros, permisos del navegador, cuotas ni el momento de activación.",
+    "description": "Explains what the firewall tester does and does not simulate. Quote the no-filtering mode by its filteringMode0Name label."
+  },
+  "firewallTestSource": {
+    "message": "Página superior: nombre de host o URL HTTP(S)",
+    "description": "Firewall tester field label for the top-level page"
+  },
+  "firewallTestDestination": {
+    "message": "Recurso de destino: nombre de host o URL HTTP(S)",
+    "description": "Firewall tester field label for the requested resource"
+  },
+  "firewallTestType": {
+    "message": "Tipo de solicitud",
+    "description": "Firewall tester field label for the request type"
+  },
+  "firewallTestRequest": {
+    "message": "Probar solicitud",
+    "description": "Button: run the firewall tester"
+  },
+  "firewallTestChanged": {
+    "message": "Los datos cambiaron; vuelve a probar.",
+    "description": "Firewall tester: inputs changed while a test was running"
+  },
+  "firewallTestFirstParty": {
+    "message": "Propio (1p)",
+    "description": "Firewall tester result: same party as the top page"
+  },
+  "firewallTestThirdParty": {
+    "message": "De terceros (3p)",
+    "description": "Firewall tester result: different party from the top page"
+  },
+  "firewallOutcomeBlock": {
+    "message": "Borrador: block — la celda ganadora solicita bloquear.",
+    "description": "Firewall tester outcome. Keep block untranslated."
+  },
+  "firewallOutcomeAllow": {
+    "message": "Borrador: allow — la celda ganadora solicita permitir.",
+    "description": "Firewall tester outcome. Keep allow untranslated."
+  },
+  "firewallOutcomeNoop": {
+    "message": "Borrador: noop — se omite el cortafuegos; las listas de filtros aún pueden bloquear.",
+    "description": "Firewall tester outcome. Keep noop untranslated."
+  },
+  "firewallOutcomeNoMatch": {
+    "message": "Ninguna celda del cortafuegos coincide; las listas de filtros aún pueden bloquear.",
+    "description": "Firewall tester outcome when no cell matches"
+  },
+  "firewallOutcomeOff": {
+    "message": "Esta página usa «sin filtrado», que tiene prioridad sobre el borrador del cortafuegos.",
+    "description": "Firewall tester outcome when the site is in the no-filtering mode. Quote the mode by its filteringMode0Name label."
+  },
+  "firewallOutcomeUnknown": {
+    "message": "No hay contexto de modo o dominio; no se toma una decisión especulativa (fail-open).",
+    "description": "Firewall tester outcome when mode or party information is unavailable"
+  },
+  "loggerTitle": {
+    "message": "Registro",
+    "description": "Logger page title"
+  },
+  "loggerIntro": {
+    "message": "Captura diagnósticos de una pestaña. Los registros permanecen en esta sesión de la extensión y se borran al cerrar su último registro. No se suben datos ni se guarda el historial de navegación.",
+    "description": "Logger page introduction"
+  },
+  "loggerTab": {
+    "message": "Pestaña",
+    "description": "Logger label for the browser tab selector"
+  },
+  "loggerStart": {
+    "message": "Iniciar captura",
+    "description": "Logger button: start capturing"
+  },
+  "loggerPause": {
+    "message": "Pausar",
+    "description": "Logger button: pause capturing"
+  },
+  "loggerClear": {
+    "message": "Borrar",
+    "description": "Logger button: clear records"
+  },
+  "loggerExport": {
+    "message": "Exportar JSON depurado",
+    "description": "Logger button: export redacted records as JSON"
+  },
+  "loggerSearch": {
+    "message": "Buscar",
+    "description": "Logger search field label"
+  },
+  "loggerSearchPlaceholder": {
+    "message": "URL, ID de regla, selector u origen",
+    "description": "Logger search field placeholder"
+  },
+  "loggerKind": {
+    "message": "Tipo",
+    "description": "Logger event-kind filter label"
+  },
+  "loggerKindAll": {
+    "message": "Todos los eventos",
+    "description": "Logger event-kind filter: all events"
+  },
+  "loggerKindNetwork": {
+    "message": "Red",
+    "description": "Logger event kind: browser network observation"
+  },
+  "loggerKindDnr": {
+    "message": "Coincidencias DNR nativas",
+    "description": "Logger event kind: native declarativeNetRequest rule matches"
+  },
+  "loggerKindCosmetic": {
+    "message": "Cosmético",
+    "description": "Logger event kind: cosmetic filtering"
+  },
+  "loggerKindDom": {
+    "message": "DOM",
+    "description": "Logger event kind: DOM diagnostics"
+  },
+  "loggerKindScriptlet": {
+    "message": "Scriptlets",
+    "description": "Logger event kind: scriptlets"
+  },
+  "loggerKindSystem": {
+    "message": "Sistema",
+    "description": "Logger event kind: system events"
+  },
+  "loggerColumnKind": {
+    "message": "Tipo / fase",
+    "description": "Logger table column: event kind and phase"
+  },
+  "loggerColumnSource": {
+    "message": "Origen de la evidencia",
+    "description": "Logger table column: which API produced the evidence"
+  },
+  "loggerColumnDetail": {
+    "message": "Solicitud / diagnóstico",
+    "description": "Logger table column: request or diagnostic details"
+  },
+  "loggerInitial": {
+    "message": "La captura está desactivada. Elige una pestaña e iníciala.",
+    "description": "Logger status before capture starts"
+  },
+  "loggerSummary": {
+    "message": "Qué puede demostrar este registro",
+    "description": "Logger heading of the evidence explanation"
+  },
+  "loggerDetailNetwork": {
+    "message": "Red es una observación de solo lectura del navegador que incluye las solicitudes completadas. Un error por sí solo no identifica qué extensión bloqueó. Pueden faltar solicitudes ocultas por el navegador y algunas interceptadas antes de la observación.",
+    "description": "Logger evidence explanation: network events"
+  },
+  "loggerDetailDnr": {
+    "message": "Una coincidencia DNR nativa identifica la regla de esta extensión elegida por Chrome. La consulta del contenido de la regla es independiente y no atómica. La disponibilidad depende de la API de feedback de Chrome y del tipo de instalación.",
+    "description": "Logger evidence explanation: native DNR matches"
+  },
+  "loggerDetailCosmetic": {
+    "message": "Cosmético significa que se insertó una hoja de estilos; no demuestra que un nodo se ocultara. DOM distingue la aplicación procedimental real de una simple instantánea de que un selector CSS tiene coincidencias. Las instantáneas prueban como máximo 32 grupos de selectores por hoja de estilos y no demuestran visibilidad ni activación de media. Se admiten como máximo 32 informes por segundo y marco; no se cubren los efectos anteriores a la carga del observador.",
+    "description": "Logger evidence explanation: cosmetic and DOM events"
+  },
+  "loggerDetailScriptlet": {
+    "message": "Los informes de scriptlets cubren el registro y el manejo de excepciones y alternativas. Esta versión no emite informes de intentos de ejecución ni confirma los efectos de cada scriptlet. Los mensajes de la página no son una prueba fiable de ejecución en el mundo MAIN. Los eventos de registro globales usan la pestaña −1.",
+    "description": "Logger evidence explanation: scriptlets"
+  },
+  "loggerDetailCapture": {
+    "message": "La captura solicita el permiso opcional de observación de red. Si se rechaza, siguen disponibles los diagnósticos DNR y de contenido. Se conservan como máximo 512 registros para hasta cuatro ventanas de registro. Cerrar la pestaña o pausar detiene la recopilación; cerrar una ventana de registro borra los registros que no muestra ninguna otra ventana abierta. Chrome puede suspender el worker y borrar este historial temporal.",
+    "description": "Logger evidence explanation: permission, limits and record lifetime"
+  },
+  "loggerDetailExport": {
+    "message": "Las URL en vivo pueden contener parámetros de consulta privados. La exportación elimina credenciales, parámetros de consulta, fragmentos y texto libre de diagnóstico; las rutas de las URL aún pueden contener identificadores personales. Revisa los archivos exportados antes de compartirlos.",
+    "description": "Logger evidence explanation: private data and export redaction"
+  },
+  "loggerEmpty": {
+    "message": "Aún no hay eventos. Inicia la captura y luego recarga la página seleccionada o usa sus controles.",
+    "description": "Logger placeholder when there are no events"
+  },
+  "loggerCapturing": {
+    "message": "Capturando.",
+    "description": "Logger status: capturing"
+  },
+  "loggerPaused": {
+    "message": "En pausa.",
+    "description": "Logger status: paused"
+  },
+  "loggerNetworkAttached": {
+    "message": "Observación de red: conectada.",
+    "description": "Logger state: browser network observation is attached"
+  },
+  "loggerNetworkUnavailable": {
+    "message": "Observación de red: no disponible.",
+    "description": "Logger state: browser network observation is unavailable"
+  },
+  "loggerNativeAttached": {
+    "message": "Escucha DNR nativa: conectada.",
+    "description": "Logger state: native DNR match listener is attached"
+  },
+  "loggerNativeUnavailable": {
+    "message": "Escucha DNR nativa: no disponible.",
+    "description": "Logger state: native DNR match listener is unavailable"
+  },
+  "loggerRecordCount": {
+    "message": "$1/$2 registros; $3 registros antiguos descartados.",
+    "description": "Logger counters. $1: records shown; $2: record limit; $3: older records discarded"
+  },
+  "loggerTabFrame": {
+    "message": "pestaña $1, marco $2",
+    "description": "Logger row context. $1: browser tab ID; $2: frame ID"
+  },
+  "loggerPermissionRefused": {
+    "message": "No se concedió el permiso de red; los demás diagnósticos siguen disponibles.",
+    "description": "Logger status when the optional network permission was refused"
+  },
+  "loggerDisconnected": {
+    "message": "La conexión del registro terminó. Se borró el historial temporal. Inicia la captura para volver a conectar.",
+    "description": "Logger status after the connection to the extension ended"
+  },
+  "loggerPhaseRequested": {
+    "message": "solicitud iniciada",
+    "description": "Logger event phase: a network request started (English keeps the technical phase name)"
+  },
+  "loggerPhaseCompleted": {
+    "message": "completada",
+    "description": "Logger event phase: a network request completed (English keeps the technical phase name)"
+  },
+  "loggerPhaseError": {
+    "message": "error",
+    "description": "Logger event phase: a network request failed (English keeps the technical phase name)"
+  },
+  "loggerPhaseRedirected": {
+    "message": "redirigida",
+    "description": "Logger event phase: a network request was redirected (English keeps the technical phase name)"
+  },
+  "loggerPhaseBlocked": {
+    "message": "bloqueada",
+    "description": "Logger event phase: the optional webRequest firewall supplement canceled a network request (English keeps the technical phase name)"
+  },
+  "loggerPhaseMatched": {
+    "message": "regla coincidente",
+    "description": "Logger event phase: a native rule matched (English keeps the technical phase name)"
+  },
+  "loggerPhaseStylesheetInserted": {
+    "message": "hoja de estilos insertada",
+    "description": "Logger event phase: a cosmetic stylesheet was inserted (English keeps the technical phase name)"
+  },
+  "loggerPhaseSelectorPresent": {
+    "message": "selector con coincidencias",
+    "description": "Logger event phase: a CSS selector matched elements in a snapshot (English keeps the technical phase name)"
+  },
+  "loggerPhaseProceduralApplied": {
+    "message": "filtro procedimental aplicado",
+    "description": "Logger event phase: a procedural cosmetic filter was applied (English keeps the technical phase name)"
+  },
+  "loggerPhaseRegistered": {
+    "message": "registrado",
+    "description": "Logger event phase: scriptlets were registered (English keeps the technical phase name)"
+  },
+  "loggerPhaseExceptionApplied": {
+    "message": "excepción aplicada",
+    "description": "Logger event phase: a scriptlet exception was applied (English keeps the technical phase name)"
+  },
+  "loggerRequestId": {
+    "message": "solicitud $1",
+    "description": "Logger row detail. $1: browser request ID"
+  },
+  "loggerLanguageTag": {
+    "message": "es",
+    "description": "Not displayed. BCP 47 language tag of this catalog, used as the lang attribute of the logger page"
+  },
+  "pickerQuit": {
+    "message": "Salir",
+    "description": "Tooltip and accessible name for the close button of the element picker and custom-filter remover (unpicker) panels"
+  },
+  "restoreSucceeded": {
+    "message": "Configuración restaurada.",
+    "description": "Dashboard status after a backup file was restored"
+  },
+  "restoreFailed": {
+    "message": "No se pudo restaurar la configuración: $1",
+    "description": "Dashboard status when restoring a backup failed; $1 is the technical reason"
+  },
+  "backupFailed": {
+    "message": "No se pudo crear la copia de seguridad: $1",
+    "description": "Dashboard status when creating a backup file failed; $1 is the technical reason"
+  },
+  "resetSucceeded": {
+    "message": "Se restableció la configuración predeterminada.",
+    "description": "Dashboard status after all settings were reset to their defaults"
+  },
+  "resetFailed": {
+    "message": "No se pudo restablecer la configuración: $1",
+    "description": "Dashboard status when resetting settings failed; $1 is the technical reason"
+  },
+  "restoreFirewallUnsupported": {
+    "message": "No se restauraron las reglas del cortafuegos: este navegador no las admite (se requiere Chrome 145 o posterior).",
+    "description": "Restore warning: the backup contains firewall rules, which this browser version cannot use"
+  },
+  "restoreImportedListsDisabled": {
+    "message": "Se restauraron $1 lista(s) importada(s), pero quedaron desactivadas: las listas activadas están limitadas a 20 MiB de datos de origen.",
+    "description": "Restore warning; $1 is the number of imported filter lists which were restored but not enabled"
+  },
+  "restoreImportedListsSkipped": {
+    "message": "No se pudieron restaurar $1 lista(s) importada(s): solo se admiten hasta 32 listas con direcciones HTTPS sin credenciales.",
+    "description": "Restore warning; $1 is the number of imported filter lists which could not be restored"
+  },
+  "restoreFilteringModesLocked": {
+    "message": "Los modos de filtrado no se modificaron: tu administrador los gestiona.",
+    "description": "Restore or reset warning: the managed disabledFeatures policy includes filteringMode, so the site filtering modes were not changed"
+  },
+  "restoreDeveloperLocked": {
+    "message": "El modo desarrollador y las reglas DNR personalizadas no se modificaron: tu administrador desactivó las funciones de desarrollo.",
+    "description": "Restore or reset warning: the managed disabledFeatures policy includes develop, so developer mode and custom DNR rules were not changed"
+  },
+  "defaultFilteringModeFailed": {
+    "message": "No se pudo cambiar el modo de filtrado predeterminado: $1",
+    "description": "Dashboard status when changing the default filtering mode failed; $1 is the technical reason"
+  },
+  "customFiltersSaveFailed": {
+    "message": "No se pudieron guardar los filtros personalizados: $1",
+    "description": "Dashboard status when saving My filters or the filter sandbox failed; $1 is the technical reason"
+  },
+  "siteRulesInvalidHostname": {
+    "message": "«$1» no es un nombre de host válido. Usa un nombre de host por línea, sin comodines, rutas ni «https://».",
+    "description": "Site rules validation error; $1 is the rejected line exactly as typed"
+  },
+  "siteRulesDuplicateHostname": {
+    "message": "«$1» aparece en más de un nivel de filtrado. Un nombre de host solo puede aparecer en un nivel.",
+    "description": "Site rules validation error; $1 is a hostname listed in more than one filtering level"
+  },
+  "siteRulesDefaultRequired": {
+    "message": "Mantén exactamente una línea «$1»: define el nivel de filtrado predeterminado para todos los demás sitios.",
+    "description": "Site rules validation error; $1 is the literal token all-urls, which must not be translated"
+  },
+  "siteRulesChangedElsewhere": {
+    "message": "Las reglas por sitio se cambiaron en otro lugar después de que esta página las cargara. Tus cambios se conservan: guarda de nuevo para sobrescribir esos cambios o recarga la página para descartar los tuyos.",
+    "description": "Site rules conflict: the stored rules changed after the page loaded them; the user's edits were not saved"
+  },
+  "siteRulesSaveFailed": {
+    "message": "No se pudieron guardar las reglas por sitio: $1",
+    "description": "Dashboard status when valid site rules could not be saved; $1 is the technical reason"
+  },
+  "webRequestSetupTitle": {
+    "message": "Cortafuegos de red experimental",
+    "description": "Diagnostics panel title for the optional Experimental WebRequest package"
+  },
+  "webRequestSetupExperimental": {
+    "message": "Abre Chrome con start-experimental-chrome.cmd, en la carpeta de la extensión. La primera vez, carga esa carpeta con «Cargar descomprimida». El lanzador usa un perfil independiente; vuelve aquí y pulsa «Actualizar diagnóstico» para comprobar el acceso.",
+    "description": "Diagnostics setup steps shown in the Experimental WebRequest package; keep start-experimental-chrome.cmd unchanged"
+  },
+  "webRequestSetupStandard": {
+    "message": "El paquete Experimental WebRequest añade el bloqueo directo del cortafuegos, incluso en dominios visitados por primera vez. Instala el paquete independiente y abre Chrome con el lanzador incluido.",
+    "description": "Diagnostics note in the standard package about the separate Experimental WebRequest package; keep the package name unchanged"
+  },
+  "webRequestSetupLimits": {
+    "message": "El filtrado DNR, allow y noop siguen aplicándose. Esta función no elimina las cuotas ni restaura el motor completo de uBO; la extensión no puede cambiar por sí misma los argumentos de inicio de Chrome.",
+    "description": "Diagnostics note on the limits of the experimental firewall; keep DNR, allow, noop and uBO unchanged"
+  },
+  "webRequestSetupGuide": {
+    "message": "Guía de instalación, verificación y eliminación",
+    "description": "Link text to the Experimental WebRequest documentation"
+  },
+  "reportGitHubConfirm": {
+    "message": "Se abrirá en GitHub un reporte prellenado con el origen del sitio y la información de solución de problemas que se muestra en esta página. No se publica nada hasta que lo envíes allí. ¿Continuar?",
+    "description": "Confirmation shown before the report page opens a prefilled public GitHub issue"
+  },
+  "reportIssueTrackerInfo": {
+    "message": "Reporta problemas de filtros con sitios web específicos en el <a href=\"https://github.com/kayurachann/uBlock-Plus/issues\">registro de problemas de <code>uBlock Plus+</code></a>. <u>Requiere una cuenta de GitHub.</u>",
+    "description": "Report page introduction; replaces supportS3P1, which names the upstream uAssets tracker. Keep the HTML markup, including the <a href> link, and the URL unchanged"
+  },
+  "protectionProfileSelectRequired": {
+    "message": "Selecciona un perfil de protección para aplicarlo.",
+    "description": "Dashboard status when Apply profile is clicked while no protection profile is selected"
+  },
+  "editorApplyFailed": {
+    "message": "No se pudieron aplicar los cambios: $1",
+    "description": "Dashboard Advanced editors: applying the edited text failed. $1 is the error message"
+  },
+  "autoUpdateRestartRequired": {
+    "message": "Permiso concedido. uBlock Plus+ se reinicia una vez para conectarse al actualizador.",
+    "description": "Dashboard settings: permission granted, the extension must restart once"
+  },
+  "autoUpdateRestartNow": {
+    "message": "Reiniciar ahora",
+    "description": "Dashboard settings: button restarting the extension to enable the updater connection"
+  },
+  "autoUpdateRestarting": {
+    "message": "Reiniciando… esta página se volverá a abrir automáticamente.",
+    "description": "Dashboard settings: the extension is restarting; this page reopens automatically"
+  },
+  "autoUpdateDownloadingVersion": {
+    "message": "Descargando $1…",
+    "description": "Dashboard settings, Updates: live status while a new version downloads. $1 is the version"
+  },
+  "autoUpdateProgress": {
+    "message": "$1 de $2 MiB",
+    "description": "Dashboard settings, Updates: download progress. $1 is the downloaded size, $2 the total size, both in MiB"
+  },
+  "autoUpdateHeld": {
+    "message": "La versión $1 no se instala automáticamente porque restauraste una versión anterior. Selecciona «Instalar ahora» para instalarla de todos modos.",
+    "description": "Dashboard settings, Updates: after the user restored an earlier version, automatic installation skips the version restored from. $1 is that version"
+  },
+  "autoUpdateCheckThrottled": {
+    "message": "La última comprobación fue hace menos de un minuto. Vuelve a intentarlo dentro de $1 segundos.",
+    "description": "Dashboard settings, Updates: Check now was used again within a minute. $1 is a number of seconds"
+  },
+  "autoUpdateIncognito": {
+    "message": "Gestiona las actualizaciones desde una ventana normal, no desde una ventana de incógnito.",
+    "description": "Dashboard settings, Updates: the page is open in an incognito window, where update controls are disabled"
+  },
+  "autoUpdateManualOnly": {
+    "message": "La instalación automática solo funciona en Windows. Para actualizar, sustituye los archivos de la carpeta de la extensión por los de la nueva versión y luego recarga uBlock Plus+ en la página de extensiones.",
+    "description": "Dashboard settings, Updates: the native updater exists only for Windows; on other systems the user updates by hand"
+  },
+  "autoUpdatePolicyOff": {
+    "message": "Tu administrador ha desactivado la búsqueda de actualizaciones.",
+    "description": "Dashboard settings, Updates: managed storage autoUpdate is \"off\""
+  },
+  "autoUpdatePolicyNotify": {
+    "message": "Tu administrador solo permite avisos de actualización; las nuevas versiones no se instalan automáticamente.",
+    "description": "Dashboard settings, Updates: managed storage allows notifications only (autoUpdate \"notify\", or the dashboard is locked)"
+  },
+  "autoUpdateErrorPolicy": {
+    "message": "Tu administrador no lo permite.",
+    "description": "Dashboard settings, Updates: an action or setting was refused by the administrator policy"
+  },
+  "autoUpdateErrorFiltersBusy": {
+    "message": "Se está actualizando una lista de filtros. Vuelve a intentarlo cuando termine.",
+    "description": "Dashboard settings, Updates: an install, restore or restart was refused because a filter list update is running"
+  },
+  "autoUpdateErrorUpdateBusy": {
+    "message": "Ya hay otra actualización en curso. Vuelve a intentarlo en un momento.",
+    "description": "Dashboard settings, Updates: another install or restore (in this browser or from the command-line updater) is running"
+  },
+  "autoUpdateErrorSignature": {
+    "message": "El paquete no está firmado con una clave de publicación de confianza de uBlock Plus+, así que no se instaló.",
+    "description": "Dashboard settings, Updates: the updater found no valid signature from a trusted release key"
+  },
+  "autoUpdateErrorPackage": {
+    "message": "El paquete descargado no es una versión válida de uBlock Plus+ para esta copia, así que no se instaló.",
+    "description": "Dashboard settings, Updates: the downloaded package is invalid, too large, not staged, or not the expected edition or version"
+  },
+  "autoUpdateErrorUnexpectedFiles": {
+    "message": "La carpeta de la extensión contiene archivos que no forman parte de uBlock Plus+. Sácalos de la carpeta y vuelve a intentarlo. No se ha cambiado nada.",
+    "description": "Dashboard settings, Updates: the updater refused to replace a folder containing files which are not part of the extension"
+  },
+  "autoUpdateErrorNoBackup": {
+    "message": "No hay ninguna versión anterior que restaurar.",
+    "description": "Dashboard settings, Updates: restore failed because the updater has no backup of an earlier version"
+  },
+  "autoUpdateErrorRollbackFailed": {
+    "message": "No se pudo restaurar la versión anterior. Los detalles están en %LOCALAPPDATA%\\uBlockPlus\\Updater\\updater.log.",
+    "description": "Dashboard settings, Updates: the updater could not restore the earlier version"
+  },
+  "autoUpdateErrorApplyFailed": {
+    "message": "No se pudo instalar la nueva versión. Los detalles están en %LOCALAPPDATA%\\uBlockPlus\\Updater\\updater.log.",
+    "description": "Dashboard settings, Updates: the updater could not back up the installed version or replace the extension files"
+  },
+  "autoUpdateErrorUnsafeFolder": {
+    "message": "El actualizador no modifica esta carpeta de la extensión: es la raíz de una unidad o una carpeta del sistema o del perfil, contiene enlaces o la pueden modificar otros usuarios de este PC. Mueve uBlock Plus+ a tu perfil de usuario, por ejemplo a %LOCALAPPDATA%\\uBlockPlus\\Extension, cárgala desde allí y vuelve a hacer la configuración.",
+    "description": "Dashboard settings, Updates: the updater refuses to manage the extension folder (drive root, system or profile folder, links)"
+  },
+  "autoUpdateErrorFolderMismatch": {
+    "message": "El actualizador gestiona una carpeta que contiene una versión distinta de la de esta extensión. Ejecuta el comando de configuración desde la carpeta que cargaste con «Cargar descomprimida».",
+    "description": "Dashboard settings, Updates: the folder the updater manages holds another (older or unknown) version than the running extension"
+  },
+  "autoUpdateErrorNotOffered": {
+    "message": "Esta versión no se ofrece en el canal de versiones seleccionado.",
+    "description": "Dashboard settings, Updates: Install now asked for a version which the selected release channel does not offer"
+  },
+  "autoUpdateErrorAmbiguous": {
+    "message": "El actualizador está registrado para varias carpetas con este ID de extensión. Ejecuta updater\\install-updater.cmd -Replace desde la carpeta que cargaste con «Cargar descomprimida».",
+    "description": "Dashboard settings, Updates: the updater has several folders registered for this extension ID and cannot tell which one to update"
+  },
+  "autoUpdateErrorUpdater": {
+    "message": "El actualizador informó de un error. Los detalles están en %LOCALAPPDATA%\\uBlockPlus\\Updater\\updater.log.",
+    "description": "Dashboard settings, Updates: the native updater reported an error without a more specific explanation (invalid configuration, internal error, unexpected reply)"
+  },
+  "autoUpdateErrorUndone": {
+    "message": "Se deshizo una actualización interrumpida y se restauró la versión anterior. No se cambió nada más.",
+    "description": "Dashboard settings: the updater restored the previous version after an interrupted update"
   }
 }

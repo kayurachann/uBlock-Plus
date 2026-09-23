@@ -72,6 +72,13 @@ try {
     assert.match(incomplete.stderr, /Required experimental component does not exist: start-experimental-chrome.cmd/);
 
     if ( process.platform === 'win32' ) {
+        // Prefer PowerShell 7 when present; stock Windows only ships Windows
+        // PowerShell 5.1, which the launcher also supports (#Requires 5.1).
+        const powershell = [ 'pwsh', 'powershell.exe' ].find(candidate =>
+            spawnSync(candidate, [ '-NoProfile', '-Command', 'exit 0' ]).status === 0);
+        assert.ok(powershell, 'Neither pwsh nor powershell.exe is available');
+        const runLauncher = args => spawnSync(powershell,
+            [ '-ExecutionPolicy', 'Bypass', ...args ], { encoding: 'utf8' });
         await mkdir(path.join(fixture, 'js'));
         await writeFile(path.join(fixture, 'js/webrequest-firewall.js'), '// Fixture; not executed.');
         const chromeFixture = path.join(fixture, 'chrome.exe');
@@ -82,7 +89,7 @@ try {
         const expectedProfile = path.join(await realpath(process.env.LOCALAPPDATA),
             'uBlockPlus', 'ExperimentalChrome', experimentalExtensionId);
         const existed = await access(expectedProfile).then(() => true, () => false);
-        const launch = spawnSync('pwsh', command, { encoding: 'utf8' });
+        const launch = runLauncher(command);
         assert.equal(launch.status, 0, launch.stderr);
         const specification = JSON.parse(launch.stdout);
         // CI can expose TEMP via an 8.3 alias (RUNNER~1) which .NET expands.
@@ -100,11 +107,11 @@ try {
         assert.equal(path.basename(path.dirname(path.dirname(specification.profileDirectory))), 'uBlockPlus');
         assert.equal(await access(specification.profileDirectory).then(() => true, () => false), existed,
             'PrintCommand must not create the isolated profile');
-        const repeat = spawnSync('pwsh', command, { encoding: 'utf8' });
+        const repeat = runLauncher(command);
         assert.equal(repeat.status, 0, repeat.stderr);
         assert.equal(await access(specification.profileDirectory).then(() => true, () => false), existed,
             'PrintCommand must not create the isolated profile');
-        const forbiddenOverride = spawnSync('pwsh', [ ...command, '-ProfileDirectory', fixture ], { encoding: 'utf8' });
+        const forbiddenOverride = runLauncher([ ...command, '-ProfileDirectory', fixture ]);
         assert.notEqual(forbiddenOverride.status, 0, 'Personal profile overrides must be rejected');
         for ( const invalid of [
             { ...metadata, extensionId: 'a'.repeat(32) },
@@ -112,16 +119,16 @@ try {
             { ...metadata, publicKey: `${metadata.publicKey}\n` },
         ] ) {
             await writeJSON(markerPath, invalid);
-            const result = spawnSync('pwsh', command, { encoding: 'utf8' });
+            const result = runLauncher(command);
             assert.notEqual(result.status, 0, 'Launcher must reject malformed experimental identity');
         }
         await writeJSON(markerPath, metadata);
         await writeJSON(manifestPath, { ...manifest, key: 'incorrect' });
-        assert.notEqual(spawnSync('pwsh', command, { encoding: 'utf8' }).status, 0,
+        assert.notEqual(runLauncher(command).status, 0,
             'Launcher must reject manifest/public-key mismatch');
         await writeJSON(manifestPath, manifest);
         await rm(path.join(fixture, 'js/webrequest-firewall.js'));
-        assert.notEqual(spawnSync('pwsh', command, { encoding: 'utf8' }).status, 0,
+        assert.notEqual(runLauncher(command).status, 0,
             'Launcher must reject a missing firewall runtime');
     }
 } finally {

@@ -62,7 +62,12 @@ async function run(options = {}) {
         missingDictionary = -1,
         malformedDictionary = -1,
         modeDetails = { none },
+        // Returning undefined models a profile which never stored the key.
         readModeDetails = ( ) => modeDetails,
+        rejectModes = false,
+        readSessionModeDetails = ( ) => undefined,
+        rejectSessionModes = false,
+        beforeSessionWrite,
         beforeDictionaryRead,
     } = options;
     const inserted = [];
@@ -71,6 +76,9 @@ async function run(options = {}) {
     const sessionWrites = [];
     const messages = [];
     const dictionaryReads = [];
+    const pendingWrites = new Set();
+    const writesPendingAtInsert = [];
+    const writesPendingAtNote = [];
     let active = 0;
     let peak = 0;
     let profileReads = 0;
@@ -83,7 +91,9 @@ async function run(options = {}) {
             storage: {
                 local: { async get(key) {
                     if ( key === 'filteringModeDetails' ) {
-                        return { [key]: structuredClone(readModeDetails()) };
+                        if ( rejectModes ) { throw new Error('storage read failed'); }
+                        const value = readModeDetails();
+                        return value === undefined ? {} : { [key]: structuredClone(value) };
                     }
                     const id = Number(key.slice('css.specific.list-'.length));
                     dictionaryReads.push(id);
@@ -109,14 +119,35 @@ async function run(options = {}) {
                             if ( rejectProfile ) { throw new Error('session unavailable'); }
                             return { [key]: profile };
                         }
+                        if ( key === 'filteringModeDetails' ) {
+                            if ( rejectSessionModes ) { throw new Error('session unavailable'); }
+                            const value = readSessionModeDetails();
+                            return value === undefined ? {} : { [key]: structuredClone(value) };
+                        }
                         return { [key]: structuredClone(cached) };
                     },
-                    async set(entries) { sessionWrites.push(structuredClone(entries)); },
+                    set(entries) {
+                        const snapshot = structuredClone(entries);
+                        const write = (async ( ) => {
+                            await beforeSessionWrite?.();
+                            sessionWrites.push(snapshot);
+                        })();
+                        pendingWrites.add(write);
+                        return write.finally(( ) => { pendingWrites.delete(write); });
+                    },
                 },
             },
-            runtime: { async sendMessage(message) { messages.push(message); } },
+            runtime: { async sendMessage(message) {
+                if ( message.what === 'noteCSSCacheWrite' ) {
+                    writesPendingAtNote.push(pendingWrites.size);
+                }
+                messages.push(message);
+            } },
         },
-        cssAPI: { insert(css) { inserted.push(css); } },
+        cssAPI: { insert(css) {
+            writesPendingAtInsert.push(pendingWrites.size);
+            inserted.push(css);
+        } },
         specificImports: dictionaries.map((_, i) => `list-${i}`),
         ProceduralFiltererAPI: class {
             addProcedurals(values) { procedurals.push(...values); }
@@ -132,9 +163,14 @@ async function run(options = {}) {
         context.isolatedAPI.contexts.entries.push({ hns: [ topHostname ] });
     }
     await vm.runInContext(source, context);
+    // The cache write is deliberately not awaited by the content script.
+    const writesPendingAtCompletion = pendingWrites.size;
+    await Promise.allSettled(Array.from(pendingWrites));
+    await new Promise(resolve => setTimeout(resolve, 0));
     return {
         inserted, procedurals, declaratives, sessionWrites, messages,
         dictionaryReads, peak, profileReads,
+        writesPendingAtInsert, writesPendingAtNote, writesPendingAtCompletion,
     };
 }
 
@@ -210,22 +246,110 @@ for ( const modeDetails of [ null, {}, { none: null }, { none: [ null ] } ] ) {
     assert.equal(unknownScope.inserted.length, 0, 'unknown Off scopes must fail open');
     assert.equal(unknownScope.sessionWrites.length, 0);
 }
+for ( const options of [
+    { readSessionModeDetails: ( ) => null },
+    { readSessionModeDetails: ( ) => ({}) },
+    { readSessionModeDetails: ( ) => ({ none: [ 7 ] }) },
+    { rejectModes: true },
+    { rejectModes: true, rejectSessionModes: true },
+] ) {
+    const unknownScope = await run(options);
+    assert.equal(unknownScope.dictionaryReads.length, 0);
+    assert.equal(unknownScope.inserted.length, 0,
+        'unreadable modes or a malformed effective-mode copy fail open');
+    assert.equal(unknownScope.sessionWrites.length, 0);
+}
 
-for ( const changedModes of [ { none: [ 'test.example' ] }, null ] ) {
-    let currentModes = { none: [] };
+// The user's modes are not stored on a fresh profile until something changes
+// a mode. The default modes have no Off scope, so filtering must apply.
+for ( const options of [
+    { readModeDetails: ( ) => undefined },
+    { readModeDetails: ( ) => undefined, rejectSessionModes: true },
+    { readModeDetails: ( ) => undefined, readSessionModeDetails: ( ) => ({
+        none: [], basic: [], optimal: [ 'all-urls' ], complete: [],
+    }) },
+] ) {
+    const fresh = await run(options);
+    assert.equal(fresh.dictionaryReads.length, dictionaries.length);
+    assert.deepEqual(fresh.inserted, low.inserted, 'absent filtering modes mean the defaults');
+    assert.deepEqual(JSON.parse(JSON.stringify(fresh.procedurals)),
+        JSON.parse(JSON.stringify(low.procedurals)));
+    assert.equal(fresh.sessionWrites.length, 1, 'the default-mode result is cached');
+    assert.equal(fresh.messages.filter(value => value.what === 'noteCSSCacheWrite').length, 1);
+}
+
+// The session copy holds the effective modes: the user's modes with
+// administrator Off scopes added and administrator '-host' entries removed.
+// When it exists it alone decides; the stored modes apply only without it.
+for ( const options of [
+    { readSessionModeDetails: ( ) => ({
+        none: [ 'test.example' ], basic: [], optimal: [ 'all-urls' ], complete: [],
+    }) },
+    { none: [ 'test.example' ], rejectSessionModes: true },
+] ) {
+    const off = await run(options);
+    assert.equal(off.dictionaryReads.length, 0, 'effective or fallback Off scopes are honored');
+    assert.equal(off.inserted.length, 0);
+    assert.deepEqual(off.sessionWrites.map(entries => Object.values(entries)[0].s), [ [] ]);
+}
+// noFiltering: [ '-test.example' ] forces filtering on a site the user
+// trusted. The worker filters it, so site-specific selectors apply too.
+for ( const options of [
+    { none: [ 'test.example' ], readSessionModeDetails: ( ) => ({
+        none: [], basic: [], optimal: [ 'all-urls' ], complete: [],
+    }) },
+    { rejectModes: true, readSessionModeDetails: ( ) => ({ none: [] }) },
+] ) {
+    const forced = await run(options);
+    assert.equal(forced.dictionaryReads.length, dictionaries.length);
+    assert.deepEqual(forced.inserted, low.inserted,
+        'an administrator removal of a user Off scope is honored');
+    assert.equal(forced.sessionWrites.length, 1);
+}
+
+// Hiding must not wait for the session-cache round trip, while the prune
+// notification must still follow the write it accounts for.
+const slowWrite = await run({
+    beforeSessionWrite: ( ) => new Promise(resolve => setTimeout(resolve, 20)),
+});
+assert.deepEqual(slowWrite.inserted, low.inserted);
+assert.deepEqual(slowWrite.writesPendingAtInsert, [ 1 ],
+    'CSS is inserted while the cache write is still pending');
+assert.deepEqual(slowWrite.writesPendingAtNote, [ 0 ],
+    'noteCSSCacheWrite is sent only after the cache write completes');
+assert.equal(slowWrite.sessionWrites.length, 1);
+const staleCache = await run({
+    cached: { t: Math.round(Date.now() / (5 * 60000)) - 2, s: [ '.cached' ], p: [] },
+    beforeSessionWrite: ( ) => new Promise(resolve => setTimeout(resolve, 20)),
+});
+assert.deepEqual(staleCache.inserted, [ '.cached{display:none!important;}' ]);
+assert.deepEqual(staleCache.writesPendingAtInsert, [ 1 ],
+    'a timestamp refresh does not delay cached hiding');
+assert.equal(staleCache.sessionWrites.length, 1);
+assert.equal(staleCache.messages.length, 0, 'a refresh is not a new cache entry');
+
+for ( const [ area, initialModes, changedModes ] of [
+    [ 'local', { none: [] }, { none: [ 'test.example' ] } ],
+    [ 'local', { none: [] }, null ],
+    [ 'local', undefined, { none: [ 'test.example' ] } ],
+    [ 'session', undefined, { none: [ 'test.example' ] } ],
+] ) {
+    let currentModes = initialModes;
     let notifyRead;
     const readStarted = new Promise(resolve => { notifyRead = resolve; });
     let releaseRead;
     const pausedRead = new Promise(resolve => { releaseRead = resolve; });
     const loading = run({
-        readModeDetails: ( ) => currentModes,
+        readModeDetails: area === 'local' ? ( ) => currentModes : ( ) => undefined,
+        readSessionModeDetails: area === 'session' ? ( ) => currentModes : ( ) => undefined,
         async beforeDictionaryRead(id) {
             if ( id !== 5 ) { return; }
             notifyRead();
             await pausedRead;
         },
     });
-    await readStarted;
+    // A lookup which never starts must fail below rather than hang here.
+    await Promise.race([ readStarted, loading ]);
     currentModes = changedModes;
     releaseRead();
     const canceled = await loading;

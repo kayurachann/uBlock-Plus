@@ -71,4 +71,196 @@ assert.equal(config.process.firstRun, false);
 local.failRead = false;
 await config.loadRulesetConfig();
 assert.deepEqual(config.rulesetConfig.enabledRulesets, [ 'first', 'second' ]);
+
+// Dashboard Settings pane. Strict backup validation, late restore steps and
+// rejected mutations must reach the user, never only the console.
+{
+    const {
+        FakeDocument, FakeElement, createExtension, settle, stageModules,
+    } = await import('./dashboard-test-harness.mjs');
+    const document = new FakeDocument();
+    const status = document.register('#operationStatus');
+    const radios = new Map([ 1, 2, 3 ].map(level => {
+        const radio = new FakeElement('input', { value: `${level}` });
+        document.register(`.filteringModeCard input[type="radio"][value="${level}"]`, radio);
+        document.register('.filteringModeCard input[type="radio"]', radio);
+        return [ level, radio ];
+    }));
+    for ( const id of [ 'autoReload', 'showBlockedCount', 'strictBlockMode', 'popupBlockMode', 'developerMode' ] ) {
+        document.register(`#${id} input[type="checkbox"]`, new FakeElement('input'));
+    }
+    document.register('#memoryProfile');
+    const memorySelect = document.register('#memoryProfile select', new FakeElement('select'));
+    document.register('#memoryProfile .memoryProfileStatus');
+    document.register('#memoryProfile .memoryProfileMetrics');
+    const fileInput = document.register(
+        'section[data-pane="settings"] input[type="file"]',
+        new FakeElement('input')
+    );
+    let memorySelected = 'auto';
+    let setDefaultError;
+    const extension = createExtension({
+        dispatch(request) {
+            switch ( request.what ) {
+            case 'getOptionsPageData':
+                return {
+                    defaultFilteringMode: 2, autoReload: true, showBlockedCount: true,
+                    canShowBlockedCount: true, strictBlockMode: true, popupBlockMode: true,
+                    hasOmnipotence: true, developerMode: false,
+                    disabledFeatures: [ 'develop' ],
+                };
+            case 'getMemoryProfile':
+                return { selected: memorySelected, effective: memorySelected };
+            case 'getMemoryTelemetry':
+                return { storage: {} };
+            case 'setDefaultFilteringMode':
+                if ( setDefaultError ) { throw setDefaultError; }
+                return request.level;
+            }
+        },
+    });
+    const backupAPI = {
+        backup: async ( ) => ({}),
+        restore: async ( ) => ({}),
+    };
+    globalThis.settingsTestBackupAPI = backupAPI;
+    globalThis.FileReader = class {
+        readAsText(file) {
+            setTimeout(( ) => {
+                this.result = file.text;
+                this.onload();
+            });
+        }
+    };
+    let confirmed = true;
+    globalThis.confirm = ( ) => confirmed;
+    // A remembered pane which a managed policy forbids.
+    document.body.dataset.pane = 'develop';
+    const staged = await stageModules({
+        modules: [ 'settings.js', 'dashboard.js' ],
+        stubs: {
+            'filter-lists.js': 'export const renderFilterLists = ( ) => {};',
+            'backup-restore.js': `
+                export const backupToObject = config => globalThis.settingsTestBackupAPI.backup(config);
+                export const restoreFromObject = data => globalThis.settingsTestBackupAPI.restore(data);
+            `,
+        },
+        document,
+        extension,
+    });
+    const buttonSelector = key =>
+        `section[data-pane="settings"] button:has([data-i18n="${key}"])`;
+    // Expected failures are also logged; keep them out of the test output.
+    const { error: consoleError, warn: consoleWarn } = console;
+    console.error = console.warn = ( ) => {};
+    const pickBackup = async text => {
+        await document.trigger(buttonSelector('restoreButton'), 'click');
+        assert.equal(typeof fileInput.onchange, 'function', 'Restore opens the file picker');
+        fileInput.onchange({ target: { files: [ { name: 'backup.json', size: text.length, text } ] } });
+        await settle(20);
+    };
+    try {
+        await staged.load('settings.js');
+        await settle(20);
+        assert.equal(document.body.dataset.forbid, 'develop');
+        assert.equal(document.body.dataset.pane, 'settings',
+            'A pane locked by disabledFeatures must not stay selected');
+
+        await pickBackup('{');
+        assert.equal(status.textContent, '[restoreFailed:Backup file is not valid JSON]');
+        assert.equal(status.dataset.level, 'error');
+        assert.equal(document.body.classes.has('busy'), false);
+
+        backupAPI.restore = async ( ) => { throw new TypeError('Invalid filtering-mode hostname'); };
+        await pickBackup('{"filteringModes":{}}');
+        assert.equal(status.textContent, '[restoreFailed:Invalid filtering-mode hostname]',
+            'A rejected restore must be reported to the user');
+        assert.equal(status.dataset.level, 'error');
+
+        backupAPI.restore = async ( ) => ({
+            firewallRulesSkipped: true,
+            importedListsDisabled: [ 'https://filters.example/list.txt' ],
+            importedListsSkipped: [],
+        });
+        await pickBackup('{}');
+        assert.equal(status.textContent,
+            '[restoreSucceeded] [restoreFirewallUnsupported] [restoreImportedListsDisabled:1]',
+            'Backup parts which could not be applied as saved must be reported');
+        assert.equal(status.dataset.level, 'error');
+
+        backupAPI.restore = async ( ) => ({
+            firewallRulesSkipped: false, importedListsDisabled: [], importedListsSkipped: [],
+        });
+        await pickBackup('{}');
+        assert.equal(status.textContent, '[restoreSucceeded]');
+        assert.equal(status.dataset.level, 'info');
+
+        // Parts which an administrator lock kept unchanged are reported for
+        // restore and reset alike.
+        const lockedSummary = {
+            developerSkipped: true, filteringModesSkipped: true,
+            firewallRulesSkipped: false, importedListsDisabled: [], importedListsSkipped: [],
+        };
+        backupAPI.restore = async ( ) => lockedSummary;
+        await pickBackup('{}');
+        assert.equal(status.textContent,
+            '[restoreSucceeded] [restoreFilteringModesLocked] [restoreDeveloperLocked]');
+        assert.equal(status.dataset.level, 'error');
+        await document.trigger(buttonSelector('resetToDefaultButton'), 'click');
+        await settle(20);
+        assert.equal(status.textContent,
+            '[resetSucceeded] [restoreFilteringModesLocked] [restoreDeveloperLocked]',
+            'A reset must report the parts an administrator lock kept');
+        assert.equal(status.dataset.level, 'error');
+
+        status.textContent = '';
+        await document.trigger(buttonSelector('restoreButton'), 'click');
+        fileInput.oncancel();
+        await settle(20);
+        assert.equal(status.textContent, '', 'Cancelling the file picker reports nothing');
+
+        backupAPI.backup = async ( ) => { throw new Error('Popup policy state is unavailable'); };
+        await document.trigger(buttonSelector('backupButton'), 'click');
+        await settle(20);
+        assert.equal(status.textContent, '[backupFailed:Popup policy state is unavailable]');
+
+        backupAPI.restore = async ( ) => { throw new Error('Unable to restore DNR rules'); };
+        await document.trigger(buttonSelector('resetToDefaultButton'), 'click');
+        await settle(20);
+        assert.equal(status.textContent, '[resetFailed:Unable to restore DNR rules]');
+        backupAPI.restore = async ( ) => ({});
+        await document.trigger(buttonSelector('resetToDefaultButton'), 'click');
+        await settle(20);
+        assert.equal(status.textContent, '[resetSucceeded]');
+        assert.equal(status.dataset.level, 'info');
+        status.textContent = '';
+        confirmed = false;
+        await document.trigger(buttonSelector('resetToDefaultButton'), 'click');
+        await settle(20);
+        assert.equal(status.textContent, '', 'A declined reset reports nothing');
+
+        // A rejected default-mode change must show the level still in effect.
+        setDefaultError = new Error('Filtering-mode transaction recovery is required');
+        radios.get(2).checked = false;
+        radios.get(3).checked = true;
+        await document.trigger('#defaultFilteringMode', 'change',
+            { target: radios.get(3) }, '.filteringModeCard input[type="radio"]');
+        await settle(20);
+        assert.equal(radios.get(2).checked, true, 'The effective level is displayed again');
+        assert.equal(status.textContent,
+            '[defaultFilteringModeFailed:Filtering-mode transaction recovery is required]');
+
+        // A protection profile applied from another pane changes the stored
+        // memory profile without a broadcast.
+        memorySelected = 'low-memory';
+        extension.emitStorageChange({ memoryProfile: { newValue: 'low-memory' } });
+        await settle(20);
+        assert.equal(memorySelect.value, 'low-memory');
+    } finally {
+        Object.assign(console, { error: consoleError, warn: consoleWarn });
+        (await staged.load('dashboard.js')).setOperationStatus('');
+        await staged.cleanup();
+        delete globalThis.settingsTestBackupAPI;
+    }
+}
 console.log('Durable settings lifecycle tests passed');

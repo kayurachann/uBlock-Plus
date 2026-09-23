@@ -25,7 +25,9 @@
 
 /******************************************************************************/
 
-const docURL = new URL(document.baseURI);
+// Custom filters are saved for the document's own host: a page controls its
+// base URL, while an about:blank frame inherits its creator's origin.
+const docURL = new URL(self.origin !== 'null' ? self.origin : document.baseURI);
 const details = await chrome.runtime.sendMessage({
     what: 'injectCustomFilters',
     hostname: docURL.hostname,

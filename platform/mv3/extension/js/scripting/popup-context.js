@@ -21,11 +21,22 @@
     let pendingForm;
     let pendingFormData;
     let formDataScheduled = false;
+    // The worker may handle several new tabs only after all of their clicks
+    // (for example on a cold start). Each activation keeps its own target so
+    // that every tab can claim the activation which actually opened it.
+    const recent = [];
+    const maximumRecent = 8;
     const gestureLifetime = 5_000;
     const maximumTargetLength = 8192;
 
     const boundedTarget = value => typeof value === 'string' &&
         value.length <= maximumTargetLength ? value : '';
+
+    const setTarget = value => {
+        lastTargetURL = value;
+        const entry = recent.at(-1);
+        if ( entry?.sequence === sequence ) { entry.targetURL = value; }
+    };
 
     const submitDetails = (form, submitter) => {
         if ( form?.localName !== 'form' ) { return; }
@@ -81,7 +92,7 @@
                 timestamp - lastGestureAt <= gestureLifetime;
             pendingClick = '';
             if ( sameActivation ) {
-                lastTargetURL = targetURL;
+                setTarget(targetURL);
                 return;
             }
         } else {
@@ -95,6 +106,8 @@
         lastGestureAt = timestamp;
         lastTargetURL = targetURL;
         sequence += 1;
+        recent.push({ at: timestamp, sequence, targetURL });
+        if ( recent.length > maximumRecent ) { recent.shift(); }
     };
 
     const recordSubmit = event => {
@@ -107,7 +120,7 @@
         if ( details === undefined ) { return; }
         // requestSubmit() also produces a trusted SubmitEvent. It can refine
         // an existing physical activation, never manufacture another one.
-        lastTargetURL = details.method === 'post' ? details.action : '';
+        setTarget(details.method === 'post' ? details.action : '');
         pendingForm = {
             form: event.target,
             submitter: event.submitter,
@@ -140,7 +153,7 @@
             if ( pending.sequence !== sequence ) { return; }
             if ( details === undefined ) { return; }
             if ( details.method === 'post' ) {
-                lastTargetURL = details.action;
+                setTarget(details.action);
                 return;
             }
             if ( formData === undefined ) { return; }
@@ -169,7 +182,7 @@
                 }
                 // GET replaces an existing query; POST preserves it.
                 target.search = `?${params}`;
-                lastTargetURL = boundedTarget(target.href);
+                setTarget(boundedTarget(target.href));
             } catch {
             }
         };
@@ -200,10 +213,14 @@
         void sender;
         if ( message?.what !== 'getPopupGestureContext' ) { return; }
         pendingFormData?.();
+        const now = Date.now();
         sendResponse({
             at: lastGestureAt,
             sequence,
             targetURL: lastTargetURL,
+            recent: recent.filter(entry =>
+                now - entry.at <= gestureLifetime
+            ).map(entry => ({ ...entry })),
         });
     });
 })();

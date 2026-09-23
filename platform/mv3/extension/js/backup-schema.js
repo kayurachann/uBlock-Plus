@@ -17,7 +17,10 @@ import { validatePopupPolicies } from './popup-policy.js';
 
 const MAX_TEXT_CHARS = 20 * 1024 * 1024;
 const MAX_FILTER_SOURCE_BYTES = 5 * 1024 * 1024;
+const MAX_ENABLED_SOURCE_BYTES = 20 * 1024 * 1024;
+const MAX_IMPORTED_LISTS = 32;
 const SHA256_PATTERN = /^[a-f0-9]{64}$/;
+const IMPORTED_LIST_ID = /^[a-z-]+:\/\//;
 
 function isObject(value) {
     return typeof value === 'object' && value !== null &&
@@ -94,7 +97,7 @@ function normalizeIntegrity(value, label) {
 
 function normalizeImportedLists(value) {
     if ( value === undefined ) { return; }
-    if ( Array.isArray(value) === false || value.length > 32 ) {
+    if ( Array.isArray(value) === false || value.length > MAX_IMPORTED_LISTS ) {
         throw new TypeError('importedLists must contain at most 32 entries');
     }
     const seenURLs = new Set();
@@ -158,16 +161,23 @@ export function normalizeModeHostname(value) {
     let hostname;
     try { hostname = new URL(`http://${value}/`).hostname; }
     catch { throw new TypeError('Invalid filtering-mode hostname'); }
-    if ( hostname.length > 253 || hostname.split('.').some(label =>
+    // Accept every name the popup can store from a page's URL.hostname:
+    // underscores (`_dmarc.example`, `my_app.intranet`), edge hyphens, and
+    // the fully qualified form with one trailing dot, which is kept as-is
+    // because it is a distinct page hostname.
+    const labels = hostname.endsWith('.')
+        ? hostname.slice(0, -1).split('.')
+        : hostname.split('.');
+    if ( hostname.length > 253 || labels.some(label =>
         label.length === 0 || label.length > 63 ||
-        /^[^\da-z]|[^\da-z]$|[^\da-z-]/.test(label)
+        /[^\da-z_-]/.test(label)
     ) ) {
         throw new TypeError('Invalid filtering-mode hostname');
     }
     return hostname;
 }
 
-function normalizeFilteringModes(value) {
+export function normalizeFilteringModes(value) {
     if ( value === undefined ) { return; }
     if ( isObject(value) === false ) {
         throw new TypeError('filteringModes must be an object');
@@ -310,19 +320,8 @@ export function normalizeBackupObject(value) {
     }
     const importedLists = normalizeImportedLists(value.importedLists);
     if ( importedLists ) {
-        const rulesetOverrides = new Map(
-            (out.rulesets || []).map(entry => [ entry.slice(1), entry[0] === '+' ])
-        );
-        let enabledSourceBytes = 0;
-        for ( const list of importedLists ) {
-            const enabled = list.enabled === true ||
-                list.enabled === undefined &&
-                    rulesetOverrides.get(list.url) === true;
-            if ( enabled === false ) { continue; }
-            enabledSourceBytes += list.sourceIntegrity?.bytes ??
-                list.maxSourceBytes ?? MAX_FILTER_SOURCE_BYTES;
-        }
-        if ( enabledSourceBytes > 20 * 1024 * 1024 ) {
+        if ( enabledSourceBytes(importedLists, out.rulesets) >
+            MAX_ENABLED_SOURCE_BYTES ) {
             throw new TypeError(
                 'Enabled imported lists exceed the 20 MiB source budget'
             );
@@ -351,6 +350,61 @@ export function normalizeBackupObject(value) {
         out.dnrRules = stringArray(value.dnrRules, 'dnrRules');
     }
     return out;
+}
+
+/******************************************************************************/
+
+function enabledSourceBytes(importedLists, rulesets = []) {
+    const rulesetOverrides = new Map(
+        rulesets.map(entry => [ entry.slice(1), entry[0] === '+' ])
+    );
+    let bytes = 0;
+    for ( const list of importedLists ) {
+        const enabled = list.enabled === true ||
+            list.enabled === undefined &&
+                rulesetOverrides.get(list.url) === true;
+        if ( enabled === false ) { continue; }
+        bytes += list.sourceIntegrity?.bytes ??
+            list.maxSourceBytes ?? MAX_FILTER_SOURCE_BYTES;
+    }
+    return bytes;
+}
+
+// Upstream uBO Lite and early uBlock Plus+ backups record an imported list
+// only as a `+https://…` rulesets entry. Give each one a subscription record
+// so that restoring does not silently drop it. Lists which do not fit the
+// enabled-source budget are kept, disabled; unusable URLs are reported.
+// Expects the output of normalizeBackupObject().
+export function migrateLegacyImportedLists(backup) {
+    const importedLists = backup.importedLists?.slice() ?? [];
+    const known = new Set(importedLists.map(list => list.url));
+    const disabled = [];
+    const skipped = [];
+    let available = MAX_ENABLED_SOURCE_BYTES -
+        enabledSourceBytes(importedLists, backup.rulesets);
+    for ( const entry of backup.rulesets || [] ) {
+        const id = entry.slice(1);
+        if ( entry[0] !== '+' || IMPORTED_LIST_ID.test(id) === false ) {
+            continue;
+        }
+        let url;
+        try { url = httpsURL(id, 'rulesets'); }
+        catch { skipped.push(id); continue; }
+        if ( known.has(url) ) { continue; }
+        if ( importedLists.length === MAX_IMPORTED_LISTS ) {
+            skipped.push(url);
+            continue;
+        }
+        known.add(url);
+        const enabled = available >= MAX_FILTER_SOURCE_BYTES;
+        if ( enabled ) {
+            available -= MAX_FILTER_SOURCE_BYTES;
+        } else {
+            disabled.push(url);
+        }
+        importedLists.push({ url, enabled });
+    }
+    return { importedLists, disabled, skipped };
 }
 
 /******************************************************************************/

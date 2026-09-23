@@ -49,6 +49,10 @@ import {
     dnrRulesetFromRawLists,
     mergeRules,
 } from './js/static-dnr-filtering.js';
+import {
+    listCacheMaxAgeDays,
+    readCachedList,
+} from './list-cache-policy.js';
 
 import { execSync } from 'node:child_process';
 import { fetchList } from './js/offscreen/fetch-list.js';
@@ -83,6 +87,7 @@ const commandLineArgs = (( ) => {
 const platform = commandLineArgs.get('platform') || 'chromium';
 const outputDir = commandLineArgs.get('output') || '.';
 const cacheDir = `${outputDir}/../mv3-data`;
+const cacheMaxAgeDays = listCacheMaxAgeDays(commandLineArgs, process.env);
 const rulesetDir = `${outputDir}/rulesets`;
 const scriptletDir = `${rulesetDir}/scripting`;
 const badfilterDetails = {};
@@ -142,13 +147,10 @@ async function fetchText(url, cacheDir) {
     const fname = url
         .replace(/^https?:\/\//, '')
         .replace(/\//g, '_');(url);
-    const content = await fs.readFile(
-        `${cacheDir}/${fname}`,
-        { encoding: 'utf8' }
-    ).catch(( ) => { });
-    if ( content !== undefined ) {
-        log(`\tFetched local ${url}`);
-        return { url, content };
+    const cached = await readCachedList(`${cacheDir}/${fname}`, cacheMaxAgeDays);
+    if ( cached !== undefined ) {
+        log(`\tFetched local ${url} (downloaded ${cached.fetchedAt})`);
+        return { url, content: cached.content };
     }
     logProgress(`Fetching remote ${path.basename(url)}`);
     log(`\tFetching remote ${url}`);
@@ -223,6 +225,7 @@ const secret = await fs.readFile(`${cacheDir}/secret.txt`, {
     return secret;
 });
 log(`Secret: ${secret}`, false);
+log(`Reusing downloaded lists younger than ${cacheMaxAgeDays} day(s)`, false);
 
 /******************************************************************************/
 
@@ -274,12 +277,12 @@ async function fetchListFromCache(assetDetails) {
     const fname = assetDetails.id;
     logProgress(`Reading locally cached ${platform}/${fname}`);
 
-    const content = await fs.readFile(`${cacheDir}/${platform}/${fname}`,
-        { encoding: 'utf8' }
-    ).catch(( ) => { });
-    if ( content !== undefined ) {
-        log(`\tFetched local ${fname}`);
-        return content;
+    const cached = await readCachedList(`${cacheDir}/${platform}/${fname}`,
+        cacheMaxAgeDays
+    );
+    if ( cached !== undefined ) {
+        log(`\tFetched local ${fname} (downloaded ${cached.fetchedAt})`);
+        return cached.content;
     }
 
     const context = {

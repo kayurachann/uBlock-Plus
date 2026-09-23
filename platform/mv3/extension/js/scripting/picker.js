@@ -119,12 +119,18 @@ function candidatesAtPoint(x, y) {
                 continue;
             }
             let value = elem.getAttribute(name);
-            const pos = value.search(/[\n\r]/);
+            // A CSS string cannot contain a raw newline: keep the first line
+            // as a prefix match.
+            const pos = value.search(/[\n\r\f]/);
+            const operator = pos !== -1 ? '^=' : '=';
             if ( pos !== -1 ) {
                 value = value.slice(0, pos);
             }
+            // Quotes and backslashes in page-controlled values must not end
+            // the string or change its meaning.
+            value = value.replace(/["\\]/g, '\\$&');
             const address = addressMajor | parts.length << 4 | 3;
-            partsDB.set(address, `[${CSS.escape(name)}="${value}"]`);
+            partsDB.set(address, `[${CSS.escape(name)}${operator}"${value}"]`);
             parts.push(address);
         }
         // https://github.com/chrisaljoudi/uBlock/issues/637

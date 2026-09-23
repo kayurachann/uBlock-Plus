@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createWebRequestFirewall } from '../platform/mv3/extension/js/webrequest-firewall.js';
 import psl from '../src/lib/publicsuffixlist/publicsuffixlist.js';
 import { readFile } from 'node:fs/promises';
+import { setImmediate as settle } from 'node:timers/promises';
 import vm from 'node:vm';
 
 psl.parse(JSON.parse(await readFile(new URL(
@@ -249,11 +250,106 @@ assert.equal(queue.service.getStatus().ready, false, 'permission removal suspend
 queue.service.beginMutation();
 await queue.service.endMutation();
 assert.equal(queue.service.getStatus().permissionGranted, false);
-queue.service.fail(new Error('startup recovery failed'));
-queue.setPermission(true);
-queue.service.beginMutation();
-await queue.service.endMutation();
-assert.equal(queue.service.getStatus().ready, false, 'startup recovery failure remains unavailable');
+
+// A DNR startup failure keeps the supplement off only while the manager
+// reports it; the next successful firewall apply reactivates it.
+const recovering = harness();
+recovering.commit();
+recovering.setData({ error: 'Firewall exceeds 4096 available native rules' });
+recovering.service.fail(new Error('Firewall exceeds 4096 available native rules'));
+await recovering.service.initialize();
+assert.equal(recovering.service.getStatus().state, 'error');
+assert.deepEqual(recovering.request(), {});
+recovering.service.beginMutation();
+recovering.setData({ error: '' });
+await recovering.service.endMutation();
+assert.equal(recovering.service.getStatus().state, 'active', 'startup failure is recoverable');
+assert.deepEqual(recovering.request(), { cancel: true });
+const unregistered = harness({ registrationError: true });
+await unregistered.service.initialize();
+unregistered.service.beginMutation();
+await unregistered.service.endMutation();
+assert.equal(unregistered.service.getStatus().state, 'error', 'registration failure stays latched');
+unregistered.commit();
+await settle();
+assert.equal(unregistered.service.getStatus().state, 'error', 'a commit cannot revive a failed registration');
+
+// Domain learning can reinstall the DNR firewall without a mutation. The
+// next top-level commit re-checks the snapshot, at most once per interval.
+const healing = harness();
+let snapshotReads = 0;
+let managerError = 'Public Suffix List unavailable';
+healing.setGetter(() => {
+    snapshotReads += 1;
+    return { text: '* * 3p-script block', modes, error: managerError };
+});
+healing.commit('https://alice.github.io/', { timeStamp: 50 });
+healing.service.fail(new Error(managerError));
+await settle();
+assert.equal(snapshotReads, 0, 'no re-check before initialization');
+await healing.service.initialize();
+assert.equal(healing.service.getStatus().state, 'error');
+snapshotReads = 0;
+managerError = '';
+healing.service.observeNavigation({ tabId: 1, frameId: 7, parentFrameId: 0,
+    parentDocumentId: 'root', documentId: 'child', timeStamp: 101, url: 'https://bob.github.io/' }, true);
+healing.service.observeNavigation({ tabId: 1, frameId: 0, timeStamp: 102, url: 'https://alice.github.io/' });
+await settle();
+assert.equal(snapshotReads, 0, 'only a committed top-level document triggers a re-check');
+healing.commit('https://alice.github.io/', { timeStamp: 103 });
+await settle();
+assert.equal(healing.service.getStatus().state, 'active', 'recovery needs no filtering mutation');
+assert.deepEqual(healing.request(), { cancel: true });
+const throttled = harness();
+throttled.setData({ error: 'native firewall recovery pending' });
+await throttled.service.initialize();
+let throttledReads = 0;
+throttled.setGetter(() => {
+    throttledReads += 1;
+    return { text: '* * 3p-script block', modes, error: 'native firewall recovery pending' };
+});
+for ( let timeStamp = 200; timeStamp < 210; timeStamp++ ) {
+    throttled.commit('https://alice.github.io/', { timeStamp });
+    await settle();
+}
+assert.equal(throttledReads, 1, 'a persisting error is re-checked at most once per interval');
+assert.equal(throttled.service.getStatus().state, 'error');
+const mutating = harness();
+mutating.setData({ error: 'native firewall recovery pending' });
+await mutating.service.initialize();
+mutating.service.beginMutation();
+mutating.setData({ error: '' });
+mutating.commit();
+await settle();
+assert.equal(mutating.service.getStatus().ready, false, 'a pending mutation keeps the supplement suspended');
+await mutating.service.endMutation();
+assert.equal(mutating.service.getStatus().state, 'active');
+
+// A root navigation that never commits (download, HTTP 204, stop) restores
+// the page still shown; a prerendered main frame never displaces it.
+const staying = harness();
+staying.commit();
+await staying.service.initialize();
+const download = { tabId: 1, frameId: 0, timeStamp: 200, url: 'https://files.example/report.zip' };
+staying.service.observeNavigation(download);
+staying.request({ ...download, type: 'main_frame', timeStamp: 201 });
+assert.deepEqual(staying.request(), {}, 'in-flight root navigation still fails open');
+staying.service.navigationFailed({ ...download, timeStamp: 150, error: 'net::ERR_ABORTED' });
+assert.deepEqual(staying.request(), {}, 'an older failure cannot end a newer navigation');
+staying.service.navigationFailed({ ...download, timeStamp: 202, error: 'net::ERR_ABORTED' });
+assert.deepEqual(staying.request(), { cancel: true }, 'failed navigation restores the committed page');
+staying.request({ ...download, type: 'main_frame', timeStamp: 201 });
+assert.deepEqual(staying.request(), { cancel: true }, 'late events of the failed navigation are ignored');
+for ( const prerender of [ { frameId: 5, documentLifecycle: 'prerender' },
+    { frameId: 0, documentLifecycle: 'prerender' }, { frameId: 0, frameType: 'fenced_frame' } ] ) {
+    staying.request({ type: 'main_frame', url: 'https://next.example/', timeStamp: 300, ...prerender });
+    assert.deepEqual(staying.request(), { cancel: true }, `${JSON.stringify(prerender)} keeps the shown page`);
+}
+staying.service.observeNavigation({ tabId: 1, frameId: 0, timeStamp: 400, url: 'https://next.example/' });
+staying.commit('https://next.example/', { timeStamp: 410, documentId: 'next-root' });
+staying.service.navigationFailed({ tabId: 1, frameId: 0, timeStamp: 420 });
+assert.deepEqual(staying.request({ documentId: 'next-root' }), { cancel: true }, 'a committed page is never replaced by failure recovery');
+assert.deepEqual(staying.request(), {});
 
 const badSnapshot = harness();
 badSnapshot.setData({ error: 'native firewall recovery pending' });
@@ -268,6 +364,13 @@ assert.deepEqual(badPSL.request(), {}, 'request evaluation exceptions fail open'
 const background = (await readFile(new URL('../platform/mv3/extension/js/background.js', import.meta.url), 'utf8'))
     .replace(/\r\n/g, '\n');
 assert.match(background, /permissions\.onRemoved\.addListener\([^]*?webRequestFirewall\.permissionsChanged\(\)/);
+// The guide may promise failed-navigation recovery only while the worker
+// forwards webNavigation.onErrorOccurred to navigationFailed().
+const failureForwarded = /webNavigation\?\.onErrorOccurred\?\.addListener\([^]{0,200}?webRequestFirewall\.navigationFailed\(/
+    .test(background);
+const guide = await readFile(new URL('../docs/EXPERIMENTAL-WEBREQUEST.md', import.meta.url), 'utf8');
+assert.equal(guide.includes('does not forward that event yet'), failureForwarded === false,
+    'docs/EXPERIMENTAL-WEBREQUEST.md must match whether background.js forwards onErrorOccurred to navigationFailed()');
 const globalQueue = harness();
 globalQueue.commit();
 await globalQueue.service.initialize();

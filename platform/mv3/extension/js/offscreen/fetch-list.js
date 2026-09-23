@@ -42,9 +42,21 @@ async function fetchText(url, progressFn, budget) {
     if ( typeof globalThis.AbortSignal?.timeout === 'function' ) {
         options.signal = globalThis.AbortSignal.timeout(30000);
     }
-    const response = await fetch(url, options).catch(( ) => { });
-    if ( response?.ok !== true ) {
-        return { url, error: `Fetching from "${url}" failed` };
+    let response;
+    try {
+        response = await fetch(url, options);
+    } catch ( reason ) {
+        // With redirect: 'error', a redirect surfaces as a network error.
+        const cause = reason?.name === 'TimeoutError'
+            ? 'timed out'
+            : 'network error or redirect; redirects are not followed';
+        return { url, error: `Fetching from "${url}" failed (${cause})` };
+    }
+    if ( response.ok !== true ) {
+        return {
+            url,
+            error: `Fetching from "${url}" failed (HTTP ${response.status})`,
+        };
     }
     if ( isCredentialFreeHTTPS(response.url) === false ) {
         return { url, error: `Non-HTTPS redirect rejected: "${response.url}"` };
@@ -151,7 +163,10 @@ export async function fetchList(context, asset, progressFn) {
             }
         }
         parts = await Promise.all(newParts);
-        if ( parts.some(v => typeof v === 'object' && v.error) ) { return; }
+        // Keep the specific cause (size limit, HTTP status, include count)
+        // for the list's diagnostics.
+        const failed = parts.find(v => typeof v === 'object' && v.error);
+        if ( failed ) { throw new Error(failed.error); }
         parts = sfp.utils.preparser.expandIncludes(parts, context.env);
     }
     const text = parts.join('\n');

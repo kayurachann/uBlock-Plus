@@ -78,6 +78,7 @@ const origin = 'chrome-extension://test';
 const context = vm.createContext({
     isFullyInitialized: Promise.resolve(),
     UBLOCK_PLUS_ORIGIN: origin, runtime: { id: 'test' },
+    UPDATE_MESSAGES: new Set(),
     firewall: { testRequest: async () => { tests++; return 'tested'; } },
 });
 vm.runInContext(background.slice(start, end), context);

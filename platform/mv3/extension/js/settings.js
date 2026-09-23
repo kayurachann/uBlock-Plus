@@ -23,7 +23,11 @@
 
 import { browser, i18n, sendMessage } from './ext.js';
 import { dom, qs$ } from './dom.js';
-import { hashFromIterable } from './dashboard.js';
+import {
+    hashFromIterable,
+    isForbiddenPane,
+    setOperationStatus,
+} from './dashboard.js';
 import { renderFilterLists } from './filter-lists.js';
 
 /******************************************************************************/
@@ -32,9 +36,21 @@ function renderAdminRules() {
     const { disabledFeatures: forbid = [] } = self.cachedRulesetData;
     if ( forbid.length === 0 ) { return; }
     dom.body.dataset.forbid = forbid.join(' ');
-    if ( forbid.includes('dashboard') ) {
-        dom.body.dataset.pane = 'about';
+    // The remembered or linked pane may have been selected before the
+    // managed policy was known.
+    if ( isForbiddenPane(dom.body.dataset.pane) ) {
+        dom.body.dataset.pane = isForbiddenPane('settings') ? 'about' : 'settings';
     }
+}
+
+/******************************************************************************/
+
+// Failures must reach the user: restore and reset can partly apply before a
+// late step rejects, and strict backup validation rejects many inputs.
+function reportOperationError(key, reason) {
+    console.error(reason);
+    const detail = reason?.message || `${reason}`;
+    setOperationStatus(i18n.getMessage(key, detail) || detail, 'error');
 }
 
 /******************************************************************************/
@@ -336,34 +352,40 @@ async function onFilteringModeChange(ev) {
     const newLevel = parseInt(input.value, 10);
     const data = self.cachedRulesetData;
 
-    switch ( newLevel ) {
-    case 1: {
-        const actualLevel = await sendMessage({
-            what: 'setDefaultFilteringMode',
-            level: newLevel,
-        });
-        data.defaultFilteringMode = actualLevel;
-        break;
-    }
-    case 2:
-    case 3: {
-        const granted = await browser.permissions.request({
-            origins: [ '<all_urls>' ],
-        });
-        if ( granted ) {
+    try {
+        switch ( newLevel ) {
+        case 1: {
             const actualLevel = await sendMessage({
                 what: 'setDefaultFilteringMode',
                 level: newLevel,
             });
             data.defaultFilteringMode = actualLevel;
-            data.hasOmnipotence = true;
+            break;
         }
-        break;
+        case 2:
+        case 3: {
+            const granted = await browser.permissions.request({
+                origins: [ '<all_urls>' ],
+            });
+            if ( granted ) {
+                const actualLevel = await sendMessage({
+                    what: 'setDefaultFilteringMode',
+                    level: newLevel,
+                });
+                data.defaultFilteringMode = actualLevel;
+                data.hasOmnipotence = true;
+            }
+            break;
+        }
+        default:
+            break;
+        }
+    } catch ( reason ) {
+        reportOperationError('defaultFilteringModeFailed', reason);
+    } finally {
+        // A rejected change must not leave the clicked level displayed.
+        renderWidgets();
     }
-    default:
-        break;
-    }
-    renderWidgets();
 }
 
 dom.on('#defaultFilteringMode',
@@ -388,6 +410,7 @@ async function backupSettings() {
     a.click();
 }
 
+// Resolves to false when no file was picked, otherwise to the restore summary.
 async function restoreSettings() {
     const promise = new Promise((resolve, reject) => {
         const input = qs$('section[data-pane="settings"] input[type="file"]');
@@ -395,7 +418,7 @@ async function restoreSettings() {
             dom.cl.add(dom.body, 'busy');
             input.onchange = null;
             const file = ev.target.files[0];
-            if ( file === undefined || file.name === '' ) { return resolve(); }
+            if ( file === undefined || file.name === '' ) { return resolve(false); }
             if ( file.size > MAX_BACKUP_FILE_BYTES ) {
                 return reject(new Error('Backup file exceeds the 32 MiB limit'));
             }
@@ -419,14 +442,13 @@ async function restoreSettings() {
                     return reject(new Error('Backup root must be an object'));
                 }
                 import('./backup-restore.js').then(
-                    api => resolve(api.restoreFromObject(data)),
-                    reject
-                );
+                    api => api.restoreFromObject(data)
+                ).then(summary => resolve(summary ?? {}), reject);
             };
             fr.readAsText(file);
         };
         input.oncancel = ( ) => {
-            resolve();
+            resolve(false);
         };
         // Reset to empty string, this will ensure a change event is properly
         // triggered if the user pick a file, even if it's the same as the last
@@ -434,25 +456,66 @@ async function restoreSettings() {
         input.value = '';
         input.click();
     });
+    let summary;
     try {
-        await promise;
-        await renderMemoryProfile({ refresh: true });
+        summary = await promise;
     } finally {
         dom.cl.remove(dom.body, 'busy');
     }
+    if ( summary !== false ) {
+        await renderMemoryProfile({ refresh: true }).catch(reportMemoryProfileError);
+    }
+    return summary;
 }
 
+// Parts of a backup which were valid but could not be applied as saved.
+function restoreWarnings(summary) {
+    const warnings = [];
+    if ( summary?.filteringModesSkipped === true ) {
+        warnings.push(i18n.getMessage('restoreFilteringModesLocked'));
+    }
+    if ( summary?.developerSkipped === true ) {
+        warnings.push(i18n.getMessage('restoreDeveloperLocked'));
+    }
+    if ( summary?.firewallRulesSkipped === true ) {
+        warnings.push(i18n.getMessage('restoreFirewallUnsupported'));
+    }
+    const disabled = summary?.importedListsDisabled?.length || 0;
+    if ( disabled !== 0 ) {
+        console.warn('Imported lists restored disabled:', summary.importedListsDisabled);
+        warnings.push(i18n.getMessage('restoreImportedListsDisabled', `${disabled}`));
+    }
+    const skipped = summary?.importedListsSkipped?.length || 0;
+    if ( skipped !== 0 ) {
+        console.warn('Imported lists not restored:', summary.importedListsSkipped);
+        warnings.push(i18n.getMessage('restoreImportedListsSkipped', `${skipped}`));
+    }
+    return warnings.filter(warning => warning !== '');
+}
+
+function reportRestoreResult(summary, doneKey = 'restoreSucceeded') {
+    const warnings = restoreWarnings(summary);
+    const done = i18n.getMessage(doneKey);
+    setOperationStatus(
+        [ done, ...warnings ].filter(text => text !== '').join(' '),
+        warnings.length !== 0 ? 'error' : 'info'
+    );
+}
+
+// Resolves to false when the user declined, otherwise to the reset summary.
 async function resetSettings() {
     const response = self.confirm(i18n.getMessage('resetToDefaultConfirm'));
-    if ( response !== true ) { return; }
+    if ( response !== true ) { return false; }
     dom.cl.add(dom.body, 'busy');
+    let summary;
     try {
         const api = await import('./backup-restore.js');
-        await api.restoreFromObject({});
-        await renderMemoryProfile({ refresh: true });
+        summary = await api.restoreFromObject({});
     } finally {
         dom.cl.remove(dom.body, 'busy');
     }
+    await renderMemoryProfile({ refresh: true }).catch(reportMemoryProfileError);
+    return summary ?? {};
 }
 
 /******************************************************************************/
@@ -499,15 +562,27 @@ dom.on('#developerMode input[type="checkbox"]', 'change', ev => {
 });
 
 dom.on('section[data-pane="settings"] button:has([data-i18n="backupButton"])', 'click', ( ) => {
-    backupSettings().catch(reason => console.error(reason));
+    backupSettings().catch(reason => {
+        reportOperationError('backupFailed', reason);
+    });
 });
 
 dom.on('section[data-pane="settings"] button:has([data-i18n="restoreButton"])', 'click', ( ) => {
-    restoreSettings().catch(reason => console.error(reason));
+    restoreSettings().then(summary => {
+        if ( summary === false ) { return; }
+        reportRestoreResult(summary);
+    }).catch(reason => {
+        reportOperationError('restoreFailed', reason);
+    });
 });
 
 dom.on('section[data-pane="settings"] button:has([data-i18n="resetToDefaultButton"])', 'click', ( ) => {
-    resetSettings().catch(reason => console.error(reason));
+    resetSettings().then(summary => {
+        if ( summary === false ) { return; }
+        reportRestoreResult(summary, 'resetSucceeded');
+    }).catch(reason => {
+        reportOperationError('resetFailed', reason);
+    });
 });
 
 /******************************************************************************/
@@ -515,6 +590,12 @@ dom.on('section[data-pane="settings"] button:has([data-i18n="resetToDefaultButto
 function listen() {
     const bc = new self.BroadcastChannel('uBlockPlus');
     bc.onmessage = listen.onmessage;
+    // The memory profile is not broadcast. Follow its stored value so that a
+    // protection profile, restore or reset keeps the selector truthful.
+    browser.storage.local.onChanged.addListener(changes => {
+        if ( changes?.memoryProfile === undefined ) { return; }
+        renderMemoryProfile().catch(reportMemoryProfileError);
+    });
 }
 
 listen.onmessage = ev => {

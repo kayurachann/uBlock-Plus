@@ -14,6 +14,7 @@ Thứ tự ưu tiên được cập nhật ngày 2026-09-06 qua [rà soát với
 - Compiler phát mã lý do ổn định và số dòng cho network filter import bị từ chối/deferred; dashboard chi tiết và export báo cáo vẫn cần hoàn thiện.
 - Smart Popup Blocker theo opener/target/trusted gesture/burst, policy exact-host `Allow|Smart|Strict`, chẩn đoán đã redaction và backup/restore policy.
 - Compiled popup observer cho corpus stock `$popup` đóng gói và subset sandbox/imported `$popup`/`$popunder` đã classifier chấp nhận. Supported popup-only là accepted+routed dù không có DNR; unsupported condition giữ typed route `popup-compiler-required` với status `deferred`. Deferred allow có guard superset fail-open để không làm mất exception; context/budget không đầy đủ cũng fail open. Stock `$popunder` vẫn được ghi `omitted` vì DNR export không bảo toàn kind.
+- [Tự động cập nhật](AUTO-UPDATE.md): kiểm tra GitHub Releases định kỳ (có thể tắt, có policy managed `autoUpdate`), trình cập nhật Windows cài riêng với consent, xác minh checksum và danh tính gói, kiểm tra quyền thư mục, backup và rollback; workflow phát hành theo tag kèm provenance. Chữ ký release đã được hỗ trợ. Khi maintainer công bố khóa, chỉ bản cài mà installer đã ghim khóa (chạy `install-updater.cmd` từ một bản phát hành có khóa, hoặc installer một bước khi nhánh `main` đã có khóa) mới bắt buộc chữ ký; không có trust-on-first-use, nên bản cài hiện có vẫn chỉ kiểm checksum cho tới khi người dùng chạy lại installer. Hiện chưa có khóa nào.
 - Budget static riêng với runtime DNR; regex dynamic + session dùng pool chung. Đã có test browser/service-worker restart, immutable generation và quota failure; benchmark trên máy `<= 4 GiB` còn ở Next.
 
 Các bổ sung ngày 6/9/2026: [firewall network với noop đúng nghĩa, logger hợp nhất và ngoại lệ giữa các nguồn](MV3-PARITY-IMPLEMENTATION-2026-09-06.md). `$badfilter` imported/personal đã hủy trước khi gộp; stock hỗ trợ hủy toàn rule và dựng lại phần còn lại của nhóm hostname chặn có đủ ánh xạ nguồn. Phép gộp chưa đủ bằng chứng và secondary corpus vẫn ở Next.
@@ -36,7 +37,7 @@ Các bổ sung ngày 6/9/2026: [firewall network với noop đúng nghĩa, logge
 ## Later — capability tùy chọn sau RFC
 
 - Managed Enterprise build/adapter và policy deployment guide.
-- Native Companion/Power Mode proof-of-concept với versioned Native Messaging IPC.
+- Native Companion/Power Mode (DNS/proxy/diagnostics) proof-of-concept, dùng lại versioned Native Messaging IPC của trình cập nhật.
 - Custom Chromium RFC/artifact riêng với patch audit, profile riêng và support matrix; không dùng custom capability để quảng cáo Google Chrome build.
 - Nghiên cứu DNS-aware diagnostics/local proxy chỉ sau privacy/security/performance review.
 - Federated catalog metadata chỉ khi có signature, provenance, revocation và UX trust rõ; không tải code.

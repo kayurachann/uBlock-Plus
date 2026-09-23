@@ -54,6 +54,7 @@
     "webNavigation"
   ],
   "optional_permissions": [
+    "nativeMessaging",
     "privacy",
     "webRequest"
   ],

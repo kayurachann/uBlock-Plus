@@ -181,17 +181,18 @@ import {
     resetJobsAlarm,
 } from './alarms.js';
 
+import { syncToolbarIconMode, toggleToolbarIcon } from './action.js';
 import { COMPILED_FILTERS_REVISION } from './compiled-cache.js';
 import { POPUP_RUNTIME_ROUTE_CODE } from './compiled-popup-matcher.js';
 import { capturePopupFrameContext } from './popup-frame-context.js';
 import { createFirewallManager } from './firewall-manager.js';
 import { createPopupBlocker } from './popup-blocker.js';
+import { createUpdateManager } from './update-manager.js';
 import { createWebRequestFirewall } from './webrequest-firewall.js';
 import { dnr } from './ext-compat.js';
 import { getRuntimeCapabilities } from './runtime-capabilities.js';
 import psl from '../lib/publicsuffixlist.js';
 import { setPopupBlockMode } from './prevent-popup.js';
-import { toggleToolbarIcon } from './action.js';
 
 /******************************************************************************/
 
@@ -200,10 +201,17 @@ const canShowBlockedCount = typeof dnr.setExtensionActionOptions === 'function';
 const COMPILED_FILTERS_DIRTY_KEY = 'compiledFilters.dirtySources';
 const COMPILED_FILTERS_REVISION_KEY = 'compiledFilters.compilerRevision';
 const COMPILED_FILTERS_RETRY_JOB = 'retryCompiledFilters';
+const COMPILED_FILTERS_RETRY_DELAY = 5 * 60 * 1000;
+const COMPILED_FILTERS_MAX_RETRY_DELAY = 6 * 60 * 60 * 1000;
 const COMPILED_FILTER_WARNINGS_KEY = 'compiledFilters.lastWarnings';
 const RULESET_TRANSACTION_KEY = 'rulesets.pendingTransaction';
+const STARTUP_RECOVERY_ERROR_KEY = 'startup.lastRecoveryError';
 const MAX_ACTIVE_STOCK_POPUP_FILTERS = 4096;
+// With "incognito": "split", Chrome runs a second worker for incognito
+// windows. It shares storage.local, but not the in-memory mutation queues.
+const isIncognitoWorker = browser.extension?.inIncognitoContext === true;
 let pendingFilteringMutation = Promise.resolve();
+let startupSettled = false;
 let cssCacheWritesSincePrune = 0;
 let stockPopupSnapshotCache = {
     key: undefined,
@@ -352,12 +360,75 @@ const popupBlocker = createPopupBlocker({
 function enqueueFilteringMutation(task, suspendWebRequest = true) {
     // Domain learning refines native partitions without changing policy. Keep
     // the synchronous supplement usable while that slower native update runs.
-    if ( suspendWebRequest ) { webRequestFirewall.beginMutation(); }
+    if ( suspendWebRequest ) {
+        webRequestFirewall.beginMutation();
+        enqueueFilteringMutation.transactions += 1;
+    }
     const result = pendingFilteringMutation.then(task).finally(() => {
-        if ( suspendWebRequest ) { return webRequestFirewall.endMutation(); }
+        if ( suspendWebRequest ) {
+            enqueueFilteringMutation.transactions -= 1;
+            return webRequestFirewall.endMutation();
+        }
     });
     pendingFilteringMutation = result.catch(( ) => { });
     return result;
+}
+// Queued or running filtering transactions (domain learning excluded).
+enqueueFilteringMutation.transactions = 0;
+
+// Filtering transactions, and startup until it settles, keep an update from
+// replacing the extension folder. Journals which a failed recovery left
+// behind do not: the next start recovers them anyway.
+function isFilteringBusy() {
+    return startupSettled === false || enqueueFilteringMutation.transactions !== 0;
+}
+
+const FILTERING_JOURNAL_KEYS = [
+    RULESET_TRANSACTION_KEY,
+    PENDING_COMPILED_ACTIVATION_KEY,
+    STAGING_COMPILED_GENERATION_KEY,
+    'filteringModeTransaction',
+];
+
+// An update action (install, restore, updater restart) waits, within the
+// bound, for startup and for queued filtering transactions instead of failing
+// at once: granting the updater permission itself queues one. In split
+// incognito mode, the incognito worker runs its own transactions; they show
+// here only as journals, which disappear when they commit. A journal which
+// outlives the bound was left by a failed recovery or rollback and does not
+// block the update.
+async function isUpdateBlocked(timeout = 60000) {
+    const deadline = Date.now() + timeout;
+    const pause = ms => new Promise(resolve => {
+        setTimeout(resolve, Math.max(0, ms));
+    });
+    if ( startupSettled === false ) {
+        await Promise.race([ startupSettledPromise, pause(timeout) ]);
+    }
+    // The queue tail changes as tasks are added: wait for the current tail,
+    // then look again.
+    while ( isFilteringBusy() && Date.now() < deadline ) {
+        await Promise.race([
+            pendingFilteringMutation,
+            pause(Math.min(500, deadline - Date.now())),
+        ]);
+    }
+    if ( isFilteringBusy() ) { return true; }
+    const incognitoAllowed = await (async ( ) =>
+        browser.extension?.isAllowedIncognitoAccess?.()
+    )().catch(( ) => false);
+    if ( incognitoAllowed !== true ) { return false; }
+    for (;;) {
+        const journals = await Promise.all(
+            FILTERING_JOURNAL_KEYS.map(key => localRead(key))
+        );
+        if ( journals.every(value => value === undefined || value === null) ) {
+            return false;
+        }
+        if ( Date.now() >= deadline ) { return false; }
+        await pause(Math.min(500, deadline - Date.now()));
+        if ( isFilteringBusy() ) { return true; }
+    }
 }
 
 let firewallDomainResolverPromise;
@@ -405,6 +476,81 @@ const webRequestFirewall = createWebRequestFirewall({
         };
     },
 });
+
+// Automatic updates: the worker reads public release metadata; the optional,
+// separately installed native updater downloads, verifies and installs.
+const updateManager = createUpdateManager({
+    runtime,
+    alarms: browser.alarms,
+    permissions: browser.permissions,
+    localRead,
+    localWrite,
+    broadcast: broadcastMessage,
+    log: message => ublockPlusLog(message),
+    inIncognito: isIncognitoWorker,
+    // After a restart for the updater, an install or a rollback.
+    openSettingsPage: ( ) => isFullyInitialized.then(( ) => browser.tabs.create({
+        url: runtime.getURL('/dashboard.html#settings/autoUpdate'),
+    })),
+    getInstallType: async ( ) => {
+        try {
+            return (await browser.management.getSelf()).installType;
+        } catch {
+            return 'unknown';
+        }
+    },
+    getPolicy: async ( ) => {
+        const [ autoUpdate, disabledFeatures ] = await Promise.all([
+            adminReadEx('autoUpdate'),
+            adminReadEx('disabledFeatures'),
+        ]);
+        return { autoUpdate, disabledFeatures };
+    },
+    // Never replace the extension folder while a ruleset, compile or mode
+    // transaction runs.
+    isBusy: ( ) => isUpdateBlocked(),
+});
+
+const UPDATE_MESSAGES = new Set([
+    'activateUpdater',
+    'getUpdateStatus',
+    'setUpdateSettings',
+    'checkForUpdatesNow',
+    'installUpdateNow',
+    'rollbackUpdate',
+]);
+
+// Updates stay available even when initialization failed or is slow: a newer
+// release is the usual way out of a broken one. They only wait for the update
+// bookkeeping (updateReady). Only extension pages may use them, never content
+// scripts or user scripts.
+async function onUpdateMessage(request, sender) {
+    if ( sender?.id !== runtime.id ||
+        sender?.url?.toLowerCase().startsWith(`${UBLOCK_PLUS_ORIGIN}/`) !== true ||
+        sender?.origin !== undefined && sender.origin.toLowerCase() !== UBLOCK_PLUS_ORIGIN ) {
+        return;
+    }
+    await updateReady;
+    switch ( request.what ) {
+    case 'activateUpdater':
+        return updateManager.activateUpdater();
+    case 'getUpdateStatus':
+        return updateManager.getStatus({ probe: request.probe === true });
+    case 'setUpdateSettings':
+        return updateManager.setSettings(request.settings);
+    case 'checkForUpdatesNow':
+        return updateManager.check({ manual: true });
+    case 'installUpdateNow':
+        if ( typeof request.version !== 'string' ) { return; }
+        // Progress and failures are reported through the update state.
+        updateManager.install(request.version).catch(( ) => { });
+        return { started: true };
+    case 'rollbackUpdate':
+        return updateManager.rollback();
+    default:
+        break;
+    }
+}
 
 async function refreshFilteringScripts() {
     // The content registration transaction owns both native and user scripts.
@@ -632,6 +778,10 @@ async function markCompiledFilterSourcesDirty(flags) {
 async function ensureCompiledFilterRevision() {
     const revision = await localRead(COMPILED_FILTERS_REVISION_KEY);
     if ( revision === COMPILED_FILTERS_REVISION ) { return; }
+    // Re-marking a pending upgrade on every worker start would reset its
+    // retry backoff.
+    const pending = await localRead(COMPILED_FILTERS_DIRTY_KEY);
+    if ( pending?.compilerRevision === COMPILED_FILTERS_REVISION ) { return; }
     await markCompiledFilterSourcesDirty({
         compiled: true,
         contentScripts: true,
@@ -639,10 +789,34 @@ async function ensureCompiledFilterRevision() {
     });
 }
 
+// Retries back off from 5 minutes, doubling up to 6 hours, so that an
+// unreachable list host cannot cause a full recompile on every worker wake.
+// A new source edit writes a fresh marker, which restarts the backoff.
+function compiledFilterRetryTime(marker, now = Date.now()) {
+    const attempts = marker?.attempts;
+    const lastAttemptAt = marker?.lastAttemptAt;
+    if ( Number.isSafeInteger(attempts) === false || attempts < 1 ) { return 0; }
+    // A clock moved backwards must not postpone the retry indefinitely.
+    if ( Number.isFinite(lastAttemptAt) === false || lastAttemptAt > now ) {
+        return 0;
+    }
+    return lastAttemptAt + Math.min(
+        COMPILED_FILTERS_RETRY_DELAY * 2 ** (attempts - 1),
+        COMPILED_FILTERS_MAX_RETRY_DELAY
+    );
+}
+
 async function scheduleCompiledFilterRetry() {
+    const marker = await localRead(COMPILED_FILTERS_DIRTY_KEY);
+    if ( marker instanceof Object === false ) { return; }
+    marker.attempts = Number.isSafeInteger(marker.attempts)
+        ? marker.attempts + 1
+        : 1;
+    marker.lastAttemptAt = Date.now();
+    await localWrite(COMPILED_FILTERS_DIRTY_KEY, marker);
     await registerJob(
         COMPILED_FILTERS_RETRY_JOB,
-        Date.now() + 5 * 60 * 1000
+        compiledFilterRetryTime(marker)
     );
 }
 
@@ -650,7 +824,19 @@ async function flushDirtyCompiledFilterSourcesNow() {
     const marker = await localRead(COMPILED_FILTERS_DIRTY_KEY);
     if ( marker instanceof Object === false ) { return false; }
     if ( marker.compiled === true ) {
-        await activateCompiledFilterRulesNow();
+        try {
+            await activateCompiledFilterRulesNow();
+        } catch ( reason ) {
+            // A failing list must not also hide personal and picker
+            // cosmetic filters: refresh content scripts, then keep the
+            // dirty marker for the normal retry path.
+            if ( marker.contentScripts === true ) {
+                await registerContentScripts().catch(registerReason => {
+                    ublockPlusErr(`registerContentScripts/${registerReason}`);
+                });
+            }
+            throw reason;
+        }
     }
     if ( marker.contentScripts === true ) {
         await registerContentScripts();
@@ -685,6 +871,17 @@ async function mutateCompiledFilterSources(flags, mutation) {
 }
 
 async function retryDirtyCompiledFilterSourcesNow() {
+    const marker = await localRead(COMPILED_FILTERS_DIRTY_KEY);
+    if ( marker instanceof Object === false ) { return false; }
+    const retryAt = compiledFilterRetryTime(marker);
+    if ( retryAt > Date.now() ) {
+        // A wake or duplicate job run within the backoff window keeps the
+        // durable job without compiling again.
+        await registerJob(COMPILED_FILTERS_RETRY_JOB, retryAt).catch(reason => {
+            ublockPlusErr(`scheduleCompiledFilterRetry/${reason}`);
+        });
+        return false;
+    }
     try {
         return await flushDirtyCompiledFilterSourcesNow();
     } catch ( reason ) {
@@ -694,6 +891,15 @@ async function retryDirtyCompiledFilterSourcesNow() {
         });
         return false;
     }
+}
+
+// Every message waits for startup, and a retry may refetch and compile every
+// imported list. Startup only queues a due retry behind itself.
+async function resumeCompiledFilterRetry() {
+    const marker = await localRead(COMPILED_FILTERS_DIRTY_KEY);
+    if ( marker instanceof Object === false ) { return false; }
+    if ( compiledFilterRetryTime(marker) > Date.now() ) { return false; }
+    return enqueueFilteringMutation(retryDirtyCompiledFilterSourcesNow);
 }
 
 /******************************************************************************/
@@ -752,17 +958,45 @@ async function rollbackRulesetTransaction(transaction) {
         // Recompiling the old stock corpus can fail a newer native regex check
         // even though its previously installed subset was valid. Restore the
         // durable API snapshot without parsing or weakening any exception.
-        await restoreNativeRulesetState(transaction.nativeState);
+        let nativeRestored = true;
+        try {
+            await restoreNativeRulesetState(transaction.nativeState);
+        } catch ( reason ) {
+            if ( reason?.code !== 'ERR_NATIVE_PACKAGE_MISMATCH' ) { throw reason; }
+            // The worker stopped mid-transaction and the extension was then
+            // updated. Chrome has reset the packaged static state, and old
+            // static IDs must not be replayed. Roll back everything which
+            // does not depend on the package, and apply the restored
+            // selection to the new package.
+            nativeRestored = false;
+            ublockPlusLog(`Ruleset rollback: ${reason.message}`);
+        }
+        const restoredSelection = Array.isArray(transaction.previousConfigEnabledRulesets)
+            ? transaction.previousConfigEnabledRulesets.slice()
+            : transaction.previousRulesets.slice();
         await replaceImportedLists(transaction.previousImportedLists || []);
         const pendingActivation = await localRead(PENDING_COMPILED_ACTIVATION_KEY);
         const currentGeneration = await getActiveCompiledGeneration();
         const previousGeneration = typeof transaction.previousGeneration === 'string'
             ? transaction.previousGeneration : '';
         await registerUserScripts(previousGeneration);
+        if ( nativeRestored === false ) {
+            // A rollback retried on a worker wake is not followed by
+            // startSession(). Enable the selection before the stock-badfilter
+            // plan of updateUserRules() is computed against it.
+            const rulesetResult = await enableRulesets(restoredSelection);
+            if ( rulesetResult.error ) {
+                throw new Error(`Static ruleset rollback failed: ${rulesetResult.error}`);
+            }
+            // Without the native snapshot, dynamic rules may still hold the
+            // abandoned generation's imported and user rules.
+            const dnrResult = await updateUserRules(previousGeneration);
+            if ( dnrResult?.fatalError ) {
+                throw new Error(`DNR rollback failed: ${dnrResult.fatalError}`);
+            }
+        }
         await commitCompiledGeneration(previousGeneration);
-        rulesetConfig.enabledRulesets = Array.isArray(transaction.previousConfigEnabledRulesets)
-            ? transaction.previousConfigEnabledRulesets.slice()
-            : transaction.previousRulesets.slice();
+        rulesetConfig.enabledRulesets = restoredSelection;
         await saveRulesetConfig();
         await registerContentScripts();
         await finalizeNativeRulesetRecovery();
@@ -1099,7 +1333,10 @@ async function restoreImportedListState(lists, enabledRulesets) {
 /******************************************************************************/
 
 async function setDeveloperMode(state) {
-    rulesetConfig.developerMode = state === true;
+    // A managed 'develop' lock keeps developer mode off, also for a restore.
+    const forbidden = await adminReadEx('disabledFeatures');
+    const locked = Array.isArray(forbidden) && forbidden.includes('develop');
+    rulesetConfig.developerMode = state === true && locked === false;
     toggleDeveloperMode(rulesetConfig.developerMode);
     broadcastMessage({ developerMode: rulesetConfig.developerMode });
     await saveRulesetConfig();
@@ -1108,10 +1345,43 @@ async function setDeveloperMode(state) {
 
 /******************************************************************************/
 
+// Managed disabledFeatures also bind the worker, so that no extension page
+// (Advanced editors, restore, Site Rules) can bypass an administrator lock
+// that only the UI would otherwise enforce.
+async function assertFeatureAllowed(feature) {
+    const forbidden = await adminReadEx('disabledFeatures');
+    if ( Array.isArray(forbidden) && forbidden.includes(feature) ) {
+        throw new Error(`The administrator disabled "${feature}"`);
+    }
+}
+
+// The picker and unpicker frames run inside web pages. Their filter edits
+// may only concern the tab's own site or one of its parent domains.
+function elementToolHostnameAllowed(request, sender) {
+    const url = sender?.url?.toLowerCase() || '';
+    if ( /^[a-z-]+:\/\/[^/]+\/(?:picker|unpicker)-ui\.html(?:[?#]|$)/.test(url) === false ) {
+        return true;
+    }
+    let tabHostname;
+    try {
+        tabHostname = new URL(sender.tab?.url).hostname;
+    } catch {
+        return false;
+    }
+    const hostname = request.hostname;
+    if ( typeof hostname !== 'string' ) { return false; }
+    return hostname === tabHostname ||
+        hostname !== '' && tabHostname.endsWith(`.${hostname}`);
+}
+
 async function onMessage(request, sender) {
 
     const tabId = sender?.tab?.id ?? false;
     const frameId = tabId && (sender?.frameId ?? false);
+
+    if ( UPDATE_MESSAGES.has(request.what) ) {
+        return onUpdateMessage(request, sender);
+    }
 
     // Does not require extension to be fully initialized
 
@@ -1432,6 +1702,7 @@ async function onMessage(request, sender) {
         return gotoURL(request.url, request.type);
 
     case 'setFilteringMode': {
+        await assertFeatureAllowed('filteringMode');
         return enqueueFilteringMutation(async ( ) => {
             const afterLevel = await setFilteringMode(request.hostname, request.level);
             // Retrying the same mode repairs registrations after a previous
@@ -1457,6 +1728,7 @@ async function onMessage(request, sender) {
     }
 
     case 'setDefaultFilteringMode': {
+        await assertFeatureAllowed('filteringMode');
         return enqueueFilteringMutation(async ( ) => {
             const afterLevel = await setDefaultFilteringMode(request.level);
             await refreshFilteringScripts();
@@ -1471,6 +1743,7 @@ async function onMessage(request, sender) {
         return getFilteringModeRestoreLevels();
 
     case 'setFilteringModeDetails': {
+        await assertFeatureAllowed('filteringMode');
         return enqueueFilteringMutation(async ( ) => {
             await setFilteringModeDetails(request.modes, request.restoreLevels);
             await refreshFilteringScripts();
@@ -1505,12 +1778,17 @@ async function onMessage(request, sender) {
         return getEffectiveUserRules();
 
     case 'updateUserDnrRules':
-        return enqueueFilteringMutation(( ) => updateUserRules());
+        // Only an explicit save may fail on the saved developer draft. Other
+        // activations keep the last applied developer rules instead.
+        return enqueueFilteringMutation(( ) =>
+            updateUserRules(undefined, { strictDeveloperDraft: true })
+        );
 
     case 'getAllCustomFilters':
         return getAllCustomFilters();
 
     case 'addCustomFilters': {
+        if ( elementToolHostnameAllowed(request, sender) === false ) { return; }
         return enqueueFilteringMutation(async ( ) => {
             const hasScriptletFilters = request.selectors.some(a => isScriptlet(a));
             const hasPlainFilters = request.selectors.some(a => isScriptlet(a) === false);
@@ -1552,6 +1830,7 @@ async function onMessage(request, sender) {
     }
 
     case 'removeCustomFilters': {
+        if ( elementToolHostnameAllowed(request, sender) === false ) { return; }
         return enqueueFilteringMutation(async ( ) => {
             const { selectors } = request;
             const hasScriptletFilters = selectors.some(a => isScriptlet(a));
@@ -1584,6 +1863,7 @@ async function onMessage(request, sender) {
     }
 
     case 'customFiltersFromHostname':
+        if ( elementToolHostnameAllowed(request, sender) === false ) { return []; }
         return customFiltersFromHostname(request.hostname);
 
     case 'getRegisteredContentScripts':
@@ -1725,8 +2005,15 @@ async function startSession() {
         }
     }
 
-    // Permissions may have been removed while the extension was disabled
-    const permissionsUpdated = await syncWithBrowserPermissions();
+    // Permissions may have been removed while the extension was disabled.
+    // A failed sync is retried on the next permission event or browser start;
+    // it must not skip script registration and the rest of startup.
+    let permissionsUpdated = false;
+    try {
+        permissionsUpdated = await syncWithBrowserPermissions();
+    } catch ( reason ) {
+        ublockPlusErr(`startSession/permissions/${reason}`);
+    }
 
     // Toggling "user scripts" permission doesn't cause a permissions change
     // event.
@@ -1785,7 +2072,13 @@ async function startSession() {
         if ( Array.isArray(items) === false ) { return; }
         if ( items.includes('develop') ) {
             if ( rulesetConfig.developerMode ) {
-                setDeveloperMode(false);
+                // Under the lock the developer draft counts as empty, so this
+                // also removes the developer DNR rules already installed.
+                setDeveloperMode(false).then(( ) => isFullyInitialized).then(( ) =>
+                    enqueueFilteringMutation(( ) => updateUserRules())
+                ).catch(reason => {
+                    ublockPlusErr(`startSession/develop lock/${reason}`);
+                });
             }
         }
     });
@@ -1793,41 +2086,78 @@ async function startSession() {
 
 /******************************************************************************/
 
+// Every journal stays durable until its recovery completes and is retried on
+// the next start. A failed recovery must not also leave scripts, the popup
+// blocker and the firewall uninitialized for the whole browser session.
+async function recoverFilteringJournals() {
+    const errors = [];
+    try {
+        const pendingRuleset = await localRead(RULESET_TRANSACTION_KEY);
+        if ( pendingRuleset?.schemaVersion === 2 ) {
+            await rollbackRulesetTransaction(pendingRuleset);
+        } else {
+            await recoverStockBadfilters();
+            if ( pendingRuleset instanceof Object ) {
+                await rollbackRulesetTransaction(pendingRuleset);
+            } else {
+                await recoverPendingCompiledActivation();
+            }
+        }
+    } catch ( reason ) {
+        errors.push(reason);
+    }
+    // A service-worker termination during offscreen compilation can leave an
+    // offscreen document and generation alive. Stop it, delete its four
+    // deterministic generation keys, then clear the stale marker.
+    try {
+        await closeOffscreenDocument().catch(( ) => { });
+        const staleGeneration = await localRead(STAGING_COMPILED_GENERATION_KEY);
+        if ( typeof staleGeneration === 'string' ) {
+            await removeCompiledGeneration(staleGeneration);
+        }
+        await localRemove(STAGING_COMPILED_GENERATION_KEY);
+    } catch ( reason ) {
+        errors.push(reason);
+    }
+    if ( errors.length === 0 ) {
+        await localRemove(STARTUP_RECOVERY_ERROR_KEY).catch(( ) => { });
+        return true;
+    }
+    const message = errors.map(reason => `${reason}`).join('; ');
+    ublockPlusErr(`Startup recovery/${message}`);
+    await localWrite(STARTUP_RECOVERY_ERROR_KEY, {
+        message: message.slice(0, 2000),
+        recordedAt: Date.now(),
+    }).catch(( ) => { });
+    return false;
+}
+
 async function start() {
     const [ , memoryProfile ] = await Promise.all([
         loadRulesetConfig(),
         initializeMemoryProfile(),
     ]);
+    // The toolbar icon mode is derived from stored modes, not worker memory.
+    syncToolbarIconMode().catch(reason => {
+        ublockPlusErr(`syncToolbarIconMode/${reason}`);
+    });
 
-    const pendingRuleset = await localRead(RULESET_TRANSACTION_KEY);
-    if ( pendingRuleset?.schemaVersion === 2 ) {
-        await rollbackRulesetTransaction(pendingRuleset);
-    } else {
-        await recoverStockBadfilters();
-        if ( pendingRuleset instanceof Object ) {
-            await rollbackRulesetTransaction(pendingRuleset);
-        } else {
-            await recoverPendingCompiledActivation();
-        }
+    // A journal seen by the incognito worker can belong to a transaction
+    // which the regular worker is still running. The regular worker owns
+    // recovery and maintenance of the shared filtering state.
+    if ( isIncognitoWorker === false ) {
+        await recoverFilteringJournals();
+        await ensureCompiledFilterRevision();
     }
-    // A service-worker termination during offscreen compilation can leave an
-    // offscreen document and generation alive. Stop it, delete its four
-    // deterministic generation keys, then clear the stale marker.
-    await closeOffscreenDocument().catch(( ) => { });
-    const staleGeneration = await localRead(STAGING_COMPILED_GENERATION_KEY);
-    if ( typeof staleGeneration === 'string' ) {
-        await removeCompiledGeneration(staleGeneration);
-    }
-    await localRemove(STAGING_COMPILED_GENERATION_KEY);
-    await ensureCompiledFilterRevision();
-    await retryDirtyCompiledFilterSourcesNow();
 
     if ( process.wakeupRun === false ) {
         await startSession();
         if ( memoryProfile.retainScriptingMetadata === false ) {
             releaseScriptingMetadata();
         }
-        await runMemoryCleanup();
+        if ( isIncognitoWorker === false ) {
+            await runMemoryCleanup();
+        }
     }
 
     const scripts = await getRegisteredContentScripts();
@@ -1842,6 +2172,25 @@ async function start() {
     });
     await webRequestFirewall.initialize();
     toggleDeveloperMode(rulesetConfig.developerMode);
+
+    if ( isIncognitoWorker === false ) {
+        resumeCompiledFilterRetry().catch(reason => {
+            ublockPlusErr(`resumeCompiledFilterRetry/${reason}`);
+        });
+    }
+}
+
+/******************************************************************************/
+
+// The incognito worker can also receive the alarm of the shared job list.
+// Imported-list updates and compiled-filter retries must stay serialized with
+// the regular worker's mutation queue and startup recovery, so the incognito
+// worker neither leases nor re-times them. It only trims its own CSS cache.
+async function processIncognitoJobs() {
+    const jobs = await localRead('deferredJobs') || [];
+    const job = jobs.find(a => a.name === 'pruneCSSCache');
+    if ( job === undefined || job.time > Date.now() ) { return; }
+    return pruneCSSCache();
 }
 
 /******************************************************************************/
@@ -1868,17 +2217,37 @@ const isFullyInitialized = start().then(( ) => {
     runtime.reload();
 });
 
+const startupSettledPromise = isFullyInitialized.catch(( ) => { }).then(( ) => {
+    startupSettled = true;
+});
+
+// Update bookkeeping starts with the worker, independently of start(): an
+// update may be the fix for a failed or slow start. Only the regular worker
+// owns the update state and alarms shared with the incognito worker.
+const updateReady = isIncognitoWorker
+    ? Promise.resolve()
+    : updateManager.initialize().catch(reason => {
+        ublockPlusErr(`autoUpdate/initialize/${reason}`);
+    });
+
+// Stable string codes (for example update error codes) reach the page, which
+// can then show localized text.
+function messageErrorReply(reason) {
+    const code = reason?.code;
+    return {
+        __ublockPlusError: reason?.message || `${reason}`,
+        __ublockPlusErrorCode: typeof code === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(code)
+            ? code
+            : undefined,
+    };
+}
+
 runtime.onMessage.addListener((request, sender, callback) => {
     if ( typeof request?.what !== 'string' ) { return; }
     if ( request.what.includes(':') ) { return; }
     onMessage(request, sender).then(callback, reason => {
         ublockPlusErr(`onMessage/${request.what}/${reason}`);
-        callback({
-            __ublockPlusError: reason?.message || `${reason}`,
-            __ublockPlusErrorCode: reason?.code === 'ERR_FILTERING_MODE_PARENT_SCOPE'
-                ? reason.code
-                : undefined,
-        });
+        callback(messageErrorReply(reason));
     });
     return true;
 });
@@ -1891,12 +2260,7 @@ if ( supportsUserScripts() && runtime.onUserScriptMessage ) {
         if ( typeof request?.what !== 'string' ) { return; }
         onMessage(request, sender).then(callback, reason => {
             ublockPlusErr(`onUserScriptMessage/${request.what}/${reason}`);
-            callback({
-                __ublockPlusError: reason?.message || `${reason}`,
-                __ublockPlusErrorCode: reason?.code === 'ERR_FILTERING_MODE_PARENT_SCOPE'
-                    ? reason.code
-                    : undefined,
-            });
+            callback(messageErrorReply(reason));
         });
         return true;
     });
@@ -1958,6 +2322,9 @@ browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 browser.webNavigation?.onBeforeNavigate?.addListener(details => {
     webRequestFirewall.observeNavigation(details);
     if ( details.frameId !== 0 ) { return; }
+    isFullyInitialized.then(( ) => popupBlocker.onBeforeNavigate(details)).catch(reason => {
+        ublockPlusErr(`popupBeforeNavigate/${reason}`);
+    });
     isFullyInitialized.then(() => enqueueFilteringMutation(() =>
         firewall.observe(details.url), false
     )).catch(reason => ublockPlusErr(`Firewall navigation/${reason}`));
@@ -1965,6 +2332,10 @@ browser.webNavigation?.onBeforeNavigate?.addListener(details => {
 
 browser.webNavigation?.onCommitted?.addListener(details => {
     webRequestFirewall.observeNavigation(details, true);
+});
+
+browser.webNavigation?.onErrorOccurred?.addListener(details => {
+    webRequestFirewall.navigationFailed(details);
 });
 
 browser.tabs.onRemoved.addListener(tabId => {
@@ -2000,10 +2371,19 @@ browser.alarms.onAlarm.addListener(alarm => {
             process.firstAlarm = true;
             return resetJobsAlarm();
         }
+        if ( isIncognitoWorker ) {
+            return processIncognitoJobs();
+        }
         return processDueJobs(onMessage);
     }).catch(reason => {
         // Failed jobs remain durably leased for retry; consume the rejection
         // here so the service worker does not report an unhandled promise.
         ublockPlusErr(`processDueJobs/${reason}`);
+    });
+});
+
+browser.alarms.onAlarm.addListener(alarm => {
+    updateReady.then(( ) => updateManager.onAlarm(alarm)).catch(reason => {
+        ublockPlusErr(`autoUpdate/check/${reason}`);
     });
 });

@@ -186,6 +186,13 @@ for ( const [ locale, readmePath ] of readmes ) {
         false,
         `${readmePath} contains a version-pinned release CTA`
     );
+    // Download links to one version go stale at the next release; link to
+    // the Releases page and describe the asset pattern instead.
+    assert.equal(
+        /\/releases\/download\/v\d/.test(content),
+        false,
+        `${readmePath} contains a version-pinned download link`
+    );
     assert.ok(
         countOccurrences(
             content,
@@ -233,5 +240,16 @@ for ( const readmePath of readmes.values() ) {
     );
 }
 await assertLocalTargets('docs/README.md', documentationIndex);
+
+// Build instructions must not pin a version number (it goes stale at the next
+// release) and must work under the default Windows execution policy.
+for ( const docPath of [ 'README.md', 'docs/README.vi.md', 'platform/mv3/README.md', 'docs/EXPERIMENTAL-WEBREQUEST.md' ] ) {
+    const content = await readFile(path.join(projectRoot, docPath), 'utf8');
+    assert.equal(/-Version\s+\d/.test(content), false, `${docPath} pins a -Version literal`);
+    if ( content.includes('make-mv3.ps1') ) {
+        assert.match(content, /ExecutionPolicy[^\n]*Bypass/,
+            `${docPath} runs PowerShell scripts without a process-scoped execution policy`);
+    }
+}
 
 console.log(`Localized README checks passed (${readmes.size} languages).`);

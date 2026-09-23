@@ -38,20 +38,23 @@ Trong dashboard, vào **Chẩn đoán → Làm mới**: chỉ khi có quyền th
 From the repository root, with Node.js 22 and npm 11:
 
 ```powershell
+# The default Windows policy blocks local scripts; allow them for this window only.
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 npm ci
 npm test
 npm run lint
-.\tools\make-mv3.ps1 -Platform chromium -Version 1.1.1 -ExperimentalWebRequest
+$version = (Get-Content -Raw package.json | ConvertFrom-Json).version
+.\tools\make-mv3.ps1 -Platform chromium -Version $version -ExperimentalWebRequest
 node tools/validate-mv3.mjs dist/build/uBlockPlus.experimental.chromium --release --experimental-webrequest
 ```
 
 Outputs:
 
 - Unpacked: `dist/build/uBlockPlus.experimental.chromium`
-- ZIP: `dist/build/uBlock-Plus_1.1.1.experimental.chromium.zip`
+- ZIP: `dist/build/uBlock-Plus_<version>.experimental.chromium.zip`
 - Checksum: the ZIP path plus `.sha256`
 
-The build transforms the generated manifest only for this variant: required `webRequest`/`webRequestBlocking`, a stable public key/ID and a distinctive name. Only the public identity is stored; it is not a signing credential or authenticity guarantee. The ordinary source manifest still excludes `webRequestBlocking`. The validator rejects privileged packages by default and requires the explicit variant option, matching identity/metadata and required implementation files. Standard and experimental outputs are separate.
+The build transforms the generated manifest only for this variant: required `webRequest`/`webRequestBlocking`, a stable public key/ID and a distinctive name. Only the public identity is stored; it is not a signing credential or authenticity guarantee. The ordinary source manifest still excludes `webRequestBlocking`. The validator rejects privileged packages by default and requires the explicit variant option, matching identity/metadata and required implementation files. Standard and experimental outputs are separate. The Windows updater handles each edition on its own: it never installs an experimental package over a standard folder, and it keeps the experimental public key so the ID cannot change (see [AUTO-UPDATE.md](AUTO-UPDATE.md)).
 
 To inspect the launcher without starting Chrome:
 
@@ -61,9 +64,9 @@ To inspect the launcher without starting Chrome:
 
 ## Behavior and fallback
 
-The listener registers synchronously when the service worker loads and returns ordinary objects, never Promises. It becomes ready only after the required permissions, saved firewall, filtering modes, Public Suffix List and tab context are available. Startup and filtering changes temporarily suspend the supplement. Unknown context, errors and absent permissions return no blocking decision. Existing native DNR rules continue to operate; fail-open means this additional layer does not invent a block while uncertain.
+The listener registers synchronously when the service worker loads and returns ordinary objects, never Promises. It becomes ready only after the required permissions, saved firewall, filtering modes, Public Suffix List and tab context are available. Startup and filtering changes temporarily suspend the supplement. Unknown context, errors and absent permissions return no blocking decision. A DNR firewall failure at startup keeps the supplement in the error state only while the firewall still reports that error. Once the firewall recovers, whether through an apply, a refresh or a later domain-learning update, the supplement reactivates without a worker restart: filtering changes re-check it immediately, and top-level page commits re-check it at most every five seconds. Only a failed listener registration stays unavailable for the worker lifetime. Existing native DNR rules continue to operate; fail-open means this additional layer does not invent a block while uncertain.
 
-After worker sleep, the supplement rebuilds current document identities from Chrome's frame API, with four concurrent queries, at most 256 existing tabs and a two-second startup budget. Each tab retains at most 256 child-frame records. Navigation/removal invalidates pending recovery for that tab, and child navigation discards its old descendant identities. Unknown or evicted contexts remain fail-open until observed again; requests during cold startup may pass. Domain-learning updates alone retain the valid policy snapshot, so they do not unnecessarily suspend the supplement while DNR updates.
+After worker sleep, the supplement rebuilds current document identities from Chrome's frame API, with four concurrent queries, at most 256 existing tabs and a two-second startup budget. Each tab retains at most 256 child-frame records. Navigation/removal invalidates pending recovery for that tab, and child navigation discards its old descendant identities. A root navigation fails open until it commits. One that never commits (download, HTTP 204 or cancellation) restores the context of the page still displayed: the service worker forwards `webNavigation.onErrorOccurred` to the supplement's `navigationFailed()`, which reinstates the last committed context. Prerendered and other non-primary main-frame requests never replace the context of the displayed page. Unknown or evicted contexts remain fail-open until observed again; requests during cold startup may pass. Domain-learning updates alone retain the valid policy snapshot, so they do not unnecessarily suspend the supplement while DNR updates.
 
 Only a matching firewall **block** returns `cancel: true`. `allow` and `noop` are terminal decisions in the firewall matcher but do not cancel requests. Existing DNR rules retain their own semantics: a webRequest `cancel: false` cannot reverse a DNR block. Off takes precedence. This supplement excludes main-frame navigation, requests outside tabs, restricted browser/extension URLs and contexts it cannot establish reliably. It does not inject code into Chrome settings pages.
 

@@ -32,11 +32,14 @@ PowerShell and the Node.js ruleset generator already shipped in the repository;
 GNU make, jq, a Unix shell, and an external zip executable are not required.
 
 .PARAMETER Full
-Also creates dist/build/uBlock-Plus_<version>.chromium.zip.
+Also creates dist/build/uBlock-Plus_<version>.chromium.zip and its .sha256.
+Without -Version the version is date-generated (a development build).
 
 .PARAMETER Version
-Overrides the manifest version and creates a release-style zip. When omitted,
-declarativeNetRequestFeedback is enabled for local development builds.
+Sets the manifest version and creates a release-style zip plus .sha256. When
+omitted, the version is date-generated, marking a development build; such
+builds never offer automatic updates. Every build declares
+declarativeNetRequestFeedback through the manifest template.
 
 .PARAMETER Before
 Path containing a previous chromium build whose rule IDs should be salvaged.
@@ -47,13 +50,16 @@ Chrome must grant webRequestBlocking through policy or a launch allowlist.
 The normal Chromium package and its permissions are not changed.
 
 .EXAMPLE
-pwsh -File tools/make-mv3.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/make-mv3.ps1
+
+Development build. ExecutionPolicy Bypass applies to this process only; the
+default Windows policy does not run local scripts.
 
 .EXAMPLE
-pwsh -File tools/make-mv3.ps1 -Full
+$version = (Get-Content -Raw package.json | ConvertFrom-Json).version
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/make-mv3.ps1 -Platform chromium -Version $version
 
-.EXAMPLE
-pwsh -File tools/make-mv3.ps1 -Version 2026.901.0
+Release build matching package.json, as produced by CI.
 #>
 
 [CmdletBinding()]
@@ -413,6 +419,10 @@ try {
     ) $projectRoot
     Copy-RequiredFile (Join-Path $mv3Root 'README.md') `
         (Join-Path $outputDirectory 'README.md')
+    # The optional Windows updater ships with the package so that it can be
+    # installed from the extension folder (updater\install-updater.cmd).
+    Copy-TreeContents (Join-Path $mv3Root 'updater') `
+        (Join-Path $outputDirectory 'updater')
 
     $codeMirrorRoot = Join-Path $extensionRoot 'lib/codemirror'
     Copy-MatchingFiles $codeMirrorRoot '*' `
@@ -592,6 +602,12 @@ try {
     Write-Utf8NoBom $manifestPath (
         ($manifest | ConvertTo-Json -Depth 100) + "`n"
     )
+    # The Windows updater deletes only files that the installed package
+    # listed, never files a user put into the extension folder.
+    Invoke-NativeCommand $node @(
+        'tools/package-files.mjs',
+        $outputDirectory
+    ) $projectRoot
 
     Write-Host "*** uBlock Plus+ ${Platform}: Extension ready"
     Write-Host "Extension location: $outputDirectory"
@@ -610,6 +626,10 @@ try {
         if ( Test-Path -LiteralPath $logFile ) {
             Remove-Item -LiteralPath $logFile -Force
         }
+        Invoke-NativeCommand $node @(
+            'tools/package-files.mjs',
+            $packageDirectory
+        ) $projectRoot
 
         $packageName = "uBlock-Plus_$packageVersion$editionSuffix.$Platform.zip"
         $packagePath = Join-Path $buildRoot $packageName

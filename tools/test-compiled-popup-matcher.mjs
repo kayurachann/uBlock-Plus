@@ -285,6 +285,35 @@ assert.equal(evaluate(urlFilterRealm({
 }), {
     targetURL: 'https://ads.example/casesensitive',
 }).action, 'block');
+assert.equal(evaluate(urlFilterRealm({
+    urlFilter: '||ads.example/Path',
+    isUrlFilterCaseSensitive: true,
+}), {
+    targetURL: 'https://CDN.ADS.example/Path',
+}).action, 'block');
+assert.deepEqual(evaluate(urlFilterRealm({
+    urlFilter: '||ads.example/Path',
+    isUrlFilterCaseSensitive: true,
+}), {
+    targetURL: 'https://ads.example/path',
+}), noMatch);
+assert.equal(evaluate(urlFilterRealm({
+    urlFilter: '||ads.example/path',
+}), {
+    targetURL: 'https://ads.example/PATH',
+}).action, 'block');
+// A dot-prefixed hostname anchor sees the label separator before a suffix,
+// but never invents one before the full hostname.
+assert.equal(evaluate(urlFilterRealm({
+    urlFilter: '||.ads.example/',
+}), {
+    targetURL: 'https://cdn.ads.example/popup',
+}).action, 'block');
+assert.deepEqual(evaluate(urlFilterRealm({
+    urlFilter: '||.ads.example/',
+}), {
+    targetURL: 'https://ads.example/popup',
+}), noMatch);
 
 // about:blank has no hostname, but an exact URL filter may intentionally
 // match it. Hostname-only rules must not inherit the opener's hostname.
@@ -347,6 +376,121 @@ assert.equal(evaluate([ {
     targetURL: 'https://oversized.example/',
     targetURLComplete: false,
 }).action, 'block');
+
+// A caller which cut an oversized target down to its origin says so. That
+// path never arrives, so padding a URL past the bound must not defer every
+// popup: a domain-anchored filter is decided by the hostname it starts with,
+// and blocks which only the dropped path could match leave the popup to the
+// contextual policy. Exceptions which could still match keep deferring.
+const truncatedTarget = {
+    targetURL: 'https://landing.example.net/',
+    targetURLComplete: false,
+    targetURLTruncated: true,
+};
+const truncatedTargetReason = {
+    action: 'none',
+    reason: 'compiled-popup-target-truncated',
+};
+const stockLikeRealm = [ {
+    id: 'stock',
+    filters: [
+        popupFilter(1, 'allow', { urlFilter: '||google.*/search' }),
+        popupFilter(2, 'allow', {
+            urlFilter: '||www.google.*/search?q=*&oq=*&sourceid=chrome&',
+            domainType: 'thirdParty',
+        }, { routeCode: POPUP_DEFERRED_ROUTE_CODE }),
+        popupFilter(3, 'allow', { urlFilter: '||.shopee.example/' }),
+        popupFilter(4, 'allow', { requestDomains: [ 'ads.google.com' ] }),
+        popupFilter(5, 'block', { urlFilter: '/earn.php?z=' }),
+        popupFilter(6, 'block', { urlFilter: '||landing.example.net/ad/' }),
+    ],
+} ];
+assert.deepEqual(evaluate(stockLikeRealm, truncatedTarget),
+    truncatedTargetReason);
+assert.deepEqual(evaluate(stockLikeRealm, {
+    ...truncatedTarget,
+    filteringMode: 1,
+}), truncatedTargetReason, 'Basic mode evaluates the stock realm');
+// Without the flag an incomplete target is still resolving.
+assert.deepEqual(evaluate(stockLikeRealm, {
+    ...truncatedTarget,
+    targetURLTruncated: false,
+}), {
+    action: 'defer',
+    reason: 'compiled-popup-allow-condition-deferred',
+});
+// The matcher's own cut of an oversized value is not trusted for this.
+assert.deepEqual(evaluate(urlFilterRealm({
+    urlFilter: 'path-fragment',
+}), {
+    targetURL: oversizedTargetURL,
+    targetURLTruncated: true,
+}), contextPending);
+// A missing initiator context can still hide an exception.
+assert.deepEqual(evaluate(stockLikeRealm, {
+    ...truncatedTarget,
+    initiatorContextComplete: false,
+}), contextPending);
+// Exceptions whose hostname can still match keep deferring.
+assert.deepEqual(evaluate(stockLikeRealm, {
+    ...truncatedTarget,
+    targetURL: 'https://www.google.example/',
+}), {
+    action: 'defer',
+    reason: 'compiled-popup-allow-condition-deferred',
+});
+assert.deepEqual(evaluate(stockLikeRealm, {
+    ...truncatedTarget,
+    targetURL: 'https://images.google.example/',
+}), contextPending);
+assert.deepEqual(evaluate(stockLikeRealm, {
+    ...truncatedTarget,
+    targetURL: 'https://cdn.shopee.example/',
+}), contextPending);
+assert.deepEqual(evaluate(stockLikeRealm, {
+    ...truncatedTarget,
+    targetURL: 'https://shopee.example/',
+}), truncatedTargetReason, 'A dot-prefixed anchor needs a parent label');
+assert.deepEqual(evaluate([ {
+    id: 'imported',
+    filters: [
+        popupFilter(1, 'allow', { urlFilter: '/safe-path' }),
+        popupFilter(2, 'block', { urlFilter: '/earn.php?z=' }),
+    ],
+} ], truncatedTarget), contextPending);
+// Hostname-only conditions are still decided on the kept origin.
+assert.equal(evaluate([ {
+    id: 'stock',
+    filters: [
+        ...stockLikeRealm[0].filters,
+        popupFilter(7, 'block', { requestDomains: [ 'example.net' ] }),
+    ],
+} ], truncatedTarget).action, 'block');
+assert.equal(evaluate(stockLikeRealm, {
+    ...truncatedTarget,
+    targetURL: 'https://ads.google.com/',
+}).lineNumber, 4, 'A hostname-only exception still applies');
+assert.equal(evaluate([ {
+    id: 'imported',
+    filters: [
+        popupFilter(1, 'allow', { requestDomains: [ 'landing.example.net' ] }),
+        popupFilter(2, 'block', { urlFilter: '/earn.php?z=' }),
+    ],
+} ], truncatedTarget).action, 'allow');
+// An important block which only the dropped path could match may outrank
+// the exception, so that exception is not applied blindly either.
+assert.deepEqual(evaluate([ {
+    id: 'imported',
+    filters: [
+        popupFilter(1, 'allow', { requestDomains: [ 'landing.example.net' ] }),
+        popupFilter(2, 'block', { urlFilter: '/earn.php?z=' }, {
+            important: true,
+        }),
+    ],
+} ], truncatedTarget), {
+    action: 'defer',
+    reason: 'compiled-popup-target-truncated',
+});
 
 const popunder = popupFilter(8, 'block', {}, { kind: 'popunder' });
 assert.deepEqual(evaluate([ {
@@ -506,11 +650,16 @@ assert.equal(evaluate(urlFilterRealm({
     targetURL: 'https://cdn.example/ads',
 }).action, 'block');
 
-// The glob implementation has an aggregate step budget, so the classic
-// `*aaaa...b` worst case fails open deterministically instead of doing
-// quadratic work. The same bound covers excessive filter/realm collections.
+// The glob implementation gives each comparison a linear step allowance and
+// the whole event an aggregate budget, so the classic `*aaaa...b` worst case
+// stops deterministically instead of doing quadratic work. The same bound
+// covers excessive filter/realm collections.
 const budgetExhausted = {
     action: 'defer',
+    reason: 'compiled-popup-evaluation-budget-exhausted',
+};
+const blocksIncomplete = {
+    action: 'none',
     reason: 'compiled-popup-evaluation-budget-exhausted',
 };
 const adversarialUrlFilter = `*${'a'.repeat(2000)}b`;
@@ -520,10 +669,132 @@ assert.deepEqual(classifyPopupCondition({
 const adversarialRealm = urlFilterRealm({
     urlFilter: adversarialUrlFilter,
 });
+const quadraticTargetURL = `https://quadratic.example/${'a'.repeat(7000)}`;
+// An unevaluated block can only fail to close a popup. With no exception in
+// play it must not also switch off the contextual policy, so the matcher
+// reports "no compiled decision" rather than deferring the whole event.
 for ( let i = 0; i < 4; i++ ) {
     assert.deepEqual(evaluate(adversarialRealm, {
-        targetURL: `https://quadratic.example/${'a'.repeat(7000)}`,
-    }), budgetExhausted);
+        targetURL: quadraticTargetURL,
+    }), blocksIncomplete);
+}
+// One self-overlapping pattern forfeits only its own verdict.
+assert.equal(evaluate([ {
+    id: 'imported',
+    filters: [
+        popupFilter(1, 'block', { urlFilter: adversarialUrlFilter }),
+        popupFilter(2, 'block', { requestDomains: [ 'quadratic.example' ] }),
+    ],
+} ], {
+    targetURL: quadraticTargetURL,
+}).action, 'block');
+// Exceptions are never guessed away: an exception that cannot be evaluated,
+// or a matching exception which an unevaluated important block could
+// outrank, still defers.
+assert.deepEqual(evaluate([ {
+    id: 'imported',
+    filters: [
+        popupFilter(1, 'block', { requestDomains: [ 'quadratic.example' ] }),
+        popupFilter(2, 'allow', { urlFilter: adversarialUrlFilter }),
+    ],
+} ], {
+    targetURL: quadraticTargetURL,
+}), budgetExhausted);
+assert.deepEqual(evaluate([ {
+    id: 'imported',
+    filters: [
+        popupFilter(1, 'block', { urlFilter: adversarialUrlFilter }, {
+            important: true,
+        }),
+        popupFilter(2, 'allow', { requestDomains: [ 'quadratic.example' ] }),
+    ],
+} ], {
+    targetURL: quadraticTargetURL,
+}), budgetExhausted);
+// An ordinary block never outranks an exception, so failing to evaluate one
+// must not withhold the matching exception (it also suppresses popunder
+// matching for the candidate).
+assert.deepEqual(evaluate([ {
+    id: 'imported',
+    filters: [
+        popupFilter(1, 'block', { urlFilter: adversarialUrlFilter }),
+        popupFilter(2, 'allow', { requestDomains: [ 'quadratic.example' ] }),
+    ],
+} ], {
+    targetURL: quadraticTargetURL,
+}), {
+    action: 'allow',
+    reason: 'compiled-popup-filter',
+    matchedRealm: 'imported',
+    lineNumber: 2,
+    kind: 'popup',
+});
+assert.equal(evaluate([ {
+    id: 'imported',
+    filters: [
+        popupFilter(1, 'block', { urlFilter: adversarialUrlFilter }),
+        popupFilter(2, 'allow', { requestDomains: [ 'x.example' ] }),
+    ],
+} ], {
+    targetURL: `https://x.example/?q=${'a'.repeat(100)}`,
+}).action, 'allow');
+// Blocks left over once the aggregate budget is gone are ranked without being
+// matched: only an important one can hold back a matching exception.
+{
+    const exhaustingBlocks = Array.from({ length: 1100 }, (_, index) =>
+        popupFilter(index + 10, 'block', { urlFilter: `/never-${index}/` })
+    );
+    const targetURL = `https://budget.example/${'a'.repeat(8000)}`;
+    const allowBudget = popupFilter(1, 'allow', {
+        requestDomains: [ 'budget.example' ],
+    });
+    assert.deepEqual(evaluate([ {
+        id: 'imported',
+        filters: exhaustingBlocks,
+    } ], { targetURL }), blocksIncomplete, 'The aggregate budget runs out');
+    assert.equal(evaluate([ {
+        id: 'imported',
+        filters: [ allowBudget, ...exhaustingBlocks ],
+    } ], { targetURL }).action, 'allow');
+    assert.deepEqual(evaluate([ {
+        id: 'imported',
+        filters: [
+            allowBudget,
+            ...exhaustingBlocks,
+            popupFilter(5000, 'block', {
+                requestDomains: [ 'budget.example' ],
+            }, { important: true }),
+        ],
+    } ], { targetURL }), budgetExhausted);
+}
+assert.equal(evaluate([ {
+    id: 'imported',
+    filters: [
+        popupFilter(1, 'block', { urlFilter: adversarialUrlFilter }),
+        popupFilter(2, 'allow', { requestDomains: [ 'unrelated.example' ] }),
+    ],
+} ], {
+    targetURL: quadraticTargetURL,
+}).action, 'none');
+
+// Ordinary long landing URLs must not exhaust the budget. Hundreds of
+// unanchored list filters are normal, and a defer here would skip the Smart
+// and Strict policies for any popup whose URL an ad network pads.
+const unanchoredFilters = Array.from({ length: 500 }, (_, index) =>
+    popupFilter(index + 1, 'block', { urlFilter: `/ad-path-${index}/` })
+);
+for ( const length of [ 1000, 8000 ] ) {
+    const targetURL = `https://ad.example/landing?x=${'a'.repeat(length)}`;
+    assert.deepEqual(evaluate([ {
+        id: 'imported',
+        filters: unanchoredFilters,
+    } ], { targetURL }), noMatch, `${length}-character URL`);
+    const matching = evaluate([ {
+        id: 'imported',
+        filters: unanchoredFilters,
+    } ], { targetURL: `${targetURL}/ad-path-499/` });
+    assert.equal(matching.action, 'block', `${length}-character match`);
+    assert.equal(matching.lineNumber, 500);
 }
 const repeatedFilter = popupFilter(1, 'block');
 assert.deepEqual(evaluate([ {

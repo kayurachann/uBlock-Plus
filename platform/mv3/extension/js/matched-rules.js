@@ -5,13 +5,15 @@ import { loggerUIText } from './logger-ui-text.js';
 import { webext } from './ext-compat.js';
 
 const $ = selector => document.querySelector(selector);
-const labels = loggerUIText(webext.i18n.getUILanguage?.() || navigator.language);
-document.documentElement.lang = labels.language;
+const labels = loggerUIText((key, substitutions) => webext.i18n.getMessage(key, substitutions));
+// The language of the catalog actually rendered: locales without logger
+// strings fall back to English, and so does this tag.
+document.documentElement.lang = webext.i18n.getMessage('loggerLanguageTag') || 'en';
 document.title = `uBlock Plus+ — ${labels.title}`;
 for ( const [ selector, key ] of [
     [ 'h1', 'title' ], [ '#intro', 'intro' ], [ '#tabLabel', 'tab' ],
     [ '#start', 'start' ], [ '#stop', 'pause' ], [ '#clear', 'clear' ], [ '#export', 'export' ],
-    [ '#searchLabel', 'search' ], [ '#kindLabel', 'kind' ], [ '#status', 'initial' ],
+    [ '#searchLabel', 'search' ], [ '#kindLabel', 'kind' ],
     [ 'summary', 'summary' ], [ '#empty', 'empty' ],
 ] ) { $(selector).textContent = labels[key]; }
 $('#tab').setAttribute('aria-label', labels.tab);
@@ -35,6 +37,14 @@ let port;
 let connected = false;
 let permissionNote = '';
 let lastSignature = '';
+// #status is a live region: announce state changes, never counter updates.
+let statusText;
+const setStatus = text => {
+    if ( text === statusText ) { return; }
+    statusText = text;
+    $('#status').textContent = text;
+};
+setStatus(labels.initial);
 const renderWarnings = warnings => {
     const values = Array.isArray(warnings) ? warnings.filter(s => typeof s === 'string') : [];
     $('#scriptletWarnings').hidden = values.length === 0;
@@ -55,12 +65,13 @@ const connect = ( ) => {
         $('#start').disabled = snapshot.capturing;
         $('#stop').disabled = !snapshot.capturing;
         $('#tab').disabled = snapshot.capturing;
-        $('#status').textContent = message.error || [
-            snapshot.capturing ? labels.capturing : labels.paused,
-            `${labels.network}: ${snapshot.networkEnabled ? labels.available : labels.unavailable}.`,
-            `${labels.native}: ${snapshot.nativeMatchesEnabled ? labels.available : labels.unavailable}.`,
-            `${snapshot.entries.length}/${snapshot.limit} ${labels.records}; ${snapshot.discarded} ${labels.discarded}.`,
-            permissionNote,
+        setStatus(message.error || [
+            snapshot.capturing ? labels.capturing : labels.paused, permissionNote,
+        ].filter(Boolean).join(' '));
+        $('#counters').textContent = [
+            labels.network(snapshot.networkEnabled),
+            labels.native(snapshot.nativeMatchesEnabled),
+            labels.records(snapshot.entries.length, snapshot.limit, snapshot.discarded),
         ].join(' ');
         render();
     });
@@ -70,7 +81,8 @@ const connect = ( ) => {
         $('#start').disabled = false;
         $('#stop').disabled = true;
         $('#tab').disabled = false;
-        $('#status').textContent = labels.disconnected;
+        setStatus(labels.disconnected);
+        $('#counters').textContent = '';
         render();
     });
 };
@@ -90,6 +102,11 @@ const render = ( ) => {
     const entries = filtered();
     const signature = JSON.stringify(entries);
     if ( signature === lastSignature ) { return; }
+    // Rebuilding rows would discard a selection the user is copying; the
+    // next poll renders once the selection is released.
+    const selection = document.getSelection?.();
+    if ( selection && selection.isCollapsed === false &&
+        $('#matchedEntries').contains(selection.anchorNode) ) { return; }
     lastSignature = signature;
     const fragment = new DocumentFragment();
     for ( const entry of entries.slice().reverse() ) {
@@ -98,8 +115,8 @@ const render = ( ) => {
         const columns = [
             new Date(entry.time).toLocaleTimeString(),
             `${labels.kinds[entry.kind] || entry.kind}\n${labels.phases[entry.phase] || entry.phase}`,
-            `${entry.source}\ntab ${entry.tabId}, ${labels.frame} ${entry.frameId}`,
-            [ entry.type, entry.url, entry.detail, entry.requestId && `request ${entry.requestId}` ].filter(Boolean).join('\n'),
+            `${entry.source}\n${labels.context(entry.tabId, entry.frameId)}`,
+            [ entry.type, entry.url, entry.detail, entry.requestId && labels.request(entry.requestId) ].filter(Boolean).join('\n'),
         ];
         for ( const value of columns ) {
             const cell = document.createElement('td');

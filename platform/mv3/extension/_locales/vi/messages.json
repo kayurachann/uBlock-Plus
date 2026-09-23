@@ -1127,5 +1127,729 @@
   },
   "popupRecentBlocks": {
     "message": "$1 popup bị chặn gần đây trên trang web này"
+  },
+  "autoUpdateSectionLabel": {
+    "message": "Cập nhật",
+    "description": "Dashboard settings: heading of the automatic update section"
+  },
+  "autoUpdateDescription": {
+    "message": "uBlock Plus+ có thể tìm phiên bản mới trên GitHub Releases và, với trình cập nhật Windows tùy chọn, cài đặt chúng mà không cần cài lại. Mỗi lần kiểm tra chỉ gửi một yêu cầu tới api.github.com; không gửi dữ liệu duyệt web.",
+    "description": "Dashboard settings: explanation of automatic updates and their network use"
+  },
+  "autoUpdateCheckLabel": {
+    "message": "Tự động kiểm tra phiên bản mới",
+    "description": "Dashboard settings: checkbox to enable periodic update checks"
+  },
+  "autoUpdateInstallLabel": {
+    "message": "Khi có phiên bản mới:",
+    "description": "Dashboard settings: label of the install mode selector"
+  },
+  "autoUpdateInstallAuto": {
+    "message": "Tự động cài đặt",
+    "description": "Dashboard settings: install mode option"
+  },
+  "autoUpdateInstallNotify": {
+    "message": "Chỉ thông báo",
+    "description": "Dashboard settings: install mode option"
+  },
+  "autoUpdateChannelLabel": {
+    "message": "Kênh phát hành:",
+    "description": "Dashboard settings: label of the release channel selector"
+  },
+  "autoUpdateChannelPreview": {
+    "message": "Xem trước (gồm bản phát hành thử)",
+    "description": "Dashboard settings: release channel option"
+  },
+  "autoUpdateChannelStable": {
+    "message": "Chỉ bản ổn định",
+    "description": "Dashboard settings: release channel option"
+  },
+  "autoUpdateCheckNow": {
+    "message": "Kiểm tra ngay",
+    "description": "Dashboard settings: button that checks for updates immediately"
+  },
+  "autoUpdateInstallNow": {
+    "message": "Cài đặt ngay",
+    "description": "Dashboard settings: button that installs the available update"
+  },
+  "autoUpdateReleaseNotes": {
+    "message": "Ghi chú phát hành",
+    "description": "Dashboard settings: link to the release page of the available version"
+  },
+  "autoUpdateGrantButton": {
+    "message": "Cho phép trình cập nhật",
+    "description": "Dashboard settings: button requesting the optional nativeMessaging permission"
+  },
+  "autoUpdateSetupSteps": {
+    "message": "Thiết lập một lần trên Windows: mở thư mục bạn đã chọn bằng “Tải tiện ích đã giải nén”, nhấp đúp updater\\install-updater.cmd, rồi chọn “Cho phép trình cập nhật” tại đây. Nếu vẫn bị từ chối truy cập, hãy chạy lệnh này trong thư mục đó:",
+    "description": "Dashboard settings: one-time setup instructions for the Windows updater"
+  },
+  "autoUpdateCopy": {
+    "message": "Sao chép",
+    "description": "Dashboard settings: copy the setup command to the clipboard"
+  },
+  "autoUpdateCopied": {
+    "message": "Đã sao chép",
+    "description": "Dashboard settings: confirmation after copying the setup command"
+  },
+  "autoUpdateRollback": {
+    "message": "Khôi phục phiên bản $1",
+    "description": "Dashboard settings: button restoring the previous version. $1 is a version number"
+  },
+  "autoUpdateDevBuild": {
+    "message": "Bản dựng phát triển $1: tự động cập nhật đã tắt.",
+    "description": "Dashboard settings: status for local development builds. $1 is the version"
+  },
+  "autoUpdateApplying": {
+    "message": "Đang cài đặt $1…",
+    "description": "Dashboard settings: files are being replaced. $1 is the version"
+  },
+  "autoUpdatePreparing": {
+    "message": "Đang chuẩn bị cài đặt $1…",
+    "description": "Dashboard settings: update is starting. $1 is the version"
+  },
+  "autoUpdateAvailable": {
+    "message": "Đã có phiên bản $1 (đang dùng: $2).",
+    "description": "Dashboard settings: a newer version exists. $1 new version, $2 installed version"
+  },
+  "autoUpdateUpToDate": {
+    "message": "Phiên bản $1 là mới nhất. Kiểm tra lần cuối: $2.",
+    "description": "Dashboard settings: no newer version. $1 installed version, $2 date and time of the last check"
+  },
+  "autoUpdateNeverChecked": {
+    "message": "Phiên bản đang dùng: $1. Chưa kiểm tra cập nhật lần nào.",
+    "description": "Dashboard settings: no check has run yet. $1 installed version"
+  },
+  "autoUpdateManagedInstall": {
+    "message": "Bản này được cài dưới dạng gói; trình duyệt hoặc quản trị viên quản lý việc cập nhật.",
+    "description": "Dashboard settings: the extension was not loaded unpacked"
+  },
+  "autoUpdatePermissionNeeded": {
+    "message": "Tự động cài đặt cần trình cập nhật Windows và sự cho phép của bạn.",
+    "description": "Dashboard settings: automatic installation is not set up yet"
+  },
+  "autoUpdateConnectedAuto": {
+    "message": "Đã kết nối trình cập nhật $1. Phiên bản mới sẽ tự cài đặt và tiện ích tự tải lại.",
+    "description": "Dashboard settings: updater connected, automatic mode. $1 updater version"
+  },
+  "autoUpdateConnectedNotify": {
+    "message": "Đã kết nối trình cập nhật $1. Chọn “Cài đặt ngay” khi có phiên bản mới.",
+    "description": "Dashboard settings: updater connected, notify-only mode. $1 updater version"
+  },
+  "autoUpdateUpdated": {
+    "message": "Đã cập nhật từ $1 lên $2.",
+    "description": "Dashboard settings: result of the last update. $1 previous version, $2 new version"
+  },
+  "autoUpdateRolledBack": {
+    "message": "Đã khôi phục phiên bản $2 (trước đó: $1).",
+    "description": "Dashboard settings: result of a rollback. $1 version before, $2 restored version"
+  },
+  "autoUpdatePermissionDenied": {
+    "message": "Chưa được cấp quyền.",
+    "description": "Dashboard settings: the permission request was declined"
+  },
+  "autoUpdateErrorMissing": {
+    "message": "Chưa cài trình cập nhật Windows.",
+    "description": "Dashboard settings: native updater not registered"
+  },
+  "autoUpdateErrorForbidden": {
+    "message": "Trình cập nhật đang đăng ký cho thư mục hoặc ID tiện ích khác. Hãy chạy lệnh bên dưới.",
+    "description": "Dashboard settings: native updater registered for another extension ID"
+  },
+  "autoUpdateErrorFailed": {
+    "message": "Trình cập nhật dừng đột ngột. Chi tiết nằm trong %LOCALAPPDATA%\\uBlockPlus\\Updater\\updater.log.",
+    "description": "Dashboard settings: native updater crashed or exited"
+  },
+  "autoUpdateErrorChecksum": {
+    "message": "Gói tải về không khớp với checksum đã công bố nên đã bị loại bỏ.",
+    "description": "Dashboard settings: package checksum mismatch"
+  },
+  "autoUpdateErrorRateLimited": {
+    "message": "GitHub đang giới hạn yêu cầu; lần kiểm tra sau sẽ chờ.",
+    "description": "Dashboard settings: GitHub API rate limit"
+  },
+  "autoUpdateErrorNetwork": {
+    "message": "Không kết nối được GitHub. Lần kiểm tra sau sẽ thử lại.",
+    "description": "Dashboard settings: network failure during a check"
+  },
+  "autoUpdateErrorReload": {
+    "message": "Tiện ích đã tải lại nhưng phiên bản không đổi. Hãy xem nhật ký của trình cập nhật.",
+    "description": "Dashboard settings: after reload the version did not change"
+  },
+  "autoUpdateErrorInterrupted": {
+    "message": "Lần cập nhật trước bị gián đoạn trước khi hoàn tất.",
+    "description": "Dashboard settings: the previous update did not finish"
+  },
+  "autoUpdateErrorGeneric": {
+    "message": "Lỗi cập nhật: $1",
+    "description": "Dashboard settings: other update error. $1 is the error message"
+  },
+  "autoUpdatePopupAvailable": {
+    "message": "Cập nhật $1",
+    "description": "Popup: compact indicator that a newer version is available. $1 is the version"
+  },
+  "autoUpdatePopupAvailableTitle": {
+    "message": "Đã có phiên bản $1. Mở cài đặt cập nhật.",
+    "description": "Popup: tooltip of the update indicator. $1 is the version"
+  },
+  "firewallTitle": {
+    "message": "Tường lửa động",
+    "description": "Dynamic firewall panel heading in Site rules"
+  },
+  "firewallDescription": {
+    "message": "Mỗi dòng: nguồn đích loại hành-động. Dùng * cho mọi tên máy chủ; block chặn, allow cho phép, noop chỉ bỏ qua tường lửa và vẫn áp dụng danh sách lọc.",
+    "description": "Dynamic firewall rule syntax. Keep *, block, allow and noop untranslated."
+  },
+  "firewallScope": {
+    "message": "Áp dụng cho yêu cầu mạng trong thẻ, kể cả iframe, trên Chrome 145+. Chế độ “không có bộ lọc” được ưu tiên. Không áp dụng cho tập lệnh nội tuyến, điều hướng trang chính hoặc yêu cầu ngoài thẻ. Quy tắc 1p/3p dùng trang cấp cao nhất và Public Suffix List; yêu cầu đầu tiên tới trang mới có thể đi qua trong lúc Chrome cập nhật phạm vi.",
+    "description": "Dynamic firewall coverage and limits. Quote the no-filtering mode by its filteringMode0Name label."
+  },
+  "firewallValidate": {
+    "message": "Kiểm tra",
+    "description": "Button: check the firewall draft without applying it"
+  },
+  "firewallApplySession": {
+    "message": "Áp dụng trong phiên",
+    "description": "Button: apply firewall rules until the browser session ends"
+  },
+  "firewallSavePermanent": {
+    "message": "Lưu lâu dài",
+    "description": "Button: save firewall rules across browser restarts"
+  },
+  "firewallLoadPermanent": {
+    "message": "Nạp bản lâu dài",
+    "description": "Button: load the saved permanent firewall rules into the editor"
+  },
+  "firewallImportFile": {
+    "message": "Nhập tệp",
+    "description": "Button: import firewall rules from a text file"
+  },
+  "firewallExportFile": {
+    "message": "Xuất tệp",
+    "description": "Button: export the firewall editor text to a file"
+  },
+  "firewallStatusRules": {
+    "message": "$1 quy tắc Chrome đang hoạt động; $2 miền đã nhận diện trong phiên.",
+    "description": "Firewall status. $1: active native Chrome rules; $2: registrable domains recognized in this browser session"
+  },
+  "firewallStatusDeferred": {
+    "message": "$1 ô cần ngữ cảnh trang; không chặn suy đoán.",
+    "description": "Firewall status. $1: cells that need to know the top page before deciding 1p/3p"
+  },
+  "firewallStatusOmitted": {
+    "message": "Đã chạm giới hạn quy tắc của Chrome: ô 1p/3p giờ chỉ áp dụng cho $1 miền được nhận diện gần nhất.",
+    "description": "Firewall status when Chrome's session-rule limit forced older learned domains out. $1: domains still covered"
+  },
+  "firewallStatusScopeError": {
+    "message": "Không thể thêm miền vừa truy cập vào phạm vi 1p/3p: $1",
+    "description": "Firewall status when a newly visited domain could not be added to the native 1p/3p scope. $1: technical error message"
+  },
+  "firewallStatusTemporary": {
+    "message": "Đang dùng bản tạm.",
+    "description": "Firewall status: session-only rules are active"
+  },
+  "firewallStatusPermanent": {
+    "message": "Đang dùng bản lâu dài.",
+    "description": "Firewall status: saved permanent rules are active"
+  },
+  "firewallPreviewRules": {
+    "message": "Đã kiểm tra: $1 quy tắc Chrome dự kiến.",
+    "description": "Result of validating a firewall draft. $1: proposed native Chrome rules"
+  },
+  "firewallPreviewOmitted": {
+    "message": "$1 miền đã nhận diện sẽ rời phạm vi 1p/3p để vừa giới hạn quy tắc của Chrome.",
+    "description": "Validation notice. $1: recognized domains that would leave the 1p/3p scope to fit Chrome's rule limit"
+  },
+  "firewallUnsupported": {
+    "message": "Tường lửa cần Chrome 145 trở lên. Các chức năng lọc hiện có vẫn hoạt động.",
+    "description": "Shown when the browser lacks the native conditions the firewall needs"
+  },
+  "firewallPermanentLoaded": {
+    "message": "Đã nạp bản lâu dài vào bản nháp; hãy áp dụng để kích hoạt.",
+    "description": "Shown after loading permanent firewall rules into the editor"
+  },
+  "firewallImportTooLarge": {
+    "message": "Kích thước tệp tối đa: 128 KiB",
+    "description": "Error when an imported firewall file is too large"
+  },
+  "firewallTestTitle": {
+    "message": "Thử và giải thích quy tắc",
+    "description": "Heading of the firewall request tester"
+  },
+  "firewallTestScope": {
+    "message": "Thử bản nháp trong ô soạn thảo với các thiết lập “không có bộ lọc” hiện tại. Không gửi yêu cầu, không lưu URL và không thay đổi bảo vệ. Kết quả chỉ giải thích tường lửa; không mô phỏng toàn bộ danh sách lọc, quyền trình duyệt, hạn mức hoặc thời điểm áp dụng.",
+    "description": "Explains what the firewall tester does and does not simulate. Quote the no-filtering mode by its filteringMode0Name label."
+  },
+  "firewallTestSource": {
+    "message": "Trang cấp cao nhất: tên máy chủ hoặc URL HTTP(S)",
+    "description": "Firewall tester field label for the top-level page"
+  },
+  "firewallTestDestination": {
+    "message": "Tài nguyên đích: tên máy chủ hoặc URL HTTP(S)",
+    "description": "Firewall tester field label for the requested resource"
+  },
+  "firewallTestType": {
+    "message": "Loại yêu cầu",
+    "description": "Firewall tester field label for the request type"
+  },
+  "firewallTestRequest": {
+    "message": "Thử yêu cầu",
+    "description": "Button: run the firewall tester"
+  },
+  "firewallTestChanged": {
+    "message": "Dữ liệu đã đổi; hãy thử lại.",
+    "description": "Firewall tester: inputs changed while a test was running"
+  },
+  "firewallTestFirstParty": {
+    "message": "Cùng bên (1p)",
+    "description": "Firewall tester result: same party as the top page"
+  },
+  "firewallTestThirdParty": {
+    "message": "Bên thứ ba (3p)",
+    "description": "Firewall tester result: different party from the top page"
+  },
+  "firewallOutcomeBlock": {
+    "message": "Bản nháp: block — ô thắng yêu cầu chặn.",
+    "description": "Firewall tester outcome. Keep block untranslated."
+  },
+  "firewallOutcomeAllow": {
+    "message": "Bản nháp: allow — ô thắng yêu cầu cho phép.",
+    "description": "Firewall tester outcome. Keep allow untranslated."
+  },
+  "firewallOutcomeNoop": {
+    "message": "Bản nháp: noop — bỏ qua tường lửa; danh sách lọc vẫn có thể chặn.",
+    "description": "Firewall tester outcome. Keep noop untranslated."
+  },
+  "firewallOutcomeNoMatch": {
+    "message": "Không có ô tường lửa nào khớp; danh sách lọc vẫn có thể chặn.",
+    "description": "Firewall tester outcome when no cell matches"
+  },
+  "firewallOutcomeOff": {
+    "message": "Trang này đang ở chế độ “không có bộ lọc”; chế độ này được ưu tiên hơn bản nháp tường lửa.",
+    "description": "Firewall tester outcome when the site is in the no-filtering mode. Quote the mode by its filteringMode0Name label."
+  },
+  "firewallOutcomeUnknown": {
+    "message": "Chưa có ngữ cảnh chế độ hoặc miền; không đưa ra quyết định suy đoán (fail-open).",
+    "description": "Firewall tester outcome when mode or party information is unavailable"
+  },
+  "loggerTitle": {
+    "message": "Nhật ký",
+    "description": "Logger page title"
+  },
+  "loggerIntro": {
+    "message": "Thu thập chẩn đoán cho một thẻ. Dữ liệu chỉ nằm trong phiên tiện ích và được xóa khi đóng cửa sổ nhật ký cuối cùng. Không tải lên máy chủ hay lưu lịch sử duyệt web.",
+    "description": "Logger page introduction"
+  },
+  "loggerTab": {
+    "message": "Thẻ",
+    "description": "Logger label for the browser tab selector"
+  },
+  "loggerStart": {
+    "message": "Bắt đầu",
+    "description": "Logger button: start capturing"
+  },
+  "loggerPause": {
+    "message": "Tạm dừng",
+    "description": "Logger button: pause capturing"
+  },
+  "loggerClear": {
+    "message": "Xóa",
+    "description": "Logger button: clear records"
+  },
+  "loggerExport": {
+    "message": "Xuất JSON đã lược dữ liệu",
+    "description": "Logger button: export redacted records as JSON"
+  },
+  "loggerSearch": {
+    "message": "Tìm kiếm",
+    "description": "Logger search field label"
+  },
+  "loggerSearchPlaceholder": {
+    "message": "URL, ID quy tắc, selector hoặc nguồn",
+    "description": "Logger search field placeholder"
+  },
+  "loggerKind": {
+    "message": "Loại",
+    "description": "Logger event-kind filter label"
+  },
+  "loggerKindAll": {
+    "message": "Mọi sự kiện",
+    "description": "Logger event-kind filter: all events"
+  },
+  "loggerKindNetwork": {
+    "message": "Mạng",
+    "description": "Logger event kind: browser network observation"
+  },
+  "loggerKindDnr": {
+    "message": "Khớp DNR gốc",
+    "description": "Logger event kind: native declarativeNetRequest rule matches"
+  },
+  "loggerKindCosmetic": {
+    "message": "Lọc giao diện",
+    "description": "Logger event kind: cosmetic filtering"
+  },
+  "loggerKindDom": {
+    "message": "DOM",
+    "description": "Logger event kind: DOM diagnostics"
+  },
+  "loggerKindScriptlet": {
+    "message": "Scriptlet",
+    "description": "Logger event kind: scriptlets"
+  },
+  "loggerKindSystem": {
+    "message": "Hệ thống",
+    "description": "Logger event kind: system events"
+  },
+  "loggerColumnKind": {
+    "message": "Loại / giai đoạn",
+    "description": "Logger table column: event kind and phase"
+  },
+  "loggerColumnSource": {
+    "message": "Nguồn bằng chứng",
+    "description": "Logger table column: which API produced the evidence"
+  },
+  "loggerColumnDetail": {
+    "message": "Yêu cầu / chẩn đoán",
+    "description": "Logger table column: request or diagnostic details"
+  },
+  "loggerInitial": {
+    "message": "Chưa thu thập. Chọn một thẻ rồi bấm Bắt đầu.",
+    "description": "Logger status before capture starts"
+  },
+  "loggerSummary": {
+    "message": "Nhật ký này xác nhận được những gì",
+    "description": "Logger heading of the evidence explanation"
+  },
+  "loggerDetailNetwork": {
+    "message": "Mạng là quan sát chỉ đọc từ trình duyệt, bao gồm yêu cầu đã hoàn tất. Chỉ riêng một lỗi không xác định được tiện ích nào đã chặn. Yêu cầu bị trình duyệt ẩn hoặc bị chặn trước thời điểm quan sát có thể không xuất hiện.",
+    "description": "Logger evidence explanation: network events"
+  },
+  "loggerDetailDnr": {
+    "message": "Khớp DNR gốc xác định quy tắc của tiện ích này mà Chrome đã chọn. Việc đọc nội dung quy tắc diễn ra riêng, không phải ảnh chụp nguyên tử cùng sự kiện. Khả năng nhận sự kiện phụ thuộc API phản hồi và loại bản cài đặt.",
+    "description": "Logger evidence explanation: native DNR matches"
+  },
+  "loggerDetailCosmetic": {
+    "message": "Lọc giao diện xác nhận stylesheet đã được chèn, chưa chứng minh phần tử đã bị ẩn. DOM phân biệt thao tác procedural thực sự đã áp dụng với ảnh chụp xác nhận selector CSS có phần tử khớp. Mỗi stylesheet được kiểm tra tối đa 32 nhóm selector; kết quả không chứng minh trạng thái hiển thị hay điều kiện media. Tối đa 32 báo cáo mỗi giây cho mỗi khung; không bao quát tác động trước khi bộ quan sát được nạp.",
+    "description": "Logger evidence explanation: cosmetic and DOM events"
+  },
+  "loggerDetailScriptlet": {
+    "message": "Scriptlet ghi nhận việc đăng ký và ngoại lệ/fallback. Bản hiện tại chưa phát báo cáo thử thực thi hoặc xác nhận tác động của từng scriptlet. Thông điệp từ trang không phải bằng chứng thực thi MAIN world đáng tin cậy. Sự kiện đăng ký chung dùng thẻ −1.",
+    "description": "Logger evidence explanation: scriptlets"
+  },
+  "loggerDetailCapture": {
+    "message": "Bắt đầu sẽ xin quyền quan sát mạng tùy chọn. Từ chối vẫn cho phép chẩn đoán DNR và nội dung khi khả dụng. Tối đa 512 bản ghi dùng chung cho bốn cửa sổ nhật ký. Đóng thẻ hoặc tạm dừng sẽ ngừng thu thập; đóng một cửa sổ nhật ký chỉ xóa dữ liệu không còn cửa sổ nhật ký nào khác đang mở hiển thị. Chrome có thể dừng service worker và xóa lịch sử tạm này.",
+    "description": "Logger evidence explanation: permission, limits and record lifetime"
+  },
+  "loggerDetailExport": {
+    "message": "URL trong cửa sổ có thể chứa tham số riêng tư. Tệp xuất bỏ thông tin đăng nhập, query, fragment và nội dung chẩn đoán tự do; đường dẫn URL vẫn có thể chứa thông tin cá nhân. Hãy kiểm tra tệp trước khi chia sẻ.",
+    "description": "Logger evidence explanation: private data and export redaction"
+  },
+  "loggerEmpty": {
+    "message": "Chưa có sự kiện. Bắt đầu thu thập, sau đó tải lại trang đã chọn hoặc sử dụng các nút trên trang.",
+    "description": "Logger placeholder when there are no events"
+  },
+  "loggerCapturing": {
+    "message": "Đang thu thập.",
+    "description": "Logger status: capturing"
+  },
+  "loggerPaused": {
+    "message": "Đã tạm dừng.",
+    "description": "Logger status: paused"
+  },
+  "loggerNetworkAttached": {
+    "message": "Quan sát mạng: có.",
+    "description": "Logger state: browser network observation is attached"
+  },
+  "loggerNetworkUnavailable": {
+    "message": "Quan sát mạng: không có.",
+    "description": "Logger state: browser network observation is unavailable"
+  },
+  "loggerNativeAttached": {
+    "message": "Bộ nhận sự kiện DNR gốc: có.",
+    "description": "Logger state: native DNR match listener is attached"
+  },
+  "loggerNativeUnavailable": {
+    "message": "Bộ nhận sự kiện DNR gốc: không có.",
+    "description": "Logger state: native DNR match listener is unavailable"
+  },
+  "loggerRecordCount": {
+    "message": "$1/$2 bản ghi; $3 bản ghi cũ đã bỏ.",
+    "description": "Logger counters. $1: records shown; $2: record limit; $3: older records discarded"
+  },
+  "loggerTabFrame": {
+    "message": "thẻ $1, khung $2",
+    "description": "Logger row context. $1: browser tab ID; $2: frame ID"
+  },
+  "loggerPermissionRefused": {
+    "message": "Chưa cấp quyền mạng; các chẩn đoán khác vẫn khả dụng.",
+    "description": "Logger status when the optional network permission was refused"
+  },
+  "loggerDisconnected": {
+    "message": "Kết nối nhật ký đã kết thúc. Lịch sử tạm đã được xóa. Bấm Bắt đầu để kết nối lại.",
+    "description": "Logger status after the connection to the extension ended"
+  },
+  "loggerPhaseRequested": {
+    "message": "đã gửi yêu cầu",
+    "description": "Logger event phase: a network request started (English keeps the technical phase name)"
+  },
+  "loggerPhaseCompleted": {
+    "message": "hoàn tất",
+    "description": "Logger event phase: a network request completed (English keeps the technical phase name)"
+  },
+  "loggerPhaseError": {
+    "message": "lỗi",
+    "description": "Logger event phase: a network request failed (English keeps the technical phase name)"
+  },
+  "loggerPhaseRedirected": {
+    "message": "chuyển hướng",
+    "description": "Logger event phase: a network request was redirected (English keeps the technical phase name)"
+  },
+  "loggerPhaseBlocked": {
+    "message": "đã chặn",
+    "description": "Logger event phase: the optional webRequest firewall supplement canceled a network request (English keeps the technical phase name)"
+  },
+  "loggerPhaseMatched": {
+    "message": "khớp quy tắc",
+    "description": "Logger event phase: a native rule matched (English keeps the technical phase name)"
+  },
+  "loggerPhaseStylesheetInserted": {
+    "message": "đã chèn stylesheet",
+    "description": "Logger event phase: a cosmetic stylesheet was inserted (English keeps the technical phase name)"
+  },
+  "loggerPhaseSelectorPresent": {
+    "message": "selector có phần tử khớp",
+    "description": "Logger event phase: a CSS selector matched elements in a snapshot (English keeps the technical phase name)"
+  },
+  "loggerPhaseProceduralApplied": {
+    "message": "đã áp dụng procedural",
+    "description": "Logger event phase: a procedural cosmetic filter was applied (English keeps the technical phase name)"
+  },
+  "loggerPhaseRegistered": {
+    "message": "đã đăng ký",
+    "description": "Logger event phase: scriptlets were registered (English keeps the technical phase name)"
+  },
+  "loggerPhaseExceptionApplied": {
+    "message": "đã áp dụng ngoại lệ",
+    "description": "Logger event phase: a scriptlet exception was applied (English keeps the technical phase name)"
+  },
+  "loggerRequestId": {
+    "message": "yêu cầu $1",
+    "description": "Logger row detail. $1: browser request ID"
+  },
+  "loggerLanguageTag": {
+    "message": "vi",
+    "description": "Not displayed. BCP 47 language tag of this catalog, used as the lang attribute of the logger page"
+  },
+  "pickerQuit": {
+    "message": "Thoát",
+    "description": "Tooltip and accessible name for the close button of the element picker and custom-filter remover (unpicker) panels"
+  },
+  "restoreSucceeded": {
+    "message": "Đã khôi phục cài đặt.",
+    "description": "Dashboard status after a backup file was restored"
+  },
+  "restoreFailed": {
+    "message": "Không thể khôi phục cài đặt: $1",
+    "description": "Dashboard status when restoring a backup failed; $1 is the technical reason"
+  },
+  "backupFailed": {
+    "message": "Không thể tạo bản sao lưu: $1",
+    "description": "Dashboard status when creating a backup file failed; $1 is the technical reason"
+  },
+  "resetSucceeded": {
+    "message": "Đã đặt lại cài đặt mặc định.",
+    "description": "Dashboard status after all settings were reset to their defaults"
+  },
+  "resetFailed": {
+    "message": "Không thể đặt lại cài đặt: $1",
+    "description": "Dashboard status when resetting settings failed; $1 is the technical reason"
+  },
+  "restoreFirewallUnsupported": {
+    "message": "Chưa khôi phục quy tắc tường lửa: trình duyệt này không hỗ trợ (cần Chrome 145 trở lên).",
+    "description": "Restore warning: the backup contains firewall rules, which this browser version cannot use"
+  },
+  "restoreImportedListsDisabled": {
+    "message": "Đã khôi phục $1 danh sách nhập nhưng để ở trạng thái tắt: các danh sách đang bật bị giới hạn 20 MiB dữ liệu nguồn.",
+    "description": "Restore warning; $1 is the number of imported filter lists which were restored but not enabled"
+  },
+  "restoreImportedListsSkipped": {
+    "message": "Không thể khôi phục $1 danh sách nhập: chỉ hỗ trợ tối đa 32 danh sách có địa chỉ HTTPS không chứa thông tin đăng nhập.",
+    "description": "Restore warning; $1 is the number of imported filter lists which could not be restored"
+  },
+  "restoreFilteringModesLocked": {
+    "message": "Chưa thay đổi chế độ lọc: quản trị viên đang quản lý các chế độ này.",
+    "description": "Restore or reset warning: the managed disabledFeatures policy includes filteringMode, so the site filtering modes were not changed"
+  },
+  "restoreDeveloperLocked": {
+    "message": "Chưa thay đổi chế độ nhà phát triển và quy tắc DNR tùy chỉnh: quản trị viên đã tắt các tính năng dành cho nhà phát triển.",
+    "description": "Restore or reset warning: the managed disabledFeatures policy includes develop, so developer mode and custom DNR rules were not changed"
+  },
+  "defaultFilteringModeFailed": {
+    "message": "Không thể thay đổi chế độ bộ lọc mặc định: $1",
+    "description": "Dashboard status when changing the default filtering mode failed; $1 is the technical reason"
+  },
+  "customFiltersSaveFailed": {
+    "message": "Không thể lưu bộ lọc tùy chỉnh: $1",
+    "description": "Dashboard status when saving My filters or the filter sandbox failed; $1 is the technical reason"
+  },
+  "siteRulesInvalidHostname": {
+    "message": "“$1” không phải là tên máy chủ hợp lệ. Mỗi dòng một tên máy chủ, không dùng ký tự đại diện, đường dẫn hoặc “https://”.",
+    "description": "Site rules validation error; $1 is the rejected line exactly as typed"
+  },
+  "siteRulesDuplicateHostname": {
+    "message": "“$1” xuất hiện ở nhiều mức lọc. Mỗi tên máy chủ chỉ được nằm ở một mức.",
+    "description": "Site rules validation error; $1 is a hostname listed in more than one filtering level"
+  },
+  "siteRulesDefaultRequired": {
+    "message": "Giữ đúng một dòng “$1”: dòng này đặt mức lọc mặc định cho mọi trang còn lại.",
+    "description": "Site rules validation error; $1 is the literal token all-urls, which must not be translated"
+  },
+  "siteRulesChangedElsewhere": {
+    "message": "Quy tắc theo trang đã bị thay đổi ở nơi khác sau khi trang này tải chúng. Nội dung bạn sửa vẫn được giữ: lưu lại lần nữa để ghi đè thay đổi đó, hoặc tải lại trang để bỏ nội dung đã sửa.",
+    "description": "Site rules conflict: the stored rules changed after the page loaded them; the user's edits were not saved"
+  },
+  "siteRulesSaveFailed": {
+    "message": "Không thể lưu quy tắc theo trang: $1",
+    "description": "Dashboard status when valid site rules could not be saved; $1 is the technical reason"
+  },
+  "webRequestSetupTitle": {
+    "message": "Tường lửa mạng thử nghiệm",
+    "description": "Diagnostics panel title for the optional Experimental WebRequest package"
+  },
+  "webRequestSetupExperimental": {
+    "message": "Mở Chrome bằng start-experimental-chrome.cmd trong thư mục tiện ích. Lần đầu, nạp thư mục đó bằng “Tải tiện ích đã giải nén”. Trình khởi chạy dùng hồ sơ riêng; quay lại đây và bấm “Làm mới chẩn đoán” để kiểm tra quyền.",
+    "description": "Diagnostics setup steps shown in the Experimental WebRequest package; keep start-experimental-chrome.cmd unchanged"
+  },
+  "webRequestSetupStandard": {
+    "message": "Gói Experimental WebRequest bổ sung quyết định chặn trực tiếp của tường lửa, kể cả trên miền mới. Cần cài gói riêng và mở Chrome bằng trình khởi chạy đi kèm.",
+    "description": "Diagnostics note in the standard package about the separate Experimental WebRequest package; keep the package name unchanged"
+  },
+  "webRequestSetupLimits": {
+    "message": "Bộ lọc DNR, allow và noop vẫn được áp dụng. Tính năng này không gỡ hạn mức hoặc khôi phục toàn bộ engine uBO; tiện ích không tự thay đổi tham số khởi chạy của Chrome.",
+    "description": "Diagnostics note on the limits of the experimental firewall; keep DNR, allow, noop and uBO unchanged"
+  },
+  "webRequestSetupGuide": {
+    "message": "Hướng dẫn cài đặt, kiểm tra và gỡ bỏ",
+    "description": "Link text to the Experimental WebRequest documentation"
+  },
+  "reportGitHubConfirm": {
+    "message": "Thao tác này mở một báo cáo điền sẵn trên GitHub, gồm nguồn gốc (origin) của trang và thông tin khắc phục sự cố hiển thị trên trang này. Không có gì được công khai cho đến khi bạn gửi báo cáo ở đó. Tiếp tục?",
+    "description": "Confirmation shown before the report page opens a prefilled public GitHub issue"
+  },
+  "reportIssueTrackerInfo": {
+    "message": "Báo cáo sự cố bộ lọc trên các trang web cụ thể tới <a href=\"https://github.com/kayurachann/uBlock-Plus/issues\">trình theo dõi sự cố của <code>uBlock Plus+</code></a>. <u>Cần có tài khoản GitHub.</u>",
+    "description": "Report page introduction; replaces supportS3P1, which names the upstream uAssets tracker. Keep the HTML markup, including the <a href> link, and the URL unchanged"
+  },
+  "protectionProfileSelectRequired": {
+    "message": "Hãy chọn một hồ sơ bảo vệ để áp dụng.",
+    "description": "Dashboard status when Apply profile is clicked while no protection profile is selected"
+  },
+  "editorApplyFailed": {
+    "message": "Không thể áp dụng thay đổi: $1",
+    "description": "Dashboard Advanced editors: applying the edited text failed. $1 is the error message"
+  },
+  "autoUpdateRestartRequired": {
+    "message": "Đã cấp quyền. uBlock Plus+ sẽ khởi động lại một lần để kết nối với trình cập nhật.",
+    "description": "Dashboard settings: permission granted, the extension must restart once"
+  },
+  "autoUpdateRestartNow": {
+    "message": "Khởi động lại ngay",
+    "description": "Dashboard settings: button restarting the extension to enable the updater connection"
+  },
+  "autoUpdateRestarting": {
+    "message": "Đang khởi động lại… trang này sẽ tự mở lại.",
+    "description": "Dashboard settings: the extension is restarting; this page reopens automatically"
+  },
+  "autoUpdateDownloadingVersion": {
+    "message": "Đang tải $1…",
+    "description": "Dashboard settings, Updates: live status while a new version downloads. $1 is the version"
+  },
+  "autoUpdateProgress": {
+    "message": "$1 / $2 MiB",
+    "description": "Dashboard settings, Updates: download progress. $1 is the downloaded size, $2 the total size, both in MiB"
+  },
+  "autoUpdateHeld": {
+    "message": "Phiên bản $1 sẽ không được tự động cài đặt vì bạn đã khôi phục một phiên bản cũ hơn. Chọn “Cài đặt ngay” nếu vẫn muốn cài đặt.",
+    "description": "Dashboard settings, Updates: after the user restored an earlier version, automatic installation skips the version restored from. $1 is that version"
+  },
+  "autoUpdateCheckThrottled": {
+    "message": "Lần kiểm tra gần nhất chưa quá một phút. Hãy thử lại sau $1 giây.",
+    "description": "Dashboard settings, Updates: Check now was used again within a minute. $1 is a number of seconds"
+  },
+  "autoUpdateIncognito": {
+    "message": "Hãy quản lý cập nhật từ cửa sổ thường, không phải từ cửa sổ ẩn danh.",
+    "description": "Dashboard settings, Updates: the page is open in an incognito window, where update controls are disabled"
+  },
+  "autoUpdateManualOnly": {
+    "message": "Tự động cài đặt chỉ hoạt động trên Windows. Để cập nhật, hãy thay các tệp trong thư mục tiện ích bằng tệp của bản phát hành mới, rồi tải lại uBlock Plus+ trên trang tiện ích.",
+    "description": "Dashboard settings, Updates: the native updater exists only for Windows; on other systems the user updates by hand"
+  },
+  "autoUpdatePolicyOff": {
+    "message": "Quản trị viên đã tắt việc kiểm tra cập nhật.",
+    "description": "Dashboard settings, Updates: managed storage autoUpdate is \"off\""
+  },
+  "autoUpdatePolicyNotify": {
+    "message": "Quản trị viên chỉ cho phép thông báo cập nhật; phiên bản mới sẽ không được tự động cài đặt.",
+    "description": "Dashboard settings, Updates: managed storage allows notifications only (autoUpdate \"notify\", or the dashboard is locked)"
+  },
+  "autoUpdateErrorPolicy": {
+    "message": "Quản trị viên không cho phép thao tác này.",
+    "description": "Dashboard settings, Updates: an action or setting was refused by the administrator policy"
+  },
+  "autoUpdateErrorFiltersBusy": {
+    "message": "Đang cập nhật danh sách bộ lọc. Hãy thử lại khi quá trình này hoàn tất.",
+    "description": "Dashboard settings, Updates: an install, restore or restart was refused because a filter list update is running"
+  },
+  "autoUpdateErrorUpdateBusy": {
+    "message": "Đang có một bản cập nhật khác chạy. Hãy thử lại sau giây lát.",
+    "description": "Dashboard settings, Updates: another install or restore (in this browser or from the command-line updater) is running"
+  },
+  "autoUpdateErrorSignature": {
+    "message": "Gói không được ký bằng khóa phát hành tin cậy của uBlock Plus+ nên đã không được cài đặt.",
+    "description": "Dashboard settings, Updates: the updater found no valid signature from a trusted release key"
+  },
+  "autoUpdateErrorPackage": {
+    "message": "Gói tải về không phải là bản phát hành uBlock Plus+ hợp lệ cho bản này nên đã không được cài đặt.",
+    "description": "Dashboard settings, Updates: the downloaded package is invalid, too large, not staged, or not the expected edition or version"
+  },
+  "autoUpdateErrorUnexpectedFiles": {
+    "message": "Thư mục tiện ích chứa các tệp không thuộc uBlock Plus+. Hãy chuyển chúng ra khỏi thư mục rồi thử lại. Chưa có gì bị thay đổi.",
+    "description": "Dashboard settings, Updates: the updater refused to replace a folder containing files which are not part of the extension"
+  },
+  "autoUpdateErrorNoBackup": {
+    "message": "Không có phiên bản cũ hơn nào để khôi phục.",
+    "description": "Dashboard settings, Updates: restore failed because the updater has no backup of an earlier version"
+  },
+  "autoUpdateErrorRollbackFailed": {
+    "message": "Không thể khôi phục phiên bản cũ hơn. Chi tiết nằm trong %LOCALAPPDATA%\\uBlockPlus\\Updater\\updater.log.",
+    "description": "Dashboard settings, Updates: the updater could not restore the earlier version"
+  },
+  "autoUpdateErrorApplyFailed": {
+    "message": "Không thể cài đặt phiên bản mới. Chi tiết nằm trong %LOCALAPPDATA%\\uBlockPlus\\Updater\\updater.log.",
+    "description": "Dashboard settings, Updates: the updater could not back up the installed version or replace the extension files"
+  },
+  "autoUpdateErrorUnsafeFolder": {
+    "message": "Trình cập nhật không thay đổi thư mục tiện ích này vì nó là thư mục gốc của ổ đĩa hoặc thư mục hệ thống/hồ sơ, có chứa liên kết, hoặc người dùng khác trên máy này có thể sửa nó. Hãy chuyển uBlock Plus+ vào hồ sơ người dùng của bạn, ví dụ %LOCALAPPDATA%\\uBlockPlus\\Extension, tải tiện ích từ đó rồi thiết lập lại.",
+    "description": "Dashboard settings, Updates: the updater refuses to manage the extension folder (drive root, system or profile folder, links)"
+  },
+  "autoUpdateErrorFolderMismatch": {
+    "message": "Trình cập nhật đang quản lý một thư mục chứa phiên bản khác với tiện ích này. Hãy chạy lệnh thiết lập từ thư mục bạn đã tải bằng “Tải tiện ích đã giải nén”.",
+    "description": "Dashboard settings, Updates: the folder the updater manages holds another (older or unknown) version than the running extension"
+  },
+  "autoUpdateErrorNotOffered": {
+    "message": "Phiên bản này không có trên kênh phát hành đã chọn.",
+    "description": "Dashboard settings, Updates: Install now asked for a version which the selected release channel does not offer"
+  },
+  "autoUpdateErrorAmbiguous": {
+    "message": "Trình cập nhật đang đăng ký cho nhiều thư mục có cùng ID tiện ích này. Hãy chạy updater\\install-updater.cmd -Replace từ thư mục bạn đã tải bằng “Tải tiện ích đã giải nén”.",
+    "description": "Dashboard settings, Updates: the updater has several folders registered for this extension ID and cannot tell which one to update"
+  },
+  "autoUpdateErrorUpdater": {
+    "message": "Trình cập nhật đã báo lỗi. Chi tiết nằm trong %LOCALAPPDATA%\\uBlockPlus\\Updater\\updater.log.",
+    "description": "Dashboard settings, Updates: the native updater reported an error without a more specific explanation (invalid configuration, internal error, unexpected reply)"
+  },
+  "autoUpdateErrorUndone": {
+    "message": "Đã hoàn tác một lần cập nhật bị gián đoạn và khôi phục phiên bản trước. Không có gì khác bị thay đổi.",
+    "description": "Dashboard settings: the updater restored the previous version after an interrupted update"
   }
 }

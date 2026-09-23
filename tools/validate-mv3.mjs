@@ -34,6 +34,7 @@ import { Buffer } from 'node:buffer';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import { hasExactResidual } from '../platform/mv3/extension/js/stock-badfilter.js';
+import { listPackageFiles } from './package-files.mjs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import process from 'node:process';
@@ -503,7 +504,7 @@ const validateSharedScriptletData = async () => {
             }
             const expectedOrigin = `(function uBlockPlus_originScriptlets() {\n` +
                 `if ( /^(?:https?|file):$/.test(document.location.protocol) ) { return; }\n` +
-                `${code}\n})();\n`;
+                `const run = function() {\n${code}\n};\nrun();\n})();\n`;
             if ( origin !== expectedOrigin ) {
                 reportError(`Packaged origin scriptlet ${id}/${world} is missing or has an unsafe guard`);
             }
@@ -587,6 +588,14 @@ if ( manifest.permissions?.includes('declarativeNetRequestFeedback') !== true ) 
 }
 if ( manifest.permissions?.includes('userScripts') !== true ) {
     reportError('Sideload builds must request userScripts');
+}
+// The native updater is consent-based: the permission must stay optional so
+// that it is only granted from the dashboard's Updates section.
+if ( manifest.permissions?.includes('nativeMessaging') ) {
+    reportError('nativeMessaging must be an optional permission, never required');
+}
+if ( manifest.optional_permissions?.includes('nativeMessaging') !== true ) {
+    reportError('Power builds must offer nativeMessaging as an optional permission for the updater');
 }
 if ( manifest.permissions?.includes('webNavigation') !== true ) {
     reportError('Power builds must request webNavigation for smart popup context');
@@ -710,9 +719,40 @@ for ( const requiredPath of [
     'js/scriptlet-exceptions.js',
     'js/scriptlet-registration.js',
     'js/scripting/popup-context.js',
+    'js/update-core.js',
+    'js/update-manager.js',
+    'js/update-ui.js',
     'lib/codemirror/cm6.bundle.ublock-plus.min.js',
+    'updater/install-updater.cmd',
+    'updater/install-updater.ps1',
+    'updater/ublock-plus-updater.cmd',
+    'updater/ublock-plus-updater.ps1',
 ] ) {
     await validateFileReference(requiredPath, 'Required uBlock Plus+ component');
+}
+// The Windows updater deletes only the files that the installed package
+// listed, so the list must name exactly the files that the build ships.
+{
+    const listed = await fs.readFile(
+        path.join(extensionDir, 'updater', 'package-files.json'), 'utf8'
+    ).then(JSON.parse).catch(( ) => { });
+    if (
+        Array.isArray(listed) === false ||
+        listed.some(file => typeof file !== 'string')
+    ) {
+        reportError('updater/package-files.json is missing or malformed');
+    } else {
+        const shipped = await listPackageFiles(extensionDir);
+        const unlisted = shipped.filter(file => listed.includes(file) === false);
+        const absent = listed.filter(file => shipped.includes(file) === false);
+        if ( unlisted.length !== 0 || absent.length !== 0 ) {
+            reportError(
+                'updater/package-files.json does not match the build ' +
+                `(unlisted: ${unlisted.slice(0, 5).join(', ') || 'none'}; ` +
+                `not shipped: ${absent.slice(0, 5).join(', ') || 'none'})`
+            );
+        }
+    }
 }
 for ( const retiredPath of [
     'css/filtering-mode.css',

@@ -8,6 +8,7 @@ import { createFirewallIndex } from './firewall-index.js';
 
 const modeNames = [ 'none', 'basic', 'optimal', 'complete' ];
 const MAX_FRAMES_PER_TAB = 256;
+const ERROR_RECHECK_INTERVAL = 5000;
 const initialStatus = () => ({
     implemented: true, declared: false, permissionGranted: false,
     listenerRegistered: false, ready: false, state: 'not-configured',
@@ -54,6 +55,7 @@ export function createWebRequestFirewall(deps) {
     let failed = false;
     let snapshot;
     let hydrationInvalidations;
+    let recheckAt = 0;
 
     const suspend = () => {
         revision += 1;
@@ -63,9 +65,12 @@ export function createWebRequestFirewall(deps) {
             status.state = status.permissionGranted ? 'suspended' : 'permission-required';
         }
     };
-    const fail = reason => {
+    // Startup and DNR failures suspend the supplement until a later refresh
+    // succeeds; the snapshot's own error keeps it off meanwhile. Only a
+    // failed listener registration is permanent for this worker.
+    const fail = (reason, permanent = false) => {
         suspend();
-        failed = true;
+        if ( permanent ) { failed = true; }
         status.error = reason?.message || String(reason);
         status.state = status.declared ? 'error' : 'not-configured';
     };
@@ -113,6 +118,17 @@ export function createWebRequestFirewall(deps) {
             status.state = 'error';
         }
     };
+    // Domain learning can reinstall the DNR firewall, clearing its error,
+    // without a filtering mutation. While in error, top-level commits
+    // re-check the snapshot at most once per interval.
+    const recheck = () => {
+        if ( status.state !== 'error' || failed || mutations !== 0 ||
+            initialized === false ) { return; }
+        const now = Date.now();
+        if ( now < recheckAt ) { return; }
+        recheckAt = now + ERROR_RECHECK_INTERVAL;
+        void refresh();
+    };
 
     const observeNavigation = (details, committed = false) => {
         if ( status.declared === false || Number.isInteger(details?.tabId) === false ||
@@ -154,17 +170,36 @@ export function createWebRequestFirewall(deps) {
             return;
         }
         const hostname = httpHostname(details.url);
+        // A root navigation that never commits (download, HTTP 204, stop)
+        // leaves the committed page displayed; keep it for navigationFailed.
+        const previousCommit = committed ? undefined
+            : previous?.pending === false ? previous : previous?.previousCommit;
         if ( hostname === '' ) {
             // Keep a timestamp tombstone so a delayed old commit cannot revive
             // a previous HTTP page after navigation to a restricted URL.
-            tabs.set(details.tabId, { hostname: '', timestamp, pending: true });
+            tabs.set(details.tabId, { hostname: '', timestamp, pending: true, previousCommit });
             return;
         }
         tabs.set(details.tabId, {
             hostname, timestamp, pending: committed === false,
             documentId: committed ? details.documentId : undefined,
-            frames: new Map(),
+            frames: new Map(), previousCommit,
         });
+        if ( committed ) { recheck(); }
+    };
+
+    // webNavigation.onErrorOccurred: the pending root navigation ended
+    // without a commit, so the page still shown regains its proven context.
+    // Its timestamp becomes the failure's so late events of the failed
+    // navigation cannot mark the tab pending again.
+    const navigationFailed = details => {
+        if ( status.declared === false || details?.frameId !== 0 ||
+            Number.isInteger(details.tabId) === false ) { return; }
+        const current = tabs.get(details.tabId);
+        const timestamp = Number.isFinite(details.timeStamp) ? details.timeStamp : 0;
+        if ( current?.pending !== true || current.previousCommit === undefined ||
+            timestamp < current.timestamp ) { return; }
+        tabs.set(details.tabId, { ...current.previousCommit, timestamp });
     };
 
     // Rebuild current document identities after worker sleep. Query results
@@ -232,7 +267,12 @@ export function createWebRequestFirewall(deps) {
         // Capture native main-frame provenance even before snapshots are ready.
         // Filtering a root document is deliberately left to existing DNR.
         if ( details.type === 'main_frame' ) {
-            observeNavigation({ ...details, frameId: 0 });
+            // A prerendered or other non-primary main frame never replaces
+            // the context of the page currently shown in the tab.
+            if ( details.frameId === 0 && details.documentLifecycle !== 'prerender' &&
+                (details.frameType ?? 'outermost_frame') === 'outermost_frame' ) {
+                observeNavigation(details);
+            }
             return {};
         }
         if ( status.ready === false || snapshot === undefined ||
@@ -290,7 +330,7 @@ export function createWebRequestFirewall(deps) {
                 { urls: [ 'http://*/*', 'https://*/*' ] }, [ 'blocking' ]);
             status.listenerRegistered = true;
         } catch ( reason ) {
-            fail(reason);
+            fail(reason, true);
         }
     }
 
@@ -313,8 +353,9 @@ export function createWebRequestFirewall(deps) {
             suspend();
             status.permissionGranted = false;
         },
-        fail,
+        fail: reason => fail(reason),
         observeNavigation,
+        navigationFailed,
         forgetTab: tabId => {
             hydrationInvalidations?.add(tabId);
             tabs.delete(tabId);

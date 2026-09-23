@@ -32,6 +32,7 @@ let failStock = true;
 let userGate;
 let customFilterCount = 0;
 let supplementalMutations = 0;
+let disabledFeatures = [];
 const context = vm.createContext({
     AggregateError, Promise,
     pendingFilteringMutation: Promise.resolve(),
@@ -46,7 +47,9 @@ const context = vm.createContext({
     firewall: { refresh: async () => { firewallCalls++; } },
     UBLOCK_PLUS_ORIGIN: 'chrome-extension://test',
     hasBroadHostPermissions: async () => true,
-    adminReadEx: async () => [],
+    adminReadEx: async key => key === 'disabledFeatures' ? disabledFeatures : [],
+    UPDATE_MESSAGES: new Set([ 'getUpdateStatus' ]),
+    onUpdateMessage: () => 'update-handler',
     hasCustomFilters: async () => customFilterCount,
     popupBlocker: {
         getPolicies: async () => ({ effective: { mode: 'default' } }),
@@ -74,9 +77,14 @@ const context = vm.createContext({
 });
 const queueStart = source.indexOf('function enqueueFilteringMutation(');
 const queueEnd = source.indexOf('\n}\n', queueStart) + 3;
+const guardStart = source.indexOf('async function assertFeatureAllowed(');
+const guardEnd = source.indexOf('async function onMessage(', guardStart);
+assert.ok(guardStart >= 0 && guardEnd > guardStart);
 vm.runInContext(source.slice(queueStart, queueEnd) + '\n' +
+    source.slice(guardStart, guardEnd) + '\n' +
     source.slice(refreshStart, refreshEnd) + '\n' +
     functionSource('onMessage', 'onCommand'), context);
+context.enqueueFilteringMutation.transactions = 0;
 const send = request => context.onMessage(request, {
     origin: 'chrome-extension://test',
 });
@@ -89,9 +97,11 @@ await new Promise(resolve => setImmediate(resolve));
 assert.equal(mode, 1);
 assert.equal(settled, false, 'Do not leave the queue while user registration is pending');
 assert.equal(supplementalMutations, 1, 'blocking supplement stays suspended while native registration is pending');
+assert.equal(context.enqueueFilteringMutation.transactions, 1, 'a running transaction keeps updates from replacing the folder');
 release();
 await checked;
 assert.equal(supplementalMutations, 0, 'rejected mutations also release their suspension lease');
+assert.equal(context.enqueueFilteringMutation.transactions, 0, 'a failed transaction no longer blocks updates');
 userGate = undefined;
 failStock = false;
 assert.equal(await send({ what: 'setFilteringMode', hostname: 'site.test', level: 1 }), 1);
@@ -122,4 +132,18 @@ for ( const [ hostname, expected ] of [
     assert.equal(matchFromHostname(hostname), expected);
     assert.equal(hostnameFromMatch(expected), hostname);
 }
-console.log('Filtering-mode retry and IP scope tests passed');
+// Managed disabledFeatures bind the worker, not only the dashboard and popup.
+disabledFeatures = [ 'filteringMode' ];
+const modeBefore = mode;
+for ( const request of [
+    { what: 'setFilteringMode', hostname: 'site.test', level: 0 },
+    { what: 'setDefaultFilteringMode', level: 0 },
+    { what: 'setFilteringModeDetails', modes: { none: [ 'all-urls' ] } },
+] ) {
+    await assert.rejects(send(request), /administrator disabled "filteringMode"/, request.what);
+}
+assert.equal(mode, modeBefore, 'A forbidden mode change has no effect');
+disabledFeatures = [];
+// Update messages are routed before anything else.
+assert.equal(await send({ what: 'getUpdateStatus' }), 'update-handler');
+console.log('Filtering-mode retry, administrator lock and IP scope tests passed');
