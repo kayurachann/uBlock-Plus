@@ -64,6 +64,14 @@ param(
     [switch] $NoRegistry
 )
 
+# Windows PowerShell started from PowerShell 7 (a PowerShell 7 terminal, a
+# GitHub Actions step) inherits PowerShell 7's module path, from which it
+# cannot load its own modules: Get-FileHash, Get-Acl and others go missing.
+# Its own modules come first. No cmdlet may run before this line.
+if ( $PSVersionTable.PSEdition -ne 'Core' ) {
+    $env:PSModulePath = "$PSHOME\Modules;$env:PSModulePath"
+}
+
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'

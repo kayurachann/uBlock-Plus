@@ -74,6 +74,14 @@ param(
     [string] $IncludePrerelease = 'config'
 )
 
+# Windows PowerShell started from PowerShell 7 (a PowerShell 7 terminal, a
+# GitHub Actions step) inherits PowerShell 7's module path, from which it
+# cannot load its own modules: Get-FileHash, Get-Acl and others go missing.
+# Its own modules come first. No cmdlet may run before this line.
+if ( $PSVersionTable.PSEdition -ne 'Core' ) {
+    $env:PSModulePath = "$PSHOME\Modules;$env:PSModulePath"
+}
+
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
@@ -315,9 +323,8 @@ function Test-LinkItem {
 
 function Get-AccessRules {
     param([Parameter(Mandatory)][string] $Path)
-    # Windows PowerShell reads permissions through .NET, not Get-Acl: started
-    # from PowerShell 7, powershell.exe inherits a module path from which the
-    # module providing Get-Acl cannot load.
+    # Windows PowerShell reads permissions through .NET, which needs no
+    # module; see the module path note at the top.
     $sections = [Security.AccessControl.AccessControlSections]::Access
     if ( $PSVersionTable.PSEdition -eq 'Core' ) {
         $security = Get-Acl -LiteralPath $Path

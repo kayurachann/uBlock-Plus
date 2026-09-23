@@ -156,20 +156,27 @@ const fixtureAsGiven = await mkdtemp(path.join(os.tmpdir(), 'ubp-updater-test-')
 const fixture = await realpath(fixtureAsGiven);
 // Windows PowerShell started from PowerShell 7 (as in a PowerShell 7 terminal
 // or a GitHub Actions step) inherits a module path from which it cannot load
-// Microsoft.PowerShell.Security, and so has no Get-Acl. Every PowerShell
-// process of this test runs with such a module first on its path.
+// its own modules: Get-Acl, Get-FileHash and others go missing. Every
+// PowerShell process of this test runs with such modules first on its path.
 if ( spawnSync(powershell, [ '-NoProfile', '-Command', '$PSVersionTable.PSEdition' ],
     { encoding: 'utf8' }).stdout.trim() === 'Desktop' ) {
     const modules = path.join(fixture, 'PSModules');
-    await mkdir(path.join(modules, 'Microsoft.PowerShell.Security'), { recursive: true });
-    await writeFile(path.join(modules, 'Microsoft.PowerShell.Security', 'Microsoft.PowerShell.Security.psd1'),
-        "@{ ModuleVersion = '7.0.0.0'; GUID = 'a94c8c7e-9810-47c0-b8af-65089c13a35a'; " +
-        "PowerShellVersion = '7.0'; CompatiblePSEditions = @('Core'); " +
-        "NestedModules = 'Microsoft.PowerShell.Security.dll'; CmdletsToExport = @('Get-Acl', 'Set-Acl') }\r\n");
+    for ( const [ name, guid, cmdlets ] of [
+        [ 'Microsoft.PowerShell.Security', 'a94c8c7e-9810-47c0-b8af-65089c13a35a', "'Get-Acl', 'Set-Acl'" ],
+        [ 'Microsoft.PowerShell.Utility', '1da87e53-152b-403e-98dc-74d7b4d63d59', "'Get-FileHash', 'ConvertFrom-Json', 'ConvertTo-Json', 'Invoke-WebRequest'" ],
+        [ 'Microsoft.PowerShell.Management', 'eefcb906-b326-4e99-9f54-8b4bb6ef3c6d', "'Get-Item', 'Test-Path', 'Join-Path', 'Copy-Item', 'Remove-Item'" ],
+    ] ) {
+        await mkdir(path.join(modules, name), { recursive: true });
+        await writeFile(path.join(modules, name, `${name}.psd1`),
+            `@{ ModuleVersion = '7.0.0.0'; GUID = '${guid}'; PowerShellVersion = '7.0'; ` +
+            `CompatiblePSEditions = @('Core'); NestedModules = '${name}.dll'; CmdletsToExport = @(${cmdlets}) }\r\n`);
+    }
     process.env.PSModulePath = [ modules, process.env.PSModulePath ].filter(Boolean).join(';');
-    const probe = spawnSync(powershell, [ '-NoProfile', '-Command', 'Get-Acl -LiteralPath $env:TEMP | Out-Null' ],
-        { encoding: 'utf8' });
-    assert.match(probe.stderr, /CouldNotAutoloadMatchingModule/, 'The module path hides Get-Acl as PowerShell 7 does');
+    for ( const command of [ 'Get-Acl -LiteralPath $env:TEMP', 'Get-FileHash -LiteralPath $env:ComSpec' ] ) {
+        const probe = spawnSync(powershell, [ '-NoProfile', '-Command', `${command} | Out-Null` ],
+            { encoding: 'utf8' });
+        assert.match(probe.stderr, /CouldNotAutoloadMatchingModule/, `The module path hides ${command.split(' ')[0]}`);
+    }
 }
 const installRoot = path.join(fixture, 'Updater');
 const extensionDir = path.join(fixture, 'Extensions', 'uBlock-Plus');
