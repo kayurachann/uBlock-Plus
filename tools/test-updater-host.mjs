@@ -11,7 +11,7 @@
 
 import { crc32, deflateRawSync } from 'node:zlib';
 import { generateKey, signBytes } from './release-signing.mjs';
-import { mkdir, mkdtemp, open, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, open, readFile, realpath, rm, stat, writeFile } from 'node:fs/promises';
 import { spawn, spawnSync } from 'node:child_process';
 import { Buffer } from 'node:buffer';
 import assert from 'node:assert/strict';
@@ -150,7 +150,10 @@ const base = `http://127.0.0.1:${server.address().port}`;
 // ---------------------------------------------------------------------------
 // Fixture folders
 
-const fixture = await mkdtemp(path.join(os.tmpdir(), 'ubp-updater-test-'));
+// TEMP may be an 8.3 path (C:\Users\RUNNER~1\... on GitHub runners). Chrome's
+// folder picker gives long paths, from which Chrome derives the extension ID.
+const fixtureAsGiven = await mkdtemp(path.join(os.tmpdir(), 'ubp-updater-test-'));
+const fixture = await realpath(fixtureAsGiven);
 // Windows PowerShell started from PowerShell 7 (as in a PowerShell 7 terminal
 // or a GitHub Actions step) inherits a module path from which it cannot load
 // Microsoft.PowerShell.Security, and so has no Get-Acl. Every PowerShell
@@ -284,7 +287,10 @@ try {
     await writePackage(extensionDir, packageEntries('1.0.0'));
 
     // Installation
-    const installed = await runPowerShell(installer, [ ...installArgs, '-ExtensionDirectory', extensionDir ]);
+    // The folder as TEMP spells it: the installer registers the ID of its
+    // long path, as Chrome derives it.
+    const installed = await runPowerShell(installer, [ ...installArgs, '-ExtensionDirectory',
+        path.join(fixtureAsGiven, 'Extensions', 'uBlock-Plus') ]);
     assert.equal(installed.status, 0, installed.stderr + installed.stdout);
     assert.match(installed.stdout, /select Allow the updater \(if shown\), then Check now/,
         'The installer names the permission step before Check now');
