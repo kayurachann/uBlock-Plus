@@ -214,7 +214,35 @@ await flush();
 assert.equal(api.declarativeNetRequest.onRuleMatchedDebug.listeners.size, 0);
 assert.equal(api.webNavigation.onCommitted.listeners.size, 0);
 assert.ok(stops.some(([ tabId ]) => tabId === 12));
-assert.equal((await send(connect(), 'read')).entries.length, 0, 'closing last window erases temporary records');
+const reopened = connect();
+assert.equal((await send(reopened, 'read')).entries.length, 0, 'closing last window erases temporary records');
+reopened.disconnect();
+await flush();
+// Closing or retargeting one window keeps records that another open window
+// still shows, including a paused one; the last window close erases them.
+const paused = connect();
+await send(paused, 'start', 5);
+logger.record({ kind: 'network', phase: 'requested', tabId: 5, url: 'https://kept.example/' });
+logger.record({ kind: 'system', phase: 'registered', source: 'stock', detail: 'global' });
+await send(paused, 'stop');
+const other = connect();
+await send(other, 'start', 7);
+other.disconnect();
+await flush();
+const retargeted = connect();
+await send(retargeted, 'start', 5);
+await send(retargeted, 'start', 8);
+state = await send(paused, 'read');
+assert.equal(state.entries.some(e => e.url === 'https://kept.example/'), true,
+    'closing another logger window keeps a paused window’s records');
+assert.equal(state.entries.some(e => e.kind === 'system'), true);
+retargeted.disconnect();
+paused.disconnect();
+await flush();
+const last = connect();
+assert.equal((await send(last, 'read')).entries.length, 0, 'closing the last window erases records');
+last.disconnect();
+await flush();
 assert.equal(redactLoggerURL('https://user:password@example.com/path?secret=1#token'), 'https://example.com/path');
 assert.equal(redactLoggerURL('data:text/plain,private'), '');
 const exported = JSON.stringify(exportLoggerEntries([{
@@ -273,13 +301,15 @@ assert.equal(content.contentEvents.listeners.size, 0, 'stop removes the isolated
 const boundedCSS = await createContent(true);
 boundedCSS.contentEvents.emit({ what: 'sampleLoggerCSS', css: Array(90).fill('.ad').join(',') });
 assert.equal(boundedCSS.queries.length, 32, 'a stylesheet cannot trigger an unbounded selector scan');
-const englishUI = loggerUIText('en-US');
-const vietnameseUI = loggerUIText('vi-VN');
-assert.equal(vietnameseUI.start, 'Bắt đầu');
-assert.equal(vietnameseUI.language, 'vi');
-assert.deepEqual(Object.keys(vietnameseUI).sort(), Object.keys(englishUI).sort());
-assert.deepEqual(Object.keys(vietnameseUI.kinds).sort(), Object.keys(englishUI.kinds).sort());
-assert.equal(vietnameseUI.details.length, englishUI.details.length);
-assert.equal(vietnameseUI.columns.length, englishUI.columns.length);
-assert.equal(loggerUIText('fr').language, 'en', 'other locales retain readable English fallback');
+// Logger copy comes from the message catalog (see test-d-firewall-logger-ui.mjs
+// for every maintained locale and every recorded phase); kinds cover every
+// recorded kind.
+const catalogUI = loggerUIText((key, substitutions) => [ key, ...(substitutions ?? []) ].join(':'));
+assert.equal(catalogUI.start, 'loggerStart');
+assert.equal(catalogUI.records(3, LOGGER_LIMIT, 1), `loggerRecordCount:3:${LOGGER_LIMIT}:1`);
+assert.deepEqual(Object.keys(catalogUI.kinds).sort(),
+    [ '', 'cosmetic', 'dnr', 'dom', 'network', 'scriptlet', 'system' ]);
+assert.equal(catalogUI.phases.blocked, 'loggerPhaseBlocked', 'webRequest firewall cancellations are labelled');
+assert.equal(catalogUI.details.length, 6);
+assert.equal(catalogUI.columns.length, 4);
 console.log('Unified logger provenance, opt-in permission, bounds, tab isolation, cleanup and redaction passed.');

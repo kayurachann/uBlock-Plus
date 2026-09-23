@@ -1127,5 +1127,729 @@
   },
   "popupRecentBlocks": {
     "message": "近期在此网站上拦截了 $1 个弹出窗口"
+  },
+  "autoUpdateSectionLabel": {
+    "message": "更新",
+    "description": "Dashboard settings: heading of the automatic update section"
+  },
+  "autoUpdateDescription": {
+    "message": "uBlock Plus+ 可以在 GitHub Releases 上检查新版本，并借助可选的 Windows 更新程序在无需重新安装的情况下完成安装。每次检查只向 api.github.com 发送一个请求，不会发送任何浏览数据。",
+    "description": "Dashboard settings: explanation of automatic updates and their network use"
+  },
+  "autoUpdateCheckLabel": {
+    "message": "自动检查新版本",
+    "description": "Dashboard settings: checkbox to enable periodic update checks"
+  },
+  "autoUpdateInstallLabel": {
+    "message": "发现新版本时：",
+    "description": "Dashboard settings: label of the install mode selector"
+  },
+  "autoUpdateInstallAuto": {
+    "message": "自动安装",
+    "description": "Dashboard settings: install mode option"
+  },
+  "autoUpdateInstallNotify": {
+    "message": "仅通知我",
+    "description": "Dashboard settings: install mode option"
+  },
+  "autoUpdateChannelLabel": {
+    "message": "发布渠道：",
+    "description": "Dashboard settings: label of the release channel selector"
+  },
+  "autoUpdateChannelPreview": {
+    "message": "预览版（包含预发布版本）",
+    "description": "Dashboard settings: release channel option"
+  },
+  "autoUpdateChannelStable": {
+    "message": "仅稳定版",
+    "description": "Dashboard settings: release channel option"
+  },
+  "autoUpdateCheckNow": {
+    "message": "立即检查",
+    "description": "Dashboard settings: button that checks for updates immediately"
+  },
+  "autoUpdateInstallNow": {
+    "message": "立即安装",
+    "description": "Dashboard settings: button that installs the available update"
+  },
+  "autoUpdateReleaseNotes": {
+    "message": "发行说明",
+    "description": "Dashboard settings: link to the release page of the available version"
+  },
+  "autoUpdateGrantButton": {
+    "message": "允许更新程序",
+    "description": "Dashboard settings: button requesting the optional nativeMessaging permission"
+  },
+  "autoUpdateSetupSteps": {
+    "message": "Windows 一次性设置：打开你通过“加载已解压的扩展程序”选择的文件夹，双击 updater\\install-updater.cmd，然后在此处选择“允许更新程序”。如果仍被拒绝访问，请在该文件夹中运行以下命令：",
+    "description": "Dashboard settings: one-time setup instructions for the Windows updater"
+  },
+  "autoUpdateCopy": {
+    "message": "复制",
+    "description": "Dashboard settings: copy the setup command to the clipboard"
+  },
+  "autoUpdateCopied": {
+    "message": "已复制",
+    "description": "Dashboard settings: confirmation after copying the setup command"
+  },
+  "autoUpdateRollback": {
+    "message": "恢复到版本 $1",
+    "description": "Dashboard settings: button restoring the previous version. $1 is a version number"
+  },
+  "autoUpdateDevBuild": {
+    "message": "开发版本 $1：已关闭自动更新。",
+    "description": "Dashboard settings: status for local development builds. $1 is the version"
+  },
+  "autoUpdateApplying": {
+    "message": "正在安装 $1…",
+    "description": "Dashboard settings: files are being replaced. $1 is the version"
+  },
+  "autoUpdatePreparing": {
+    "message": "正在准备安装 $1…",
+    "description": "Dashboard settings: update is starting. $1 is the version"
+  },
+  "autoUpdateAvailable": {
+    "message": "有新版本 $1 可用（已安装：$2）。",
+    "description": "Dashboard settings: a newer version exists. $1 new version, $2 installed version"
+  },
+  "autoUpdateUpToDate": {
+    "message": "版本 $1 已是最新。上次检查：$2。",
+    "description": "Dashboard settings: no newer version. $1 installed version, $2 date and time of the last check"
+  },
+  "autoUpdateNeverChecked": {
+    "message": "已安装版本：$1。尚未检查更新。",
+    "description": "Dashboard settings: no check has run yet. $1 installed version"
+  },
+  "autoUpdateManagedInstall": {
+    "message": "此副本以软件包形式安装，其更新由浏览器或管理员管理。",
+    "description": "Dashboard settings: the extension was not loaded unpacked"
+  },
+  "autoUpdatePermissionNeeded": {
+    "message": "自动安装需要 Windows 更新程序和你的许可。",
+    "description": "Dashboard settings: automatic installation is not set up yet"
+  },
+  "autoUpdateConnectedAuto": {
+    "message": "已连接更新程序 $1。新版本将自动安装，扩展程序会自行重新加载。",
+    "description": "Dashboard settings: updater connected, automatic mode. $1 updater version"
+  },
+  "autoUpdateConnectedNotify": {
+    "message": "已连接更新程序 $1。有新版本时请选择“立即安装”。",
+    "description": "Dashboard settings: updater connected, notify-only mode. $1 updater version"
+  },
+  "autoUpdateUpdated": {
+    "message": "已从 $1 更新到 $2。",
+    "description": "Dashboard settings: result of the last update. $1 previous version, $2 new version"
+  },
+  "autoUpdateRolledBack": {
+    "message": "已恢复到版本 $2（之前为 $1）。",
+    "description": "Dashboard settings: result of a rollback. $1 version before, $2 restored version"
+  },
+  "autoUpdatePermissionDenied": {
+    "message": "未授予权限。",
+    "description": "Dashboard settings: the permission request was declined"
+  },
+  "autoUpdateErrorMissing": {
+    "message": "尚未安装 Windows 更新程序。",
+    "description": "Dashboard settings: native updater not registered"
+  },
+  "autoUpdateErrorForbidden": {
+    "message": "更新程序注册的是其他扩展文件夹或 ID。请运行下面的命令。",
+    "description": "Dashboard settings: native updater registered for another extension ID"
+  },
+  "autoUpdateErrorFailed": {
+    "message": "更新程序意外停止。详细信息见 %LOCALAPPDATA%\\uBlockPlus\\Updater\\updater.log。",
+    "description": "Dashboard settings: native updater crashed or exited"
+  },
+  "autoUpdateErrorChecksum": {
+    "message": "下载的软件包与发布的校验和不一致，已丢弃。",
+    "description": "Dashboard settings: package checksum mismatch"
+  },
+  "autoUpdateErrorRateLimited": {
+    "message": "GitHub 正在限制请求，下次检查将稍后进行。",
+    "description": "Dashboard settings: GitHub API rate limit"
+  },
+  "autoUpdateErrorNetwork": {
+    "message": "无法连接 GitHub，下次检查时会重试。",
+    "description": "Dashboard settings: network failure during a check"
+  },
+  "autoUpdateErrorReload": {
+    "message": "扩展程序已重新加载，但版本没有变化。请查看更新程序日志。",
+    "description": "Dashboard settings: after reload the version did not change"
+  },
+  "autoUpdateErrorInterrupted": {
+    "message": "上一次更新在完成前被中断。",
+    "description": "Dashboard settings: the previous update did not finish"
+  },
+  "autoUpdateErrorGeneric": {
+    "message": "更新问题：$1",
+    "description": "Dashboard settings: other update error. $1 is the error message"
+  },
+  "autoUpdatePopupAvailable": {
+    "message": "更新 $1",
+    "description": "Popup: compact indicator that a newer version is available. $1 is the version"
+  },
+  "autoUpdatePopupAvailableTitle": {
+    "message": "有新版本 $1 可用。打开更新设置。",
+    "description": "Popup: tooltip of the update indicator. $1 is the version"
+  },
+  "firewallTitle": {
+    "message": "动态防火墙",
+    "description": "Dynamic firewall panel heading in Site rules"
+  },
+  "firewallDescription": {
+    "message": "每行一条：来源 目标 类型 动作。* 表示所有主机名；block 拦截，allow 允许，noop 仅绕过防火墙，过滤列表仍然生效。",
+    "description": "Dynamic firewall rule syntax. Keep *, block, allow and noop untranslated."
+  },
+  "firewallScope": {
+    "message": "适用于 Chrome 145 及更高版本中标签页内的网络请求（包括 iframe）。“不过滤”模式优先。不包括内联脚本、主页面导航以及标签页之外的请求。1p/3p 规则依据顶层页面和 Public Suffix List；Chrome 更新范围期间，新网站的最初请求可能会被放行。",
+    "description": "Dynamic firewall coverage and limits. Quote the no-filtering mode by its filteringMode0Name label."
+  },
+  "firewallValidate": {
+    "message": "验证",
+    "description": "Button: check the firewall draft without applying it"
+  },
+  "firewallApplySession": {
+    "message": "在本次会话中应用",
+    "description": "Button: apply firewall rules until the browser session ends"
+  },
+  "firewallSavePermanent": {
+    "message": "永久保存",
+    "description": "Button: save firewall rules across browser restarts"
+  },
+  "firewallLoadPermanent": {
+    "message": "载入永久规则",
+    "description": "Button: load the saved permanent firewall rules into the editor"
+  },
+  "firewallImportFile": {
+    "message": "导入文件",
+    "description": "Button: import firewall rules from a text file"
+  },
+  "firewallExportFile": {
+    "message": "导出文件",
+    "description": "Button: export the firewall editor text to a file"
+  },
+  "firewallStatusRules": {
+    "message": "$1 条 Chrome 规则生效；本次会话已识别 $2 个域名。",
+    "description": "Firewall status. $1: active native Chrome rules; $2: registrable domains recognized in this browser session"
+  },
+  "firewallStatusDeferred": {
+    "message": "$1 个单元需要页面上下文；不做推测性拦截。",
+    "description": "Firewall status. $1: cells that need to know the top page before deciding 1p/3p"
+  },
+  "firewallStatusOmitted": {
+    "message": "已达到 Chrome 规则上限：1p/3p 单元现在仅适用于最近识别的 $1 个域名。",
+    "description": "Firewall status when Chrome's session-rule limit forced older learned domains out. $1: domains still covered"
+  },
+  "firewallStatusScopeError": {
+    "message": "无法将新访问的域名加入 1p/3p 范围：$1",
+    "description": "Firewall status when a newly visited domain could not be added to the native 1p/3p scope. $1: technical error message"
+  },
+  "firewallStatusTemporary": {
+    "message": "临时规则生效中。",
+    "description": "Firewall status: session-only rules are active"
+  },
+  "firewallStatusPermanent": {
+    "message": "永久规则生效中。",
+    "description": "Firewall status: saved permanent rules are active"
+  },
+  "firewallPreviewRules": {
+    "message": "验证通过：预计 $1 条 Chrome 规则。",
+    "description": "Result of validating a firewall draft. $1: proposed native Chrome rules"
+  },
+  "firewallPreviewOmitted": {
+    "message": "为符合 Chrome 规则上限，将有 $1 个已识别域名移出 1p/3p 范围。",
+    "description": "Validation notice. $1: recognized domains that would leave the 1p/3p scope to fit Chrome's rule limit"
+  },
+  "firewallUnsupported": {
+    "message": "防火墙需要 Chrome 145 或更高版本。现有过滤功能仍可使用。",
+    "description": "Shown when the browser lacks the native conditions the firewall needs"
+  },
+  "firewallPermanentLoaded": {
+    "message": "已将永久规则载入草稿；应用后生效。",
+    "description": "Shown after loading permanent firewall rules into the editor"
+  },
+  "firewallImportTooLarge": {
+    "message": "文件大小上限：128 KiB",
+    "description": "Error when an imported firewall file is too large"
+  },
+  "firewallTestTitle": {
+    "message": "测试并解释规则",
+    "description": "Heading of the firewall request tester"
+  },
+  "firewallTestScope": {
+    "message": "使用当前的“不过滤”设置测试编辑器中的草稿。不会发送请求、不会保存 URL，也不会改变防护。此处仅解释防火墙，不模拟全部过滤列表、浏览器权限、配额或生效时机。",
+    "description": "Explains what the firewall tester does and does not simulate. Quote the no-filtering mode by its filteringMode0Name label."
+  },
+  "firewallTestSource": {
+    "message": "顶层页面：主机名或 HTTP(S) URL",
+    "description": "Firewall tester field label for the top-level page"
+  },
+  "firewallTestDestination": {
+    "message": "目标资源：主机名或 HTTP(S) URL",
+    "description": "Firewall tester field label for the requested resource"
+  },
+  "firewallTestType": {
+    "message": "请求类型",
+    "description": "Firewall tester field label for the request type"
+  },
+  "firewallTestRequest": {
+    "message": "测试请求",
+    "description": "Button: run the firewall tester"
+  },
+  "firewallTestChanged": {
+    "message": "输入已更改，请重新测试。",
+    "description": "Firewall tester: inputs changed while a test was running"
+  },
+  "firewallTestFirstParty": {
+    "message": "第一方 (1p)",
+    "description": "Firewall tester result: same party as the top page"
+  },
+  "firewallTestThirdParty": {
+    "message": "第三方 (3p)",
+    "description": "Firewall tester result: different party from the top page"
+  },
+  "firewallOutcomeBlock": {
+    "message": "草稿：block — 胜出的单元要求拦截。",
+    "description": "Firewall tester outcome. Keep block untranslated."
+  },
+  "firewallOutcomeAllow": {
+    "message": "草稿：allow — 胜出的单元要求允许。",
+    "description": "Firewall tester outcome. Keep allow untranslated."
+  },
+  "firewallOutcomeNoop": {
+    "message": "草稿：noop — 绕过防火墙；过滤列表仍可能拦截。",
+    "description": "Firewall tester outcome. Keep noop untranslated."
+  },
+  "firewallOutcomeNoMatch": {
+    "message": "没有匹配的防火墙单元；过滤列表仍可能拦截。",
+    "description": "Firewall tester outcome when no cell matches"
+  },
+  "firewallOutcomeOff": {
+    "message": "此页面适用“不过滤”模式，其优先级高于防火墙草稿。",
+    "description": "Firewall tester outcome when the site is in the no-filtering mode. Quote the mode by its filteringMode0Name label."
+  },
+  "firewallOutcomeUnknown": {
+    "message": "无法获取模式或域名上下文；不做推测性判断（fail-open）。",
+    "description": "Firewall tester outcome when mode or party information is unavailable"
+  },
+  "loggerTitle": {
+    "message": "日志",
+    "description": "Logger page title"
+  },
+  "loggerIntro": {
+    "message": "为一个标签页捕获诊断信息。记录只保存在本次扩展会话中，关闭最后一个日志窗口时即被清除。不会上传，也不会保存浏览历史。",
+    "description": "Logger page introduction"
+  },
+  "loggerTab": {
+    "message": "标签页",
+    "description": "Logger label for the browser tab selector"
+  },
+  "loggerStart": {
+    "message": "开始捕获",
+    "description": "Logger button: start capturing"
+  },
+  "loggerPause": {
+    "message": "暂停",
+    "description": "Logger button: pause capturing"
+  },
+  "loggerClear": {
+    "message": "清除",
+    "description": "Logger button: clear records"
+  },
+  "loggerExport": {
+    "message": "导出脱敏 JSON",
+    "description": "Logger button: export redacted records as JSON"
+  },
+  "loggerSearch": {
+    "message": "搜索",
+    "description": "Logger search field label"
+  },
+  "loggerSearchPlaceholder": {
+    "message": "URL、规则 ID、选择器或来源",
+    "description": "Logger search field placeholder"
+  },
+  "loggerKind": {
+    "message": "类别",
+    "description": "Logger event-kind filter label"
+  },
+  "loggerKindAll": {
+    "message": "全部事件",
+    "description": "Logger event-kind filter: all events"
+  },
+  "loggerKindNetwork": {
+    "message": "网络",
+    "description": "Logger event kind: browser network observation"
+  },
+  "loggerKindDnr": {
+    "message": "原生 DNR 匹配",
+    "description": "Logger event kind: native declarativeNetRequest rule matches"
+  },
+  "loggerKindCosmetic": {
+    "message": "外观过滤",
+    "description": "Logger event kind: cosmetic filtering"
+  },
+  "loggerKindDom": {
+    "message": "DOM",
+    "description": "Logger event kind: DOM diagnostics"
+  },
+  "loggerKindScriptlet": {
+    "message": "Scriptlet",
+    "description": "Logger event kind: scriptlets"
+  },
+  "loggerKindSystem": {
+    "message": "系统",
+    "description": "Logger event kind: system events"
+  },
+  "loggerColumnKind": {
+    "message": "类别 / 阶段",
+    "description": "Logger table column: event kind and phase"
+  },
+  "loggerColumnSource": {
+    "message": "证据来源",
+    "description": "Logger table column: which API produced the evidence"
+  },
+  "loggerColumnDetail": {
+    "message": "请求 / 诊断",
+    "description": "Logger table column: request or diagnostic details"
+  },
+  "loggerInitial": {
+    "message": "捕获未开启。请选择一个标签页并开始。",
+    "description": "Logger status before capture starts"
+  },
+  "loggerSummary": {
+    "message": "此日志能证明什么",
+    "description": "Logger heading of the evidence explanation"
+  },
+  "loggerDetailNetwork": {
+    "message": "“网络”是浏览器的只读观察结果，也包括已完成的请求。仅凭错误无法判断是哪个扩展拦截的。被浏览器隐藏的请求以及部分在观察前被拦下的请求可能不会出现。",
+    "description": "Logger evidence explanation: network events"
+  },
+  "loggerDetailDnr": {
+    "message": "原生 DNR 匹配表示 Chrome 选中了本扩展的哪条规则。规则内容的查询是单独进行的，并非原子操作。能否使用取决于 Chrome 的反馈 API 和安装方式。",
+    "description": "Logger evidence explanation: native DNR matches"
+  },
+  "loggerDetailCosmetic": {
+    "message": "“外观过滤”表示已插入样式表，但并不证明元素已被隐藏。DOM 会区分真正应用的程序化过滤与仅表示 CSS 选择器有匹配元素的快照。每个样式表的快照最多检查 32 组选择器，且不能证明可见性或 media 条件生效。每个框架每秒最多报告 32 次；观察器加载之前的效果不在范围内。",
+    "description": "Logger evidence explanation: cosmetic and DOM events"
+  },
+  "loggerDetailScriptlet": {
+    "message": "Scriptlet 报告涵盖注册以及例外和回退处理。此版本不会报告执行尝试，也不会确认各个 scriptlet 的效果。页面发出的消息不能作为在 MAIN 环境中执行的可信证据。全局注册事件使用标签页 −1。",
+    "description": "Logger evidence explanation: scriptlets"
+  },
+  "loggerDetailCapture": {
+    "message": "开始捕获时会请求可选的网络观察权限。拒绝后，仍可使用现有的 DNR 和内容诊断。最多四个日志窗口共享最多 512 条记录。关闭标签页或暂停会停止收集；关闭一个日志窗口会清除其他已打开的日志窗口都不再显示的记录。Chrome 可能会暂停 worker 并清除这些临时记录。",
+    "description": "Logger evidence explanation: permission, limits and record lifetime"
+  },
+  "loggerDetailExport": {
+    "message": "实时显示的 URL 可能包含私密查询参数。导出会移除凭据、查询参数、片段和诊断自由文本；URL 路径中仍可能含有个人标识。分享前请检查导出的文件。",
+    "description": "Logger evidence explanation: private data and export redaction"
+  },
+  "loggerEmpty": {
+    "message": "暂无事件。请开始捕获，然后重新加载所选页面或在页面上进行操作。",
+    "description": "Logger placeholder when there are no events"
+  },
+  "loggerCapturing": {
+    "message": "正在捕获。",
+    "description": "Logger status: capturing"
+  },
+  "loggerPaused": {
+    "message": "已暂停。",
+    "description": "Logger status: paused"
+  },
+  "loggerNetworkAttached": {
+    "message": "网络观察：已连接。",
+    "description": "Logger state: browser network observation is attached"
+  },
+  "loggerNetworkUnavailable": {
+    "message": "网络观察：不可用。",
+    "description": "Logger state: browser network observation is unavailable"
+  },
+  "loggerNativeAttached": {
+    "message": "原生 DNR 监听器：已连接。",
+    "description": "Logger state: native DNR match listener is attached"
+  },
+  "loggerNativeUnavailable": {
+    "message": "原生 DNR 监听器：不可用。",
+    "description": "Logger state: native DNR match listener is unavailable"
+  },
+  "loggerRecordCount": {
+    "message": "$1/$2 条记录；已丢弃 $3 条较早的记录。",
+    "description": "Logger counters. $1: records shown; $2: record limit; $3: older records discarded"
+  },
+  "loggerTabFrame": {
+    "message": "标签页 $1，框架 $2",
+    "description": "Logger row context. $1: browser tab ID; $2: frame ID"
+  },
+  "loggerPermissionRefused": {
+    "message": "未授予网络权限；其他诊断仍可使用。",
+    "description": "Logger status when the optional network permission was refused"
+  },
+  "loggerDisconnected": {
+    "message": "日志连接已结束，临时记录已清除。开始捕获即可重新连接。",
+    "description": "Logger status after the connection to the extension ended"
+  },
+  "loggerPhaseRequested": {
+    "message": "请求开始",
+    "description": "Logger event phase: a network request started (English keeps the technical phase name)"
+  },
+  "loggerPhaseCompleted": {
+    "message": "已完成",
+    "description": "Logger event phase: a network request completed (English keeps the technical phase name)"
+  },
+  "loggerPhaseError": {
+    "message": "错误",
+    "description": "Logger event phase: a network request failed (English keeps the technical phase name)"
+  },
+  "loggerPhaseRedirected": {
+    "message": "已重定向",
+    "description": "Logger event phase: a network request was redirected (English keeps the technical phase name)"
+  },
+  "loggerPhaseBlocked": {
+    "message": "已拦截",
+    "description": "Logger event phase: the optional webRequest firewall supplement canceled a network request (English keeps the technical phase name)"
+  },
+  "loggerPhaseMatched": {
+    "message": "规则匹配",
+    "description": "Logger event phase: a native rule matched (English keeps the technical phase name)"
+  },
+  "loggerPhaseStylesheetInserted": {
+    "message": "已插入样式表",
+    "description": "Logger event phase: a cosmetic stylesheet was inserted (English keeps the technical phase name)"
+  },
+  "loggerPhaseSelectorPresent": {
+    "message": "选择器有匹配元素",
+    "description": "Logger event phase: a CSS selector matched elements in a snapshot (English keeps the technical phase name)"
+  },
+  "loggerPhaseProceduralApplied": {
+    "message": "已应用程序化过滤",
+    "description": "Logger event phase: a procedural cosmetic filter was applied (English keeps the technical phase name)"
+  },
+  "loggerPhaseRegistered": {
+    "message": "已注册",
+    "description": "Logger event phase: scriptlets were registered (English keeps the technical phase name)"
+  },
+  "loggerPhaseExceptionApplied": {
+    "message": "已应用例外",
+    "description": "Logger event phase: a scriptlet exception was applied (English keeps the technical phase name)"
+  },
+  "loggerRequestId": {
+    "message": "请求 $1",
+    "description": "Logger row detail. $1: browser request ID"
+  },
+  "loggerLanguageTag": {
+    "message": "zh-CN",
+    "description": "Not displayed. BCP 47 language tag of this catalog, used as the lang attribute of the logger page"
+  },
+  "pickerQuit": {
+    "message": "退出",
+    "description": "Tooltip and accessible name for the close button of the element picker and custom-filter remover (unpicker) panels"
+  },
+  "restoreSucceeded": {
+    "message": "设置已恢复。",
+    "description": "Dashboard status after a backup file was restored"
+  },
+  "restoreFailed": {
+    "message": "无法恢复设置：$1",
+    "description": "Dashboard status when restoring a backup failed; $1 is the technical reason"
+  },
+  "backupFailed": {
+    "message": "无法创建备份：$1",
+    "description": "Dashboard status when creating a backup file failed; $1 is the technical reason"
+  },
+  "resetSucceeded": {
+    "message": "已恢复默认设置。",
+    "description": "Dashboard status after all settings were reset to their defaults"
+  },
+  "resetFailed": {
+    "message": "无法重置设置：$1",
+    "description": "Dashboard status when resetting settings failed; $1 is the technical reason"
+  },
+  "restoreFirewallUnsupported": {
+    "message": "未恢复防火墙规则：此浏览器不支持（需要 Chrome 145 或更高版本）。",
+    "description": "Restore warning: the backup contains firewall rules, which this browser version cannot use"
+  },
+  "restoreImportedListsDisabled": {
+    "message": "已恢复 $1 个导入的列表，但保持停用：已启用列表的源数据上限为 20 MiB。",
+    "description": "Restore warning; $1 is the number of imported filter lists which were restored but not enabled"
+  },
+  "restoreImportedListsSkipped": {
+    "message": "无法恢复 $1 个导入的列表：仅支持最多 32 个不含凭据的 HTTPS 地址列表。",
+    "description": "Restore warning; $1 is the number of imported filter lists which could not be restored"
+  },
+  "restoreFilteringModesLocked": {
+    "message": "过滤模式未更改：由管理员管理。",
+    "description": "Restore or reset warning: the managed disabledFeatures policy includes filteringMode, so the site filtering modes were not changed"
+  },
+  "restoreDeveloperLocked": {
+    "message": "开发者模式和自定义 DNR 规则未更改：管理员已禁用开发者功能。",
+    "description": "Restore or reset warning: the managed disabledFeatures policy includes develop, so developer mode and custom DNR rules were not changed"
+  },
+  "defaultFilteringModeFailed": {
+    "message": "无法更改默认过滤模式：$1",
+    "description": "Dashboard status when changing the default filtering mode failed; $1 is the technical reason"
+  },
+  "customFiltersSaveFailed": {
+    "message": "无法保存自定义过滤器：$1",
+    "description": "Dashboard status when saving My filters or the filter sandbox failed; $1 is the technical reason"
+  },
+  "siteRulesInvalidHostname": {
+    "message": "“$1”不是有效的主机名。每行填写一个主机名，不要包含通配符、路径或“https://”。",
+    "description": "Site rules validation error; $1 is the rejected line exactly as typed"
+  },
+  "siteRulesDuplicateHostname": {
+    "message": "“$1”出现在多个过滤级别中。同一主机名只能出现在一个级别。",
+    "description": "Site rules validation error; $1 is a hostname listed in more than one filtering level"
+  },
+  "siteRulesDefaultRequired": {
+    "message": "请保留且仅保留一行“$1”：它决定所有其他网站的默认过滤级别。",
+    "description": "Site rules validation error; $1 is the literal token all-urls, which must not be translated"
+  },
+  "siteRulesChangedElsewhere": {
+    "message": "此页面加载网站规则后，规则已在其他位置被更改。你的编辑已保留：再次保存将覆盖这些更改，重新加载页面则会放弃你的编辑。",
+    "description": "Site rules conflict: the stored rules changed after the page loaded them; the user's edits were not saved"
+  },
+  "siteRulesSaveFailed": {
+    "message": "无法保存网站规则：$1",
+    "description": "Dashboard status when valid site rules could not be saved; $1 is the technical reason"
+  },
+  "webRequestSetupTitle": {
+    "message": "实验性网络防火墙",
+    "description": "Diagnostics panel title for the optional Experimental WebRequest package"
+  },
+  "webRequestSetupExperimental": {
+    "message": "使用扩展程序文件夹中的 start-experimental-chrome.cmd 打开 Chrome。首次使用时，请通过“加载已解压的扩展程序”加载该文件夹。启动器使用独立的配置文件；之后回到此处点击“刷新诊断”以检查访问权限。",
+    "description": "Diagnostics setup steps shown in the Experimental WebRequest package; keep start-experimental-chrome.cmd unchanged"
+  },
+  "webRequestSetupStandard": {
+    "message": "Experimental WebRequest 软件包增加了防火墙直接拦截功能，包括新访问的域名。请安装该独立软件包，并使用其附带的启动器打开 Chrome。",
+    "description": "Diagnostics note in the standard package about the separate Experimental WebRequest package; keep the package name unchanged"
+  },
+  "webRequestSetupLimits": {
+    "message": "DNR 过滤、allow 和 noop 仍然生效。此功能不会解除配额，也不会恢复完整的 uBO 引擎；扩展程序无法自行更改 Chrome 的启动参数。",
+    "description": "Diagnostics note on the limits of the experimental firewall; keep DNR, allow, noop and uBO unchanged"
+  },
+  "webRequestSetupGuide": {
+    "message": "安装、验证与移除指南",
+    "description": "Link text to the Experimental WebRequest documentation"
+  },
+  "reportGitHubConfirm": {
+    "message": "这将在 GitHub 上打开一份预填的报告，其中包含网站的源（origin）以及本页显示的故障排除信息。在你于 GitHub 上提交之前，不会公开任何内容。是否继续？",
+    "description": "Confirmation shown before the report page opens a prefilled public GitHub issue"
+  },
+  "reportIssueTrackerInfo": {
+    "message": "请将特定网站的过滤问题报告到 <a href=\"https://github.com/kayurachann/uBlock-Plus/issues\"><code>uBlock Plus+</code> 问题跟踪器</a>。<u>需要 GitHub 账户。</u>",
+    "description": "Report page introduction; replaces supportS3P1, which names the upstream uAssets tracker. Keep the HTML markup, including the <a href> link, and the URL unchanged"
+  },
+  "protectionProfileSelectRequired": {
+    "message": "请选择要应用的防护配置。",
+    "description": "Dashboard status when Apply profile is clicked while no protection profile is selected"
+  },
+  "editorApplyFailed": {
+    "message": "无法应用更改：$1",
+    "description": "Dashboard Advanced editors: applying the edited text failed. $1 is the error message"
+  },
+  "autoUpdateRestartRequired": {
+    "message": "已授予权限。uBlock Plus+ 将重新启动一次以连接更新程序。",
+    "description": "Dashboard settings: permission granted, the extension must restart once"
+  },
+  "autoUpdateRestartNow": {
+    "message": "立即重新启动",
+    "description": "Dashboard settings: button restarting the extension to enable the updater connection"
+  },
+  "autoUpdateRestarting": {
+    "message": "正在重新启动…此页面将自动重新打开。",
+    "description": "Dashboard settings: the extension is restarting; this page reopens automatically"
+  },
+  "autoUpdateDownloadingVersion": {
+    "message": "正在下载 $1…",
+    "description": "Dashboard settings, Updates: live status while a new version downloads. $1 is the version"
+  },
+  "autoUpdateProgress": {
+    "message": "$1 / $2 MiB",
+    "description": "Dashboard settings, Updates: download progress. $1 is the downloaded size, $2 the total size, both in MiB"
+  },
+  "autoUpdateHeld": {
+    "message": "由于你已恢复到较早的版本，版本 $1 不会自动安装。如仍要安装，请选择“立即安装”。",
+    "description": "Dashboard settings, Updates: after the user restored an earlier version, automatic installation skips the version restored from. $1 is that version"
+  },
+  "autoUpdateCheckThrottled": {
+    "message": "上次检查还不到一分钟。请在 $1 秒后重试。",
+    "description": "Dashboard settings, Updates: Check now was used again within a minute. $1 is a number of seconds"
+  },
+  "autoUpdateIncognito": {
+    "message": "请在普通窗口中管理更新，而不是在无痕窗口中。",
+    "description": "Dashboard settings, Updates: the page is open in an incognito window, where update controls are disabled"
+  },
+  "autoUpdateManualOnly": {
+    "message": "自动安装仅适用于 Windows。要更新，请用新版本的文件替换扩展文件夹中的文件，然后在扩展程序页面重新加载 uBlock Plus+。",
+    "description": "Dashboard settings, Updates: the native updater exists only for Windows; on other systems the user updates by hand"
+  },
+  "autoUpdatePolicyOff": {
+    "message": "管理员已关闭更新检查。",
+    "description": "Dashboard settings, Updates: managed storage autoUpdate is \"off\""
+  },
+  "autoUpdatePolicyNotify": {
+    "message": "管理员仅允许更新通知；新版本不会自动安装。",
+    "description": "Dashboard settings, Updates: managed storage allows notifications only (autoUpdate \"notify\", or the dashboard is locked)"
+  },
+  "autoUpdateErrorPolicy": {
+    "message": "管理员不允许此操作。",
+    "description": "Dashboard settings, Updates: an action or setting was refused by the administrator policy"
+  },
+  "autoUpdateErrorFiltersBusy": {
+    "message": "正在更新过滤规则列表。请在更新完成后重试。",
+    "description": "Dashboard settings, Updates: an install, restore or restart was refused because a filter list update is running"
+  },
+  "autoUpdateErrorUpdateBusy": {
+    "message": "另一个更新正在进行。请稍后重试。",
+    "description": "Dashboard settings, Updates: another install or restore (in this browser or from the command-line updater) is running"
+  },
+  "autoUpdateErrorSignature": {
+    "message": "该软件包未使用受信任的 uBlock Plus+ 发布密钥签名，因此未安装。",
+    "description": "Dashboard settings, Updates: the updater found no valid signature from a trusted release key"
+  },
+  "autoUpdateErrorPackage": {
+    "message": "下载的软件包不是适用于此副本的有效 uBlock Plus+ 版本，因此未安装。",
+    "description": "Dashboard settings, Updates: the downloaded package is invalid, too large, not staged, or not the expected edition or version"
+  },
+  "autoUpdateErrorUnexpectedFiles": {
+    "message": "扩展文件夹中有不属于 uBlock Plus+ 的文件。请将它们移出该文件夹后重试。未做任何更改。",
+    "description": "Dashboard settings, Updates: the updater refused to replace a folder containing files which are not part of the extension"
+  },
+  "autoUpdateErrorNoBackup": {
+    "message": "没有可恢复的较早版本。",
+    "description": "Dashboard settings, Updates: restore failed because the updater has no backup of an earlier version"
+  },
+  "autoUpdateErrorRollbackFailed": {
+    "message": "无法恢复到较早的版本。详细信息见 %LOCALAPPDATA%\\uBlockPlus\\Updater\\updater.log。",
+    "description": "Dashboard settings, Updates: the updater could not restore the earlier version"
+  },
+  "autoUpdateErrorApplyFailed": {
+    "message": "无法安装新版本。详细信息见 %LOCALAPPDATA%\\uBlockPlus\\Updater\\updater.log。",
+    "description": "Dashboard settings, Updates: the updater could not back up the installed version or replace the extension files"
+  },
+  "autoUpdateErrorUnsafeFolder": {
+    "message": "更新程序不会更改此扩展文件夹：它是驱动器根目录或系统/配置文件夹、包含链接，或者此电脑上的其他用户可以更改它。请将 uBlock Plus+ 移到你的用户配置文件中（例如 %LOCALAPPDATA%\\uBlockPlus\\Extension），从那里重新加载，然后再次进行设置。",
+    "description": "Dashboard settings, Updates: the updater refuses to manage the extension folder (drive root, system or profile folder, links)"
+  },
+  "autoUpdateErrorFolderMismatch": {
+    "message": "更新程序管理的文件夹中的版本与此扩展不同。请在你通过“加载已解压的扩展程序”加载的文件夹中运行设置命令。",
+    "description": "Dashboard settings, Updates: the folder the updater manages holds another (older or unknown) version than the running extension"
+  },
+  "autoUpdateErrorNotOffered": {
+    "message": "所选发布渠道不提供此版本。",
+    "description": "Dashboard settings, Updates: Install now asked for a version which the selected release channel does not offer"
+  },
+  "autoUpdateErrorAmbiguous": {
+    "message": "更新程序为多个使用此扩展 ID 的文件夹进行了注册。请在你通过“加载已解压的扩展程序”加载的文件夹中运行 updater\\install-updater.cmd -Replace。",
+    "description": "Dashboard settings, Updates: the updater has several folders registered for this extension ID and cannot tell which one to update"
+  },
+  "autoUpdateErrorUpdater": {
+    "message": "更新程序报告了错误。详细信息见 %LOCALAPPDATA%\\uBlockPlus\\Updater\\updater.log。",
+    "description": "Dashboard settings, Updates: the native updater reported an error without a more specific explanation (invalid configuration, internal error, unexpected reply)"
+  },
+  "autoUpdateErrorUndone": {
+    "message": "已撤销一次中断的更新并恢复了之前的版本。其他内容均未更改。",
+    "description": "Dashboard settings: the updater restored the previous version after an interrupted update"
   }
 }

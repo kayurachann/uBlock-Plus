@@ -22,12 +22,17 @@
 */
 
 import {
+    UPDATE_STATE_KEY,
+    compareVersions,
+    parseVersion,
+} from './update-core.js';
+import {
     applyPowerUISettings,
     getPowerUISettings,
     listenForPowerUISettings,
     setPowerUISettings,
 } from './power-ui.js';
-import { browser, runtime, sendMessage } from './ext.js';
+import { browser, localRead, runtime, sendMessage } from './ext.js';
 import {
     createPopupActionRunner,
     launchPopupTool,
@@ -380,6 +385,24 @@ async function openDashboard(pane) {
     }
 }
 
+// The worker records newer releases found by its periodic check; the popup
+// only reads that state and never contacts the network itself.
+async function renderUpdateBadge() {
+    const version = (await localRead(UPDATE_STATE_KEY))?.available?.version;
+    const button = qs$('#updateAvailable');
+    const newer = typeof version === 'string' && parseVersion(version) !== null &&
+        compareVersions(version, runtime.getManifest().version) > 0;
+    button.hidden = newer === false || forbidden('dashboard');
+    if ( button.hidden ) { return; }
+    dom.text(button, i18n$('autoUpdatePopupAvailable', [ version ]));
+    dom.attr(button, 'title', i18n$('autoUpdatePopupAvailableTitle', [ version ]));
+}
+
+dom.on('#updateAvailable', 'click', ev => {
+    if ( ev.isTrusted !== true || forbidden('dashboard') ) { return; }
+    return runAction(( ) => openDashboard('settings/autoUpdate'));
+});
+
 dom.on('#gotoDashboard, #gotoDashboardFooter, #gotoMyFilters, #gotoSiteRules', 'click', ev => {
     // Options remain a recovery route if the service worker failed to start.
     if ( ev.isTrusted !== true || forbidden('dashboard') ) { return; }
@@ -495,4 +518,4 @@ dom.on('#toggleDetails', 'click', ev => {
     });
 });
 
-tryInit();
+tryInit().catch(( ) => { }).then(renderUpdateBadge).catch(( ) => { });

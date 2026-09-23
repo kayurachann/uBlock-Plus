@@ -180,6 +180,54 @@
             <p><label id="privacyDisableAdApis" data-i18n="privacyDisableAdApis"><span class="input checkbox"><input type="checkbox"><svg viewBox="0 0 24 24"><path d="M1.73,12.91 8.1,19.28 22.79,4.59"/></svg></span>_</label><legend></legend></p>
         </div>
     </div>
+    <div id="autoUpdate" data-platform-only="chromium">
+        <h3 data-i18n="autoUpdateSectionLabel">_</h3>
+        <p data-i18n="autoUpdateDescription">_</p>
+        <p class="autoUpdateSummary" role="status" aria-live="polite"></p>
+        <p class="autoUpdateProgress" hidden></p>
+        <p class="autoUpdateLastUpdate" hidden></p>
+        <p class="autoUpdatePolicy" hidden></p>
+        <p class="autoUpdateIncognito" hidden></p>
+        <p class="autoUpdateHeld" hidden></p>
+        <p class="autoUpdateError" role="alert" hidden></p>
+        <p class="autoUpdateNote" role="status" hidden></p>
+        <p class="autoUpdateActions">
+            <button id="autoUpdateCheckNow" class="iconified dontshrink" type="button"><span class="fa-icon">refresh</span><span data-i18n="autoUpdateCheckNow">_</span><span class="hover"></span></button>
+            <button id="autoUpdateInstallNow" class="iconified dontshrink" type="button" hidden><span class="fa-icon">download-alt</span><span data-i18n="autoUpdateInstallNow">_</span><span class="hover"></span></button>
+            <a id="autoUpdateReleaseNotes" href="#" target="_blank" rel="noopener noreferrer" hidden data-i18n="autoUpdateReleaseNotes">_</a>
+        </p>
+        <p><label id="autoUpdateCheck" data-i18n="autoUpdateCheckLabel"><span class="input checkbox"><input type="checkbox"><svg viewBox="0 0 24 24"><path d="M1.73,12.91 8.1,19.28 22.79,4.59"/></svg></span>_</label></p>
+        <p class="autoUpdateOptions">
+            <label class="autoUpdateInstallModeLabel"><span data-i18n="autoUpdateInstallLabel">_</span>
+                <select id="autoUpdateInstallMode" aria-label="autoUpdateInstallLabel">
+                    <option value="auto" data-i18n="autoUpdateInstallAuto">_</option>
+                    <option value="notify" data-i18n="autoUpdateInstallNotify">_</option>
+                </select>
+            </label>
+            <label><span data-i18n="autoUpdateChannelLabel">_</span>
+                <select id="autoUpdateChannel" aria-label="autoUpdateChannelLabel">
+                    <option value="preview" data-i18n="autoUpdateChannelPreview">_</option>
+                    <option value="stable" data-i18n="autoUpdateChannelStable">_</option>
+                </select>
+            </label>
+        </p>
+        <div class="autoUpdateUpdater">
+            <p class="autoUpdateUpdaterStatus" role="status"></p>
+            <p class="autoUpdatePermissionPrompt" hidden>
+                <button id="autoUpdateGrant" class="iconified dontshrink" type="button"><span class="fa-icon">lock</span><span data-i18n="autoUpdateGrantButton">_</span><span class="hover"></span></button>
+            </p>
+            <p>
+                <button id="autoUpdateRestart" class="iconified dontshrink" type="button" hidden><span class="fa-icon">refresh</span><span data-i18n="autoUpdateRestartNow">_</span><span class="hover"></span></button>
+            </p>
+            <div class="autoUpdateSetup" hidden>
+                <p data-i18n="autoUpdateSetupSteps">_</p>
+                <p class="autoUpdateSetupLine"><code class="autoUpdateSetupCommand"></code> <button id="autoUpdateCopyCommand" type="button" data-i18n="autoUpdateCopy">_</button></p>
+            </div>
+            <p>
+                <button id="autoUpdateRollback" class="iconified dontshrink" type="button" hidden><span class="fa-icon">undo</span><span class="autoUpdateRollbackLabel">_</span><span class="hover"></span></button>
+            </p>
+        </div>
+    </div>
     <div>
         <h3 data-i18n="settingsBackupRestoreLabel">_</h3>
         <p data-i18n="settingsBackupRestoreSummary">_</p>
@@ -464,6 +512,7 @@
 <script src="js/firewall-ui.js" type="module"></script>
 <script src="js/filter-manager-ui.js" type="module"></script>
 <script src="js/develop.js" type="module"></script>
+<script src="js/update-ui.js" type="module"></script>
 
 </body>
 </html>

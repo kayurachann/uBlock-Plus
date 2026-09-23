@@ -22,9 +22,10 @@
 */
 
 import { dom, qs$, qsa$ } from './dom.js';
+import { i18n, i18n$ } from './i18n.js';
 import { localRead, localWrite, sendMessage } from './ext.js';
 import { faIconsInit } from './fa-icons.js';
-import { i18n } from './i18n.js';
+import { setOperationStatus } from './dashboard.js';
 
 /******************************************************************************/
 
@@ -415,7 +416,15 @@ class Editor {
     async saveEditorText() {
         if ( typeof this.editor.saveEditorText !== 'function' ) { return; }
         if ( this.editorTextChanged() === false ) { return; }
-        const saved = await this.editor.saveEditorText(this);
+        let saved;
+        try {
+            saved = await this.editor.saveEditorText(this);
+        } catch (reason) {
+            // The worker rejected the change: keep the edited text so it can
+            // be corrected and applied again, and say why.
+            setOperationStatus(i18n$('editorApplyFailed', [ reason?.message ?? String(reason) ]), 'error');
+            return;
+        }
         if ( saved !== true ) { return; }
         this.lastSavedText = this.normalizeEditorText(this.getEditorText());
         this.updateView();

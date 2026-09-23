@@ -21,7 +21,27 @@
 
 import { dom, qs$ } from './dom.js';
 import { getTroubleshootingInfo } from './troubleshooting.js';
+import { i18n$ } from './i18n.js';
 import { sendMessage } from './ext.js';
+
+/******************************************************************************/
+
+// Reports are filed in a public tracker. As docs/PRIVACY.md states, they
+// carry only origins: paths and queries can identify the user or embed
+// tokens, e.g. in private imported-list subscription URLs.
+
+const ISSUE_TRACKER = 'https://github.com/kayurachann/uBlock-Plus/issues';
+
+function originOnlyURL(url) {
+    return `${url.protocol}//${url.host}/`;
+}
+
+function redactURLs(text) {
+    return text.replace(
+        /\b([a-z][a-z\d+.-]*:\/\/)(?:[^\s/?#@]*@)?([^\s/?#]*)([/?#]\S*)?/gi,
+        (match, scheme, host, rest) => `${scheme}${host}${rest ? '/…' : ''}`
+    );
+}
 
 /******************************************************************************/
 
@@ -31,23 +51,8 @@ const reportedPage = (( ) => {
         const pageURL = url.searchParams.get('url');
         if ( pageURL === null ) { return null; }
         const parsedURL = new URL(pageURL);
-        parsedURL.username = '';
-        parsedURL.password = '';
-        parsedURL.hash = '';
         const select = qs$('select[name="url"]');
-        dom.text(select.options[0], parsedURL.href);
-        if ( parsedURL.search !== '' ) {
-            const option = dom.create('option');
-            parsedURL.search = '';
-            dom.text(option, parsedURL.href);
-            select.append(option);
-        }
-        if ( parsedURL.pathname !== '/' ) {
-            const option = dom.create('option');
-            parsedURL.pathname = '';
-            dom.text(option, parsedURL.href);
-            select.append(option);
-        }
+        dom.text(select.options[0], originOnlyURL(parsedURL));
         return {
             hostname: parsedURL.hostname.replace(/^(m|mobile|www)\./, ''),
             siteMode: parseInt(url.searchParams.get('mode'), 10),
@@ -67,9 +72,8 @@ function reportSpecificFilterType() {
 /******************************************************************************/
 
 async function reportSpecificFilterIssue() {
-    const githubURL = new URL(
-        'https://github.com/kayurachann/uBlock-Plus/issues/new'
-    );
+    if ( self.confirm(i18n$('reportGitHubConfirm')) !== true ) { return; }
+    const githubURL = new URL(`${ISSUE_TRACKER}/new`);
     const issueType = reportSpecificFilterType();
     let title = `${reportedPage.hostname}: ${issueType}`;
     if ( qs$('#isNSFW').checked ) {
@@ -92,16 +96,23 @@ async function reportSpecificFilterIssue() {
 
 /******************************************************************************/
 
-getTroubleshootingInfo(reportedPage).then(config => {
-    qs$('[data-i18n="supportS5H"] + pre').textContent = config;
+// Links in localized text open in a new tab rather than replace this form.
+// i18n.js has already rendered them: bind now, so that they work while the
+// troubleshooting information is still loading. Real anchors can also be
+// focused and activated with the keyboard.
+const linkSelector = 'a[href^="https://"], [data-url]';
 
-    dom.on('[data-url]', 'click', ev => {
-        const elem = ev.target.closest('[data-url]');
-        const url = dom.attr(elem, 'data-url');
-        if ( typeof url !== 'string' || url === '' ) { return; }
-        sendMessage({ what: 'gotoURL', url });
-        ev.preventDefault();
-    });
+dom.on(linkSelector, 'click', ev => {
+    const elem = ev.target.closest(linkSelector);
+    const url = elem?.href || dom.attr(elem, 'data-url');
+    if ( typeof url !== 'string' || url === '' ) { return; }
+    sendMessage({ what: 'gotoURL', url });
+    ev.preventDefault();
+});
+
+getTroubleshootingInfo(reportedPage).then(config => {
+    // Show exactly what a report will contain.
+    qs$('[data-i18n="supportS5H"] + pre').textContent = redactURLs(config);
 
     if ( reportedPage !== null ) {
         dom.on('[data-i18n="supportReportSpecificButton"]', 'click', ev => {
@@ -110,7 +121,7 @@ getTroubleshootingInfo(reportedPage).then(config => {
         });
 
         dom.on('[data-i18n="supportFindSpecificButton"]', 'click', ev => {
-            const url = new URL('https://github.com/uBlockOrigin/uAssets/issues');
+            const url = new URL(ISSUE_TRACKER);
             url.searchParams.set('q', `is:issue sort:updated-desc "${reportedPage.hostname}" in:title`);
             sendMessage({ what: 'gotoURL', url: url.href });
             ev.preventDefault();

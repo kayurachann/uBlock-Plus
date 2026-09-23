@@ -1,58 +1,13 @@
 /* uBlock Plus+ - dynamic firewall editor. GPL-3.0-or-later. */
+import { i18n, sendMessage } from './ext.js';
 import { FIREWALL_REQUEST_TYPES } from './firewall-core.js';
-import { sendMessage } from './ext.js';
 
-const vi = navigator.language.startsWith('vi');
-const labels = vi ? {
-    title: 'Firewall động',
-    description: 'Mỗi dòng: nguồn đích loại hành-động. Dùng * cho mọi tên miền; block chặn, allow cho phép, noop chỉ bỏ qua firewall và vẫn áp dụng danh sách lọc.',
-    scope: 'Áp dụng cho request mạng trong tab, kể cả iframe, trên Chrome 145+. Chế độ Off được ưu tiên. Không áp dụng cho inline-script, điều hướng trang chính hoặc request ngoài tab. Quy tắc 1p/3p dùng trang cấp cao nhất và Public Suffix List; request đầu tiên tới trang mới có thể đi qua trong lúc Chrome cập nhật phạm vi.',
-    preview: 'Kiểm tra', temporary: 'Áp dụng trong phiên', save: 'Lưu lâu dài',
-    revert: 'Nạp bản lâu dài', import: 'Nhập tệp', export: 'Xuất tệp',
-    placeholder: '* * 3p-script block\nexample.com * 3p-script noop',
-    active: 'quy tắc Chrome đang hoạt động', domains: 'miền đã nhận diện trong phiên',
-    deferred: 'ô cần ngữ cảnh trang; không chặn suy đoán',
-    temporaryState: 'Đang dùng bản tạm', permanentState: 'Đang dùng bản lâu dài',
-    unsupported: 'Firewall cần Chrome 145 trở lên. Các chức năng lọc hiện có vẫn hoạt động.',
-    testTitle: 'Thử và giải thích quy tắc',
-    testScope: 'Thử bản nháp trong ô soạn thảo với chế độ Off hiện tại. Không gửi request, không lưu URL và không thay đổi bảo vệ. Kết quả chỉ giải thích firewall; không mô phỏng toàn bộ danh sách lọc, quyền trình duyệt, hạn mức hoặc thời điểm áp dụng.',
-    source: 'Trang cấp cao nhất: hostname hoặc URL HTTP(S)',
-    destination: 'Tài nguyên đích: hostname hoặc URL HTTP(S)',
-    type: 'Loại request', test: 'Thử request', changed: 'Dữ liệu đã đổi; hãy thử lại.',
-    firstParty: 'Cùng bên (1p)', thirdParty: 'Bên thứ ba (3p)',
-    outcomes: {
-        block: 'Bản nháp: block — ô thắng yêu cầu chặn.',
-        allow: 'Bản nháp: allow — ô thắng yêu cầu cho phép.',
-        noop: 'Bản nháp: noop — bỏ qua firewall; danh sách lọc vẫn có thể chặn.',
-        'no-match': 'Không có ô firewall khớp; danh sách lọc vẫn có thể chặn.',
-        off: 'Off đang áp dụng cho trang này; được ưu tiên hơn bản nháp firewall.',
-        unknown: 'Chưa đủ ngữ cảnh chế độ hoặc miền để kết luận; fail-open.',
-    },
-} : {
-    title: 'Dynamic firewall',
-    description: 'One row: source destination type action. Use * for all hostnames; block denies, allow permits, noop bypasses only the firewall while filter lists still apply.',
-    scope: 'Network requests inside tabs, including iframes, on Chrome 145+. Off takes precedence. Inline scripts, main-page navigation and requests outside tabs are excluded. Party rules use the top page and the Public Suffix List; initial requests on a new site may pass while Chrome updates its scope.',
-    preview: 'Validate', temporary: 'Apply for this session', save: 'Save permanently',
-    revert: 'Load permanent rules', import: 'Import file', export: 'Export file',
-    placeholder: '* * 3p-script block\nexample.com * 3p-script noop',
-    active: 'active Chrome rules', domains: 'domains recognized this session',
-    deferred: 'cells need page context; no speculative blocking',
-    temporaryState: 'Temporary rules active', permanentState: 'Permanent rules active',
-    unsupported: 'The firewall requires Chrome 145 or later. Existing filtering remains available.',
-    testTitle: 'Test and explain a rule',
-    testScope: 'Test the editor draft with current Off settings. No request is sent, no URL is saved and protection is unchanged. This explains only the firewall; it does not simulate all filter lists, browser permissions, quotas or activation timing.',
-    source: 'Top page: hostname or HTTP(S) URL',
-    destination: 'Destination resource: hostname or HTTP(S) URL',
-    type: 'Request type', test: 'Test request', changed: 'Inputs changed; test again.',
-    firstParty: 'First party (1p)', thirdParty: 'Third party (3p)',
-    outcomes: {
-        block: 'Draft: block — the winning cell requests blocking.',
-        allow: 'Draft: allow — the winning cell requests allowing.',
-        noop: 'Draft: noop — bypass the firewall; filter lists may still block.',
-        'no-match': 'No firewall cell matches; filter lists may still block.',
-        off: 'Off applies to this page and takes precedence over the firewall draft.',
-        unknown: 'Mode or domain context is unavailable; no speculative decision (fail-open).',
-    },
+const i18n$ = (key, ...substitutions) => i18n.getMessage(key,
+    substitutions.length ? substitutions.map(String) : undefined);
+const outcomes = {
+    block: 'firewallOutcomeBlock', allow: 'firewallOutcomeAllow',
+    noop: 'firewallOutcomeNoop', 'no-match': 'firewallOutcomeNoMatch',
+    off: 'firewallOutcomeOff', unknown: 'firewallOutcomeUnknown',
 };
 
 const panel = document.createElement('div');
@@ -64,16 +19,16 @@ const add = (tag, text) => {
     panel.append(node);
     return node;
 };
-add('h3', labels.title);
-add('p', labels.description);
-add('p', labels.scope);
+add('h3', i18n$('firewallTitle'));
+add('p', i18n$('firewallDescription'));
+add('p', i18n$('firewallScope'));
 const editor = add('textarea', '');
 editor.id = 'firewallRules';
 editor.spellcheck = false;
 editor.rows = 9;
 editor.style.cssText = 'width:100%;box-sizing:border-box;font-family:monospace';
-editor.placeholder = labels.placeholder;
-editor.setAttribute('aria-label', labels.title);
+editor.placeholder = '* * 3p-script block\nexample.com * 3p-script noop';
+editor.setAttribute('aria-label', i18n$('firewallTitle'));
 const actions = add('p', '');
 const status = add('p', '');
 status.id = 'firewallStatus';
@@ -84,11 +39,15 @@ let state;
 let busy = false;
 function display(result) {
     if ( result.error ) { status.textContent = result.error; return; }
-    if ( result.supported === false ) { status.textContent = labels.unsupported; return; }
-    status.textContent = `${result.ruleCount} ${labels.active}; ` +
-        `${result.learnedDomains ?? state?.learnedDomains ?? 0} ${labels.domains}. ` +
-        (result.deferredCells ? `${result.deferredCells} ${labels.deferred}. ` : '') +
-        (result.temporary ? labels.temporaryState : labels.permanentState);
+    if ( result.supported === false ) { status.textContent = i18n$('firewallUnsupported'); return; }
+    const learned = result.learnedDomains ?? state?.learnedDomains ?? 0;
+    status.textContent = [
+        i18n$('firewallStatusRules', result.ruleCount, learned),
+        result.deferredCells ? i18n$('firewallStatusDeferred', result.deferredCells) : '',
+        result.omittedDomains ? i18n$('firewallStatusOmitted', learned) : '',
+        result.scopeError ? i18n$('firewallStatusScopeError', result.scopeError) : '',
+        i18n$(result.temporary ? 'firewallStatusTemporary' : 'firewallStatusPermanent'),
+    ].filter(Boolean).join(' ');
 }
 async function run(task) {
     if ( busy ) { return; }
@@ -109,11 +68,13 @@ function button(id, label, task) {
     actions.append(node, ' ');
     buttons.push(node);
 }
-button('firewallValidate', labels.preview, async () => {
+button('firewallValidate', i18n$('firewallValidate'), async () => {
     const result = await sendMessage({ what: 'previewFirewallRules', text: editor.value });
-    status.textContent = `${labels.preview}: ${result.ruleCount} ` +
-        (vi ? 'quy tắc dự kiến' : 'proposed native rules') +
-        (result.deferredCells ? `; ${result.deferredCells} ${labels.deferred}` : '');
+    status.textContent = [
+        i18n$('firewallPreviewRules', result.ruleCount),
+        result.deferredCells ? i18n$('firewallStatusDeferred', result.deferredCells) : '',
+        result.omittedDomains ? i18n$('firewallPreviewOmitted', result.omittedDomains) : '',
+    ].filter(Boolean).join(' ');
 });
 async function apply(permanent) {
     const draft = editor.value;
@@ -123,28 +84,31 @@ async function apply(permanent) {
     if ( editor.value === draft ) { editor.value = result.sessionText; }
     display(result);
 }
-button('firewallApply', labels.temporary, () => apply(false));
-button('firewallSave', labels.save, () => apply(true));
-button('firewallRevert', labels.revert, async () => {
+button('firewallApply', i18n$('firewallApplySession'), () => apply(false));
+button('firewallSave', i18n$('firewallSavePermanent'), () => apply(true));
+button('firewallRevert', i18n$('firewallLoadPermanent'), async () => {
     state = await sendMessage({ what: 'getFirewallState' });
     editor.value = state.permanentText;
-    status.textContent = vi ? 'Đã nạp bản lâu dài vào bản nháp; bấm Áp dụng để kích hoạt.'
-        : 'Permanent rules loaded into the draft; apply to activate.';
+    status.textContent = i18n$('firewallPermanentLoaded');
 });
 const input = document.createElement('input');
 input.type = 'file'; input.accept = 'text/plain'; input.hidden = true;
 panel.append(input);
-input.addEventListener('change', () => run(async () => {
+input.addEventListener('change', () => {
     const file = input.files[0];
-    if ( file === undefined ) { return; }
-    if ( file.size > 131072 ) { throw new Error('Maximum file size: 128 KiB'); }
-    const text = await file.text();
-    await sendMessage({ what: 'previewFirewallRules', text });
-    editor.value = text;
+    // Reset before any await or error, so choosing the same corrected file
+    // again fires another change event.
     input.value = '';
-}));
-button('firewallImport', labels.import, () => input.click());
-button('firewallExport', labels.export, () => {
+    run(async () => {
+        if ( file === undefined ) { return; }
+        if ( file.size > 131072 ) { throw new Error(i18n$('firewallImportTooLarge')); }
+        const text = await file.text();
+        await sendMessage({ what: 'previewFirewallRules', text });
+        editor.value = text;
+    });
+});
+button('firewallImport', i18n$('firewallImportFile'), () => input.click());
+button('firewallExport', i18n$('firewallExportFile'), () => {
     const url = URL.createObjectURL(new Blob([ editor.value ], { type: 'text/plain' }));
     const link = document.createElement('a');
     link.href = url; link.download = 'ublock-plus-firewall.txt'; link.click();
@@ -154,19 +118,19 @@ document.querySelector('section[data-pane="siteRules"]').append(panel);
 const tester = document.createElement('details');
 tester.id = 'firewallTester';
 const summary = document.createElement('summary');
-summary.textContent = labels.testTitle;
+summary.textContent = i18n$('firewallTestTitle');
 tester.append(summary);
 const explanation = document.createElement('p');
-explanation.textContent = labels.testScope;
+explanation.textContent = i18n$('firewallTestScope');
 tester.append(explanation);
 const fields = [];
-for ( const [ name, tag, placeholder ] of [
-    [ 'source', 'input', 'example.com' ],
-    [ 'destination', 'input', 'https://ads.example.net/script.js' ],
-    [ 'type', 'select', '' ],
+for ( const [ name, tag, placeholder, key ] of [
+    [ 'source', 'input', 'example.com', 'firewallTestSource' ],
+    [ 'destination', 'input', 'https://ads.example.net/script.js', 'firewallTestDestination' ],
+    [ 'type', 'select', '', 'firewallTestType' ],
 ] ) {
     const label = document.createElement('label');
-    label.textContent = labels[name];
+    label.textContent = i18n$(key);
     label.style.cssText = 'display:block;margin-block:0.8em';
     const field = document.createElement(tag);
     field.id = `firewallTest-${name}`;
@@ -186,7 +150,7 @@ for ( const [ name, tag, placeholder ] of [
 }
 const testButton = document.createElement('button');
 testButton.type = 'button'; testButton.id = 'firewallTestRequest';
-testButton.textContent = labels.test;
+testButton.textContent = i18n$('firewallTestRequest');
 const testResult = document.createElement('pre');
 testResult.id = 'firewallTestResult';
 testResult.style.cssText = 'white-space:pre-wrap;overflow-wrap:anywhere';
@@ -199,18 +163,18 @@ testButton.addEventListener('click', () => run(async () => {
     try {
         const result = await sendMessage({ what: 'testFirewallRequest', text, source, destination, type });
         if ( JSON.stringify(input) !== JSON.stringify(testInputs()) ) {
-            testResult.textContent = labels.changed;
+            testResult.textContent = i18n$('firewallTestChanged');
             return;
         }
-        const lines = [ labels.outcomes[result.action], `${result.source} → ${result.destination}` ];
+        const lines = [ i18n$(outcomes[result.action]), `${result.source} → ${result.destination}` ];
         if ( result.thirdParty !== null ) {
-            lines.push(result.thirdParty ? labels.thirdParty : labels.firstParty);
+            lines.push(i18n$(result.thirdParty ? 'firewallTestThirdParty' : 'firewallTestFirstParty'));
         }
         if ( result.rule ) { lines.push(result.rule); }
         testResult.textContent = lines.join('\n');
     } catch ( reason ) {
         testResult.textContent = JSON.stringify(input) === JSON.stringify(testInputs())
-            ? reason.message : labels.changed;
+            ? reason.message : i18n$('firewallTestChanged');
     }
 }));
 for ( const field of [ editor, ...fields ] ) {

@@ -5,7 +5,7 @@
 
 <img src="assets/readme/hero.png" alt="盾牌在 Chromium 頁面載入前篩選廣告、追蹤器、Cookie 和其他不需要的網路請求的插圖" width="1100">
 
-<sub>概念插圖 · v1.0.0 是需要手動更新的側載預先發佈版本</sub>
+<sub>概念插圖 · 側載預先發佈版本，可在 Windows 上選用自動更新</sub>
 
 # uBlock Plus+
 
@@ -30,7 +30,7 @@
 uBlock Plus+ 是一款適用於 Chromium MV3、採用 GPL 授權的獨立內容封鎖器。它將經過驗證的上游篩選與編譯基礎，和社群 Filter Store、可攜式設定、明確的進階使用者控制以及重視記憶體的運作方式結合起來，同時不使用專案遙測服務，也不載入遠端可執行程式碼。
 
 > [!IMPORTANT]
-> **發佈狀態：** v1.0.0 是供手動側載的預先發佈版本，不會自動更新。uBlock Plus+ 是獨立分支，不是 uBlock Origin 的官方版本，也未獲 Raymond Hill 認可。Chrome MV3 並未提供原始 MV2 擴充功能可用的全部封鎖原語。側載可以避開 Chrome 線上應用程式商店的發佈政策，但**不會**消除 DNR 配額、Service Worker 生命週期規則或瀏覽器安全邊界。請參閱[如實說明的相容性矩陣](FEATURE-MATRIX.md)。
+> **發佈狀態：** 本專案以側載預先發佈版本提供，只需透過**載入未封裝項目**安裝一次；選用的 [Windows 更新程式](AUTO-UPDATE.md)會自動安裝後續版本。uBlock Plus+ 是獨立分支，不是 uBlock Origin 的官方版本，也未獲 Raymond Hill 認可。Chrome MV3 並未提供原始 MV2 擴充功能可用的全部封鎖原語。側載可以避開 Chrome 線上應用程式商店的發佈政策，但**不會**消除 DNR 配額、Service Worker 生命週期規則或瀏覽器安全邊界。請參閱[如實說明的相容性矩陣](FEATURE-MATRIX.md)。
 
 ## 以你的選擇為核心
 
@@ -131,20 +131,28 @@ uBlock Plus+ 是一款適用於 Chromium MV3、採用 GPL 授權的獨立內容�
 ### 安裝發佈版本
 
 1. 從 [GitHub Releases](https://github.com/kayurachann/uBlock-Plus/releases) 下載 `uBlock-Plus_*.chromium.zip` 及其對應的 `.sha256` 檔案。
-2. 驗證總和檢查碼，然後將 ZIP 解壓縮到固定資料夾。
+2. 驗證總和檢查碼，然後將 ZIP 解壓縮到使用者設定檔中一個新建、僅供本擴充功能使用的空資料夾；在 Windows 上建議使用 `%LOCALAPPDATA%\uBlockPlus\Extension`。不要使用磁碟機根目錄、直接在 `C:\` 下建立的資料夾或其中的任何資料夾（例如 `C:\Extensions` 或 `C:\Extensions\uBlock-Plus`）：Windows 更新程式會拒絕磁碟機根目錄、系統資料夾和設定檔資料夾本身，以及本機其他使用者可以修改的資料夾。如果已經安裝在這樣的資料夾中，請移到 `%LOCALAPPDATA%\uBlockPlus\Extension`；請參閱[資料夾規則](AUTO-UPDATE.md#folder-rules)和[移動現有安裝](AUTO-UPDATE.md#moving-an-existing-installation)。
 3. 開啟 `chrome://extensions` 或 `edge://extensions`。
-4. 啟用**開發人員模式**，選擇**載入未封裝項目**，然後選取包含 `manifest.json` 的解壓縮資料夾。
+4. 啟用**開發人員模式**，選擇**載入未封裝項目**，然後選取包含 `manifest.json` 的解壓縮資料夾。之後請保持**開發人員模式**開啟；關閉後 Chrome 會停用未封裝的擴充功能。
 5. 在 Chrome 138 以上版本中，開啟該擴充功能的**詳細資料**頁面並啟用**允許使用者指令碼**。Chrome 130–137 改用全域**開發人員模式**開關。如果安裝後變更任一開關，請按一下擴充功能資訊卡上的**重新載入**，讓其 Service Worker 情境識別新的 API 狀態。如此一來，受支援的匯入外觀篩選器和內建允許清單 scriptlet 才能完成註冊。請參閱 Chrome 的 [`userScripts` 指南](https://developer.chrome.com/docs/extensions/reference/api/userScripts)。
 
 > [!NOTE]
-> 側載的擴充功能不會透過 Chrome 線上應用程式商店更新。請關注 [Releases](https://github.com/kayurachann/uBlock-Plus/releases)，並在新版本發佈後替換未封裝的建置版本。只安裝來自本儲存庫的成品，並驗證隨附的 SHA-256 總和檢查碼。
+> 每個安裝副本大約每六小時透過 `api.github.com` 檢查一次新版本，不會傳送瀏覽資料。在 Windows 上，1.2.0 以上版本隨附的更新程式會自動安裝新版本。只需設定一次：在已載入的擴充功能資料夾中按兩下 `updater\install-updater.cmd`（不需要系統管理員權限），然後在**控制台 → 設定 → 更新**中選擇**允許更新程式**。Chrome 會要求與原生應用程式通訊的權限，請允許；接著 uBlock Plus+ 會重新啟動一次，並重新開啟**更新**區段。如果顯示的是**立即重新啟動**，請按一下該按鈕。此後，新版本會先下載，再通過 SHA-256 總和檢查碼與擴充功能身分驗證，並在備份舊版本後安裝。只要資料夾中還有不屬於 uBlock Plus+ 的檔案，更新程式就不會做任何變更。不使用更新程式時（例如在 macOS 或 Linux 上），請關注 [Releases](https://github.com/kayurachann/uBlock-Plus/releases)，以新版本取代資料夾內容，然後重新載入擴充功能。若要移除該資料夾的更新程式，請開啟命令提示字元並執行 `"%LOCALAPPDATA%\uBlockPlus\Extension\updater\install-updater.cmd" -Uninstall`（如果資料夾不同，請改用其路徑）；只有在沒有其他已註冊的安裝副本時，才會刪除瀏覽器中的註冊。只安裝來自本儲存庫的成品，並驗證隨附的 SHA-256 總和檢查碼。詳情與疑難排解請參閱 [AUTO-UPDATE.md](AUTO-UPDATE.md)。
+
+也可以用下列 PowerShell 指令一次完成第 1、2 步並安裝更新程式。這些指令會將最新版本下載到 `%LOCALAPPDATA%\uBlockPlus\Extension`，該資料夾必須是空的或尚不存在。接著將此資料夾載入為未封裝項目，並選擇**允許更新程式**。
+
+```powershell
+$installer = Join-Path $env:TEMP 'install-updater.ps1'
+Invoke-WebRequest -UseBasicParsing https://raw.githubusercontent.com/kayurachann/uBlock-Plus/main/platform/mv3/updater/install-updater.ps1 -OutFile $installer
+powershell -ExecutionPolicy Bypass -File $installer
+```
 
 <details>
 <summary><strong>在 Windows 上驗證發佈套件總和檢查碼</strong></summary>
 
 ```powershell
-(Get-FileHash .\uBlock-Plus_1.0.0.chromium.zip -Algorithm SHA256).Hash
-Get-Content .\uBlock-Plus_1.0.0.chromium.zip.sha256
+(Get-FileHash .\uBlock-Plus_1.2.0.chromium.zip -Algorithm SHA256).Hash
+Get-Content .\uBlock-Plus_1.2.0.chromium.zip.sha256
 ```
 
 兩個十六進位雜湊值必須一致，字母大小寫不影響結果。
@@ -161,6 +169,8 @@ Get-Content .\uBlock-Plus_1.0.0.chromium.zip.sha256
 ```powershell
 git clone --recurse-submodules https://github.com/kayurachann/uBlock-Plus.git
 cd uBlock-Plus
+# Windows 預設會封鎖未簽署的本機指令碼；僅在此視窗中允許。
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 $version = (Get-Content -Raw package.json | ConvertFrom-Json).version
 .\tools\make-mv3.ps1 -Platform chromium -Version $version
 ```
@@ -206,7 +216,7 @@ tools/make-mv3.sh chromium "$VERSION"
 | 遠端來源 | HTTPS 目錄和清單會作為有界資料剖析；重新導向、格式錯誤的結構描述和可執行承載內容都會遭到拒絕。 |
 | Filter Store 信任 | 內建和自訂項目都會顯示其信任等級。僅憑社群熱門程度絕不會將項目提升為 `verified`。 |
 | 擴充功能程式碼 | JavaScript、scriptlet 和重新導向資源均隨經過審查的擴充功能套件提供，絕不會從執行階段 URL 載入。 |
-| 權限 | 核心篩選權限已有文件說明。只有使用者啟用相關控制時才會要求 Chrome 的 `privacy` 權限，而且該權限可以撤銷。 |
+| 權限 | 核心篩選權限已有文件說明。只有使用者啟用相關控制時才會要求 Chrome 的 `privacy` 權限，而且該權限可以撤銷。選用的 `nativeMessaging` 權限只在使用者選擇**允許更新程式**時才會要求。 |
 | 本機資料 | 設定、已編譯篩選器和儲存空間大小診斷資訊會留在裝置上，除非使用者明確匯出。 |
 | 發佈完整性 | CI 會建置並驗證 Chromium 成品；發佈套件附帶 SHA-256 總和檢查碼。 |
 
@@ -216,7 +226,7 @@ tools/make-mv3.sh chromium "$VERSION"
 
 | 目前可用 | 受 MV3 限制 | 未來研究——選用 |
 | --- | --- | --- |
-| DNR 網路封鎖、外觀篩選、內建 scriptlet、自訂/匯入清單、Filter Store、元素選取器/移除器、可感知情境的各主機彈出視窗策略、透過觀察器執行已封裝的 stock `$popup` 規則與受支援的匯入 `$popup`/`$popunder` 子集並僅保留經過刪減的 realm/來源行/類型來源資訊，以及備份/還原 | 即時請求記錄、程序式篩選器、非同步彈出視窗觀察、動態防火牆語意、回應標頭操作和重新導向行為無法提供與 MV2 完全一致的效果 | 受管理的企業轉接器，以及獨立安裝的開放原始碼原生伴隨程式；均須經過 RFC、使用者同意和安全審查 |
+| DNR 網路封鎖、外觀篩選、內建 scriptlet、自訂/匯入清單、Filter Store、元素選取器/移除器、可感知情境的各主機彈出視窗策略、透過觀察器執行已封裝的 stock `$popup` 規則與受支援的匯入 `$popup`/`$popunder` 子集並僅保留經過刪減的 realm/來源行/類型來源資訊，以及備份/還原 | 即時請求記錄、程序式篩選器、非同步彈出視窗觀察、動態防火牆語意、回應標頭操作和重新導向行為無法提供與 MV2 完全一致的效果 | 受管理的企業轉接器，以及獨立安裝、用於篩選（例如 DNS/Proxy）的開放原始碼原生伴隨程式；均須經過 RFC、使用者同意和安全審查。目前唯一發佈的原生元件是由使用者自行安裝的選用 Windows 更新程式（自 1.2.0 起） |
 
 受支援的匯入彈出視窗篩選器子集現在由觀察器執行階段套用。無法精確表達的條件（例如網域類型、要求方法或回應標頭條件）會明確延後，而不會近似執行。延後的 `allow` 條件會作為保守的 fail-open 守衛保留；守衛只能延後決策，絕不能近似地放行或封鎖。由於套用依賴 MV3 的非同步分頁和導覽事件，因此並非與 MV2 的同步處理完全等同。動態與工作階段 DNR 規則共用一個 1,000 條 regex 規則配額，並非各有 1,000 條。
 
@@ -250,7 +260,7 @@ tools/make-mv3.sh chromium "$VERSION"
 <td valign="top">
 
 - 受管理的企業轉接器
-- 選用原生伴隨程式研究
+- 用於篩選的選用原生伴隨程式研究
 - 已簽署目錄的來源證明與撤銷機制
 
 </td>

@@ -130,6 +130,9 @@ try {
     };
     globalThis.self = { chrome: { runtime } };
     globalThis.chrome = globalThis.self.chrome;
+    // Optional override for the source response; it may throw to model a
+    // network failure.
+    let respond;
     globalThis.fetch = async (url, options) => {
         if ( url === './scriptlet.template.js' ) {
             return new Response(await fs.readFile(path.join(temporaryRoot,
@@ -139,7 +142,8 @@ try {
         assert.equal(options.credentials, 'omit');
         assert.equal(options.redirect, 'error');
         fetchCount += 1;
-        const response = new Response(includedSources.get(url) ?? sourceText);
+        const response = respond?.(url) ??
+            new Response(includedSources.get(url) ?? sourceText);
         Object.defineProperty(response, 'url', { value: url });
         return response;
     };
@@ -505,6 +509,269 @@ try {
             }
         }
     }
+
+    const sha256Hex = async text => Array.from(new Uint8Array(
+        await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))
+    ), byte => byte.toString(16).padStart(2, '0')).join('');
+    const importedRules = ( ) => persisted.get(
+        `compiledFilters.g.${generation}.importedFilters.dnrRules`
+    )?.map(rule => rule.condition.requestDomains).flat();
+    sandboxText = '';
+
+    // A pinned source refetched over the network (after a restore, a disable
+    // or a compiler upgrade) is gzip-encoded by raw.githubusercontent.com:
+    // Content-Length counts encoded bytes and must not reject a body whose
+    // decoded size and digest match.
+    sourceText = '! Title: Pinned gzip fixture\n||pinned-gzip.example^$script\n';
+    lists.length = 0;
+    lists.push({ id: sourceURL, enabled: true, sourceIntegrity: {
+        algorithm: 'sha256', digest: await sha256Hex(sourceText),
+        bytes: new TextEncoder().encode(sourceText).length,
+    } });
+    persisted.delete(cacheKey);
+    respond = ( ) => new Response(sourceText, { headers: {
+        'content-encoding': 'gzip', 'content-length': '17',
+    } });
+    generation = (++structuralGeneration).toString(16).padStart(32, '0');
+    const gzipped = await run();
+    assert.equal(gzipped.persisted, true, JSON.stringify(gzipped.errors));
+    assert.deepEqual(importedRules(), [ 'pinned-gzip.example' ]);
+    respond = undefined;
+    // Pinned bytes are immutable: an expired pinned list is never refetched.
+    Object.assign(lists[0], { expires: 1, time: { updated: 0 } });
+    let fetchesBefore = fetchCount;
+    generation = (++structuralGeneration).toString(16).padStart(32, '0');
+    const pinnedExpired = await run();
+    assert.equal(pinnedExpired.persisted, true, JSON.stringify(pinnedExpired.errors));
+    assert.equal(fetchCount, fetchesBefore);
+    assert.deepEqual(importedRules(), [ 'pinned-gzip.example' ]);
+
+    // An expired list keeps its last complete compilation until a
+    // replacement has been fetched and compiled. One unreachable list must
+    // not fail every later compilation of personal and imported filters.
+    const dayMs = 24 * 60 * 60 * 1000;
+    const expiredList = { id: sourceURL, enabled: true, expires: 1,
+        time: { updated: 0 } };
+    lists.length = 0;
+    lists.push(expiredList);
+    persisted.delete(cacheKey);
+    sourceText = '! Title: Last good\n||last-good.example^$script';
+    generation = (++structuralGeneration).toString(16).padStart(32, '0');
+    const installed = await run();
+    assert.equal(installed.persisted, true, JSON.stringify(installed.errors));
+    // What the service worker commits after activation.
+    expiredList.compiledMetadataToken = installed.importedListUpdates[0].metadataToken;
+    expiredList.time.updated = Date.now() - 2 * dayMs;
+    sandboxText = '||personal.example^$image';
+    for ( const [ label, failure, cause ] of [
+        [ 'network', ( ) => { throw new TypeError('fetch failed'); },
+            /failed \(network error or redirect; redirects are not followed\)/ ],
+        [ 'status', ( ) => new Response('gone', { status: 404 }), /failed \(HTTP 404\)/ ],
+        [ 'size', ( ) => new Response('x'.repeat(6 * 1024 * 1024)),
+            /exceeds its size limit/ ],
+        [ 'condition', ( ) => new Response('!#if unknown_platform\n||new.example^\n!#endif'),
+            /Unsupported filter condition at line 1/ ],
+    ] ) {
+        respond = failure;
+        const fetchesBefore = fetchCount;
+        generation = (++structuralGeneration).toString(16).padStart(32, '0');
+        const kept = await run();
+        assert.equal(kept.persisted, true, `${label}: ${JSON.stringify(kept.errors)}`);
+        assert.equal(fetchCount - fetchesBefore, 1, `${label}: one refresh attempt`);
+        assert.deepEqual(importedRules(), [ 'last-good.example' ], label);
+        assert.equal(persisted.get(
+            `compiledFilters.g.${generation}.sandboxFilters.dnrRules`
+        ).length, 1, `${label}: personal filters still compile`);
+        assert.equal(kept.importedListUpdates.length, 1);
+        const [ refreshFailure ] = kept.importedListUpdates;
+        assert.equal(refreshFailure.listid, sourceURL);
+        assert.equal(refreshFailure.refreshFailed, true);
+        assert.equal(Number.isFinite(refreshFailure.failedAt), true);
+        assert.match(refreshFailure.message, cause, label);
+        assert.equal(persisted.get(cacheKey).pendingMetadataToken,
+            expiredList.compiledMetadataToken, `${label}: cache kept`);
+    }
+    sandboxText = '';
+    // A successful refresh replaces the cache and stages fresh metadata.
+    respond = undefined;
+    sourceText = '! Title: Refreshed\n||refreshed.example^$script';
+    generation = (++structuralGeneration).toString(16).padStart(32, '0');
+    const refreshed = await run();
+    assert.equal(refreshed.persisted, true, JSON.stringify(refreshed.errors));
+    assert.deepEqual(importedRules(), [ 'refreshed.example' ]);
+    assert.equal(refreshed.importedListUpdates[0].title, 'Refreshed');
+    assert.notEqual(refreshed.importedListUpdates[0].metadataToken,
+        expiredList.compiledMetadataToken);
+    // Until that metadata commits, the new cache is current: no refetch.
+    fetchesBefore = fetchCount;
+    generation = (++structuralGeneration).toString(16).padStart(32, '0');
+    const uncommitted = await run();
+    assert.equal(uncommitted.persisted, true, JSON.stringify(uncommitted.errors));
+    assert.equal(fetchCount, fetchesBefore);
+    assert.equal(uncommitted.importedListUpdates[0].metadataToken,
+        refreshed.importedListUpdates[0].metadataToken);
+    // A list which is not due is never refetched.
+    expiredList.compiledMetadataToken = refreshed.importedListUpdates[0].metadataToken;
+    expiredList.time.updated = Date.now();
+    generation = (++structuralGeneration).toString(16).padStart(32, '0');
+    assert.equal((await run()).persisted, true);
+    assert.equal(fetchCount, fetchesBefore);
+
+    // A refresh which compiles but prevents activation, for example by
+    // exceeding a DNR quota, never commits. Once generations with it have
+    // failed for a while, the compilation which last activated returns, so
+    // personal filters activate again, and the list is retried after a
+    // backoff until upstream fixes it.
+    const metadataKey = `rulesets.imported.pendingMetadata.${sourceURL}`;
+    const hourMs = 60 * 60 * 1000;
+    const lastGood = structuredClone(persisted.get(cacheKey));
+    expiredList.time.updated = Date.now() - 2 * dayMs;
+    sourceText = '! Title: Unactivatable\n||unactivatable.example^$script';
+    generation = (++structuralGeneration).toString(16).padStart(32, '0');
+    const unactivatable = await run();
+    assert.equal(unactivatable.persisted, true, JSON.stringify(unactivatable.errors));
+    assert.equal(fetchCount - fetchesBefore, 1);
+    assert.deepEqual(importedRules(), [ 'unactivatable.example' ]);
+    assert.deepEqual(persisted.get(metadataKey).previous, lastGood,
+        'The last activated compilation is kept until the refresh commits');
+    assert.equal(Object.hasOwn(unactivatable.importedListUpdates[0], 'previous'), false,
+        'Staged updates, and so the activation journal, stay small');
+    // Activation retries within the grace period reuse the refresh.
+    generation = (++structuralGeneration).toString(16).padStart(32, '0');
+    assert.deepEqual((await run()).importedListUpdates.map(update => update.metadataToken),
+        unactivatable.importedListUpdates.map(update => update.metadataToken));
+    assert.equal(fetchCount - fetchesBefore, 1);
+    persisted.get(metadataKey).fetchedAt = Date.now() - 2 * hourMs;
+    sandboxText = '||personal.example^$image';
+    generation = (++structuralGeneration).toString(16).padStart(32, '0');
+    const fallback = await run();
+    assert.equal(fallback.persisted, true, JSON.stringify(fallback.errors));
+    assert.equal(fetchCount - fetchesBefore, 1, 'Falling back does not refetch');
+    assert.deepEqual(importedRules(), [ 'refreshed.example' ]);
+    assert.equal(persisted.get(
+        `compiledFilters.g.${generation}.sandboxFilters.dnrRules`
+    ).length, 1);
+    assert.deepEqual(persisted.get(cacheKey), lastGood);
+    assert.equal(persisted.has(metadataKey), false);
+    assert.equal(fallback.importedListUpdates.length, 1);
+    assert.equal(fallback.importedListUpdates[0].refreshFailed, true);
+    assert.match(fallback.importedListUpdates[0].message, /could not be activated/);
+    sandboxText = '';
+    // What the service worker commits: the backoff defers the next attempt,
+    // which then fetches the newer upstream version.
+    expiredList.time.retryAfter = Date.now() + hourMs;
+    generation = (++structuralGeneration).toString(16).padStart(32, '0');
+    assert.equal((await run()).persisted, true);
+    assert.equal(fetchCount - fetchesBefore, 1);
+    expiredList.time.retryAfter = Date.now() - 1;
+    sourceText = '! Title: Fixed upstream\n||fixed.example^$script';
+    generation = (++structuralGeneration).toString(16).padStart(32, '0');
+    assert.equal((await run()).persisted, true);
+    assert.equal(fetchCount - fetchesBefore, 2);
+    assert.deepEqual(importedRules(), [ 'fixed.example' ]);
+    delete expiredList.time.retryAfter;
+    // With no activated version to return to, as on first install or with a
+    // sidecar written before `fetchedAt` existed, a stale refresh is fetched
+    // again, and a newer upstream version replaces it.
+    const firstInstall = { id: sourceURL, enabled: true, expires: 1, time: { updated: 0 } };
+    lists.length = 0;
+    lists.push(firstInstall);
+    persisted.delete(cacheKey);
+    sourceText = '! Title: First version\n||first-version.example^$script';
+    generation = (++structuralGeneration).toString(16).padStart(32, '0');
+    assert.equal((await run()).persisted, true);
+    assert.equal(persisted.get(metadataKey).previous, undefined);
+    delete persisted.get(metadataKey).fetchedAt;
+    sourceText = '! Title: Second version\n||second-version.example^$script';
+    fetchesBefore = fetchCount;
+    generation = (++structuralGeneration).toString(16).padStart(32, '0');
+    const refetched = await run();
+    assert.equal(refetched.persisted, true, JSON.stringify(refetched.errors));
+    assert.equal(fetchCount - fetchesBefore, 1);
+    assert.deepEqual(importedRules(), [ 'second-version.example' ]);
+    assert.equal(refetched.importedListUpdates[0].title, 'Second version');
+    lists.length = 0;
+    lists.push(expiredList);
+    // Without a usable cache, the failure names the list and its cause.
+    persisted.delete(cacheKey);
+    respond = ( ) => new Response('gone', { status: 404 });
+    generation = (++structuralGeneration).toString(16).padStart(32, '0');
+    const uncached = await run();
+    assert.equal(uncached.persisted, false);
+    assert.deepEqual(uncached.errors.map(({ listid }) => listid), [ sourceURL ]);
+    assert.match(uncached.errors[0].message, /failed \(HTTP 404\)/);
+    respond = undefined;
+    // So does a compile-stage failure, rather than blaming 'compiler'.
+    sourceText = '!#if unknown_platform\n||unknown.example^\n!#endif';
+    generation = (++structuralGeneration).toString(16).padStart(32, '0');
+    const unsupported = await run();
+    assert.equal(unsupported.persisted, false);
+    assert.deepEqual(unsupported.errors.map(({ listid }) => listid), [ sourceURL ]);
+    assert.match(unsupported.errors[0].message, /Unsupported filter condition at line 1/);
+
+    // A Filter Store batch share bounds the first fetch of a list only.
+    // Once installed, a list which grows refreshes under the per-list limit.
+    const batchList = { id: sourceURL, enabled: true, maxSourceBytes: 64,
+        expires: 1, time: { updated: 0 } };
+    lists.length = 0;
+    lists.push(batchList);
+    persisted.delete(cacheKey);
+    sourceText = `! Title: Batch\n||batch.example^$script\n!${'x'.repeat(64)}`;
+    generation = (++structuralGeneration).toString(16).padStart(32, '0');
+    const overShare = await run();
+    assert.equal(overShare.persisted, false);
+    assert.match(overShare.errors[0].message, /exceeds its size limit/);
+    sourceText = '||batch.example^$script';
+    generation = (++structuralGeneration).toString(16).padStart(32, '0');
+    const withinShare = await run();
+    assert.equal(withinShare.persisted, true, JSON.stringify(withinShare.errors));
+    batchList.compiledMetadataToken = withinShare.importedListUpdates[0].metadataToken;
+    batchList.time.updated = Date.now() - 2 * dayMs;
+    sourceText = `! Title: Batch\n||grown.example^$script\n!${'x'.repeat(4096)}`;
+    fetchesBefore = fetchCount;
+    generation = (++structuralGeneration).toString(16).padStart(32, '0');
+    const grown = await run();
+    assert.equal(grown.persisted, true, JSON.stringify(grown.errors));
+    assert.equal(fetchCount - fetchesBefore, 1);
+    assert.deepEqual(importedRules(), [ 'grown.example' ]);
+    assert.equal(grown.importedListUpdates.some(update => update.refreshFailed), false);
+
+    // Regex scopes from an imported list which could backtrack exponentially
+    // never reach page code, including those in older cached compilations.
+    // The compiler reports them for the scriptlet diagnostics.
+    lists.length = 0;
+    lists.push({ id: sourceURL, enabled: true });
+    persisted.delete(cacheKey);
+    sourceText = [
+        'site.example##+js(set, probeValue, 1)',
+        '/^((.+)+)+x$/#@#+js(set, probeValue, 1)',
+        '/^(.+)+x$/##+js(set, otherValue, 1)',
+        '/^safe\\.example$/#@#+js(set, otherValue, 1)',
+    ].join('\n');
+    for ( const warm of [ false, true ] ) {
+        generation = (++structuralGeneration).toString(16).padStart(32, '0');
+        const hostile = await run();
+        assert.equal(hostile.persisted, true, JSON.stringify(hostile.errors));
+        const key = `compiledFilters.g.${generation}.importedFilters`;
+        const exceptions = persisted.get(`${key}.scriptletExceptions`);
+        assert.equal(JSON.stringify(exceptions).includes('(.+)+'), false, `warm: ${warm}`);
+        assert.equal(JSON.stringify(persisted.get(`${key}.userScripts`))
+            .includes('(.+)+'), false);
+        assert.ok(exceptions.some(entry =>
+            entry.hostnames.includes('/^safe\\.example$/')
+        ), 'Safe regex exceptions are kept verbatim');
+        assert.ok(exceptions.some(entry => entry.hostnames.includes('*')),
+            'An unsafe exception widens instead of disappearing');
+        assert.match(persisted.get(`${key}.scriptletWarnings`)[0],
+            /contain 2 scriptlet regex hostname\(s\)/);
+    }
+    sourceText = 'site.example##+js(set, probeValue, 1)';
+    persisted.delete(cacheKey);
+    generation = (++structuralGeneration).toString(16).padStart(32, '0');
+    assert.equal((await run()).persisted, true);
+    assert.equal(persisted.has(
+        `compiledFilters.g.${generation}.importedFilters.scriptletWarnings`
+    ), false);
 
     // Restore a selected source for the messaging boundary checks below.
     lists.length = 0;

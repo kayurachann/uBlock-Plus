@@ -27,6 +27,7 @@ export const COMPILED_LOGICAL_KEYS = Object.freeze([
     'importedFilters.userScripts',
     'sandboxFilters.scriptletExceptions',
     'importedFilters.scriptletExceptions',
+    'importedFilters.scriptletWarnings',
     'scriptletExceptions.schema',
     'sandboxFilters.popupFilters',
     'importedFilters.popupFilters',

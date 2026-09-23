@@ -476,12 +476,12 @@
     "description": "This describes the 'complete' filtering mode"
   },
   "noFilteringModeDescription": {
-      "message": "List of websites for which no filtering will take place.",
-      "description": "A short description for the editable field which lists trusted sites"
+    "message": "List of websites for which no filtering will take place.",
+    "description": "A short description for the editable field which lists trusted sites"
   },
   "noFilteringModePlaceholder": {
-      "message": "[hostnames only]\nexample.com\ngames.example\n...",
-      "description": "Default text for in edit field"
+    "message": "[hostnames only]\nexample.com\ngames.example\n...",
+    "description": "Default text for in edit field"
   },
   "behaviorSectionLabel": {
     "message": "Behavior",
@@ -551,12 +551,24 @@
     "message": "When active, matching filters will automatically close unwanted browser tabs created by websites.",
     "description": "Short description for a checkbox in the options page"
   },
-  "popupPolicyLabel": { "message": "Popup policy for this hostname" },
-  "popupPolicyDefault": { "message": "Default (Smart)" },
-  "popupPolicyAllow": { "message": "Allow" },
-  "popupPolicySmart": { "message": "Smart" },
-  "popupPolicyStrict": { "message": "Strict" },
-  "popupPolicyDescription": { "message": "Applies to this exact host. Filter-list rules and trusted-site settings still apply. Strict requires a trusted action and a directly related hostname." },
+  "popupPolicyLabel": {
+    "message": "Popup policy for this hostname"
+  },
+  "popupPolicyDefault": {
+    "message": "Default (Smart)"
+  },
+  "popupPolicyAllow": {
+    "message": "Allow"
+  },
+  "popupPolicySmart": {
+    "message": "Smart"
+  },
+  "popupPolicyStrict": {
+    "message": "Strict"
+  },
+  "popupPolicyDescription": {
+    "message": "Applies to this exact host. Filter-list rules and trusted-site settings still apply. Strict requires a trusted action and a directly related hostname."
+  },
   "sandboxEditorLabel": {
     "message": "Filter-creation sandbox",
     "description": "Header for filter-creation section in the dashboard"
@@ -729,133 +741,1115 @@
     "message": "Select a filter below to highlight matching elements in the web page. Click the trash can to remove a filter.",
     "description": "Summary description on how to use the tool to remove custom filters"
   },
-  "myFiltersPageName": { "message": "My filters" },
-  "siteRulesPageName": { "message": "Site rules" },
-  "diagnosticsPageName": { "message": "Diagnostics" },
-  "advancedPageName": { "message": "Advanced" },
-  "powerConsoleTitle": { "message": "Power Console" },
-  "powerConsoleDescription": { "message": "Original-style control with Plus+ profiles, appearance, site rules, popup intelligence, performance and runtime diagnostics." },
-  "powerSettingsLoadFailed": { "message": "Could not load Power settings." },
-  "protectionProfilesTitle": { "message": "Protection profiles" },
-  "protectionProfilesDescription": { "message": "Apply a complete, reversible baseline, or continue tuning every control below." },
-  "protectionProfileBaseline": { "message": "Baseline" },
-  "protectionProfileBaselineDescription": { "message": "Basic network filtering; popup protection stays enabled." },
-  "protectionProfileBalanced": { "message": "Balanced" },
-  "protectionProfileBalancedDescription": { "message": "Advanced filtering, strict navigation blocking and automatic memory selection." },
-  "protectionProfileMaximum": { "message": "Maximum" },
-  "protectionProfileMaximumDescription": { "message": "Complete extended filtering, strict navigation and the balanced performance budget." },
-  "protectionProfileLowMemory": { "message": "Low memory" },
-  "protectionProfileLowMemoryDescription": { "message": "Advanced protection with serialized compilation and smaller caches for weak devices." },
-  "protectionProfileApply": { "message": "Apply profile" },
-  "protectionProfileApplying": { "message": "Applying protection profile…" },
-  "protectionProfileApplied": { "message": "Protection profile applied." },
-  "protectionProfileApplyFailed": { "message": "Could not apply the protection profile." },
-  "protectionProfilePermissionDenied": { "message": "Broad site access is required for this profile and was not granted." },
-  "protectionProfileActive": { "message": "Active: $1" },
-  "protectionProfileCustomActive": { "message": "Active: Custom settings" },
-  "appearanceSettingsTitle": { "message": "Appearance and interface" },
-  "appearanceSettingsDescription": { "message": "Choose an explicit theme, accent, information density and popup layout." },
-  "appearanceThemeLabel": { "message": "Theme" },
-  "appearanceThemeAuto": { "message": "Follow system" },
-  "appearanceThemeLight": { "message": "Light" },
-  "appearanceThemeDark": { "message": "Dark" },
-  "appearanceAccentLabel": { "message": "Accent" },
-  "appearanceAccentCrimson": { "message": "Crimson" },
-  "appearanceAccentBlue": { "message": "Blue" },
-  "appearanceAccentEmerald": { "message": "Emerald" },
-  "appearanceAccentViolet": { "message": "Violet" },
-  "appearanceDensityLabel": { "message": "Density" },
-  "appearanceDensityComfortable": { "message": "Comfortable" },
-  "appearanceDensityCompact": { "message": "Compact" },
-  "appearancePopupLayoutLabel": { "message": "Popup layout" },
-  "appearancePopupPower": { "message": "Power (full controls)" },
-  "appearancePopupCompact": { "message": "Compact" },
-  "appearanceSettingsSaved": { "message": "Interface settings saved." },
-  "appearanceSettingsSaveFailed": { "message": "Could not save interface settings." },
-  "siteRulesTitle": { "message": "Per-site control" },
-  "siteRulesDescription": { "message": "Manage trusted sites, filtering levels and intelligent popup policy without editing internal storage." },
-  "popupPolicyManagerTitle": { "message": "Popup policy rules" },
-  "popupPolicyManagerDescription": { "message": "Set exact-host exceptions for the smart popup engine. Compiled filter-list rules keep precedence." },
-  "popupPolicyHostnameLabel": { "message": "Hostname" },
-  "popupPolicyHostnamePlaceholder": { "message": "example.com" },
-  "popupPolicyModeLabel": { "message": "Policy" },
-  "popupPolicyActionsLabel": { "message": "Actions" },
-  "popupPolicyAdd": { "message": "Add rule" },
-  "popupPolicyRemove": { "message": "Remove" },
-  "popupPolicyEmpty": { "message": "No per-site popup policy rules." },
-  "popupPolicySaved": { "message": "Popup policy saved." },
-  "popupPolicyRemoved": { "message": "Popup policy removed." },
-  "popupPolicySaveFailed": { "message": "Could not save the popup policy." },
-  "popupPolicyInvalidHostname": { "message": "Enter a valid hostname such as example.com." },
-  "filteringSiteRulesTitle": { "message": "Filtering level by site" },
-  "filteringSiteRulesDescription": { "message": "One hostname per line. “No filtering” is the trusted-sites list; a hostname may appear in only one level." },
-  "saveSiteRules": { "message": "Save site rules" },
-  "siteRulesSaved": { "message": "Site rules saved." },
-  "siteRulesInvalid": { "message": "Site rules contain an invalid or duplicate hostname." },
-  "siteRulesLoadFailed": { "message": "Could not load site rules." },
-  "diagnosticsTitle": { "message": "Runtime diagnostics" },
-  "diagnosticsDescription": { "message": "Inspect the actual MV3 engine, browser capabilities, quota ceilings, memory budget and recent popup decisions." },
-  "diagnosticsRefresh": { "message": "Refresh diagnostics" },
-  "diagnosticsLoadFailed": { "message": "Could not load runtime diagnostics." },
-  "runtimeCapabilitiesTitle": { "message": "Runtime capabilities" },
-  "diagnosticsNetworkEngine": { "message": "Network engine" },
-  "diagnosticsInstallType": { "message": "Install type" },
-  "diagnosticsPopupObservation": { "message": "Smart popup observation" },
-  "diagnosticsUserScripts": { "message": "User-script filters" },
-  "diagnosticsOffscreenCompiler": { "message": "Offscreen compiler" },
-  "diagnosticsStaticRules": { "message": "Available static rules" },
-  "diagnosticsDynamicRules": { "message": "Dynamic-rule ceiling" },
-  "diagnosticsSessionRules": { "message": "Session-rule ceiling" },
-  "diagnosticsRegexRules": { "message": "Regex-rule ceiling" },
-  "diagnosticsAvailable": { "message": "Available" },
-  "diagnosticsUnavailable": { "message": "Unavailable" },
-  "performanceDetailsTitle": { "message": "Effective performance budget" },
-  "performanceSelectedProfile": { "message": "Selected profile" },
-  "performanceEffectiveProfile": { "message": "Effective profile" },
-  "performanceDeviceMemory": { "message": "Detected device memory" },
-  "performanceCompileConcurrency": { "message": "Import compile concurrency" },
-  "performanceCacheEntries": { "message": "CSS cache entries" },
-  "performanceCacheHighWatermark": { "message": "CSS cache high-water mark" },
-  "performancePruneInterval": { "message": "Cache prune interval" },
-  "performanceMinutes": { "message": "$1 min" },
-  "performanceRetainMetadata": { "message": "Retain scripting metadata" },
-  "popupDiagnosticsTitle": { "message": "Recent popup decisions" },
-  "popupDiagnosticsDescription": { "message": "A bounded, local-only decision ledger. URLs, paths, queries and credentials are not retained." },
-  "popupDiagnosticsClear": { "message": "Clear history" },
-  "popupDiagnosticsCleared": { "message": "Popup decision history cleared." },
-  "popupDiagnosticsClearFailed": { "message": "Could not clear popup decision history." },
-  "popupDiagnosticsEmpty": { "message": "No popup decisions recorded in this browser session." },
-  "diagnosticTime": { "message": "Time" },
-  "diagnosticAction": { "message": "Action" },
-  "diagnosticSource": { "message": "Source" },
-  "diagnosticTarget": { "message": "Target" },
-  "diagnosticReason": { "message": "Reason" },
-  "popupUnavailable": { "message": "Protection is unavailable on this page" },
-  "popupCapabilityUnavailable": { "message": "Unavailable" },
-  "popupLoadFailed": { "message": "Could not load protection settings. Try again." },
-  "popupParentScope": { "message": "This site inherits a parent-site rule. Change the parent rule in Site rules first." },
-  "popupActionFailed": { "message": "Could not save this change. Try again." },
-  "popupToolFailed": { "message": "Could not open this tool on the current page." },
-  "popupPermissionDenied": { "message": "Site access was not granted. Protection settings were kept." },
-  "popupPermissionFailed": { "message": "Could not request access to this site." },
-  "popupReloadFailed": { "message": "Could not reload this page." },
-  "popupRetry": { "message": "Try again" },
-  "popupMore": { "message": "More" },
-  "popupLess": { "message": "Less" },
-  "popupPowerEdition": { "message": "Power Edition" },
-  "popupPowerToggle": { "message": "Toggle protection for this site" },
-  "popupReloadPage": { "message": "Reload this page" },
-  "popupProtectionOn": { "message": "Protection is on" },
-  "popupProtectionOff": { "message": "Protection is off" },
-  "popupCapabilitySummary": { "message": "Protection capability summary" },
-  "popupCapabilityNetwork": { "message": "Network filtering" },
-  "popupCapabilityExtended": { "message": "Extended filtering" },
-  "popupCapabilityPopups": { "message": "Smart popups" },
-  "popupCapabilityLists": { "message": "Enabled lists" },
-  "popupCapabilityActive": { "message": "Active" },
-  "popupCapabilityInactive": { "message": "Inactive" },
-  "popupSiteControls": { "message": "Site controls" },
-  "popupQuickTools": { "message": "Quick tools" },
-  "popupMatchedRules": { "message": "Recent matched rules" },
-  "popupRecentBlocks": { "message": "$1 recent popup block(s) on this site" }
+  "myFiltersPageName": {
+    "message": "My filters"
+  },
+  "siteRulesPageName": {
+    "message": "Site rules"
+  },
+  "diagnosticsPageName": {
+    "message": "Diagnostics"
+  },
+  "advancedPageName": {
+    "message": "Advanced"
+  },
+  "powerConsoleTitle": {
+    "message": "Power Console"
+  },
+  "powerConsoleDescription": {
+    "message": "Original-style control with Plus+ profiles, appearance, site rules, popup intelligence, performance and runtime diagnostics."
+  },
+  "powerSettingsLoadFailed": {
+    "message": "Could not load Power settings."
+  },
+  "protectionProfilesTitle": {
+    "message": "Protection profiles"
+  },
+  "protectionProfilesDescription": {
+    "message": "Apply a complete, reversible baseline, or continue tuning every control below."
+  },
+  "protectionProfileBaseline": {
+    "message": "Baseline"
+  },
+  "protectionProfileBaselineDescription": {
+    "message": "Basic network filtering; popup protection stays enabled."
+  },
+  "protectionProfileBalanced": {
+    "message": "Balanced"
+  },
+  "protectionProfileBalancedDescription": {
+    "message": "Advanced filtering, strict navigation blocking and automatic memory selection."
+  },
+  "protectionProfileMaximum": {
+    "message": "Maximum"
+  },
+  "protectionProfileMaximumDescription": {
+    "message": "Complete extended filtering, strict navigation and the balanced performance budget."
+  },
+  "protectionProfileLowMemory": {
+    "message": "Low memory"
+  },
+  "protectionProfileLowMemoryDescription": {
+    "message": "Advanced protection with serialized compilation and smaller caches for weak devices."
+  },
+  "protectionProfileApply": {
+    "message": "Apply profile"
+  },
+  "protectionProfileApplying": {
+    "message": "Applying protection profile…"
+  },
+  "protectionProfileApplied": {
+    "message": "Protection profile applied."
+  },
+  "protectionProfileApplyFailed": {
+    "message": "Could not apply the protection profile."
+  },
+  "protectionProfilePermissionDenied": {
+    "message": "Broad site access is required for this profile and was not granted."
+  },
+  "protectionProfileActive": {
+    "message": "Active: $1"
+  },
+  "protectionProfileCustomActive": {
+    "message": "Active: Custom settings"
+  },
+  "appearanceSettingsTitle": {
+    "message": "Appearance and interface"
+  },
+  "appearanceSettingsDescription": {
+    "message": "Choose an explicit theme, accent, information density and popup layout."
+  },
+  "appearanceThemeLabel": {
+    "message": "Theme"
+  },
+  "appearanceThemeAuto": {
+    "message": "Follow system"
+  },
+  "appearanceThemeLight": {
+    "message": "Light"
+  },
+  "appearanceThemeDark": {
+    "message": "Dark"
+  },
+  "appearanceAccentLabel": {
+    "message": "Accent"
+  },
+  "appearanceAccentCrimson": {
+    "message": "Crimson"
+  },
+  "appearanceAccentBlue": {
+    "message": "Blue"
+  },
+  "appearanceAccentEmerald": {
+    "message": "Emerald"
+  },
+  "appearanceAccentViolet": {
+    "message": "Violet"
+  },
+  "appearanceDensityLabel": {
+    "message": "Density"
+  },
+  "appearanceDensityComfortable": {
+    "message": "Comfortable"
+  },
+  "appearanceDensityCompact": {
+    "message": "Compact"
+  },
+  "appearancePopupLayoutLabel": {
+    "message": "Popup layout"
+  },
+  "appearancePopupPower": {
+    "message": "Power (full controls)"
+  },
+  "appearancePopupCompact": {
+    "message": "Compact"
+  },
+  "appearanceSettingsSaved": {
+    "message": "Interface settings saved."
+  },
+  "appearanceSettingsSaveFailed": {
+    "message": "Could not save interface settings."
+  },
+  "siteRulesTitle": {
+    "message": "Per-site control"
+  },
+  "siteRulesDescription": {
+    "message": "Manage trusted sites, filtering levels and intelligent popup policy without editing internal storage."
+  },
+  "popupPolicyManagerTitle": {
+    "message": "Popup policy rules"
+  },
+  "popupPolicyManagerDescription": {
+    "message": "Set exact-host exceptions for the smart popup engine. Compiled filter-list rules keep precedence."
+  },
+  "popupPolicyHostnameLabel": {
+    "message": "Hostname"
+  },
+  "popupPolicyHostnamePlaceholder": {
+    "message": "example.com"
+  },
+  "popupPolicyModeLabel": {
+    "message": "Policy"
+  },
+  "popupPolicyActionsLabel": {
+    "message": "Actions"
+  },
+  "popupPolicyAdd": {
+    "message": "Add rule"
+  },
+  "popupPolicyRemove": {
+    "message": "Remove"
+  },
+  "popupPolicyEmpty": {
+    "message": "No per-site popup policy rules."
+  },
+  "popupPolicySaved": {
+    "message": "Popup policy saved."
+  },
+  "popupPolicyRemoved": {
+    "message": "Popup policy removed."
+  },
+  "popupPolicySaveFailed": {
+    "message": "Could not save the popup policy."
+  },
+  "popupPolicyInvalidHostname": {
+    "message": "Enter a valid hostname such as example.com."
+  },
+  "filteringSiteRulesTitle": {
+    "message": "Filtering level by site"
+  },
+  "filteringSiteRulesDescription": {
+    "message": "One hostname per line. “No filtering” is the trusted-sites list; a hostname may appear in only one level."
+  },
+  "saveSiteRules": {
+    "message": "Save site rules"
+  },
+  "siteRulesSaved": {
+    "message": "Site rules saved."
+  },
+  "siteRulesInvalid": {
+    "message": "Site rules contain an invalid or duplicate hostname."
+  },
+  "siteRulesLoadFailed": {
+    "message": "Could not load site rules."
+  },
+  "diagnosticsTitle": {
+    "message": "Runtime diagnostics"
+  },
+  "diagnosticsDescription": {
+    "message": "Inspect the actual MV3 engine, browser capabilities, quota ceilings, memory budget and recent popup decisions."
+  },
+  "diagnosticsRefresh": {
+    "message": "Refresh diagnostics"
+  },
+  "diagnosticsLoadFailed": {
+    "message": "Could not load runtime diagnostics."
+  },
+  "runtimeCapabilitiesTitle": {
+    "message": "Runtime capabilities"
+  },
+  "diagnosticsNetworkEngine": {
+    "message": "Network engine"
+  },
+  "diagnosticsInstallType": {
+    "message": "Install type"
+  },
+  "diagnosticsPopupObservation": {
+    "message": "Smart popup observation"
+  },
+  "diagnosticsUserScripts": {
+    "message": "User-script filters"
+  },
+  "diagnosticsOffscreenCompiler": {
+    "message": "Offscreen compiler"
+  },
+  "diagnosticsStaticRules": {
+    "message": "Available static rules"
+  },
+  "diagnosticsDynamicRules": {
+    "message": "Dynamic-rule ceiling"
+  },
+  "diagnosticsSessionRules": {
+    "message": "Session-rule ceiling"
+  },
+  "diagnosticsRegexRules": {
+    "message": "Regex-rule ceiling"
+  },
+  "diagnosticsAvailable": {
+    "message": "Available"
+  },
+  "diagnosticsUnavailable": {
+    "message": "Unavailable"
+  },
+  "performanceDetailsTitle": {
+    "message": "Effective performance budget"
+  },
+  "performanceSelectedProfile": {
+    "message": "Selected profile"
+  },
+  "performanceEffectiveProfile": {
+    "message": "Effective profile"
+  },
+  "performanceDeviceMemory": {
+    "message": "Detected device memory"
+  },
+  "performanceCompileConcurrency": {
+    "message": "Import compile concurrency"
+  },
+  "performanceCacheEntries": {
+    "message": "CSS cache entries"
+  },
+  "performanceCacheHighWatermark": {
+    "message": "CSS cache high-water mark"
+  },
+  "performancePruneInterval": {
+    "message": "Cache prune interval"
+  },
+  "performanceMinutes": {
+    "message": "$1 min"
+  },
+  "performanceRetainMetadata": {
+    "message": "Retain scripting metadata"
+  },
+  "popupDiagnosticsTitle": {
+    "message": "Recent popup decisions"
+  },
+  "popupDiagnosticsDescription": {
+    "message": "A bounded, local-only decision ledger. URLs, paths, queries and credentials are not retained."
+  },
+  "popupDiagnosticsClear": {
+    "message": "Clear history"
+  },
+  "popupDiagnosticsCleared": {
+    "message": "Popup decision history cleared."
+  },
+  "popupDiagnosticsClearFailed": {
+    "message": "Could not clear popup decision history."
+  },
+  "popupDiagnosticsEmpty": {
+    "message": "No popup decisions recorded in this browser session."
+  },
+  "diagnosticTime": {
+    "message": "Time"
+  },
+  "diagnosticAction": {
+    "message": "Action"
+  },
+  "diagnosticSource": {
+    "message": "Source"
+  },
+  "diagnosticTarget": {
+    "message": "Target"
+  },
+  "diagnosticReason": {
+    "message": "Reason"
+  },
+  "popupUnavailable": {
+    "message": "Protection is unavailable on this page"
+  },
+  "popupCapabilityUnavailable": {
+    "message": "Unavailable"
+  },
+  "popupLoadFailed": {
+    "message": "Could not load protection settings. Try again."
+  },
+  "popupParentScope": {
+    "message": "This site inherits a parent-site rule. Change the parent rule in Site rules first."
+  },
+  "popupActionFailed": {
+    "message": "Could not save this change. Try again."
+  },
+  "popupToolFailed": {
+    "message": "Could not open this tool on the current page."
+  },
+  "popupPermissionDenied": {
+    "message": "Site access was not granted. Protection settings were kept."
+  },
+  "popupPermissionFailed": {
+    "message": "Could not request access to this site."
+  },
+  "popupReloadFailed": {
+    "message": "Could not reload this page."
+  },
+  "popupRetry": {
+    "message": "Try again"
+  },
+  "popupMore": {
+    "message": "More"
+  },
+  "popupLess": {
+    "message": "Less"
+  },
+  "popupPowerEdition": {
+    "message": "Power Edition"
+  },
+  "popupPowerToggle": {
+    "message": "Toggle protection for this site"
+  },
+  "popupReloadPage": {
+    "message": "Reload this page"
+  },
+  "popupProtectionOn": {
+    "message": "Protection is on"
+  },
+  "popupProtectionOff": {
+    "message": "Protection is off"
+  },
+  "popupCapabilitySummary": {
+    "message": "Protection capability summary"
+  },
+  "popupCapabilityNetwork": {
+    "message": "Network filtering"
+  },
+  "popupCapabilityExtended": {
+    "message": "Extended filtering"
+  },
+  "popupCapabilityPopups": {
+    "message": "Smart popups"
+  },
+  "popupCapabilityLists": {
+    "message": "Enabled lists"
+  },
+  "popupCapabilityActive": {
+    "message": "Active"
+  },
+  "popupCapabilityInactive": {
+    "message": "Inactive"
+  },
+  "popupSiteControls": {
+    "message": "Site controls"
+  },
+  "popupQuickTools": {
+    "message": "Quick tools"
+  },
+  "popupMatchedRules": {
+    "message": "Recent matched rules"
+  },
+  "popupRecentBlocks": {
+    "message": "$1 recent popup block(s) on this site"
+  },
+  "autoUpdateSectionLabel": {
+    "message": "Updates",
+    "description": "Dashboard settings: heading of the automatic update section"
+  },
+  "autoUpdateDescription": {
+    "message": "uBlock Plus+ can look for new versions on GitHub Releases and, with the optional Windows updater, install them without reinstalling. A check sends one request to api.github.com; no browsing data is sent.",
+    "description": "Dashboard settings: explanation of automatic updates and their network use"
+  },
+  "autoUpdateCheckLabel": {
+    "message": "Check for new versions automatically",
+    "description": "Dashboard settings: checkbox to enable periodic update checks"
+  },
+  "autoUpdateInstallLabel": {
+    "message": "When a new version is found:",
+    "description": "Dashboard settings: label of the install mode selector"
+  },
+  "autoUpdateInstallAuto": {
+    "message": "Install it automatically",
+    "description": "Dashboard settings: install mode option"
+  },
+  "autoUpdateInstallNotify": {
+    "message": "Only notify me",
+    "description": "Dashboard settings: install mode option"
+  },
+  "autoUpdateChannelLabel": {
+    "message": "Release channel:",
+    "description": "Dashboard settings: label of the release channel selector"
+  },
+  "autoUpdateChannelPreview": {
+    "message": "Preview (includes pre-releases)",
+    "description": "Dashboard settings: release channel option"
+  },
+  "autoUpdateChannelStable": {
+    "message": "Stable releases only",
+    "description": "Dashboard settings: release channel option"
+  },
+  "autoUpdateCheckNow": {
+    "message": "Check now",
+    "description": "Dashboard settings: button that checks for updates immediately"
+  },
+  "autoUpdateInstallNow": {
+    "message": "Install now",
+    "description": "Dashboard settings: button that installs the available update"
+  },
+  "autoUpdateReleaseNotes": {
+    "message": "Release notes",
+    "description": "Dashboard settings: link to the release page of the available version"
+  },
+  "autoUpdateGrantButton": {
+    "message": "Allow the updater",
+    "description": "Dashboard settings: button requesting the optional nativeMessaging permission"
+  },
+  "autoUpdateSetupSteps": {
+    "message": "One-time setup on Windows: open the folder you selected with “Load unpacked”, double-click updater\\install-updater.cmd, then select “Allow the updater” here. If access is still refused, run this command in that folder:",
+    "description": "Dashboard settings: one-time setup instructions for the Windows updater"
+  },
+  "autoUpdateCopy": {
+    "message": "Copy",
+    "description": "Dashboard settings: copy the setup command to the clipboard"
+  },
+  "autoUpdateCopied": {
+    "message": "Copied",
+    "description": "Dashboard settings: confirmation after copying the setup command"
+  },
+  "autoUpdateRollback": {
+    "message": "Restore version $1",
+    "description": "Dashboard settings: button restoring the previous version. $1 is a version number"
+  },
+  "autoUpdateDevBuild": {
+    "message": "Development build $1: automatic updates are turned off.",
+    "description": "Dashboard settings: status for local development builds. $1 is the version"
+  },
+  "autoUpdateApplying": {
+    "message": "Installing $1…",
+    "description": "Dashboard settings: files are being replaced. $1 is the version"
+  },
+  "autoUpdatePreparing": {
+    "message": "Preparing to install $1…",
+    "description": "Dashboard settings: update is starting. $1 is the version"
+  },
+  "autoUpdateAvailable": {
+    "message": "Version $1 is available (installed: $2).",
+    "description": "Dashboard settings: a newer version exists. $1 new version, $2 installed version"
+  },
+  "autoUpdateUpToDate": {
+    "message": "Version $1 is up to date. Last checked: $2.",
+    "description": "Dashboard settings: no newer version. $1 installed version, $2 date and time of the last check"
+  },
+  "autoUpdateNeverChecked": {
+    "message": "Installed version: $1. No update check has run yet.",
+    "description": "Dashboard settings: no check has run yet. $1 installed version"
+  },
+  "autoUpdateManagedInstall": {
+    "message": "This copy was installed as a package; your browser or administrator manages its updates.",
+    "description": "Dashboard settings: the extension was not loaded unpacked"
+  },
+  "autoUpdatePermissionNeeded": {
+    "message": "Automatic installation needs the Windows updater and your permission.",
+    "description": "Dashboard settings: automatic installation is not set up yet"
+  },
+  "autoUpdateConnectedAuto": {
+    "message": "Updater $1 connected. New versions install automatically and the extension reloads by itself.",
+    "description": "Dashboard settings: updater connected, automatic mode. $1 updater version"
+  },
+  "autoUpdateConnectedNotify": {
+    "message": "Updater $1 connected. Select “Install now” when a new version is available.",
+    "description": "Dashboard settings: updater connected, notify-only mode. $1 updater version"
+  },
+  "autoUpdateUpdated": {
+    "message": "Updated from $1 to $2.",
+    "description": "Dashboard settings: result of the last update. $1 previous version, $2 new version"
+  },
+  "autoUpdateRolledBack": {
+    "message": "Restored version $2 (was $1).",
+    "description": "Dashboard settings: result of a rollback. $1 version before, $2 restored version"
+  },
+  "autoUpdatePermissionDenied": {
+    "message": "Permission was not granted.",
+    "description": "Dashboard settings: the permission request was declined"
+  },
+  "autoUpdateErrorMissing": {
+    "message": "The Windows updater is not installed yet.",
+    "description": "Dashboard settings: native updater not registered"
+  },
+  "autoUpdateErrorForbidden": {
+    "message": "The updater is registered for a different extension folder or ID. Run the command below.",
+    "description": "Dashboard settings: native updater registered for another extension ID"
+  },
+  "autoUpdateErrorFailed": {
+    "message": "The updater stopped unexpectedly. Details are in %LOCALAPPDATA%\\uBlockPlus\\Updater\\updater.log.",
+    "description": "Dashboard settings: native updater crashed or exited"
+  },
+  "autoUpdateErrorChecksum": {
+    "message": "The downloaded package did not match its published checksum and was discarded.",
+    "description": "Dashboard settings: package checksum mismatch"
+  },
+  "autoUpdateErrorRateLimited": {
+    "message": "GitHub is limiting requests; the next check will wait.",
+    "description": "Dashboard settings: GitHub API rate limit"
+  },
+  "autoUpdateErrorNetwork": {
+    "message": "Could not reach GitHub. The next check will try again.",
+    "description": "Dashboard settings: network failure during a check"
+  },
+  "autoUpdateErrorReload": {
+    "message": "The extension reloaded but its version did not change. Check the updater log.",
+    "description": "Dashboard settings: after reload the version did not change"
+  },
+  "autoUpdateErrorInterrupted": {
+    "message": "The previous update was interrupted before it finished.",
+    "description": "Dashboard settings: the previous update did not finish"
+  },
+  "autoUpdateErrorGeneric": {
+    "message": "Update problem: $1",
+    "description": "Dashboard settings: other update error. $1 is the error message"
+  },
+  "autoUpdatePopupAvailable": {
+    "message": "Update $1",
+    "description": "Popup: compact indicator that a newer version is available. $1 is the version"
+  },
+  "autoUpdatePopupAvailableTitle": {
+    "message": "Version $1 is available. Open the update settings.",
+    "description": "Popup: tooltip of the update indicator. $1 is the version"
+  },
+  "firewallTitle": {
+    "message": "Dynamic firewall",
+    "description": "Dynamic firewall panel heading in Site rules"
+  },
+  "firewallDescription": {
+    "message": "One row: source destination type action. Use * for all hostnames; block denies, allow permits, noop bypasses only the firewall while filter lists still apply.",
+    "description": "Dynamic firewall rule syntax. Keep *, block, allow and noop untranslated."
+  },
+  "firewallScope": {
+    "message": "Network requests inside tabs, including iframes, on Chrome 145+. The “no filtering” mode takes precedence. Inline scripts, main-page navigation and requests outside tabs are excluded. Party rules use the top page and the Public Suffix List; initial requests on a new site may pass while Chrome updates its scope.",
+    "description": "Dynamic firewall coverage and limits. Quote the no-filtering mode by its filteringMode0Name label."
+  },
+  "firewallValidate": {
+    "message": "Validate",
+    "description": "Button: check the firewall draft without applying it"
+  },
+  "firewallApplySession": {
+    "message": "Apply for this session",
+    "description": "Button: apply firewall rules until the browser session ends"
+  },
+  "firewallSavePermanent": {
+    "message": "Save permanently",
+    "description": "Button: save firewall rules across browser restarts"
+  },
+  "firewallLoadPermanent": {
+    "message": "Load permanent rules",
+    "description": "Button: load the saved permanent firewall rules into the editor"
+  },
+  "firewallImportFile": {
+    "message": "Import file",
+    "description": "Button: import firewall rules from a text file"
+  },
+  "firewallExportFile": {
+    "message": "Export file",
+    "description": "Button: export the firewall editor text to a file"
+  },
+  "firewallStatusRules": {
+    "message": "$1 active Chrome rules; $2 domains recognized this session.",
+    "description": "Firewall status. $1: active native Chrome rules; $2: registrable domains recognized in this browser session"
+  },
+  "firewallStatusDeferred": {
+    "message": "$1 cells need page context; no speculative blocking.",
+    "description": "Firewall status. $1: cells that need to know the top page before deciding 1p/3p"
+  },
+  "firewallStatusOmitted": {
+    "message": "Chrome’s rule limit was reached: 1p/3p cells now apply only on the $1 most recently recognized domains.",
+    "description": "Firewall status when Chrome's session-rule limit forced older learned domains out. $1: domains still covered"
+  },
+  "firewallStatusScopeError": {
+    "message": "A newly visited domain could not be added to the 1p/3p scope: $1",
+    "description": "Firewall status when a newly visited domain could not be added to the native 1p/3p scope. $1: technical error message"
+  },
+  "firewallStatusTemporary": {
+    "message": "Temporary rules active.",
+    "description": "Firewall status: session-only rules are active"
+  },
+  "firewallStatusPermanent": {
+    "message": "Permanent rules active.",
+    "description": "Firewall status: saved permanent rules are active"
+  },
+  "firewallPreviewRules": {
+    "message": "Validated: $1 proposed Chrome rules.",
+    "description": "Result of validating a firewall draft. $1: proposed native Chrome rules"
+  },
+  "firewallPreviewOmitted": {
+    "message": "$1 recognized domains would leave the 1p/3p scope to fit Chrome’s rule limit.",
+    "description": "Validation notice. $1: recognized domains that would leave the 1p/3p scope to fit Chrome's rule limit"
+  },
+  "firewallUnsupported": {
+    "message": "The firewall requires Chrome 145 or later. Existing filtering remains available.",
+    "description": "Shown when the browser lacks the native conditions the firewall needs"
+  },
+  "firewallPermanentLoaded": {
+    "message": "Permanent rules loaded into the draft; apply to activate.",
+    "description": "Shown after loading permanent firewall rules into the editor"
+  },
+  "firewallImportTooLarge": {
+    "message": "Maximum file size: 128 KiB",
+    "description": "Error when an imported firewall file is too large"
+  },
+  "firewallTestTitle": {
+    "message": "Test and explain a rule",
+    "description": "Heading of the firewall request tester"
+  },
+  "firewallTestScope": {
+    "message": "Test the editor draft with the current “no filtering” settings. No request is sent, no URL is saved and protection is unchanged. This explains only the firewall; it does not simulate all filter lists, browser permissions, quotas or activation timing.",
+    "description": "Explains what the firewall tester does and does not simulate. Quote the no-filtering mode by its filteringMode0Name label."
+  },
+  "firewallTestSource": {
+    "message": "Top page: hostname or HTTP(S) URL",
+    "description": "Firewall tester field label for the top-level page"
+  },
+  "firewallTestDestination": {
+    "message": "Destination resource: hostname or HTTP(S) URL",
+    "description": "Firewall tester field label for the requested resource"
+  },
+  "firewallTestType": {
+    "message": "Request type",
+    "description": "Firewall tester field label for the request type"
+  },
+  "firewallTestRequest": {
+    "message": "Test request",
+    "description": "Button: run the firewall tester"
+  },
+  "firewallTestChanged": {
+    "message": "Inputs changed; test again.",
+    "description": "Firewall tester: inputs changed while a test was running"
+  },
+  "firewallTestFirstParty": {
+    "message": "First party (1p)",
+    "description": "Firewall tester result: same party as the top page"
+  },
+  "firewallTestThirdParty": {
+    "message": "Third party (3p)",
+    "description": "Firewall tester result: different party from the top page"
+  },
+  "firewallOutcomeBlock": {
+    "message": "Draft: block — the winning cell requests blocking.",
+    "description": "Firewall tester outcome. Keep block untranslated."
+  },
+  "firewallOutcomeAllow": {
+    "message": "Draft: allow — the winning cell requests allowing.",
+    "description": "Firewall tester outcome. Keep allow untranslated."
+  },
+  "firewallOutcomeNoop": {
+    "message": "Draft: noop — bypass the firewall; filter lists may still block.",
+    "description": "Firewall tester outcome. Keep noop untranslated."
+  },
+  "firewallOutcomeNoMatch": {
+    "message": "No firewall cell matches; filter lists may still block.",
+    "description": "Firewall tester outcome when no cell matches"
+  },
+  "firewallOutcomeOff": {
+    "message": "This page uses “no filtering”, which takes precedence over the firewall draft.",
+    "description": "Firewall tester outcome when the site is in the no-filtering mode. Quote the mode by its filteringMode0Name label."
+  },
+  "firewallOutcomeUnknown": {
+    "message": "Mode or domain context is unavailable; no speculative decision (fail-open).",
+    "description": "Firewall tester outcome when mode or party information is unavailable"
+  },
+  "loggerTitle": {
+    "message": "Logger",
+    "description": "Logger page title"
+  },
+  "loggerIntro": {
+    "message": "Capture diagnostics for one tab. Records stay in this extension session and are erased when its last logger closes. No upload or browsing-history storage.",
+    "description": "Logger page introduction"
+  },
+  "loggerTab": {
+    "message": "Tab",
+    "description": "Logger label for the browser tab selector"
+  },
+  "loggerStart": {
+    "message": "Start capture",
+    "description": "Logger button: start capturing"
+  },
+  "loggerPause": {
+    "message": "Pause",
+    "description": "Logger button: pause capturing"
+  },
+  "loggerClear": {
+    "message": "Clear",
+    "description": "Logger button: clear records"
+  },
+  "loggerExport": {
+    "message": "Export redacted JSON",
+    "description": "Logger button: export redacted records as JSON"
+  },
+  "loggerSearch": {
+    "message": "Search",
+    "description": "Logger search field label"
+  },
+  "loggerSearchPlaceholder": {
+    "message": "URL, rule ID, selector or source",
+    "description": "Logger search field placeholder"
+  },
+  "loggerKind": {
+    "message": "Kind",
+    "description": "Logger event-kind filter label"
+  },
+  "loggerKindAll": {
+    "message": "All events",
+    "description": "Logger event-kind filter: all events"
+  },
+  "loggerKindNetwork": {
+    "message": "Network",
+    "description": "Logger event kind: browser network observation"
+  },
+  "loggerKindDnr": {
+    "message": "Native DNR matches",
+    "description": "Logger event kind: native declarativeNetRequest rule matches"
+  },
+  "loggerKindCosmetic": {
+    "message": "Cosmetic",
+    "description": "Logger event kind: cosmetic filtering"
+  },
+  "loggerKindDom": {
+    "message": "DOM",
+    "description": "Logger event kind: DOM diagnostics"
+  },
+  "loggerKindScriptlet": {
+    "message": "Scriptlets",
+    "description": "Logger event kind: scriptlets"
+  },
+  "loggerKindSystem": {
+    "message": "System",
+    "description": "Logger event kind: system events"
+  },
+  "loggerColumnKind": {
+    "message": "Kind / phase",
+    "description": "Logger table column: event kind and phase"
+  },
+  "loggerColumnSource": {
+    "message": "Evidence source",
+    "description": "Logger table column: which API produced the evidence"
+  },
+  "loggerColumnDetail": {
+    "message": "Request / diagnostic",
+    "description": "Logger table column: request or diagnostic details"
+  },
+  "loggerInitial": {
+    "message": "Capture is off. Choose a tab and start.",
+    "description": "Logger status before capture starts"
+  },
+  "loggerSummary": {
+    "message": "What this logger can prove",
+    "description": "Logger heading of the evidence explanation"
+  },
+  "loggerDetailNetwork": {
+    "message": "Network is a read-only browser observation, including requests that completed. An error alone does not identify a blocking extension. Browser-hidden requests and some requests intercepted before observation may be absent.",
+    "description": "Logger evidence explanation: network events"
+  },
+  "loggerDetailDnr": {
+    "message": "Native DNR match identifies this extension’s rule selected by Chrome. Rule-body lookup is separate and not atomic. Availability depends on Chrome’s feedback API and installation type.",
+    "description": "Logger evidence explanation: native DNR matches"
+  },
+  "loggerDetailCosmetic": {
+    "message": "Cosmetic means a stylesheet was inserted; it does not prove that a node was hidden. DOM distinguishes actual procedural application from a plain CSS selector-present snapshot. Snapshots test at most 32 selector groups in a stylesheet and do not prove visibility or media activation. Reports are limited to 32 per second per frame; effects before the observer loads are not covered.",
+    "description": "Logger evidence explanation: cosmetic and DOM events"
+  },
+  "loggerDetailScriptlet": {
+    "message": "Scriptlet reports cover registration and exception/fallback handling. This build does not emit execution-attempt reports or confirm individual scriptlet effects. Page messages are not trusted evidence of MAIN-world execution. Global registration events use tab −1.",
+    "description": "Logger evidence explanation: scriptlets"
+  },
+  "loggerDetailCapture": {
+    "message": "Capture requests the optional network-observation permission. Refusing it still permits available DNR and content diagnostics. At most 512 records are retained across up to four logger windows. Closing the tab or pausing stops collection; closing a logger window clears records no other open logger window shows. Chrome may suspend the worker and clear this temporary history.",
+    "description": "Logger evidence explanation: permission, limits and record lifetime"
+  },
+  "loggerDetailExport": {
+    "message": "Live URLs can contain private query strings. Export removes credentials, query strings, fragments and diagnostic free text; URL paths can still contain personal identifiers. Review exported files before sharing.",
+    "description": "Logger evidence explanation: private data and export redaction"
+  },
+  "loggerEmpty": {
+    "message": "No events yet. Start capture, then reload the selected page or use its controls.",
+    "description": "Logger placeholder when there are no events"
+  },
+  "loggerCapturing": {
+    "message": "Capturing.",
+    "description": "Logger status: capturing"
+  },
+  "loggerPaused": {
+    "message": "Paused.",
+    "description": "Logger status: paused"
+  },
+  "loggerNetworkAttached": {
+    "message": "Network observation: attached.",
+    "description": "Logger state: browser network observation is attached"
+  },
+  "loggerNetworkUnavailable": {
+    "message": "Network observation: unavailable.",
+    "description": "Logger state: browser network observation is unavailable"
+  },
+  "loggerNativeAttached": {
+    "message": "Native DNR listener: attached.",
+    "description": "Logger state: native DNR match listener is attached"
+  },
+  "loggerNativeUnavailable": {
+    "message": "Native DNR listener: unavailable.",
+    "description": "Logger state: native DNR match listener is unavailable"
+  },
+  "loggerRecordCount": {
+    "message": "$1/$2 records; $3 older records discarded.",
+    "description": "Logger counters. $1: records shown; $2: record limit; $3: older records discarded"
+  },
+  "loggerTabFrame": {
+    "message": "tab $1, frame $2",
+    "description": "Logger row context. $1: browser tab ID; $2: frame ID"
+  },
+  "loggerPermissionRefused": {
+    "message": "Network permission was not granted; other diagnostics remain available.",
+    "description": "Logger status when the optional network permission was refused"
+  },
+  "loggerDisconnected": {
+    "message": "Logger connection ended. Temporary history was cleared. Start capture to reconnect.",
+    "description": "Logger status after the connection to the extension ended"
+  },
+  "loggerPhaseRequested": {
+    "message": "requested",
+    "description": "Logger event phase: a network request started (English keeps the technical phase name)"
+  },
+  "loggerPhaseCompleted": {
+    "message": "completed",
+    "description": "Logger event phase: a network request completed (English keeps the technical phase name)"
+  },
+  "loggerPhaseError": {
+    "message": "error",
+    "description": "Logger event phase: a network request failed (English keeps the technical phase name)"
+  },
+  "loggerPhaseRedirected": {
+    "message": "redirected",
+    "description": "Logger event phase: a network request was redirected (English keeps the technical phase name)"
+  },
+  "loggerPhaseBlocked": {
+    "message": "blocked",
+    "description": "Logger event phase: the optional webRequest firewall supplement canceled a network request (English keeps the technical phase name)"
+  },
+  "loggerPhaseMatched": {
+    "message": "matched",
+    "description": "Logger event phase: a native rule matched (English keeps the technical phase name)"
+  },
+  "loggerPhaseStylesheetInserted": {
+    "message": "stylesheet-inserted",
+    "description": "Logger event phase: a cosmetic stylesheet was inserted (English keeps the technical phase name)"
+  },
+  "loggerPhaseSelectorPresent": {
+    "message": "css-selector-present",
+    "description": "Logger event phase: a CSS selector matched elements in a snapshot (English keeps the technical phase name)"
+  },
+  "loggerPhaseProceduralApplied": {
+    "message": "procedural-applied",
+    "description": "Logger event phase: a procedural cosmetic filter was applied (English keeps the technical phase name)"
+  },
+  "loggerPhaseRegistered": {
+    "message": "registered",
+    "description": "Logger event phase: scriptlets were registered (English keeps the technical phase name)"
+  },
+  "loggerPhaseExceptionApplied": {
+    "message": "exception-applied",
+    "description": "Logger event phase: a scriptlet exception was applied (English keeps the technical phase name)"
+  },
+  "loggerRequestId": {
+    "message": "request $1",
+    "description": "Logger row detail. $1: browser request ID"
+  },
+  "loggerLanguageTag": {
+    "message": "en",
+    "description": "Not displayed. BCP 47 language tag of this catalog, used as the lang attribute of the logger page"
+  },
+  "pickerQuit": {
+    "message": "Quit",
+    "description": "Tooltip and accessible name for the close button of the element picker and custom-filter remover (unpicker) panels"
+  },
+  "restoreSucceeded": {
+    "message": "Settings restored.",
+    "description": "Dashboard status after a backup file was restored"
+  },
+  "restoreFailed": {
+    "message": "Could not restore settings: $1",
+    "description": "Dashboard status when restoring a backup failed; $1 is the technical reason"
+  },
+  "backupFailed": {
+    "message": "Could not create the backup: $1",
+    "description": "Dashboard status when creating a backup file failed; $1 is the technical reason"
+  },
+  "resetSucceeded": {
+    "message": "Default settings restored.",
+    "description": "Dashboard status after all settings were reset to their defaults"
+  },
+  "resetFailed": {
+    "message": "Could not reset settings: $1",
+    "description": "Dashboard status when resetting settings failed; $1 is the technical reason"
+  },
+  "restoreFirewallUnsupported": {
+    "message": "Firewall rules were not restored: this browser does not support them (Chrome 145 or later is required).",
+    "description": "Restore warning: the backup contains firewall rules, which this browser version cannot use"
+  },
+  "restoreImportedListsDisabled": {
+    "message": "$1 imported list(s) were restored but left disabled: enabled lists are limited to 20 MiB of source data.",
+    "description": "Restore warning; $1 is the number of imported filter lists which were restored but not enabled"
+  },
+  "restoreImportedListsSkipped": {
+    "message": "$1 imported list(s) could not be restored: only up to 32 lists with credential-free HTTPS addresses are supported.",
+    "description": "Restore warning; $1 is the number of imported filter lists which could not be restored"
+  },
+  "restoreFilteringModesLocked": {
+    "message": "Filtering modes were left unchanged: your administrator manages them.",
+    "description": "Restore or reset warning: the managed disabledFeatures policy includes filteringMode, so the site filtering modes were not changed"
+  },
+  "restoreDeveloperLocked": {
+    "message": "Developer mode and custom DNR rules were left unchanged: your administrator disabled developer features.",
+    "description": "Restore or reset warning: the managed disabledFeatures policy includes develop, so developer mode and custom DNR rules were not changed"
+  },
+  "defaultFilteringModeFailed": {
+    "message": "Could not change the default filtering mode: $1",
+    "description": "Dashboard status when changing the default filtering mode failed; $1 is the technical reason"
+  },
+  "customFiltersSaveFailed": {
+    "message": "Could not save custom filters: $1",
+    "description": "Dashboard status when saving My filters or the filter sandbox failed; $1 is the technical reason"
+  },
+  "siteRulesInvalidHostname": {
+    "message": "“$1” is not a valid hostname. Use one hostname per line, without wildcards, paths or “https://”.",
+    "description": "Site rules validation error; $1 is the rejected line exactly as typed"
+  },
+  "siteRulesDuplicateHostname": {
+    "message": "“$1” appears in more than one filtering level. A hostname may appear in only one level.",
+    "description": "Site rules validation error; $1 is a hostname listed in more than one filtering level"
+  },
+  "siteRulesDefaultRequired": {
+    "message": "Keep exactly one “$1” line: it sets the default filtering level for all other sites.",
+    "description": "Site rules validation error; $1 is the literal token all-urls, which must not be translated"
+  },
+  "siteRulesChangedElsewhere": {
+    "message": "Site rules were changed elsewhere after this page loaded them. Your edits are kept: save again to overwrite those changes, or reload the page to discard your edits.",
+    "description": "Site rules conflict: the stored rules changed after the page loaded them; the user's edits were not saved"
+  },
+  "siteRulesSaveFailed": {
+    "message": "Could not save site rules: $1",
+    "description": "Dashboard status when valid site rules could not be saved; $1 is the technical reason"
+  },
+  "webRequestSetupTitle": {
+    "message": "Experimental network firewall",
+    "description": "Diagnostics panel title for the optional Experimental WebRequest package"
+  },
+  "webRequestSetupExperimental": {
+    "message": "Open Chrome using start-experimental-chrome.cmd in the extension folder. On first use, load that folder with Load unpacked. The launcher uses a separate profile; return here and Refresh to check access.",
+    "description": "Diagnostics setup steps shown in the Experimental WebRequest package; keep start-experimental-chrome.cmd unchanged"
+  },
+  "webRequestSetupStandard": {
+    "message": "The Experimental WebRequest package adds direct firewall blocking, including newly visited domains. Install the separate package and open Chrome with its included launcher.",
+    "description": "Diagnostics note in the standard package about the separate Experimental WebRequest package; keep the package name unchanged"
+  },
+  "webRequestSetupLimits": {
+    "message": "DNR filtering, allow and noop still apply. This feature does not remove quotas or restore the full uBO engine; the extension cannot change Chrome launch arguments itself.",
+    "description": "Diagnostics note on the limits of the experimental firewall; keep DNR, allow, noop and uBO unchanged"
+  },
+  "webRequestSetupGuide": {
+    "message": "Installation, verification and removal guide",
+    "description": "Link text to the Experimental WebRequest documentation"
+  },
+  "reportGitHubConfirm": {
+    "message": "This opens a prefilled report on GitHub containing the site origin and the troubleshooting information shown on this page. Nothing is published until you submit it there. Continue?",
+    "description": "Confirmation shown before the report page opens a prefilled public GitHub issue"
+  },
+  "reportIssueTrackerInfo": {
+    "message": "Report filter issues with specific websites to the <a href=\"https://github.com/kayurachann/uBlock-Plus/issues\"><code>uBlock Plus+</code> issue tracker</a>. <u>Requires a GitHub account.</u>",
+    "description": "Report page introduction; replaces supportS3P1, which names the upstream uAssets tracker. Keep the HTML markup, including the <a href> link, and the URL unchanged"
+  },
+  "protectionProfileSelectRequired": {
+    "message": "Select a protection profile to apply.",
+    "description": "Dashboard status when Apply profile is clicked while no protection profile is selected"
+  },
+  "editorApplyFailed": {
+    "message": "Could not apply the changes: $1",
+    "description": "Dashboard Advanced editors: applying the edited text failed. $1 is the error message"
+  },
+  "autoUpdateRestartRequired": {
+    "message": "Permission granted. uBlock Plus+ restarts once to connect to the updater.",
+    "description": "Dashboard settings: permission granted, the extension must restart once"
+  },
+  "autoUpdateRestartNow": {
+    "message": "Restart now",
+    "description": "Dashboard settings: button restarting the extension to enable the updater connection"
+  },
+  "autoUpdateRestarting": {
+    "message": "Restarting… this page reopens automatically.",
+    "description": "Dashboard settings: the extension is restarting; this page reopens automatically"
+  },
+  "autoUpdateDownloadingVersion": {
+    "message": "Downloading $1…",
+    "description": "Dashboard settings, Updates: live status while a new version downloads. $1 is the version"
+  },
+  "autoUpdateProgress": {
+    "message": "$1 of $2 MiB",
+    "description": "Dashboard settings, Updates: download progress. $1 is the downloaded size, $2 the total size, both in MiB"
+  },
+  "autoUpdateHeld": {
+    "message": "Version $1 is not installed automatically because you restored an earlier version. Select “Install now” to install it anyway.",
+    "description": "Dashboard settings, Updates: after the user restored an earlier version, automatic installation skips the version restored from. $1 is that version"
+  },
+  "autoUpdateCheckThrottled": {
+    "message": "The last check was less than a minute ago. Try again in $1 seconds.",
+    "description": "Dashboard settings, Updates: Check now was used again within a minute. $1 is a number of seconds"
+  },
+  "autoUpdateIncognito": {
+    "message": "Manage updates from a regular window, not from an incognito window.",
+    "description": "Dashboard settings, Updates: the page is open in an incognito window, where update controls are disabled"
+  },
+  "autoUpdateManualOnly": {
+    "message": "Automatic installation works only on Windows. To update, replace the files in the extension folder with those of the new release, then reload uBlock Plus+ on the extensions page.",
+    "description": "Dashboard settings, Updates: the native updater exists only for Windows; on other systems the user updates by hand"
+  },
+  "autoUpdatePolicyOff": {
+    "message": "Your administrator has turned off update checks.",
+    "description": "Dashboard settings, Updates: managed storage autoUpdate is \"off\""
+  },
+  "autoUpdatePolicyNotify": {
+    "message": "Your administrator allows update notifications only; new versions are not installed automatically.",
+    "description": "Dashboard settings, Updates: managed storage allows notifications only (autoUpdate \"notify\", or the dashboard is locked)"
+  },
+  "autoUpdateErrorPolicy": {
+    "message": "Your administrator does not allow this.",
+    "description": "Dashboard settings, Updates: an action or setting was refused by the administrator policy"
+  },
+  "autoUpdateErrorFiltersBusy": {
+    "message": "A filter list update is running. Try again when it finishes.",
+    "description": "Dashboard settings, Updates: an install, restore or restart was refused because a filter list update is running"
+  },
+  "autoUpdateErrorUpdateBusy": {
+    "message": "Another update is already running. Try again in a moment.",
+    "description": "Dashboard settings, Updates: another install or restore (in this browser or from the command-line updater) is running"
+  },
+  "autoUpdateErrorSignature": {
+    "message": "The package is not signed with a trusted uBlock Plus+ release key, so it was not installed.",
+    "description": "Dashboard settings, Updates: the updater found no valid signature from a trusted release key"
+  },
+  "autoUpdateErrorPackage": {
+    "message": "The downloaded package is not a valid uBlock Plus+ release for this copy, so it was not installed.",
+    "description": "Dashboard settings, Updates: the downloaded package is invalid, too large, not staged, or not the expected edition or version"
+  },
+  "autoUpdateErrorUnexpectedFiles": {
+    "message": "The extension folder contains files that are not part of uBlock Plus+. Move them out of the folder, then try again. Nothing was changed.",
+    "description": "Dashboard settings, Updates: the updater refused to replace a folder containing files which are not part of the extension"
+  },
+  "autoUpdateErrorNoBackup": {
+    "message": "There is no earlier version to restore.",
+    "description": "Dashboard settings, Updates: restore failed because the updater has no backup of an earlier version"
+  },
+  "autoUpdateErrorRollbackFailed": {
+    "message": "The earlier version could not be restored. Details are in %LOCALAPPDATA%\\uBlockPlus\\Updater\\updater.log.",
+    "description": "Dashboard settings, Updates: the updater could not restore the earlier version"
+  },
+  "autoUpdateErrorApplyFailed": {
+    "message": "The new version could not be installed. Details are in %LOCALAPPDATA%\\uBlockPlus\\Updater\\updater.log.",
+    "description": "Dashboard settings, Updates: the updater could not back up the installed version or replace the extension files"
+  },
+  "autoUpdateErrorUnsafeFolder": {
+    "message": "The updater does not change this extension folder: it is a drive root or a system or profile folder, it contains links, or other users of this PC can change it. Move uBlock Plus+ into your user profile, for example %LOCALAPPDATA%\\uBlockPlus\\Extension, load it from there, then run the setup again.",
+    "description": "Dashboard settings, Updates: the updater refuses to manage the extension folder (drive root, system or profile folder, links)"
+  },
+  "autoUpdateErrorFolderMismatch": {
+    "message": "The updater manages a folder that holds a different version than this extension. Run the setup command from the folder you loaded with “Load unpacked”.",
+    "description": "Dashboard settings, Updates: the folder the updater manages holds another (older or unknown) version than the running extension"
+  },
+  "autoUpdateErrorNotOffered": {
+    "message": "This version is not offered on the selected release channel.",
+    "description": "Dashboard settings, Updates: Install now asked for a version which the selected release channel does not offer"
+  },
+  "autoUpdateErrorAmbiguous": {
+    "message": "The updater is registered for several folders with this extension ID. Run updater\\install-updater.cmd -Replace from the folder you loaded with “Load unpacked”.",
+    "description": "Dashboard settings, Updates: the updater has several folders registered for this extension ID and cannot tell which one to update"
+  },
+  "autoUpdateErrorUpdater": {
+    "message": "The updater reported an error. Details are in %LOCALAPPDATA%\\uBlockPlus\\Updater\\updater.log.",
+    "description": "Dashboard settings, Updates: the native updater reported an error without a more specific explanation (invalid configuration, internal error, unexpected reply)"
+  },
+  "autoUpdateErrorUndone": {
+    "message": "An interrupted update was undone and the previous version was restored. Nothing else was changed.",
+    "description": "Dashboard settings: the updater restored the previous version after an interrupted update"
+  }
 }

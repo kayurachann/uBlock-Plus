@@ -1,3 +1,154 @@
+# uBlock Plus+ changelog
+
+Releases of this community fork. The upstream uBlock Origin changelog follows further below.
+
+## 1.2.0
+
+### Automatic updates
+
+- **Update checks.** The extension reads the public GitHub release list about every six hours (`api.github.com`, no identifiers or browsing data). A newer version appears in **Settings → Updates**, and the popup shows an **Update x.y.z** button that opens that section.
+  - Checks use ETag and honour GitHub rate limits. A failed check is retried by a one-shot alarm when its backoff ends (15 minutes, doubling up to one day).
+  - **Check now** works once a minute.
+  - **Release channel** offers **Preview (includes pre-releases)** or **Stable releases only**.
+  - Checks can be turned off.
+  - Development builds (first version number 2000 or higher) make no scheduled requests, and their update controls are disabled. The incognito worker leaves updates to the regular one.
+  - Outside Windows, the dashboard reports new versions and explains the manual update.
+- **Optional Windows updater.** Run `updater\install-updater.cmd` once from the extension folder, select **Allow the updater** and grant the new optional `nativeMessaging` permission. The extension restarts once and reopens **Settings → Updates**. New releases then install without reinstalling, automatically or with **Install now** in **Only notify me** mode:
+  - download and SHA-256 verification; the checksum file must name the package;
+  - RSA release signatures against keys pinned in `release-signing-keys.json`, once a key is published. Key sets carry a generation number. The updater adopts new keys, and updates itself, only from a signed package that verified. There is no trust on first use;
+  - checks for manifest identity, edition, stable extension ID and a newer version;
+  - a backup of the previous version, the file swap and an automatic reload;
+  - **Restore version x**. After a restore, automatic installs do not reinstall the version that was removed until a newer release appears or you select **Install now**;
+  - an update interrupted midway is undone from the backup at the updater's next run. If that run is the status check of **Settings → Updates** (opening the section, or **Allow the updater**), the section reports it and the extension reloads into the restored version if needed. If it is an install, the install then continues.
+
+  The updater needs no administrator rights, service or scheduled task. It runs only when Chrome or the user starts it. It refuses to change these folders:
+  - drive roots, network (UNC) paths, and system or profile folders themselves;
+  - folders with a junction or symbolic link in their path or inside them;
+  - folders that other users of the PC can change or whose parent they can rename, such as folders created directly under `C:\`.
+
+  It never deletes files that no uBlock Plus+ package listed in `updater/package-files.json`; it stops and names them instead. Install, restore and the restart for the updater wait up to 60 seconds for running filter-list work; an automatic install tries again five minutes later. The installer runs the same folder check before it registers anything. It accepts `-ExtensionDirectory`, `-ExtensionId` (the setup command that **Settings → Updates** shows passes the extension's ID), `-StableOnly`, `-IncludePrerelease`, `-Replace`, `-ResetKeys`, `-Force` and `-Uninstall`. `-Uninstall` removes one folder's registration and data; the registry entries and updater files go when no other folder remains. A lock file keeps updater operations one at a time. A one-step PowerShell installer downloads the newest release into `%LOCALAPPDATA%\uBlockPlus\Extension`. See [docs/AUTO-UPDATE.md](docs/AUTO-UPDATE.md).
+
+  **Upgrading from 1.1.x.** Releases before 1.2.0 contain no updater, so update by hand once: export a backup, delete the files in the extension folder (keep the folder), extract the 1.2.0 ZIP into it and click **Reload** on `chrome://extensions`. Then run `updater\install-updater.cmd`. If the updater refuses the folder (for example `C:\Extensions`), move the installation to `%LOCALAPPDATA%\uBlockPlus\Extension` ([moving an existing installation](docs/AUTO-UPDATE.md#moving-an-existing-installation)), or remove the shared permissions as described in [folder rules](docs/AUTO-UPDATE.md#folder-rules).
+- **Administrator policy.** The managed `autoUpdate` setting accepts `off` (no checks), `notify` (never install automatically) or `auto` (the user decides). `disabledFeatures: ["dashboard"]` also limits updates to notifications.
+- **Release workflow.** Pushing a `v<version>` tag starts two jobs:
+  - a read-only build job (`npm ci --ignore-scripts`) that tests, lints, builds and validates both packages;
+  - a publish job that signs them when a key is published and checks that the previous release's keys accept them. It then attests build provenance and publishes the assets that the updater expects.
+
+  It can also be run by hand for an existing tag. A tag push publishes a pre-release. The workflow sets the pre-release flag only when it creates the release, so a stable release needs the flag cleared on GitHub afterwards ([details](platform/mv3/README.md#releases)). The workflow never replaces an asset. If an asset already on the release differs from the new build, the run fails, so finish a partial release with **Re-run failed jobs**. `tools/release-signing.mjs` generates, signs, verifies and retires release keys. Releases before 1.2.0 were uploaded by hand and have no attestation.
+
+### Reliability and correctness (verified audit findings)
+
+Startup and service worker:
+- A ruleset journal left by an older package version no longer makes every worker start fail. This matters for updates: recovery skips the stale native replay, restores the previous selection and still initializes popup blocking and the firewall.
+- An invalid saved developer DNR draft can no longer break every compiled activation and its rollback.
+- A failed compiled-filter update is no longer retried as a full compile on every worker wake before messages are answered.
+- With split incognito, the incognito worker no longer rolls back the regular worker's pending transactions or runs its filter-mutating jobs.
+- Permission sync no longer aborts startup when nested site modes exist.
+- Default filtering modes are persisted, so site-specific cosmetic filtering works on a fresh profile. Previously it did nothing until a filtering mode was changed.
+
+Filter lists and compiler:
+- Pinned Filter Store lists downloaded over the network no longer always fail. The cause was a compressed `Content-Length` compared with the decompressed size.
+- A scheduled refresh keeps the last-good cache, and one failing list no longer aborts every compile.
+- A `$badfilter` that cancels part of a split `domain=` filter no longer aborts the compile.
+- Regex hostnames in scriptlet exceptions from imported lists are bounded, so they cannot freeze pages.
+- The Filter Store **Remove** button for custom repositories works again.
+- Import errors keep their specific cause.
+- Community lists are no longer capped by a one-time batch budget.
+- Origin-only stock scriptlet copies are no longer compiled eagerly in every frame when User Scripts are enabled.
+- The local list download cache now expires.
+
+Popup blocker:
+- Ordinary long ad URLs no longer exhaust the compiled matcher budget. When the budget runs out, the decision defers only while an exception could still apply, or while an unchecked `important` block could outrank a matched exception. Otherwise the unchecked blocks are skipped and Smart/Strict decide.
+- User-opened sign-in and checkout windows are no longer closed when they later navigate to the same hostname or a parent/child hostname, or follow a link or form the user clicks in that window. Compiled popup filters still apply to these navigations. Script and meta-refresh redirects to other hosts, sibling hostnames, and typed URLs or bookmarks are still re-evaluated.
+- Rapid successive clicks keep their own gesture grants.
+- The toolbar icon mode survives worker eviction.
+- Fewer session writes, and complete cleanup when a tab closes.
+
+Dynamic firewall and logger:
+- Native rule counts are no longer multiplied by every learned domain. Ordinary rule sets therefore no longer hit the 4,096-rule limit, and the firewall no longer turns off after a restart.
+- Domain learning no longer stalls after many sites, including when a page tries to force this.
+- Backups containing firewall rules restore on Chrome 130–144.
+- Supplement fixes for the experimental webRequest package: a failure no longer disables it for the whole worker lifetime, and a navigation that never commits no longer discards the committed context.
+- Closing one logger window no longer wipes other windows' records.
+- Quieter screen-reader updates.
+- A corrected file can be re-imported.
+- The firewall editor, tester, logger and diagnostics panels are translated into the ten maintained languages.
+- Firewall texts name the “no filtering” mode by its UI label instead of “Off”.
+- The logger page's language tag matches the language it actually shows.
+
+Content scripts and element tools:
+- The picker and unpicker use the page's real host, not a `<base href>` chosen by the page.
+- The element-tool frame authenticates its handshake, and the worker accepts its filter changes only for the tab's own site or a parent domain.
+- Attribute values in picked selectors are escaped.
+- Zapper keyboard deletion no longer throws.
+- Elements are hidden without waiting for a cache write.
+- The procedural logger no longer floods the buffer.
+- Forced cache pruning is honoured.
+- The picker close button has an accessible name.
+- Site-specific cosmetic filtering follows the administrator's no-filtering sites, including sites the administrator forces back to filtering.
+
+Dashboard, backup and report:
+- Backup, restore, reset and default-mode failures and successes are shown in the page, not only in the console.
+- Restore validates DNR rules before changing anything.
+- Hostnames that the popup itself stores are accepted.
+- Imported lists from older and upstream backups are kept.
+- Site Rules validates hostnames and no longer overwrites newer changes with stale data.
+- Protection profile, appearance and Advanced/Site Rules admin locks stay in sync.
+- With the managed `filteringMode` or `develop` lock, restore and reset leave filtering modes, or developer mode and the custom DNR draft, unchanged, and the page says so.
+- The worker enforces the `develop` lock: no page, restore included, can turn developer mode on, and developer DNR rules installed before the lock are removed. It also refuses filtering-mode changes under the `filteringMode` lock.
+- Rejected messages no longer leave controls stuck.
+- The report page redacts paths and queries, and searches this fork's issues. Its issue-tracker link works from the keyboard, and its links open in a new tab.
+- Vietnamese terms follow Chrome's own Vietnamese labels.
+
+### Build, tests and documentation
+
+- `npm test` (`tools/run-tests.mjs`) discovers every `tools/test-*.mjs` automatically, except the browser tests (`*-chrome.mjs`, including `test-auto-update-chrome.mjs`), which need a real Chrome and are run separately. `npm run lint` covers all tools. The experimental-build test works with Windows PowerShell 5.1 when PowerShell 7 is absent.
+- `npm run lint:all` passes: ESLint knows the `chrome`/`browser` globals and ignores the unused publishing submodule.
+- Windows build instructions set a process-scoped execution policy. Build documentation matches the code. READMEs no longer pin version-specific download links, and a test prevents such links from returning.
+- New end-to-end test `tools/test-auto-update-chrome.mjs`. It drives a real Chrome through the whole flow: permission dialog, check, download, verify, apply, reload and rollback.
+- New tests for the updater host (`tools/test-updater-host.mjs`), release signing, the release workflow scripts (`tools/test-release-workflow.mjs`) and the update worker and dashboard.
+- The locale test also checks the update, firewall, logger, restore and report strings for placeholders and untranslated text, and rejects English UI terms in Vietnamese.
+- Every package lists its files in `updater/package-files.json`, and the validator requires it.
+
+## 1.1.2 — 2026-09-08
+
+Popup blocker correctness and effectiveness:
+- Slow legitimate windows are kept.
+- Separate rapid clicks get separate activation grants.
+- Real form destinations are honoured.
+- Popup-feature Off, site protection Off and contextual Allow apply during asynchronous decisions.
+
+## 1.1.1 — 2026-09-08
+
+Anti-adblock compatibility:
+- Adds six AdGuard redirect aliases for packaged resources and fixes conditional-filter and scriptlet-exception semantics.
+- Restores 172 native stock dynamic rules at startup.
+
+## 1.1.0 — 2026-09-08
+
+Adds:
+- the dynamic firewall with the draft tester and indexed matching;
+- cross-source scriptlet exceptions and stock `$badfilter`;
+- the opt-in unified logger;
+- memory-profile improvements;
+- the yellow-plus logo;
+- the separate Experimental WebRequest package.
+
+## 1.0.0 — 2026-09-01
+
+First sideload-first preview for Chromium Manifest V3. It includes:
+- DNR, cosmetic and scriptlet filtering;
+- per-site modes, the picker and the zapper;
+- the Filter Store;
+- imported lists;
+- memory profiles;
+- backup/restore.
+
+----------
+
+# Upstream uBlock Origin changelog
+
+
 - [Add `mpegdash-prune` scriptlet](https://github.com/gorhill/uBlock/commit/323b4ce279)
 - [Improve `xmlPrune` scriptlet](https://github.com/gorhill/uBlock/commit/1235e4dd27)
 - [Improve procedural operator `:matches-path()`](https://github.com/gorhill/uBlock/commit/43d3c74ce7)

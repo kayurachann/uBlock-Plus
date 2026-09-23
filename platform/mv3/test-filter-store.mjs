@@ -177,6 +177,28 @@ assert.match(controller, /what: 'updateRulesetSelection'/);
 assert.match(controller, /rulesetIdsToEnable: stockRulesetIds/);
 assert.doesNotMatch(controller, /beforeEnabled/);
 
+// Delegated click handlers select data-* attributes. The HTML dataset API
+// maps each uppercase letter to "-" plus lowercase (repositoryURL becomes
+// data-repository-u-r-l), so every selected or read key must be written
+// under a name which maps to that exact attribute.
+{
+    const attributeOf = key =>
+        `data-${key.replace(/[A-Z]/g, c => `-${c.toLowerCase()}`)}`;
+    const written = new Set(Array.from(
+        controller.matchAll(/\.dataset\.([A-Za-z]+)\s*=[^=]/g),
+        match => attributeOf(match[1])
+    ));
+    const used = [
+        ...Array.from(controller.matchAll(/\[(data-[a-z-]+)\]/g), m => m[1]),
+        ...Array.from(controller.matchAll(/\.dataset\.([A-Za-z]+)\b(?!\s*=[^=])/g),
+            match => attributeOf(match[1])),
+    ];
+    assert.ok(used.includes('data-repository-url'));
+    for ( const attribute of used ) {
+        assert.ok(written.has(attribute), `${attribute} is never written`);
+    }
+}
+
 const background = await readText('extension/js/background.js');
 assert.match(
     background,

@@ -57,6 +57,35 @@ const localRead = async function(key) {
     }
 };
 
+const readModesFrom = async function(area) {
+    try {
+        const bin = await area.get('filteringModeDetails');
+        if ( typeof bin === 'object' && bin !== null ) { return bin; }
+    } catch {
+    }
+};
+
+// The worker's session copy holds the effective modes: the user's modes with
+// administrator Off scopes added and administrator '-host' entries removed.
+// When present it is the only source of Off scopes; the worker writes it
+// before the user's stored modes. Without it, use the stored modes, which
+// exist only once a mode has changed: a successful read without the key
+// means the defaults, which have no Off scope. An unreadable record leaves
+// the Off scopes unknown.
+const readFilteringModes = async function() {
+    const [ stored, effective ] = await Promise.all([
+        readModesFrom(chrome.storage.local),
+        readModesFrom(chrome.storage.session),
+    ]);
+    if ( effective?.filteringModeDetails !== undefined ) {
+        return effective.filteringModeDetails;
+    }
+    if ( stored === undefined ) { return; }
+    return stored.filteringModeDetails === undefined
+        ? { none: [] }
+        : stored.filteringModeDetails;
+};
+
 const selectorsFromListIndex = (data, ilist) => {
     const list = JSON.parse(`[${data.selectorLists[ilist]}]`);
     const { result } = data;
@@ -107,15 +136,16 @@ const fillCache = async function(rulesetIds) {
     const selectors = new Set();
     const exceptions = new Set();
     const result = { selectors, exceptions };
-    const [ filteringModeDetails, memoryProfile ] = await Promise.all([
-        localRead('filteringModeDetails'),
+    const [ modes, memoryProfile ] = await Promise.all([
+        readFilteringModes(),
         sessionRead('memoryProfile.runtime'),
     ]);
     // Without the current Off scopes, applying even valid cached list data
     // could filter a page which the user has explicitly trusted.
-    if ( Array.isArray(filteringModeDetails?.none) === false ) { return; }
-    if ( filteringModeDetails.none.some(a => typeof a !== 'string') ) { return; }
-    const skip = filteringModeDetails.none.some(a => {
+    if ( Array.isArray(modes?.none) === false ) { return; }
+    const offScopes = modes.none;
+    if ( offScopes.some(a => typeof a !== 'string') ) { return; }
+    const skip = offScopes.some(a => {
         if ( topHostname.endsWith(a) === false ) { return false; }
         const n = a.length;
         return topHostname.length === n || topHostname.at(-n-1) === '.';
@@ -125,7 +155,7 @@ const fillCache = async function(rulesetIds) {
         cacheEntry.p = [];
         return cacheEntry;
     }
-    const modeSnapshot = JSON.stringify(filteringModeDetails);
+    const modeSnapshot = JSON.stringify(modes);
     // Each storage read deserializes an entire packaged dictionary into this
     // frame. Bound cold-cache work as well as compilation, without dropping
     // any list or applying selectors before later-list exceptions arrive.
@@ -143,7 +173,7 @@ const fillCache = async function(rulesetIds) {
     // Loading several dictionaries can span a user changing site modes.
     // Discard that obsolete result before it can repopulate the cleared cache
     // or hide elements on a newly trusted page.
-    const currentModes = await localRead('filteringModeDetails');
+    const currentModes = await readFilteringModes();
     if ( JSON.stringify(currentModes) !== modeSnapshot ) { return; }
     for ( const selector of exceptions ) {
         selectors.delete(selector);
@@ -175,10 +205,12 @@ const now = Math.round(Date.now() / (5 * 60000));
 const since = now - cacheEntry.t;
 if ( since > 1 ) {
     cacheEntry.t = now;
-    await sessionWrite(cacheKey, cacheEntry);
-    if ( cacheMiss ) {
+    // Hide elements without waiting for the storage round trip; the prune
+    // notification still follows the write it accounts for.
+    sessionWrite(cacheKey, cacheEntry).then(( ) => {
+        if ( cacheMiss === false ) { return; }
         chrome.runtime.sendMessage({ what: 'noteCSSCacheWrite' }).catch(( ) => { });
-    }
+    });
 }
 
 const { s, p } = cacheEntry;

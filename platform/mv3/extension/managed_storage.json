@@ -2,6 +2,12 @@
   "$schema": "http://json-schema.org/draft-03/schema#",
   "type": "object",
   "properties": {
+    "autoUpdate": {
+      "title": "Automatic updates of unpacked installations",
+      "description": "Can be one of \"off\" (no update checks), \"notify\" (check and notify; never install automatically) or \"auto\" (the user decides).",
+      "type": "string",
+      "enum": [ "off", "notify", "auto" ]
+    },
     "defaultFiltering": {
       "title": "The default filtering mode",
       "description": "Can be one of \"none\", \"basic\", \"optimal\", \"complete\".",

@@ -198,7 +198,8 @@ body > * {
 body[data-forbid~="dashboard"] #dashboard-nav [data-pane="siteRules"],
 body[data-forbid~="dashboard"] section[data-pane="siteRules"],
 body[data-forbid~="dashboard"] #dashboard-nav [data-pane="diagnostics"],
-body[data-forbid~="dashboard"] section[data-pane="diagnostics"] {
+body[data-forbid~="dashboard"] section[data-pane="diagnostics"],
+body[data-forbid~="filteringMode"] #filteringSiteRules {
     display: none;
 }
 
@@ -228,3 +229,12 @@ body[data-forbid~="dashboard"] section[data-pane="diagnostics"] {
         font-size: 1.8em;
     }
 }
+
+/* Updates */
+#autoUpdate .autoUpdateOptions { display: flex; flex-wrap: wrap; gap: 0.5em 1.5em; }
+#autoUpdate .autoUpdateOptions label { align-items: center; display: inline-flex; gap: 0.5em; }
+#autoUpdate .autoUpdateError { color: var(--info3-ink); }
+#autoUpdate .autoUpdateSetup { border-inline-start: 3px solid var(--border-1); padding-inline-start: var(--default-gap-small); }
+#autoUpdate .autoUpdateSetupLine { align-items: center; display: flex; flex-wrap: wrap; gap: 0.5em; }
+#autoUpdate .autoUpdateSetupCommand { overflow-wrap: anywhere; user-select: all; }
+#autoUpdate [hidden] { display: none !important; }

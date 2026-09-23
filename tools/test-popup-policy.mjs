@@ -1079,6 +1079,12 @@ function lifecycleFixture(options = {}) {
             return state.modes.get(hostname) ?? 3;
         },
         getGestureContexts: async (tabId, frameId) => {
+            // Tab 2 is asked only about navigations inside the popup itself.
+            if ( tabId === 2 ) {
+                assert.equal(frameId, 0);
+                await state.popupGestureRead?.();
+                return state.popupGestures || [];
+            }
             assert.equal(tabId, 1);
             return state.gestureRead?.(frameId) ?? state.gestures;
         },
@@ -1327,6 +1333,368 @@ for ( const lateSnapshot of [ false, true ] ) {
     assert.deepEqual(removed, []);
 }
 
+// A user-opened login/checkout popup keeps working while the user spends more
+// than the gesture lifetime inside it. Navigation within the accepted
+// destination's hostname lineage is checked against compiled filters only; a
+// fragment change is not a navigation. A cross-host move is judged again.
+for ( const [ label, gestureTarget ] of [
+    [ 'exact', 'https://www.paypal.example/checkoutnow?token=abc' ],
+    [ 'button', '' ],
+] ) {
+    const steps = [
+        [ 12_000, 'https://www.paypal.example/webapps/hermes?token=abc', [] ],
+        [ 6_000, 'https://www.paypal.example/webapps/hermes?token=abc#login', [] ],
+        [ 6_000, 'https://paypal.example/signin', [] ],
+        [ 1_000, 'https://checkout.paypal.example/pay', [ 2 ] ],
+    ];
+    const fixture = lifecycleFixture({
+        targetURL: 'https://www.paypal.example/checkoutnow?token=abc',
+    });
+    fixture.gestures = [ {
+        frameId: 0, at: fixture.clock, sequence: 1, targetURL: gestureTarget,
+    } ];
+    assert.equal((await fixture.open()).reason, gestureTarget === ''
+        ? 'recent-user-gesture' : 'trusted-navigation-target');
+    for ( const [ delay, url, removed ] of steps ) {
+        fixture.clock += delay;
+        fixture.tabs.get(2).url = url;
+        await fixture.blocker.onTabUpdated(2, { url }, fixture.tabs.get(2));
+        assert.deepEqual(fixture.removed, removed, `${label}: ${url}`);
+        if ( removed.length !== 0 ) { break; }
+        await fixture.blocker.onTabUpdated(2, { status: 'complete' },
+            fixture.tabs.get(2));
+        assert.deepEqual(fixture.removed, removed, `${label}: ${url} loaded`);
+    }
+}
+
+for ( const [ url, removed ] of [
+    [ 'https://checkout.shop.example/step-2', [] ],
+    [ 'https://tracker.example/landing', [ 2 ] ],
+] ) {
+    const fixture = lifecycleFixture({
+        targetURL: 'https://checkout.shop.example/cart',
+    });
+    await fixture.blocker.setPolicy('shop.example', 'strict');
+    fixture.gestures = [ {
+        frameId: 0, at: fixture.clock, sequence: 1, targetURL: '',
+    } ];
+    assert.equal((await fixture.open()).reason,
+        'strict-related-hostname-user-gesture');
+    fixture.clock += 12_000;
+    fixture.tabs.get(2).url = url;
+    await fixture.blocker.onTabUpdated(2, { url }, fixture.tabs.get(2));
+    assert.deepEqual(fixture.removed, removed, `Strict trusted popup to ${url}`);
+}
+
+// A compiled block for the new URL still applies inside a trusted popup.
+{
+    const fixture = lifecycleFixture({
+        targetURL: 'https://news.example/article',
+        filters: [ lifecycleFilter('popup', 'ads.news.example') ],
+    });
+    fixture.gestures = [ {
+        frameId: 0, at: fixture.clock, sequence: 1,
+        targetURL: fixture.tabs.get(2).url,
+    } ];
+    assert.equal((await fixture.open()).reason, 'trusted-navigation-target');
+    fixture.clock += 12_000;
+    fixture.tabs.get(2).url = 'https://ads.news.example/landing';
+    assert.equal((await fixture.blocker.onTabUpdated(2,
+        { url: fixture.tabs.get(2).url }, fixture.tabs.get(2))).action,
+    'blocked');
+    assert.deepEqual(fixture.removed, [ 2 ]);
+}
+
+// Changing only the fragment while a compiled decision is pending cannot
+// discard that decision.
+{
+    const fixture = lifecycleFixture();
+    fixture.gestures = [ {
+        frameId: 0, at: fixture.clock, sequence: 1,
+        targetURL: fixture.tabs.get(2).url,
+    } ];
+    assert.equal((await fixture.open()).reason, 'trusted-navigation-target');
+    fixture.clock += 6_000;
+    const entered = delayedResult();
+    const release = delayedResult();
+    fixture.stockRead = async ( ) => { entered.resolve(); await release.promise; };
+    fixture.tabs.get(2).url = 'https://ads.example/next';
+    const pending = fixture.blocker.onTabUpdated(2,
+        { url: fixture.tabs.get(2).url }, fixture.tabs.get(2));
+    await entered.promise;
+    fixture.tabs.get(2).url = 'https://ads.example/next#escape';
+    await fixture.blocker.onTabUpdated(2, { url: fixture.tabs.get(2).url },
+        fixture.tabs.get(2));
+    release.resolve();
+    assert.equal((await pending).action, 'blocked');
+    assert.deepEqual(fixture.removed, [ 2 ]);
+}
+
+// Inside a tab the user opened, the user may follow a link to another site
+// long after the opening gesture expired. The navigation start is checked
+// against the popup's own document while it is still loaded; only a link the
+// user activated for exactly that URL counts. Anything else is judged again.
+{
+    const trustedPopup = async ( ) => {
+        const fixture = lifecycleFixture({
+            targetURL: 'https://news.other.example/result',
+            filters: [ lifecycleFilter('popup', 'ads.example') ],
+        });
+        fixture.gestures = [ {
+            frameId: 0, at: fixture.clock, sequence: 1,
+            targetURL: fixture.tabs.get(2).url,
+        } ];
+        assert.equal((await fixture.open()).reason, 'trusted-navigation-target');
+        fixture.clock += 10_000;
+        fixture.navigate = async (url, activationTarget, committedURL = url) => {
+            fixture.popupGestures = activationTarget === undefined ? [] : [ {
+                frameId: 0, at: fixture.clock - 50, sequence: 7,
+                targetURL: activationTarget,
+            } ];
+            await fixture.blocker.onBeforeNavigate({ tabId: 2, frameId: 0, url });
+            fixture.tabs.get(2).url = committedURL;
+            return fixture.blocker.onTabUpdated(2, { url: committedURL },
+                fixture.tabs.get(2));
+        };
+        return fixture;
+    };
+
+    // An outbound link, then in-site navigations of the chosen site.
+    let fixture = await trustedPopup();
+    assert.equal((await fixture.navigate(
+        'https://www.youtube.example/watch?v=1',
+        'https://www.youtube.example/watch?v=1'
+    )).reason, 'trusted-destination-navigation');
+    fixture.clock += 2_000;
+    fixture.tabs.get(2).url = 'https://www.youtube.example/watch?v=2';
+    await fixture.blocker.onTabUpdated(2, { url: fixture.tabs.get(2).url },
+        fixture.tabs.get(2));
+    assert.deepEqual(fixture.removed, [], 'User link to another site');
+    // A later script redirect is judged again.
+    await fixture.navigate('https://tracker.example/landing', undefined);
+    assert.deepEqual(fixture.removed, [ 2 ], 'Script redirect afterwards');
+
+    // A server redirect belongs to the navigation the user started.
+    fixture = await trustedPopup();
+    await fixture.navigate('https://t.example/r/abc', 'https://t.example/r/abc',
+        'https://login.live.example/signin');
+    assert.deepEqual(fixture.removed, [], 'Redirected user navigation');
+
+    // A click elsewhere, or no signal at all, proves nothing.
+    fixture = await trustedPopup();
+    await fixture.navigate('https://tracker.example/landing',
+        'https://news.other.example/next-page');
+    assert.deepEqual(fixture.removed, [ 2 ], 'Unrelated activation');
+    fixture = await trustedPopup();
+    fixture.tabs.get(2).url = 'https://tracker.example/landing';
+    await fixture.blocker.onTabUpdated(2, { url: fixture.tabs.get(2).url },
+        fixture.tabs.get(2));
+    assert.deepEqual(fixture.removed, [ 2 ], 'No navigation signal');
+
+    // Compiled filters still apply to the destination.
+    fixture = await trustedPopup();
+    assert.equal((await fixture.navigate('https://ads.example/landing',
+        'https://ads.example/landing')).action, 'blocked');
+    assert.deepEqual(fixture.removed, [ 2 ], 'Compiled block after user link');
+
+    // The URL change may arrive while the old document is still being asked;
+    // it and any later update wait for the answer, in order.
+    fixture = await trustedPopup();
+    const entered = delayedResult();
+    const release = delayedResult();
+    fixture.popupGestureRead = async ( ) => {
+        entered.resolve();
+        await release.promise;
+    };
+    fixture.popupGestures = [ {
+        frameId: 0, at: fixture.clock, sequence: 3,
+        targetURL: 'https://www.youtube.example/',
+    } ];
+    const started = fixture.blocker.onBeforeNavigate({
+        tabId: 2, frameId: 0, url: 'https://www.youtube.example/',
+    });
+    await entered.promise;
+    fixture.tabs.get(2).url = 'https://www.youtube.example/';
+    const updated = fixture.blocker.onTabUpdated(2,
+        { url: fixture.tabs.get(2).url }, fixture.tabs.get(2));
+    const loaded = fixture.blocker.onTabUpdated(2, { status: 'complete' },
+        fixture.tabs.get(2));
+    release.resolve();
+    await started;
+    assert.equal((await updated).reason, 'trusted-destination-navigation');
+    await loaded;
+    assert.deepEqual(fixture.removed, [], 'Slow activation answer');
+
+    // Only accepted popups are probed, and only for their top frame.
+    fixture = lifecycleFixture();
+    let probes = 0;
+    fixture.popupGestureRead = async ( ) => { probes += 1; };
+    await fixture.blocker.setPolicy('shop.example', 'allow');
+    await fixture.open();
+    await fixture.blocker.onBeforeNavigate({
+        tabId: 2, frameId: 0, url: 'https://elsewhere.example/',
+    });
+    fixture = await trustedPopup();
+    fixture.popupGestureRead = async ( ) => { probes += 1; };
+    await fixture.blocker.onBeforeNavigate({
+        tabId: 2, frameId: 3, url: 'https://frame.example/',
+    });
+    await fixture.blocker.onBeforeNavigate({
+        tabId: 9, frameId: 0, url: 'https://unrelated.example/',
+    });
+    assert.equal(probes, 0);
+}
+
+// Padding a popup URL must not switch off popup protection. Ordinary list
+// sizes against long landing URLs stay within the compiled matcher budget, so
+// the contextual policy still judges the popup.
+for ( const policy of [ 'block', 'strict' ] ) {
+    const targetURL = `https://adsterra-landing.example.net/landing?x=${'a'.repeat(900)}`;
+    const fixture = lifecycleFixture({
+        targetURL,
+        filters: Array.from({ length: 500 }, (_, index) => ({
+            schemaVersion: 1,
+            routeCode: 'popup-observer-runtime',
+            kind: 'popup',
+            action: 'block',
+            important: false,
+            condition: { urlFilter: `/ad-path-${index}/` },
+            lineNumber: index + 1,
+        })),
+    });
+    await fixture.blocker.setPolicy('shop.example', policy);
+    const result = await fixture.open();
+    assert.equal(result.action, 'blocked', `${policy}: ${result.reason}`);
+    assert.equal(result.reason, policy === 'strict'
+        ? 'strict-without-user-gesture'
+        : 'unrelated-hostname-without-user-gesture');
+    assert.deepEqual(fixture.removed, [ 2 ]);
+}
+
+// Padding past the 8 KB bound, where only the origin is kept, must not switch
+// popup protection off either. Stock-like exceptions anchored to other hosts
+// are ruled out by hostname; one which could still match keeps deferring.
+{
+    const stockLike = (lineNumber, action, condition, routeCode) => ({
+        schemaVersion: 1,
+        routeCode: routeCode || 'popup-observer-runtime',
+        kind: 'popup',
+        action,
+        important: false,
+        condition,
+        lineNumber,
+    });
+    const filters = [
+        stockLike(1, 'allow', { urlFilter: '||google.*/search' }),
+        stockLike(2, 'allow', {
+            urlFilter: '||www.google.*/search?q=*&oq=*&sourceid=chrome&',
+            domainType: 'thirdParty',
+        }, 'popup-compiler-required'),
+        stockLike(3, 'allow', { urlFilter: '||ads.shopee.*/' }),
+        stockLike(4, 'block', { urlFilter: '/earn.php?z=' }),
+    ];
+    for ( const policy of [ 'block', 'strict' ] ) {
+        const fixture = lifecycleFixture({
+            targetURL: `https://adsterra-landing.example.net/landing?x=${'a'.repeat(9_000)}`,
+            filters,
+        });
+        await fixture.blocker.setPolicy('shop.example', policy);
+        const result = await fixture.open();
+        assert.equal(result.action, 'blocked', `${policy}: ${result.reason}`);
+        assert.equal(result.reason, policy === 'strict'
+            ? 'strict-without-user-gesture'
+            : 'unrelated-hostname-without-user-gesture');
+        assert.deepEqual(fixture.removed, [ 2 ]);
+    }
+    const fixture = lifecycleFixture({
+        targetURL: `https://www.google.example/search?q=${'a'.repeat(9_000)}`,
+        filters,
+    });
+    await fixture.blocker.setPolicy('shop.example', 'strict');
+    assert.equal((await fixture.open()).action, 'defer');
+    assert.deepEqual(fixture.removed, []);
+}
+
+// URL changes of ordinary tabs (single-page applications change them many
+// times a minute) must not rewrite the popup checkpoint.
+{
+    const writes = [];
+    const session = new Map();
+    const tabs = new Map([
+        [ 1, { id: 1, url: 'https://shop.example/start' } ],
+        [ 2, { id: 2, openerTabId: 1, url: 'https://shop.example/popup' } ],
+        [ 3, { id: 3, openerTabId: 2, url: 'https://shop.example/chain' } ],
+        [ 99, { id: 99, url: 'https://spa.example/#/feed' } ],
+    ]);
+    let clock = 5_000_000;
+    const observer = createPopupBlocker({
+        tabs: {
+            get: async id => {
+                if ( tabs.has(id) === false ) { throw new Error('gone'); }
+                return { ...tabs.get(id) };
+            },
+            remove: async id => { tabs.delete(id); },
+        },
+        now: ( ) => clock,
+        getFilteringMode: async ( ) => 3,
+        getGestureContexts: async ( ) => [
+            { frameId: 0, at: 0, sequence: 0, targetURL: '' },
+        ],
+        getSourceContext: async tabId => ({
+            topURL: tabs.get(tabId).url, topContextComplete: true,
+            initiatorURL: tabs.get(tabId).url, initiatorContextComplete: true,
+        }),
+        sessionRead: async key => structuredClone(session.get(key)),
+        sessionWrite: async (key, value) => {
+            writes.push(key);
+            session.set(key, structuredClone(value));
+        },
+    });
+    await observer.ready;
+    const transientWrites = ( ) => writes.filter(key =>
+        key === 'popupBlocker.transient'
+    ).length;
+    for ( const url of [ 'https://spa.example/#/profile',
+        'https://spa.example/watch?v=2' ] ) {
+        tabs.get(99).url = url;
+        await observer.onTabUpdated(99, { url }, tabs.get(99));
+    }
+    assert.equal(transientWrites(), 0, 'Unrelated tab URL changes');
+
+    // A same-site popup chain: tab 2 opens tab 3, so tab 2 is both a
+    // candidate and a burst opener.
+    for ( const [ tabId, sourceTabId ] of [ [ 2, 1 ], [ 3, 2 ] ] ) {
+        assert.equal((await observer.onNavigationTarget({
+            tabId, sourceTabId, sourceFrameId: 0, url: tabs.get(tabId).url,
+        })).reason, 'single-related-hostname-popup');
+    }
+    let checkpoint = session.get('popupBlocker.transient');
+    assert.equal(checkpoint.bursts.some(([ tabId ]) => tabId === 2), true);
+    const writesBeforeOpenerUpdate = transientWrites();
+    tabs.get(1).url = 'https://shop.example/next';
+    await observer.onTabUpdated(1, { url: tabs.get(1).url }, tabs.get(1));
+    assert.equal(transientWrites(), writesBeforeOpenerUpdate,
+        'A popunder check with no decision writes nothing');
+
+    await observer.onTabRemoved(2);
+    checkpoint = session.get('popupBlocker.transient');
+    assert.equal(checkpoint.candidates.some(entry => entry.tabId === 2), false);
+    assert.equal(checkpoint.bursts.some(([ tabId ]) => tabId === 2), false,
+        'A removed candidate tab also drops its own burst entry');
+
+    // An expiry removed while scanning popunder candidates is persisted.
+    clock += 2_001;
+    tabs.set(4, { id: 4, openerTabId: 1, url: 'https://shop.example/help' });
+    assert.equal((await observer.onNavigationTarget({
+        tabId: 4, sourceTabId: 1, sourceFrameId: 0, url: tabs.get(4).url,
+    })).reason, 'single-related-hostname-popup');
+    clock += 30_001;
+    const writesBeforeExpiry = transientWrites();
+    tabs.get(1).url = 'https://shop.example/later';
+    await observer.onTabUpdated(1, { url: tabs.get(1).url }, tabs.get(1));
+    assert.equal(transientWrites(), writesBeforeExpiry + 1);
+}
+
 // Old registrations must fail open even when their target-only data contains
 // a matching block. Only the observer has authoritative opener/intent context.
 const preventPopupSource = await fs.readFile(path.join(
@@ -1431,7 +1799,12 @@ const collectorContext = vm.createContext({
             sendMessage: async (tabId, message, { frameId }) => {
                 void tabId; void message;
                 messagedFrames.push(frameId);
-                return { sequence: frameId === 70 ? 1 : 0 };
+                return frameId === 70
+                    ? { sequence: 2, recent: [
+                        { at: 1, sequence: 1, targetURL: 'https://a.example/' },
+                        { at: 2, sequence: 2, targetURL: 'https://b.example/' },
+                    ] }
+                    : { sequence: 0 };
             },
         },
     },
@@ -1441,7 +1814,10 @@ const collected = await collectorContext.getPopupGestureContexts(1, 70);
 assert.equal(messagedFrames.length, 64, 'Source priority preserves message cap');
 assert.equal(messagedFrames[0], 70);
 assert.equal(new Set(messagedFrames).size, 64);
-assert.equal(collected.find(context => context.frameId === 70)?.sequence, 1);
+assert.equal(collected.find(context => context.frameId === 70)?.sequence, 2);
+// Every recent activation of a frame reaches the observer, which pairs each
+// one with the tab it actually opened.
+assert.equal(collected.find(context => context.frameId === 70)?.recent.length, 2);
 assert.match(
     backgroundSource,
     /popupPanelData[\s\S]{0,1600}popupPolicy:\s*results\[4\]\.effective/

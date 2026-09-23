@@ -316,6 +316,54 @@ try {
         '*$script,domain=a.example,badfilter',
     ]);
     assert.deepEqual(partial.dnrRules[0].condition.initiatorDomains, [ 'b.example' ]);
+    // DNR cannot express an entity. Cancelling the hostname half of a split
+    // domain list must leave no rule, not an entity-only rule which fails
+    // validation and aborts every compilation, whichever source cancels it.
+    {
+        const cancelled = compile([
+            '*$script,domain=google.*|foo.example',
+            '*$script,domain=foo.example,badfilter',
+        ]);
+        assert.equal(cancelled.dnrRules.length, 0);
+        assert.equal(cancelled.badfilterCancelledCount, 1);
+        const imported = compile([ '*$xhr,domain=thepiratebay.org|thepiratebay.*' ]);
+        assert.deepEqual(imported.dnrRules.map(rule => rule.condition.initiatorDomains),
+            [ [ 'thepiratebay.org' ] ], 'The hostname half still blocks without a badfilter');
+        const stock = compile([ '*$xhr,domain=thepiratebay.org,badfilter' ]);
+        resolveNetworkBadfilters([ imported, { badfilterKeys: stock.badfilterKeys } ]);
+        const rejections = [];
+        assert.deepEqual(validateRules(
+            minimizeRules(minimizeRuleset(imported.dnrRules)), rejections
+        ), []);
+        assert.deepEqual(rejections, []);
+        resolveNetworkBadfilters([ imported ]);
+        assert.deepEqual(imported.dnrRules.map(rule => rule.condition.initiatorDomains),
+            [ [ 'thepiratebay.org' ] ], 'Removing the badfilter restores the hostname unit');
+        // Caches compiled before this fix still hold a DNR rule on the entity
+        // unit. They heal on the next compile, without a revision bump.
+        const [ entityUnit, hostnameUnit ] = imported.networkUnits;
+        const legacyRule = domains => ({
+            action: { type: 'block' },
+            condition: { initiatorDomains: domains, resourceTypes: [ 'xmlhttprequest' ] },
+        });
+        const legacy = { networkUnits: [
+            { key: entityUnit.key, dnrRules: [ legacyRule([ 'thepiratebay.*' ]) ], popupFilters: [] },
+            { key: hostnameUnit.key, dnrRules: [ legacyRule([ 'thepiratebay.org' ]) ], popupFilters: [] },
+        ] };
+        const legacyUnits = structuredClone(legacy.networkUnits);
+        resolveNetworkBadfilters([ legacy, { badfilterKeys: stock.badfilterKeys } ]);
+        const legacyRejections = [];
+        assert.deepEqual(validateRules(
+            minimizeRules(minimizeRuleset(legacy.dnrRules)), legacyRejections
+        ), []);
+        assert.deepEqual(legacyRejections, []);
+        assert.deepEqual(legacy.networkUnits, legacyUnits, 'Cached units stay intact');
+        resolveNetworkBadfilters([ legacy ]);
+        const legacyRules = validateRules(minimizeRules(minimizeRuleset(legacy.dnrRules)));
+        assert.deepEqual(legacyRules.map(rule => rule.condition.initiatorDomains),
+            [ [ 'thepiratebay.org' ] ],
+            'Without the badfilter, a legacy cache enforces exactly what it did before');
+    }
     const noPartial = compile([
         '||ads.example^$script,domain=a.example|b.example',
         '||ads.example^$script,domain=a.example,badfilter',

@@ -41,10 +41,25 @@ dom.body.dataset.platform = webextFlavor;
 
 dom.attr('a', 'target', '_blank');
 
+// Managed `disabledFeatures` entries and the panes they lock. The stylesheet
+// hides the same tabs; this also refuses hash or remembered-pane navigation.
+const forbiddenPanesByFeature = new Map([
+    [ 'dashboard', [ 'settings', 'rulesets', 'filters', 'siteRules', 'diagnostics', 'develop' ] ],
+    [ 'develop', [ 'develop' ] ],
+    [ 'picker', [ 'filters' ] ],
+]);
+
+export function isForbiddenPane(pane) {
+    const forbid = (dom.body.dataset.forbid || '').split(' ');
+    return forbid.some(feature =>
+        forbiddenPanesByFeature.get(feature)?.includes(pane) === true
+    );
+}
+
 function selectPane(pane) {
     const knownPane = Array.from(document.querySelectorAll('.tabButton[data-pane]'))
         .some(button => button.dataset.pane === pane);
-    if ( knownPane === false ) { return false; }
+    if ( knownPane === false || isForbiddenPane(pane) ) { return false; }
     dom.body.dataset.pane = pane;
     if ( pane === 'settings' ) {
         localRemove('dashboard.activePane');
@@ -54,8 +69,42 @@ function selectPane(pane) {
     return true;
 }
 
+// The page stays hidden (body.loading) until Settings rendered, and a hidden
+// heading can be neither scrolled to nor focused: wait until it shows.
+let pendingReveal;
+function revealSection(heading) {
+    pendingReveal?.disconnect();
+    pendingReveal = undefined;
+    const reveal = ( ) => {
+        heading.setAttribute('tabindex', '-1');
+        heading.scrollIntoView({ block: 'start' });
+        heading.focus({ preventScroll: true });
+    };
+    if ( dom.cl.has(dom.body, 'loading') === false ) { return reveal(); }
+    const observer = new MutationObserver(( ) => {
+        if ( dom.cl.has(dom.body, 'loading') ) { return; }
+        observer.disconnect();
+        if ( pendingReveal === observer ) { pendingReveal = undefined; }
+        reveal();
+    });
+    observer.observe(dom.body, { attributes: true, attributeFilter: [ 'class' ] });
+    pendingReveal = observer;
+}
+
+// A hash can also name a section of the pane, as in #settings/autoUpdate:
+// its heading is scrolled into view and focused.
 function selectHashPane() {
-    return selectPane(self.location.hash.slice(1));
+    const [ pane, anchor ] = self.location.hash.slice(1).split('/');
+    if ( selectPane(pane) === false ) { return false; }
+    pendingReveal?.disconnect();
+    pendingReveal = undefined;
+    if ( typeof anchor !== 'string' || /^[A-Za-z][\w-]{0,63}$/.test(anchor) === false ) {
+        return true;
+    }
+    const heading = qs$(`section[data-pane="${pane}"] #${anchor} h3`);
+    if ( heading === null ) { return true; }
+    revealSection(heading);
+    return true;
 }
 
 dom.on('#dashboard-nav', 'click', '.tabButton', ev => {
@@ -100,6 +149,26 @@ export function nodeFromTemplate(templateId, nodeSelector) {
 export function hashFromIterable(iter) {
     if ( Boolean(iter) === false ) { return ''; }
     return Array.from(iter).sort().join('\n');
+}
+
+/******************************************************************************/
+
+// Shared result line for dashboard operations which have no inline status.
+
+let operationTimer;
+
+export function setOperationStatus(text, level = 'info') {
+    const node = qs$('#operationStatus');
+    if ( node === null ) { return; }
+    self.clearTimeout(operationTimer);
+    node.dataset.level = level;
+    dom.text(node, text);
+    if ( text !== '' ) {
+        operationTimer = self.setTimeout(( ) => {
+            dom.text(node, '');
+            delete node.dataset.level;
+        }, level === 'error' ? 9000 : 5000);
+    }
 }
 
 /******************************************************************************/

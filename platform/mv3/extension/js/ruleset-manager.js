@@ -33,6 +33,8 @@ import {
     updateEnabledImportedLists,
 } from './imported-lists.js';
 
+import { adminReadEx, getAdminRulesets } from './admin.js';
+
 import {
     i18n,
     localRead, localRemove, localWrite,
@@ -51,7 +53,6 @@ import { createRulesetNativeState } from './ruleset-native-state.js';
 import { createStockBadfilterManager } from './stock-badfilter.js';
 import { dnr } from './ext-compat.js';
 import { fetchJSON } from './fetch.js';
-import { getAdminRulesets } from './admin.js';
 import { hasBroadHostPermissions } from './ext-utils.js';
 import { rulesFromText } from './dnr-parser.js';
 
@@ -63,6 +64,8 @@ const USER_RULES_PRIORITY = 1000000;
 const TRUSTED_DIRECTIVE_BASE_RULE_ID = 8000000;
 const TRUSTED_DIRECTIVE_PRIORITY = USER_RULES_PRIORITY + 1000000;
 const STRICTBLOCK_PRIORITY = 29;
+// Developer DNR text installed by the last successful user-rules update.
+const USER_DNR_APPLIED_KEY = 'userDnrRules.applied';
 const stockBadfilterManager = createStockBadfilterManager({
     dnr, read: localRead, write: localWrite, remove: localRemove, fetchJSON,
 });
@@ -939,7 +942,7 @@ async function getEffectiveUserRules() {
     return userRules;
 }
 
-async function updateUserRulesNow(generation, stockResidualRules = []) {
+async function updateUserRulesNow(generation, stockResidualRules, effectiveRulesText) {
     // Keep only ids from the existing dynamic rules before loading compiled
     // filter arrays. Holding all three large representations at once causes a
     // pronounced peak in a MV3 service worker on low-memory devices.
@@ -960,14 +963,9 @@ async function updateUserRulesNow(generation, stockResidualRules = []) {
             }
         }
     }
-    const userRulesText = await localRead('userDnrRules') || '';
     const effectiveGeneration = generation === undefined
         ? await localRead(ACTIVE_COMPILED_GENERATION_KEY) || ''
         : generation;
-
-    const effectiveRulesText = rulesetConfig.developerMode
-        ? userRulesText
-        : '';
 
     const parsed = rulesFromText(effectiveRulesText);
     const out = { added: 0, removed: 0, errors: [], fatalError: '' };
@@ -1150,7 +1148,42 @@ async function updateUserRulesNow(generation, stockResidualRules = []) {
     return out;
 }
 
-async function updateUserRulesWithStockNow(generation) {
+// Only an explicit save (strictDeveloperDraft) may fail because of the saved
+// developer draft. Every other update which cannot use the draft keeps the
+// developer rules installed by the last successful update, so a draft error
+// cannot block unrelated compiled, recovery or startup updates. Without a
+// record of those rules (before the first update which stored one), the draft
+// error is still returned: guessing could drop an installed exception.
+// A managed 'develop' lock treats the draft as empty, so that neither a saved
+// nor a restored draft installs developer rules, and earlier ones go away.
+async function developerRulesAllowed() {
+    if ( rulesetConfig.developerMode !== true ) { return false; }
+    const forbidden = await adminReadEx('disabledFeatures');
+    return Array.isArray(forbidden) === false || forbidden.includes('develop') === false;
+}
+
+async function updateDeveloperUserRulesNow(generation, stockResidualRules, options) {
+    const developerRules = await developerRulesAllowed();
+    const draftText = developerRules
+        ? await localRead('userDnrRules') || ''
+        : '';
+    const result = await updateUserRulesNow(generation, stockResidualRules, draftText);
+    if ( result.fatalError === '' || options.strictDeveloperDraft === true ||
+        developerRules !== true ) {
+        return { result, developerRulesText: draftText };
+    }
+    const appliedText = await localRead(USER_DNR_APPLIED_KEY);
+    if ( typeof appliedText !== 'string' || appliedText === draftText ) {
+        return { result, developerRulesText: draftText };
+    }
+    const fallback = await updateUserRulesNow(generation, stockResidualRules, appliedText);
+    if ( fallback.fatalError === '' ) {
+        fallback.errors.unshift(`Developer DNR draft not applied: ${result.fatalError}`);
+    }
+    return { result: fallback, developerRulesText: appliedText };
+}
+
+async function updateUserRulesWithStockNow(generation, options) {
     let plan;
     try {
         await stockBadfilterManager.recover();
@@ -1164,13 +1197,24 @@ async function updateUserRulesWithStockNow(generation) {
         }
         plan = await stockBadfilterManager.prepare(keys);
         if ( plan.changed ) { await stockBadfilterManager.begin(plan); }
-        const result = await updateUserRulesNow(generation, plan.residualRules);
+        const { result, developerRulesText } = await updateDeveloperUserRulesNow(
+            generation, plan.residualRules, options
+        );
         if ( result.fatalError ) { throw new Error(result.fatalError); }
         if ( plan.changed ) {
             await stockBadfilterManager.apply(plan);
             await stockBadfilterManager.commit(plan);
         }
         try { await stockBadfilterManager.report(plan); } catch { }
+        try {
+            if ( await localRead(USER_DNR_APPLIED_KEY) !== developerRulesText ) {
+                await localWrite(USER_DNR_APPLIED_KEY, developerRulesText);
+            }
+        } catch ( reason ) {
+            // The native update is committed; only a later fallback can use
+            // an older record.
+            ublockPlusErr(`updateUserRules/applied/${reason}`);
+        }
         if ( plan.status.deferredSourceCount ) {
             result.errors.push(`$badfilter: ${plan.status.deferredSourceCount} packaged source(s) ` +
                 'deferred because exact residual or secondary-corpus cancellation is required');
@@ -1189,8 +1233,10 @@ function recoverStockBadfilters() {
     return enqueueDNRMutation(( ) => stockBadfilterManager.recover());
 }
 
-function updateUserRules(generation) {
-    return enqueueDNRMutation(( ) => updateUserRulesWithStockNow(generation));
+function updateUserRules(generation, options = {}) {
+    return enqueueDNRMutation(( ) =>
+        updateUserRulesWithStockNow(generation, options)
+    );
 }
 
 /******************************************************************************/

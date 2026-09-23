@@ -65,6 +65,9 @@ export const defaultFilteringModes = {
 const MODE_KEY = 'filteringModeDetails';
 const RESTORE_KEY = 'filteringModeRestoreLevels';
 const TRANSACTION_KEY = 'filteringModeTransaction';
+// With "incognito": "split", the incognito worker shares storage.local with
+// the regular worker but not this module's mutation queue.
+const isIncognitoWorker = browser.extension?.inIncognitoContext === true;
 let pendingModeMutation = Promise.resolve();
 let loadingModes;
 let recoveryNeeded = false;
@@ -304,11 +307,13 @@ async function restoreModeTransaction(transaction) {
     const modes = await effectiveModeDetails(transaction.previousModes);
     const levels = normalizeRestoreLevels(transaction.previousRestoreLevels);
     const errors = [];
+    // Content scripts take Off scopes from the session copy when it exists:
+    // update it before the stored modes, as writeFilteringModeDetails does.
     for ( const task of [
         ( ) => filteringModesToDNR(modes),
+        ( ) => sessionWrite(MODE_KEY, serializeModeDetails(modes)),
         ( ) => localWrite(MODE_KEY, transaction.previousModes),
         ( ) => localWrite(RESTORE_KEY, levels),
-        ( ) => sessionWrite(MODE_KEY, serializeModeDetails(modes)),
     ] ) {
         try { await task(); }
         catch ( reason ) { errors.push(`${reason}`); }
@@ -323,11 +328,38 @@ async function restoreModeTransaction(transaction) {
     return modes;
 }
 
+async function readModeTransaction(transaction) {
+    if ( transaction?.version !== 1 ||
+        transaction.previousModes instanceof Object === false ) {
+        throw new Error('Invalid pending filtering-mode transaction');
+    }
+    // The journal may belong to a write which the regular worker is still
+    // running. Use its committed modes without touching shared state; the
+    // regular worker owns the rollback. recoveryNeeded stays set, so later
+    // reads look at storage again.
+    const modes = await effectiveModeDetails(transaction.previousModes);
+    restoreLevels = normalizeRestoreLevels(transaction.previousRestoreLevels);
+    readFilteringModeDetails.cache = modes;
+    return modes;
+}
+
 async function loadFilteringModes() {
     const stored = await readPersistedModes();
     if ( stored[TRANSACTION_KEY] !== undefined ) {
         recoveryNeeded = true;
-        return restoreModeTransaction(stored[TRANSACTION_KEY]);
+        return isIncognitoWorker
+            ? readModeTransaction(stored[TRANSACTION_KEY])
+            : restoreModeTransaction(stored[TRANSACTION_KEY]);
+    }
+    if ( stored[MODE_KEY] === undefined ) {
+        // Content scripts read the stored modes directly and cannot tell a
+        // profile which never changed a mode from an unreadable record. Store
+        // the defaults once; this changes no effective mode.
+        try {
+            await localWrite(MODE_KEY, structuredClone(defaultFilteringModes));
+        } catch {
+            // The defaults still apply in the worker; retry on the next load.
+        }
     }
     const modes = await effectiveModeDetails(
         stored[MODE_KEY] ?? defaultFilteringModes
@@ -384,9 +416,12 @@ async function writeFilteringModeDetails(
     }
     try {
         await filteringModesToDNR(effectiveModes);
+        // css-specific.js takes Off scopes from this session copy when it
+        // exists: update it first, so that a newly trusted site is not
+        // filtered through a stale copy.
+        await sessionWrite(MODE_KEY, serializeModeDetails(effectiveModes));
         await localWrite(MODE_KEY, data);
         await localWrite(RESTORE_KEY, afterRestore);
-        await sessionWrite(MODE_KEY, serializeModeDetails(effectiveModes));
         await localRemove(TRANSACTION_KEY);
     } catch ( reason ) {
         try { await restoreModeTransaction(before); }
@@ -536,14 +571,33 @@ async function syncWithBrowserPermissionsNow() {
         for ( const hn of new Set([ ...optimal, ...complete ]) ) {
             if ( afterAllowedHostnames.has(hn) ) { continue; }
             if ( isDescendantHostnameOfIter(hn, afterAllowedHostnames) ) { continue; }
-            applyFilteringMode(filteringModes, hn, afterMode);
+            try {
+                applyFilteringMode(filteringModes, hn, afterMode);
+            } catch ( reason ) {
+                if ( reason?.code !== 'ERR_FILTERING_MODE_PARENT_SCOPE' ) {
+                    throw reason;
+                }
+                // The parent-scope guard is for user edits. A lost permission
+                // must still drop the elevated level, e.g. of a child kept
+                // below a trusted parent: the child inherits its parent again.
+                optimal.delete(hn);
+                complete.delete(hn);
+            }
             modified = true;
         }
         for ( const hn of afterAllowedHostnames ) {
             if ( beforeAllowedHostnames.has(hn) ) { continue; }
             if ( optimal.has(hn) || complete.has(hn) ) { continue; }
             if ( basic.has(hn) || none.has(hn) ) { continue; }
-            applyFilteringMode(filteringModes, hn, MODE_OPTIMAL);
+            try {
+                applyFilteringMode(filteringModes, hn, MODE_OPTIMAL);
+            } catch ( reason ) {
+                if ( reason?.code !== 'ERR_FILTERING_MODE_PARENT_SCOPE' ) {
+                    throw reason;
+                }
+                // Keep the level set on the parent site.
+                continue;
+            }
             modified = true;
         }
         if ( modified ) {

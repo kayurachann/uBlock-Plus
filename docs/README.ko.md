@@ -5,7 +5,7 @@
 
 <img src="assets/readme/hero.png" alt="Chromium 페이지가 로드되기 전에 방패가 광고, 추적기, 쿠키와 그 밖의 원치 않는 웹 요청을 필터링하는 그림" width="1100">
 
-<sub>콘셉트 일러스트 · v1.0.0은 수동으로 업데이트하는 사이드로드용 사전 릴리스입니다</sub>
+<sub>콘셉트 일러스트 · Windows에서 선택적 자동 업데이트를 지원하는 사이드로드용 사전 릴리스입니다</sub>
 
 # uBlock Plus+
 
@@ -30,7 +30,7 @@
 uBlock Plus+는 Chromium MV3용으로 독립 개발되는 GPL 라이선스 콘텐츠 차단기입니다. 검증된 업스트림 필터링/컴파일러 기반에 커뮤니티 Filter Store, 이동 가능한 설정, 명시적인 고급 사용자 제어, 메모리를 고려한 동작을 결합합니다. 프로젝트가 운영하는 텔레메트리 서비스나 원격 실행 코드는 사용하지 않습니다.
 
 > [!IMPORTANT]
-> **릴리스 상태:** v1.0.0은 수동 사이드로드용 사전 릴리스이며 자동으로 업데이트되지 않습니다. uBlock Plus+는 독립 포크로서 uBlock Origin의 공식 릴리스가 아니며 Raymond Hill의 보증을 받지 않았습니다. Chrome MV3는 기존 MV2 확장 프로그램에서 사용할 수 있던 모든 차단 기능을 제공하지 않습니다. 사이드로드는 Chrome 웹 스토어의 배포 정책을 피할 수 있지만 DNR 할당량, 서비스 워커 수명 주기 규칙 또는 브라우저 보안 경계를 없애지는 **않습니다**. [솔직한 호환성 표](FEATURE-MATRIX.md)를 확인하세요.
+> **릴리스 상태:** **압축해제된 확장 프로그램을 로드합니다**로 한 번만 설치하는 사이드로드용 사전 릴리스이며, 선택 사항인 [Windows 업데이터](AUTO-UPDATE.md)를 사용하면 이후 릴리스가 자동으로 설치됩니다. uBlock Plus+는 독립 포크로서 uBlock Origin의 공식 릴리스가 아니며 Raymond Hill의 보증을 받지 않았습니다. Chrome MV3는 기존 MV2 확장 프로그램에서 사용할 수 있던 모든 차단 기능을 제공하지 않습니다. 사이드로드는 Chrome 웹 스토어의 배포 정책을 피할 수 있지만 DNR 할당량, 서비스 워커 수명 주기 규칙 또는 브라우저 보안 경계를 없애지는 **않습니다**. [솔직한 호환성 표](FEATURE-MATRIX.md)를 확인하세요.
 
 ## 사용자의 선택을 중심으로
 
@@ -112,7 +112,7 @@ Power UI의 전체 문자열은 영어, 독일어, 스페인어, 프랑스어, �
 <img src="assets/readme/memory-settings.png" alt="Auto 모드, 실제 적용된 Balanced 설정, 로컬 저장소 진단을 보여 주는 실제 uBlock Plus+ Memory Profile 설정">
 
 <strong>Memory Profile</strong><br>
-Auto, Balanced 또는 Low-memory를 선택하고 실시간 RAM이 아닌 로컬 캐시/저장소 지표를 확인할 수 있습니다.
+Auto, Balanced 또는 Low memory를 선택하고 실시간 RAM이 아닌 로컬 캐시/저장소 지표를 확인할 수 있습니다.
 
 </td>
 </tr>
@@ -131,20 +131,28 @@ Auto, Balanced 또는 Low-memory를 선택하고 실시간 RAM이 아닌 로컬 
 ### 릴리스 설치
 
 1. [GitHub Releases](https://github.com/kayurachann/uBlock-Plus/releases)에서 `uBlock-Plus_*.chromium.zip`과 일치하는 `.sha256` 파일을 다운로드합니다.
-2. 체크섬을 검증한 다음 ZIP을 계속 유지할 폴더에 압축 해제합니다.
+2. 체크섬을 검증한 다음, 사용자 프로필 안에 새로 만든 확장 프로그램 전용 빈 폴더에 ZIP을 압축 해제합니다. Windows에서는 `%LOCALAPPDATA%\uBlockPlus\Extension`을 권장합니다. 드라이브 루트, `C:\` 바로 아래에 만든 폴더와 그 안의 폴더(예: `C:\Extensions`, `C:\Extensions\uBlock-Plus`)는 사용하지 마세요. Windows 업데이터는 드라이브 루트, 시스템 폴더와 프로필 폴더 자체, PC의 다른 사용자가 변경할 수 있는 폴더를 거부합니다. 이미 그런 폴더에 설치했다면 `%LOCALAPPDATA%\uBlockPlus\Extension`으로 옮기세요. [폴더 규칙](AUTO-UPDATE.md#folder-rules)과 [기존 설치본 옮기기](AUTO-UPDATE.md#moving-an-existing-installation)를 참고하세요.
 3. `chrome://extensions` 또는 `edge://extensions`를 엽니다.
-4. **개발자 모드**를 켜고 **압축 해제된 확장 프로그램을 로드합니다**를 선택한 다음 `manifest.json`이 들어 있는 압축 해제 폴더를 지정합니다.
+4. **개발자 모드**를 켜고 **압축해제된 확장 프로그램을 로드합니다**를 선택한 다음 `manifest.json`이 들어 있는 압축 해제 폴더를 지정합니다. 이후에도 **개발자 모드**는 켜 두세요. 꺼져 있으면 Chrome이 압축 해제된 확장 프로그램을 사용 중지합니다.
 5. Chrome 138 이상에서는 확장 프로그램의 **세부정보** 페이지를 열고 **사용자 스크립트 허용**을 켭니다. Chrome 130–137에서는 대신 전역 **개발자 모드** 스위치를 사용합니다. 설치 후 어느 스위치든 변경했다면 확장 프로그램 카드에서 **새로고침**을 눌러 서비스 워커 컨텍스트가 새 API 상태를 인식하도록 하세요. 그러면 지원되는 가져온 코스메틱 필터와 패키지 허용 목록에 포함된 스크립틀릿을 등록할 수 있습니다. Chrome의 [`userScripts` 안내](https://developer.chrome.com/docs/extensions/reference/api/userScripts)를 참고하세요.
 
 > [!NOTE]
-> 사이드로드한 확장 프로그램은 Chrome 웹 스토어를 통해 업데이트되지 않습니다. [Releases](https://github.com/kayurachann/uBlock-Plus/releases)를 확인하고 새 버전이 게시되면 압축을 푼 빌드를 교체하세요. 이 저장소의 아티팩트만 설치하고 제공된 SHA-256 체크섬을 검증하세요.
+> 모든 설치본은 약 6시간마다 `api.github.com`에서 새 릴리스가 있는지 확인하며, 브라우징 데이터는 보내지 않습니다. Windows에서는 1.2.0 이상에 포함된 업데이터가 새 버전을 자동으로 설치합니다. 설정은 한 번만 하면 됩니다. 로드한 확장 프로그램 폴더에서 `updater\install-updater.cmd`를 두 번 클릭하고(관리자 권한 불필요) **대시보드 → 설정 → 업데이트**에서 **업데이터 허용**을 선택하세요. Chrome이 네이티브 애플리케이션과 통신할 권한을 요청하면 허용합니다. 그러면 uBlock Plus+가 한 번 다시 시작되고 **업데이트** 섹션을 다시 엽니다. 대신 **지금 다시 시작**이 표시되면 그 버튼을 선택하세요. 이후 새 버전은 다운로드된 뒤 SHA-256 체크섬과 확장 프로그램 ID를 검증하고, 이전 버전을 백업한 다음 설치됩니다. 폴더에 uBlock Plus+에 속하지 않는 파일이 있는 동안 업데이터는 아무것도 변경하지 않습니다. 업데이터를 쓰지 않는 경우(예: macOS, Linux)에는 [Releases](https://github.com/kayurachann/uBlock-Plus/releases)를 확인하고, 폴더 내용을 새 버전으로 교체한 뒤 확장 프로그램을 새로고침하세요. 해당 폴더의 업데이터를 제거하려면 명령 프롬프트에서 `"%LOCALAPPDATA%\uBlockPlus\Extension\updater\install-updater.cmd" -Uninstall`을 실행하세요(다른 폴더라면 그 경로를 사용). 브라우저 등록은 등록된 다른 설치본이 남아 있지 않을 때만 삭제됩니다. 이 저장소의 아티팩트만 설치하고 제공된 SHA-256 체크섬을 검증하세요. 자세한 내용과 문제 해결은 [AUTO-UPDATE.md](AUTO-UPDATE.md)를 참고하세요.
+
+1–2단계와 업데이터 설정은 다음 PowerShell 명령으로 한 번에 할 수도 있습니다. 최신 릴리스를 `%LOCALAPPDATA%\uBlockPlus\Extension`에 다운로드하며, 이 폴더는 비어 있거나 아직 없어야 합니다. 그런 다음 이 폴더를 압축 해제된 확장 프로그램으로 로드하고 **업데이터 허용**을 선택하세요.
+
+```powershell
+$installer = Join-Path $env:TEMP 'install-updater.ps1'
+Invoke-WebRequest -UseBasicParsing https://raw.githubusercontent.com/kayurachann/uBlock-Plus/main/platform/mv3/updater/install-updater.ps1 -OutFile $installer
+powershell -ExecutionPolicy Bypass -File $installer
+```
 
 <details>
 <summary><strong>Windows에서 릴리스 체크섬 검증</strong></summary>
 
 ```powershell
-(Get-FileHash .\uBlock-Plus_1.0.0.chromium.zip -Algorithm SHA256).Hash
-Get-Content .\uBlock-Plus_1.0.0.chromium.zip.sha256
+(Get-FileHash .\uBlock-Plus_1.2.0.chromium.zip -Algorithm SHA256).Hash
+Get-Content .\uBlock-Plus_1.2.0.chromium.zip.sha256
 ```
 
 16진수 해시가 일치해야 합니다(대소문자는 구분하지 않습니다).
@@ -161,6 +169,8 @@ Get-Content .\uBlock-Plus_1.0.0.chromium.zip.sha256
 ```powershell
 git clone --recurse-submodules https://github.com/kayurachann/uBlock-Plus.git
 cd uBlock-Plus
+# Windows는 기본적으로 서명되지 않은 로컬 스크립트를 차단합니다. 이 창에서만 허용합니다.
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 $version = (Get-Content -Raw package.json | ConvertFrom-Json).version
 .\tools\make-mv3.ps1 -Platform chromium -Version $version
 ```
@@ -206,7 +216,7 @@ tools/make-mv3.sh chromium "$VERSION"
 | 원격 소스 | HTTPS 카탈로그와 목록은 크기가 제한된 데이터로 파싱되며 리디렉션, 잘못된 스키마, 실행 가능한 페이로드는 거부됩니다. |
 | Filter Store 신뢰 | 기본 및 사용자 지정 항목에는 신뢰 등급이 표시됩니다. 커뮤니티 인기도만으로 항목이 `verified`로 승격되지는 않습니다. |
 | 확장 프로그램 코드 | JavaScript, 스크립틀릿, 리디렉션 리소스는 검토된 확장 프로그램 패키지 안에 포함되며 런타임 URL에서 가져오지 않습니다. |
-| 권한 | 핵심 필터링 권한은 문서화되어 있습니다. Chrome의 `privacy` 권한은 사용자가 해당 제어 기능을 켤 때만 요청되며 취소할 수 있습니다. |
+| 권한 | 핵심 필터링 권한은 문서화되어 있습니다. Chrome의 `privacy` 권한은 사용자가 해당 제어 기능을 켤 때만 요청되며 취소할 수 있습니다. 선택 권한 `nativeMessaging`은 사용자가 **업데이터 허용**을 선택할 때만 요청됩니다. |
 | 로컬 데이터 | 설정, 컴파일된 필터, 저장소 크기 진단은 사용자가 명시적으로 내보내지 않는 한 기기에 남습니다. |
 | 릴리스 무결성 | CI가 Chromium 아티팩트를 빌드하고 검증하며 릴리스에는 SHA-256 체크섬이 포함됩니다. |
 
@@ -216,7 +226,7 @@ tools/make-mv3.sh chromium "$VERSION"
 
 | 현재 사용 가능 | MV3로 인한 제약 | 향후 연구—선택 사항 |
 | --- | --- | --- |
-| DNR 네트워크 차단, 코스메틱 필터링, 패키지 스크립틀릿, 사용자 지정/가져온 목록, Filter Store, 선택기/제거 도구, 상황 인식형 호스트별 팝업 정책, 민감 정보를 제거한 realm/소스 줄/종류 출처 정보와 함께 패키지 stock `$popup` 규칙 및 지원되는 가져온 `$popup`/`$popunder` 하위 집합을 관찰자 방식으로 적용, 백업/복원 | 실시간 요청 로깅, 절차형 필터, 비동기 팝업 관찰, 동적 방화벽 의미 체계, 응답 헤더 작업, 리디렉션 동작은 MV2와 정확히 동등하지 않습니다 | RFC, 동의, 보안 검토를 전제로 하는 Managed Enterprise 어댑터와 별도로 설치하는 오픈 소스 네이티브 컴패니언 |
+| DNR 네트워크 차단, 코스메틱 필터링, 패키지 스크립틀릿, 사용자 지정/가져온 목록, Filter Store, 선택기/제거 도구, 상황 인식형 호스트별 팝업 정책, 민감 정보를 제거한 realm/소스 줄/종류 출처 정보와 함께 패키지 stock `$popup` 규칙 및 지원되는 가져온 `$popup`/`$popunder` 하위 집합을 관찰자 방식으로 적용, 백업/복원 | 실시간 요청 로깅, 절차형 필터, 비동기 팝업 관찰, 동적 방화벽 의미 체계, 응답 헤더 작업, 리디렉션 동작은 MV2와 정확히 동등하지 않습니다 | RFC, 동의, 보안 검토를 전제로 하는 Managed Enterprise 어댑터와 별도로 설치하는 필터링용(예: DNS/프록시) 오픈 소스 네이티브 컴패니언. 현재 배포되는 네이티브 구성 요소는 사용자가 직접 설치하는 선택형 Windows 업데이터(1.2.0부터)뿐입니다 |
 
 지원되는 가져온 팝업 필터 하위 집합은 이제 관찰자 런타임을 통해 적용됩니다. `domainType`, `requestMethods`, `responseHeaders`처럼 정확히 표현할 수 없는 조건은 근사하지 않고 명시적으로 보류됩니다. 보류된 `allow` 조건은 보수적인 fail-open 가드로 유지되며, 가드는 결정을 보류할 수만 있고 근사적으로 허용하거나 차단할 수는 없습니다. 적용은 MV3의 비동기 탭 및 탐색 이벤트를 따르므로 MV2의 동기 처리와 정확히 동등하지 않습니다. 동적 DNR 규칙과 세션 DNR 규칙은 하나의 1,000개 regex 풀을 공유하며 각각 1,000개씩을 갖는 것이 아닙니다.
 
@@ -250,7 +260,7 @@ tools/make-mv3.sh chromium "$VERSION"
 <td valign="top">
 
 - Managed Enterprise 어댑터
-- 선택형 네이티브 컴패니언 연구
+- 필터링용 선택형 네이티브 컴패니언 연구
 - 서명된 카탈로그 출처 및 취소
 
 </td>

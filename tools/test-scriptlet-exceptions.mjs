@@ -15,7 +15,9 @@ import { builtinScriptlets } from '../src/js/resources/scriptlets.js';
 import { compiledStorageKey } from '../platform/mv3/extension/js/compiled-storage.js';
 import fs from 'node:fs/promises';
 import { literalStrFromRegex } from '../src/js/regex-analyzer.js';
+import os from 'node:os';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { safeReplace } from '../platform/mv3/extension/js/offscreen/safe-replace.js';
 import vm from 'node:vm';
 
@@ -422,5 +424,148 @@ validationErrors.length = 0;
 packaged.set('origin/main/test.js', maker.originOnlyCode(compile(0)));
 packaged.delete('scriptlet-exceptions.json');
 await validationContext.validate(); assert.ok(validationErrors.some(error => error.includes('metadata is missing')));
+
+// Regex hostnames from imported lists are tested in every matching frame at
+// document_start, and one nested quantifier can stall a page for minutes.
+// Unsafe ones never reach a page: positive scopes are dropped, exception
+// scopes widen to a cheap superset and are never lost.
+{
+    await import('../src/lib/regexanalyzer/regex.js');
+    const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'ublock-regex-safety-'));
+    try {
+        for ( const [ from, to ] of [
+            [ '../src/js/regex-analyzer.js', 'regex-analyzer.js' ],
+            [ '../platform/mv3/extension/js/offscreen/scriptlet-regex-safety.js',
+                'scriptlet-regex-safety.js' ],
+        ] ) {
+            await fs.copyFile(new URL(from, import.meta.url), path.join(directory, to));
+        }
+        await fs.writeFile(path.join(directory, 'package.json'), '{"type":"module"}\n');
+        const { isSafeHostnameRegex, sanitizeUntrustedScriptletDetails } = await import(
+            pathToFileURL(path.join(directory, 'scriptlet-regex-safety.js')));
+        for ( const unsafe of [
+            '^((.+)+)+x$', '^(.+)+x$', '^(ab|a)*c$', '(a)\\1', '.*.*.*b', '^a|.*.*.*b',
+            '^[a-z]{1,100}[a-z]{1,100}[a-z]{1,100}[a-z]{1,100}x$', 'x'.repeat(300), '(',
+            '(a|ab){5}',
+            // Narrow quantifiers and alternations multiply paths as well:
+            // each of these takes 0.6 to 15 seconds on one hostname.
+            `^${'[a-z0-9.-]{0,15}'.repeat(8)}x$`,
+            `^${'.?'.repeat(22)}.{22}x$`,
+            `^${'(?:.|..)'.repeat(24)}x$`,
+            // A scan which cannot branch still runs once per path reaching it.
+            `^${'.?'.repeat(15)}[0-9.]*x$`,
+            `^${'.?'.repeat(12)}(?:.{50}){4}#`,
+            `^${'.?'.repeat(12)}(?=[a-z0-9.]{200})(?=[a-z0-9.]{200})#`,
+            // A quantifier stops in one place only when the next character is
+            // mandatory and not hidden in an escape: \x2e and \056 are dots.
+            `^${'.?'.repeat(6)}[0-9]*x?${'1'.repeat(60)}#`,
+            `^${'.?'.repeat(6)}\\x2e*\\.${'1'.repeat(60)}#`,
+            `^${'.?'.repeat(6)}\\056*\\.${'1'.repeat(60)}#`,
+            // A lookbehind is matched backward: its optional parts run first.
+            `^.{250}(?<=[a-z0-9.]{200}${'.?'.repeat(10)})#`,
+        ] ) {
+            assert.equal(isSafeHostnameRegex(unsafe), false, unsafe);
+        }
+        const safePatterns = [
+            '^child\\.example\\.test$', '^(www\\.)?example\\.com$', '(?<=a)b+',
+            'ads[0-9]+\\.example\\.(com|net)', '^[a-z]{8,16}\\.test$', '^[a-z]+\\d+\\.[a-z]+$',
+            '^([a-z0-9-]+\\.)*example\\.com$', '^moon(?:-[a-z0-9]+)?-embed\\.com$',
+            'cimcime\\d+\\.\\w+$', 'dizilla\\d*\\.(club|com|nl)', 'hentaizm\\d+.online',
+        ];
+        for ( const safe of [
+            ...safePatterns,
+            `^${'.?'.repeat(6)}[0-9]*x${'1'.repeat(60)}#`,
+            `^${'.?'.repeat(6)}e*\\.${'1'.repeat(60)}#`,
+            `^.{250}(?=[a-z0-9.]{200}${'.?'.repeat(10)})#`,
+        ] ) {
+            assert.equal(isSafeHostnameRegex(safe), true, safe);
+        }
+        // Every kept regex runs in each matching frame: their number and total
+        // cost are capped. Past the cap, positives are dropped and exceptions
+        // widened exactly as unsafe ones, and all of them are reported.
+        const numerous = new Map([ [ 'numerous', { args: [ 'probe-0', 'many' ],
+            matches: Array.from({ length: 300 }, (_, i) => `/^site${i}\\.example$/`) } ] ]);
+        const numerousRejected = sanitizeUntrustedScriptletDetails(numerous);
+        assert.equal(numerous.get('numerous').matches.length, 256);
+        assert.equal(numerousRejected.length, 44);
+        assert.equal(numerousRejected[0], '/^site256\\.example$/');
+        const costliest = [
+            `^.*${'.?'.repeat(9)}x`,
+            `^${'.?'.repeat(16)}x$`,
+            `^${'.?'.repeat(9)}[a-z0-9.]{200}#`,
+            `^${'.?'.repeat(9)}(?:.{50}){4}#`,
+            `^${'(?:.|..)'.repeat(14)}x$`,
+            `${'.?'.repeat(9)}x`,
+        ];
+        for ( const pattern of costliest ) {
+            assert.equal(isSafeHostnameRegex(pattern), true, pattern);
+        }
+        const costly = new Map(Array.from({ length: 300 }, (_, i) => [ `costly-${i}`, {
+            args: [ 'alias-0', 'costly', `${i}` ],
+            excludeMatches: [ `/${costliest[i % costliest.length]}/` ],
+        } ]));
+        const costlyRejected = sanitizeUntrustedScriptletDetails(costly);
+        const kept = Array.from(costly.values(), entry => entry.excludeMatches[0])
+            .filter(hn => costliest.includes(hn.slice(1, -1)));
+        assert.ok(kept.length !== 0 && kept.length < 32, `${kept.length} costly regexes kept`);
+        assert.deepEqual(new Set(costlyRejected), new Set(costliest.map(p => `/${p}/`)));
+        assert.ok(Array.from(costly.values()).every(entry => entry.excludeMatches.length === 1),
+            'Exceptions past the budget are widened, never lost');
+        // All regexes kept together stay fast on a worst-case hostname of 253
+        // characters and each of its parent domains. Best of three runs, so a
+        // busy machine does not fail the check.
+        const hostname = [ 63, 63, 63, 61 ].map(n => '1'.repeat(n)).join('.');
+        const hostnames = [ hostname ];
+        for ( let pos = hostname.indexOf('.'); pos !== -1; pos = hostname.indexOf('.', pos + 1) ) {
+            hostnames.push(hostname.slice(pos + 1));
+        }
+        const survivors = [
+            ...safePatterns,
+            ...numerous.get('numerous').matches.map(hn => hn.slice(1, -1)),
+            ...Array.from(costly.values(), entry => entry.excludeMatches[0])
+                .filter(hn => hn.startsWith('/')).map(hn => hn.slice(1, -1)),
+        ].map(source => new RegExp(source));
+        let fastest = Number.POSITIVE_INFINITY;
+        for ( let run = 0; run < 3; run++ ) {
+            const start = performance.now();
+            for ( const re of survivors ) {
+                for ( const hn of hostnames ) { re.test(hn); }
+            }
+            fastest = Math.min(fastest, performance.now() - start);
+        }
+        assert.ok(fastest < 50, `Kept scriptlet regexes took ${fastest.toFixed(1)} ms`);
+        const details = new Map([
+            [ 'positive', { args: [ 'probe-0', 'target', 'yes' ],
+                matches: [ '/^(.+)+x$/', 'child.example.test' ] } ],
+            [ 'exception', { args: [ 'alias-0', 'target', 'yes' ],
+                excludeMatches: [ '/^((.+)+)+example$/', '/^child\\.example\\.test$/' ] } ],
+            [ 'broad', { args: [], excludeMatches: [ '/^(a+)+$/>>' ] } ],
+        ]);
+        assert.deepEqual(sanitizeUntrustedScriptletDetails(details),
+            [ '/^(.+)+x$/', '/^((.+)+)+example$/', '/^(a+)+$/>>' ]);
+        assert.deepEqual(details.get('positive').matches, [ 'child.example.test' ]);
+        assert.deepEqual(details.get('exception').excludeMatches,
+            [ '/example/', '/^child\\.example\\.test$/' ]);
+        assert.deepEqual(details.get('broad').excludeMatches, [ '*' ]);
+        assert.deepEqual(sanitizeUntrustedScriptletDetails(details), [],
+            'Sanitized data is stable');
+        // The widened exception still suppresses its invocation, and no unsafe
+        // pattern is left in shared exception data or generated code.
+        const exceptions = collectScriptletExceptions([ [ 'imported',
+            maker.exceptionDetails(new Map([ [ 'e', details.get('exception') ] ])) ] ]);
+        assert.equal(JSON.stringify(exceptions).includes('(.+)+'), false);
+        assert.deepEqual(run(compile(0), exceptions, 'child.example.test'), [ [ 'other', 'no' ] ]);
+        assert.equal(run(compile(0), exceptions, 'unrelated.test').length, 2);
+        maker.reset();
+        maker.compile('imported', structuredClone(details.get('positive')));
+        maker.compile('imported', structuredClone(details.get('exception')));
+        const generated = maker.commit('imported', template).MAIN;
+        assert.equal(generated.code.includes('(.+)+'), false);
+        assert.deepEqual(Array.from(generated.hostnames), [ 'child.example.test' ],
+            'A dropped positive regex no longer forces injection everywhere');
+    } finally {
+        await fs.rm(directory, { recursive: true, force: true });
+    }
+}
 
 console.log('Cross-source scriptlet exceptions: aliases, worlds, scopes, Basic/Off policy, native fallback and rollback passed.');

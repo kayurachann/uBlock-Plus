@@ -12,6 +12,12 @@
 */
 
 import {
+    DEFAULT_LIST_CACHE_MAX_AGE_DAYS,
+    listCacheMaxAgeDays,
+    readCachedList,
+} from '../platform/mv3/list-cache-policy.js';
+
+import {
     MAX_IMPORTED_SOURCE_BYTES,
     MAX_IMPORTED_SOURCE_FETCHES,
     createImportedFetchBudget,
@@ -32,6 +38,8 @@ import {
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { isVerifiedSourceKey } from '../platform/mv3/extension/js/verified-source-handoff.js';
+import os from 'node:os';
+import path from 'node:path';
 
 function newCompiledListData() {
     return {
@@ -440,6 +448,49 @@ for ( const deserialize of [
         'generation',
         'marker',
     ]);
+}
+
+// The ruleset build caches downloaded lists across builds. A cached list
+// older than the limit is downloaded again, so a release built weeks later
+// cannot silently ship old stock rulesets; Infinity reuses a preserved set.
+{
+    assert.equal(listCacheMaxAgeDays(new Map(), {}), DEFAULT_LIST_CACHE_MAX_AGE_DAYS);
+    assert.equal(listCacheMaxAgeDays(new Map([ [ 'listCacheMaxAgeDays', '2' ] ]),
+        { UBLOCK_PLUS_LIST_CACHE_MAX_AGE_DAYS: '9' }), 2);
+    assert.equal(listCacheMaxAgeDays(new Map(),
+        { UBLOCK_PLUS_LIST_CACHE_MAX_AGE_DAYS: 'Infinity' }), Number.POSITIVE_INFINITY);
+    for ( const invalid of [ '-1', 'soon' ] ) {
+        assert.throws(( ) => listCacheMaxAgeDays(
+            new Map([ [ 'listCacheMaxAgeDays', invalid ] ])
+        ), /Invalid list cache maximum age/);
+    }
+    const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'ublock-list-cache-'));
+    try {
+        const day = 24 * 60 * 60 * 1000;
+        const file = path.join(directory, 'easylist.txt');
+        await fs.writeFile(file, '||ads.example^');
+        const stale = new Date(Date.now() - 8 * day);
+        await fs.utimes(file, stale, stale);
+        assert.equal(await readCachedList(file, 7), undefined,
+            'An eight-day-old download is fetched again');
+        const reused = await readCachedList(file, Number.POSITIVE_INFINITY);
+        assert.equal(reused.content, '||ads.example^');
+        assert.ok(Math.abs(Date.parse(reused.fetchedAt) - stale.getTime()) < 2000,
+            'The log records when a reused list was downloaded');
+        const recent = new Date(Date.now() - 6 * day);
+        await fs.utimes(file, recent, recent);
+        assert.equal((await readCachedList(file, 7)).content, '||ads.example^');
+        assert.equal(await readCachedList(path.join(directory, 'missing.txt'), 7),
+            undefined);
+    } finally {
+        await fs.rm(directory, { recursive: true, force: true });
+    }
+    const makeRulesets = await fs.readFile(new URL(
+        '../platform/mv3/make-rulesets.js', import.meta.url
+    ), 'utf8');
+    assert.equal(makeRulesets.match(/await readCachedList\(/g)?.length, 2,
+        'Stock list and DNR source caches both honour the age limit');
+    assert.doesNotMatch(makeRulesets, /fs\.readFile\(\s*`\$\{cacheDir\}\/\$\{(?:platform|fname)/);
 }
 
 console.log('Compiler fault-recovery tests passed');

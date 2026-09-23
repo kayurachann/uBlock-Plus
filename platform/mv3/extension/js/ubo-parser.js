@@ -1164,6 +1164,18 @@ export function networkFilterIdentities(parser) {
     return [ { key: JSON.stringify(identity) } ];
 }
 
+// Only the entity unit of a split domain list can carry an entity-only
+// domain condition: parseNetworkFilter() rejects every other one. Caches
+// compiled before NetworkFilterCompiler.add() stopped emitting such rules
+// still hold them, and alone, once a badfilter cancelled their sibling, they
+// would fail validation and abort the whole compilation. DNR cannot express
+// an entity, so dropping them never changes what a valid ruleset enforces.
+const hasEntityOnlyDomains = rule => [
+    rule.condition?.initiatorDomains,
+    rule.condition?.requestDomains,
+].some(domains => Array.isArray(domains) && domains.length !== 0 &&
+    domains.every(hn => isNotEntity(hn) === false));
+
 export function resolveNetworkBadfilters(compiledSources) {
     const sources = compiledSources.filter(Boolean);
     const disabled = new Set(sources.flatMap(source => source.badfilterKeys ?? []));
@@ -1172,7 +1184,9 @@ export function resolveNetworkBadfilters(compiledSources) {
         const units = source.networkUnits.filter(unit => disabled.has(unit.key) === false);
         // Minimizers mutate their inputs. Keep the cached source units intact
         // so removing a badfilter restores exactly the previous contribution.
-        source.dnrRules = structuredClone(units.flatMap(unit => unit.dnrRules));
+        source.dnrRules = structuredClone(units.flatMap(unit =>
+            unit.dnrRules.filter(rule => hasEntityOnlyDomains(rule) === false)
+        ));
         source.popupFilters = structuredClone(units.flatMap(unit => unit.popupFilters));
         source.badfilterCancelledCount = source.networkUnits.length - units.length;
     }
@@ -1216,7 +1230,13 @@ export class NetworkFilterCompiler {
             return result;
         }
         for ( const { key, hostname } of identities ) {
-            const rules = structuredClone(lineRules);
+            // DNR cannot express an entity, so its unit contributes no DNR
+            // rule. Merged with a sibling unit, validation already drops the
+            // entity; alone, after the sibling was badfiltered, it would fail
+            // validation and abort the whole compilation.
+            const rules = hostname === undefined || isNotEntity(hostname)
+                ? structuredClone(lineRules)
+                : [];
             const popupFilters = structuredClone(linePopupFilters);
             if ( hostname !== undefined ) {
                 for ( const item of [ ...rules, ...popupFilters ] ) {

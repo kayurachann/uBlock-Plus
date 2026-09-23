@@ -159,7 +159,7 @@ try {
         'Draft: noop', [ 'filter lists may still block', 'news.example * 3p-script noop' ]);
     await run('destination allow precedence', { text: '* * 3p-script block\n* ads.example.net * allow' },
         'Draft: allow', [ '* ads.example.net * allow' ]);
-    await run('Off overrides draft', { source: 'https://off.example/' }, 'Off applies');
+    await run('no filtering overrides draft', { source: 'https://off.example/' }, 'uses “no filtering”');
     await run('first-party script', { text: '* * 1p-script block', source: 'https://www.example.com/',
         destination: 'https://cdn.example.com/script.js' }, 'Draft: block', [ 'First party (1p)' ]);
     await run('PSL separates github.io tenants', { source: 'https://alice.github.io/',

@@ -1127,5 +1127,729 @@
   },
   "popupRecentBlocks": {
     "message": "Недавно заблокировано всплывающих окон на этом сайте: $1"
+  },
+  "autoUpdateSectionLabel": {
+    "message": "Обновления",
+    "description": "Dashboard settings: heading of the automatic update section"
+  },
+  "autoUpdateDescription": {
+    "message": "uBlock Plus+ может искать новые версии в GitHub Releases и с помощью дополнительной программы обновления для Windows устанавливать их без переустановки. Проверка отправляет один запрос на api.github.com; данные о просмотре страниц не передаются.",
+    "description": "Dashboard settings: explanation of automatic updates and their network use"
+  },
+  "autoUpdateCheckLabel": {
+    "message": "Автоматически проверять наличие новых версий",
+    "description": "Dashboard settings: checkbox to enable periodic update checks"
+  },
+  "autoUpdateInstallLabel": {
+    "message": "Когда найдена новая версия:",
+    "description": "Dashboard settings: label of the install mode selector"
+  },
+  "autoUpdateInstallAuto": {
+    "message": "Устанавливать автоматически",
+    "description": "Dashboard settings: install mode option"
+  },
+  "autoUpdateInstallNotify": {
+    "message": "Только уведомлять",
+    "description": "Dashboard settings: install mode option"
+  },
+  "autoUpdateChannelLabel": {
+    "message": "Канал выпусков:",
+    "description": "Dashboard settings: label of the release channel selector"
+  },
+  "autoUpdateChannelPreview": {
+    "message": "Предварительный (включая пре-релизы)",
+    "description": "Dashboard settings: release channel option"
+  },
+  "autoUpdateChannelStable": {
+    "message": "Только стабильные выпуски",
+    "description": "Dashboard settings: release channel option"
+  },
+  "autoUpdateCheckNow": {
+    "message": "Проверить сейчас",
+    "description": "Dashboard settings: button that checks for updates immediately"
+  },
+  "autoUpdateInstallNow": {
+    "message": "Установить сейчас",
+    "description": "Dashboard settings: button that installs the available update"
+  },
+  "autoUpdateReleaseNotes": {
+    "message": "Примечания к выпуску",
+    "description": "Dashboard settings: link to the release page of the available version"
+  },
+  "autoUpdateGrantButton": {
+    "message": "Разрешить программу обновления",
+    "description": "Dashboard settings: button requesting the optional nativeMessaging permission"
+  },
+  "autoUpdateSetupSteps": {
+    "message": "Однократная настройка в Windows: откройте папку, выбранную через «Загрузить распакованное расширение», дважды щёлкните updater\\install-updater.cmd, затем нажмите здесь «Разрешить программу обновления». Если доступ по-прежнему запрещён, выполните в этой папке команду:",
+    "description": "Dashboard settings: one-time setup instructions for the Windows updater"
+  },
+  "autoUpdateCopy": {
+    "message": "Копировать",
+    "description": "Dashboard settings: copy the setup command to the clipboard"
+  },
+  "autoUpdateCopied": {
+    "message": "Скопировано",
+    "description": "Dashboard settings: confirmation after copying the setup command"
+  },
+  "autoUpdateRollback": {
+    "message": "Восстановить версию $1",
+    "description": "Dashboard settings: button restoring the previous version. $1 is a version number"
+  },
+  "autoUpdateDevBuild": {
+    "message": "Сборка для разработки $1: автоматические обновления отключены.",
+    "description": "Dashboard settings: status for local development builds. $1 is the version"
+  },
+  "autoUpdateApplying": {
+    "message": "Установка $1…",
+    "description": "Dashboard settings: files are being replaced. $1 is the version"
+  },
+  "autoUpdatePreparing": {
+    "message": "Подготовка к установке $1…",
+    "description": "Dashboard settings: update is starting. $1 is the version"
+  },
+  "autoUpdateAvailable": {
+    "message": "Доступна версия $1 (установлена: $2).",
+    "description": "Dashboard settings: a newer version exists. $1 new version, $2 installed version"
+  },
+  "autoUpdateUpToDate": {
+    "message": "Версия $1 актуальна. Последняя проверка: $2.",
+    "description": "Dashboard settings: no newer version. $1 installed version, $2 date and time of the last check"
+  },
+  "autoUpdateNeverChecked": {
+    "message": "Установленная версия: $1. Проверка обновлений ещё не выполнялась.",
+    "description": "Dashboard settings: no check has run yet. $1 installed version"
+  },
+  "autoUpdateManagedInstall": {
+    "message": "Эта копия установлена как пакет; её обновлениями управляет браузер или администратор.",
+    "description": "Dashboard settings: the extension was not loaded unpacked"
+  },
+  "autoUpdatePermissionNeeded": {
+    "message": "Для автоматической установки нужны программа обновления для Windows и ваше разрешение.",
+    "description": "Dashboard settings: automatic installation is not set up yet"
+  },
+  "autoUpdateConnectedAuto": {
+    "message": "Программа обновления $1 подключена. Новые версии устанавливаются автоматически, расширение перезагружается само.",
+    "description": "Dashboard settings: updater connected, automatic mode. $1 updater version"
+  },
+  "autoUpdateConnectedNotify": {
+    "message": "Программа обновления $1 подключена. Когда появится новая версия, нажмите «Установить сейчас».",
+    "description": "Dashboard settings: updater connected, notify-only mode. $1 updater version"
+  },
+  "autoUpdateUpdated": {
+    "message": "Обновлено с $1 до $2.",
+    "description": "Dashboard settings: result of the last update. $1 previous version, $2 new version"
+  },
+  "autoUpdateRolledBack": {
+    "message": "Восстановлена версия $2 (была $1).",
+    "description": "Dashboard settings: result of a rollback. $1 version before, $2 restored version"
+  },
+  "autoUpdatePermissionDenied": {
+    "message": "Разрешение не предоставлено.",
+    "description": "Dashboard settings: the permission request was declined"
+  },
+  "autoUpdateErrorMissing": {
+    "message": "Программа обновления для Windows ещё не установлена.",
+    "description": "Dashboard settings: native updater not registered"
+  },
+  "autoUpdateErrorForbidden": {
+    "message": "Программа обновления зарегистрирована для другой папки или ID расширения. Выполните команду ниже.",
+    "description": "Dashboard settings: native updater registered for another extension ID"
+  },
+  "autoUpdateErrorFailed": {
+    "message": "Программа обновления неожиданно завершилась. Подробности в %LOCALAPPDATA%\\uBlockPlus\\Updater\\updater.log.",
+    "description": "Dashboard settings: native updater crashed or exited"
+  },
+  "autoUpdateErrorChecksum": {
+    "message": "Загруженный пакет не совпал с опубликованной контрольной суммой и был удалён.",
+    "description": "Dashboard settings: package checksum mismatch"
+  },
+  "autoUpdateErrorRateLimited": {
+    "message": "GitHub ограничивает запросы; следующая проверка подождёт.",
+    "description": "Dashboard settings: GitHub API rate limit"
+  },
+  "autoUpdateErrorNetwork": {
+    "message": "Не удалось подключиться к GitHub. Следующая проверка повторит попытку.",
+    "description": "Dashboard settings: network failure during a check"
+  },
+  "autoUpdateErrorReload": {
+    "message": "Расширение перезагрузилось, но его версия не изменилась. Проверьте журнал программы обновления.",
+    "description": "Dashboard settings: after reload the version did not change"
+  },
+  "autoUpdateErrorInterrupted": {
+    "message": "Предыдущее обновление было прервано до завершения.",
+    "description": "Dashboard settings: the previous update did not finish"
+  },
+  "autoUpdateErrorGeneric": {
+    "message": "Проблема с обновлением: $1",
+    "description": "Dashboard settings: other update error. $1 is the error message"
+  },
+  "autoUpdatePopupAvailable": {
+    "message": "Обновление $1",
+    "description": "Popup: compact indicator that a newer version is available. $1 is the version"
+  },
+  "autoUpdatePopupAvailableTitle": {
+    "message": "Доступна версия $1. Открыть настройки обновлений.",
+    "description": "Popup: tooltip of the update indicator. $1 is the version"
+  },
+  "firewallTitle": {
+    "message": "Динамический брандмауэр",
+    "description": "Dynamic firewall panel heading in Site rules"
+  },
+  "firewallDescription": {
+    "message": "Одна строка: источник назначение тип действие. * означает все имена хостов; block блокирует, allow разрешает, noop обходит только брандмауэр, а списки фильтров продолжают действовать.",
+    "description": "Dynamic firewall rule syntax. Keep *, block, allow and noop untranslated."
+  },
+  "firewallScope": {
+    "message": "Сетевые запросы во вкладках, включая iframe, в Chrome 145 и новее. Режим «без фильтрации» имеет приоритет. Встроенные скрипты, навигация главной страницы и запросы вне вкладок не обрабатываются. Правила 1p/3p используют страницу верхнего уровня и Public Suffix List; первые запросы на новом сайте могут пройти, пока Chrome обновляет область действия.",
+    "description": "Dynamic firewall coverage and limits. Quote the no-filtering mode by its filteringMode0Name label."
+  },
+  "firewallValidate": {
+    "message": "Проверить",
+    "description": "Button: check the firewall draft without applying it"
+  },
+  "firewallApplySession": {
+    "message": "Применить на этот сеанс",
+    "description": "Button: apply firewall rules until the browser session ends"
+  },
+  "firewallSavePermanent": {
+    "message": "Сохранить постоянно",
+    "description": "Button: save firewall rules across browser restarts"
+  },
+  "firewallLoadPermanent": {
+    "message": "Загрузить постоянные правила",
+    "description": "Button: load the saved permanent firewall rules into the editor"
+  },
+  "firewallImportFile": {
+    "message": "Импортировать файл",
+    "description": "Button: import firewall rules from a text file"
+  },
+  "firewallExportFile": {
+    "message": "Экспортировать файл",
+    "description": "Button: export the firewall editor text to a file"
+  },
+  "firewallStatusRules": {
+    "message": "Активных правил Chrome: $1; доменов, распознанных в этом сеансе: $2.",
+    "description": "Firewall status. $1: active native Chrome rules; $2: registrable domains recognized in this browser session"
+  },
+  "firewallStatusDeferred": {
+    "message": "Ячеек, которым нужен контекст страницы: $1; предположительная блокировка не выполняется.",
+    "description": "Firewall status. $1: cells that need to know the top page before deciding 1p/3p"
+  },
+  "firewallStatusOmitted": {
+    "message": "Достигнут лимит правил Chrome: ячейки 1p/3p теперь применяются только к $1 последним распознанным доменам.",
+    "description": "Firewall status when Chrome's session-rule limit forced older learned domains out. $1: domains still covered"
+  },
+  "firewallStatusScopeError": {
+    "message": "Не удалось добавить недавно посещённый домен в область 1p/3p: $1",
+    "description": "Firewall status when a newly visited domain could not be added to the native 1p/3p scope. $1: technical error message"
+  },
+  "firewallStatusTemporary": {
+    "message": "Действуют временные правила.",
+    "description": "Firewall status: session-only rules are active"
+  },
+  "firewallStatusPermanent": {
+    "message": "Действуют постоянные правила.",
+    "description": "Firewall status: saved permanent rules are active"
+  },
+  "firewallPreviewRules": {
+    "message": "Проверено: предлагаемых правил Chrome: $1.",
+    "description": "Result of validating a firewall draft. $1: proposed native Chrome rules"
+  },
+  "firewallPreviewOmitted": {
+    "message": "Чтобы уложиться в лимит правил Chrome, из области 1p/3p будут исключены распознанные домены: $1.",
+    "description": "Validation notice. $1: recognized domains that would leave the 1p/3p scope to fit Chrome's rule limit"
+  },
+  "firewallUnsupported": {
+    "message": "Для брандмауэра нужен Chrome 145 или новее. Существующая фильтрация остаётся доступной.",
+    "description": "Shown when the browser lacks the native conditions the firewall needs"
+  },
+  "firewallPermanentLoaded": {
+    "message": "Постоянные правила загружены в черновик; примените их, чтобы включить.",
+    "description": "Shown after loading permanent firewall rules into the editor"
+  },
+  "firewallImportTooLarge": {
+    "message": "Максимальный размер файла: 128 КиБ",
+    "description": "Error when an imported firewall file is too large"
+  },
+  "firewallTestTitle": {
+    "message": "Проверить и объяснить правило",
+    "description": "Heading of the firewall request tester"
+  },
+  "firewallTestScope": {
+    "message": "Проверяет черновик редактора с текущими настройками режима «без фильтрации». Запросы не отправляются, URL не сохраняются, защита не меняется. Объясняется только брандмауэр; списки фильтров, разрешения браузера, квоты и момент применения не моделируются.",
+    "description": "Explains what the firewall tester does and does not simulate. Quote the no-filtering mode by its filteringMode0Name label."
+  },
+  "firewallTestSource": {
+    "message": "Страница верхнего уровня: имя хоста или URL HTTP(S)",
+    "description": "Firewall tester field label for the top-level page"
+  },
+  "firewallTestDestination": {
+    "message": "Целевой ресурс: имя хоста или URL HTTP(S)",
+    "description": "Firewall tester field label for the requested resource"
+  },
+  "firewallTestType": {
+    "message": "Тип запроса",
+    "description": "Firewall tester field label for the request type"
+  },
+  "firewallTestRequest": {
+    "message": "Проверить запрос",
+    "description": "Button: run the firewall tester"
+  },
+  "firewallTestChanged": {
+    "message": "Данные изменились; проверьте снова.",
+    "description": "Firewall tester: inputs changed while a test was running"
+  },
+  "firewallTestFirstParty": {
+    "message": "Первая сторона (1p)",
+    "description": "Firewall tester result: same party as the top page"
+  },
+  "firewallTestThirdParty": {
+    "message": "Третья сторона (3p)",
+    "description": "Firewall tester result: different party from the top page"
+  },
+  "firewallOutcomeBlock": {
+    "message": "Черновик: block — выигравшая ячейка требует блокировки.",
+    "description": "Firewall tester outcome. Keep block untranslated."
+  },
+  "firewallOutcomeAllow": {
+    "message": "Черновик: allow — выигравшая ячейка требует разрешить запрос.",
+    "description": "Firewall tester outcome. Keep allow untranslated."
+  },
+  "firewallOutcomeNoop": {
+    "message": "Черновик: noop — брандмауэр пропускается; списки фильтров всё ещё могут заблокировать.",
+    "description": "Firewall tester outcome. Keep noop untranslated."
+  },
+  "firewallOutcomeNoMatch": {
+    "message": "Ни одна ячейка брандмауэра не подходит; списки фильтров всё ещё могут заблокировать.",
+    "description": "Firewall tester outcome when no cell matches"
+  },
+  "firewallOutcomeOff": {
+    "message": "Для этой страницы действует режим «без фильтрации», он приоритетнее черновика брандмауэра.",
+    "description": "Firewall tester outcome when the site is in the no-filtering mode. Quote the mode by its filteringMode0Name label."
+  },
+  "firewallOutcomeUnknown": {
+    "message": "Контекст режима или домена недоступен; предположительное решение не принимается (fail-open).",
+    "description": "Firewall tester outcome when mode or party information is unavailable"
+  },
+  "loggerTitle": {
+    "message": "Журнал",
+    "description": "Logger page title"
+  },
+  "loggerIntro": {
+    "message": "Сбор диагностики для одной вкладки. Записи хранятся только в текущем сеансе расширения и удаляются при закрытии последнего окна журнала. Без отправки данных и сохранения истории просмотра.",
+    "description": "Logger page introduction"
+  },
+  "loggerTab": {
+    "message": "Вкладка",
+    "description": "Logger label for the browser tab selector"
+  },
+  "loggerStart": {
+    "message": "Начать запись",
+    "description": "Logger button: start capturing"
+  },
+  "loggerPause": {
+    "message": "Пауза",
+    "description": "Logger button: pause capturing"
+  },
+  "loggerClear": {
+    "message": "Очистить",
+    "description": "Logger button: clear records"
+  },
+  "loggerExport": {
+    "message": "Экспортировать обезличенный JSON",
+    "description": "Logger button: export redacted records as JSON"
+  },
+  "loggerSearch": {
+    "message": "Поиск",
+    "description": "Logger search field label"
+  },
+  "loggerSearchPlaceholder": {
+    "message": "URL, ID правила, селектор или источник",
+    "description": "Logger search field placeholder"
+  },
+  "loggerKind": {
+    "message": "Вид",
+    "description": "Logger event-kind filter label"
+  },
+  "loggerKindAll": {
+    "message": "Все события",
+    "description": "Logger event-kind filter: all events"
+  },
+  "loggerKindNetwork": {
+    "message": "Сеть",
+    "description": "Logger event kind: browser network observation"
+  },
+  "loggerKindDnr": {
+    "message": "Совпадения нативных правил DNR",
+    "description": "Logger event kind: native declarativeNetRequest rule matches"
+  },
+  "loggerKindCosmetic": {
+    "message": "Косметика",
+    "description": "Logger event kind: cosmetic filtering"
+  },
+  "loggerKindDom": {
+    "message": "DOM",
+    "description": "Logger event kind: DOM diagnostics"
+  },
+  "loggerKindScriptlet": {
+    "message": "Скриптлеты",
+    "description": "Logger event kind: scriptlets"
+  },
+  "loggerKindSystem": {
+    "message": "Система",
+    "description": "Logger event kind: system events"
+  },
+  "loggerColumnKind": {
+    "message": "Вид / этап",
+    "description": "Logger table column: event kind and phase"
+  },
+  "loggerColumnSource": {
+    "message": "Источник данных",
+    "description": "Logger table column: which API produced the evidence"
+  },
+  "loggerColumnDetail": {
+    "message": "Запрос / диагностика",
+    "description": "Logger table column: request or diagnostic details"
+  },
+  "loggerInitial": {
+    "message": "Запись выключена. Выберите вкладку и начните.",
+    "description": "Logger status before capture starts"
+  },
+  "loggerSummary": {
+    "message": "Что может подтвердить этот журнал",
+    "description": "Logger heading of the evidence explanation"
+  },
+  "loggerDetailNetwork": {
+    "message": "«Сеть» — это наблюдение браузера только для чтения, включая завершённые запросы. Одна лишь ошибка не показывает, какое расширение заблокировало запрос. Скрытые браузером и некоторые перехваченные до наблюдения запросы могут отсутствовать.",
+    "description": "Logger evidence explanation: network events"
+  },
+  "loggerDetailDnr": {
+    "message": "Совпадение нативного DNR указывает правило этого расширения, выбранное Chrome. Текст правила запрашивается отдельно и не атомарно. Доступность зависит от API обратной связи Chrome и способа установки.",
+    "description": "Logger evidence explanation: native DNR matches"
+  },
+  "loggerDetailCosmetic": {
+    "message": "«Косметика» означает, что таблица стилей была вставлена; это не доказывает, что элемент скрыт. DOM отличает реально применённые процедурные фильтры от простого снимка, где CSS-селектор нашёл элементы. Снимки проверяют не более 32 групп селекторов в таблице стилей и не подтверждают видимость или срабатывание media-условий. Не более 32 отчётов в секунду на фрейм; действия до загрузки наблюдателя не учитываются.",
+    "description": "Logger evidence explanation: cosmetic and DOM events"
+  },
+  "loggerDetailScriptlet": {
+    "message": "Отчёты о скриптлетах охватывают регистрацию и обработку исключений и запасных вариантов. Эта сборка не сообщает о попытках выполнения и не подтверждает действие отдельных скриптлетов. Сообщения страницы не являются надёжным доказательством выполнения в мире MAIN. Глобальные события регистрации используют вкладку −1.",
+    "description": "Logger evidence explanation: scriptlets"
+  },
+  "loggerDetailCapture": {
+    "message": "Запись запрашивает необязательное разрешение на наблюдение за сетью. Если отказать, доступная диагностика DNR и содержимого сохранится. Хранится не более 512 записей для не более чем четырёх окон журнала. Закрытие вкладки или пауза прекращает сбор; закрытие окна журнала удаляет записи, которые не показывает ни одно другое открытое окно журнала. Chrome может приостановить worker и удалить эту временную историю.",
+    "description": "Logger evidence explanation: permission, limits and record lifetime"
+  },
+  "loggerDetailExport": {
+    "message": "Текущие URL могут содержать личные параметры запроса. При экспорте удаляются учётные данные, параметры запроса, фрагменты и произвольный текст диагностики; пути URL всё же могут содержать личные идентификаторы. Проверьте экспортированные файлы перед отправкой.",
+    "description": "Logger evidence explanation: private data and export redaction"
+  },
+  "loggerEmpty": {
+    "message": "Событий пока нет. Начните запись, затем перезагрузите выбранную страницу или воспользуйтесь её элементами управления.",
+    "description": "Logger placeholder when there are no events"
+  },
+  "loggerCapturing": {
+    "message": "Идёт запись.",
+    "description": "Logger status: capturing"
+  },
+  "loggerPaused": {
+    "message": "Пауза.",
+    "description": "Logger status: paused"
+  },
+  "loggerNetworkAttached": {
+    "message": "Наблюдение за сетью: подключено.",
+    "description": "Logger state: browser network observation is attached"
+  },
+  "loggerNetworkUnavailable": {
+    "message": "Наблюдение за сетью: недоступно.",
+    "description": "Logger state: browser network observation is unavailable"
+  },
+  "loggerNativeAttached": {
+    "message": "Слушатель нативного DNR: подключён.",
+    "description": "Logger state: native DNR match listener is attached"
+  },
+  "loggerNativeUnavailable": {
+    "message": "Слушатель нативного DNR: недоступен.",
+    "description": "Logger state: native DNR match listener is unavailable"
+  },
+  "loggerRecordCount": {
+    "message": "Записей: $1/$2; отброшено старых записей: $3.",
+    "description": "Logger counters. $1: records shown; $2: record limit; $3: older records discarded"
+  },
+  "loggerTabFrame": {
+    "message": "вкладка $1, фрейм $2",
+    "description": "Logger row context. $1: browser tab ID; $2: frame ID"
+  },
+  "loggerPermissionRefused": {
+    "message": "Разрешение на доступ к сети не предоставлено; остальная диагностика доступна.",
+    "description": "Logger status when the optional network permission was refused"
+  },
+  "loggerDisconnected": {
+    "message": "Соединение журнала завершено. Временная история удалена. Начните запись, чтобы подключиться снова.",
+    "description": "Logger status after the connection to the extension ended"
+  },
+  "loggerPhaseRequested": {
+    "message": "запрос начат",
+    "description": "Logger event phase: a network request started (English keeps the technical phase name)"
+  },
+  "loggerPhaseCompleted": {
+    "message": "завершён",
+    "description": "Logger event phase: a network request completed (English keeps the technical phase name)"
+  },
+  "loggerPhaseError": {
+    "message": "ошибка",
+    "description": "Logger event phase: a network request failed (English keeps the technical phase name)"
+  },
+  "loggerPhaseRedirected": {
+    "message": "перенаправлен",
+    "description": "Logger event phase: a network request was redirected (English keeps the technical phase name)"
+  },
+  "loggerPhaseBlocked": {
+    "message": "заблокирован",
+    "description": "Logger event phase: the optional webRequest firewall supplement canceled a network request (English keeps the technical phase name)"
+  },
+  "loggerPhaseMatched": {
+    "message": "правило сработало",
+    "description": "Logger event phase: a native rule matched (English keeps the technical phase name)"
+  },
+  "loggerPhaseStylesheetInserted": {
+    "message": "таблица стилей вставлена",
+    "description": "Logger event phase: a cosmetic stylesheet was inserted (English keeps the technical phase name)"
+  },
+  "loggerPhaseSelectorPresent": {
+    "message": "селектор нашёл элементы",
+    "description": "Logger event phase: a CSS selector matched elements in a snapshot (English keeps the technical phase name)"
+  },
+  "loggerPhaseProceduralApplied": {
+    "message": "процедурный фильтр применён",
+    "description": "Logger event phase: a procedural cosmetic filter was applied (English keeps the technical phase name)"
+  },
+  "loggerPhaseRegistered": {
+    "message": "зарегистрирован",
+    "description": "Logger event phase: scriptlets were registered (English keeps the technical phase name)"
+  },
+  "loggerPhaseExceptionApplied": {
+    "message": "исключение применено",
+    "description": "Logger event phase: a scriptlet exception was applied (English keeps the technical phase name)"
+  },
+  "loggerRequestId": {
+    "message": "запрос $1",
+    "description": "Logger row detail. $1: browser request ID"
+  },
+  "loggerLanguageTag": {
+    "message": "ru",
+    "description": "Not displayed. BCP 47 language tag of this catalog, used as the lang attribute of the logger page"
+  },
+  "pickerQuit": {
+    "message": "Выйти",
+    "description": "Tooltip and accessible name for the close button of the element picker and custom-filter remover (unpicker) panels"
+  },
+  "restoreSucceeded": {
+    "message": "Настройки восстановлены.",
+    "description": "Dashboard status after a backup file was restored"
+  },
+  "restoreFailed": {
+    "message": "Не удалось восстановить настройки: $1",
+    "description": "Dashboard status when restoring a backup failed; $1 is the technical reason"
+  },
+  "backupFailed": {
+    "message": "Не удалось создать резервную копию: $1",
+    "description": "Dashboard status when creating a backup file failed; $1 is the technical reason"
+  },
+  "resetSucceeded": {
+    "message": "Восстановлены настройки по умолчанию.",
+    "description": "Dashboard status after all settings were reset to their defaults"
+  },
+  "resetFailed": {
+    "message": "Не удалось сбросить настройки: $1",
+    "description": "Dashboard status when resetting settings failed; $1 is the technical reason"
+  },
+  "restoreFirewallUnsupported": {
+    "message": "Правила брандмауэра не восстановлены: этот браузер их не поддерживает (требуется Chrome 145 или новее).",
+    "description": "Restore warning: the backup contains firewall rules, which this browser version cannot use"
+  },
+  "restoreImportedListsDisabled": {
+    "message": "Импортированные списки ($1) восстановлены, но оставлены отключёнными: объём исходных данных включённых списков ограничен 20 МиБ.",
+    "description": "Restore warning; $1 is the number of imported filter lists which were restored but not enabled"
+  },
+  "restoreImportedListsSkipped": {
+    "message": "Не удалось восстановить импортированные списки ($1): поддерживается не более 32 списков с HTTPS-адресами без учётных данных.",
+    "description": "Restore warning; $1 is the number of imported filter lists which could not be restored"
+  },
+  "restoreFilteringModesLocked": {
+    "message": "Режимы фильтрации не изменены: ими управляет администратор.",
+    "description": "Restore or reset warning: the managed disabledFeatures policy includes filteringMode, so the site filtering modes were not changed"
+  },
+  "restoreDeveloperLocked": {
+    "message": "Режим разработчика и пользовательские правила DNR не изменены: администратор отключил функции для разработчиков.",
+    "description": "Restore or reset warning: the managed disabledFeatures policy includes develop, so developer mode and custom DNR rules were not changed"
+  },
+  "defaultFilteringModeFailed": {
+    "message": "Не удалось изменить режим фильтрации по умолчанию: $1",
+    "description": "Dashboard status when changing the default filtering mode failed; $1 is the technical reason"
+  },
+  "customFiltersSaveFailed": {
+    "message": "Не удалось сохранить пользовательские фильтры: $1",
+    "description": "Dashboard status when saving My filters or the filter sandbox failed; $1 is the technical reason"
+  },
+  "siteRulesInvalidHostname": {
+    "message": "«$1» — недопустимое имя хоста. Укажите одно имя хоста на строку, без подстановочных знаков, путей и «https://».",
+    "description": "Site rules validation error; $1 is the rejected line exactly as typed"
+  },
+  "siteRulesDuplicateHostname": {
+    "message": "«$1» указано в нескольких уровнях фильтрации. Имя хоста может быть только в одном уровне.",
+    "description": "Site rules validation error; $1 is a hostname listed in more than one filtering level"
+  },
+  "siteRulesDefaultRequired": {
+    "message": "Оставьте ровно одну строку «$1»: она задаёт уровень фильтрации по умолчанию для всех остальных сайтов.",
+    "description": "Site rules validation error; $1 is the literal token all-urls, which must not be translated"
+  },
+  "siteRulesChangedElsewhere": {
+    "message": "Правила сайтов были изменены в другом месте после загрузки на этой странице. Ваши правки сохранены: сохраните ещё раз, чтобы перезаписать эти изменения, или перезагрузите страницу, чтобы отменить правки.",
+    "description": "Site rules conflict: the stored rules changed after the page loaded them; the user's edits were not saved"
+  },
+  "siteRulesSaveFailed": {
+    "message": "Не удалось сохранить правила сайтов: $1",
+    "description": "Dashboard status when valid site rules could not be saved; $1 is the technical reason"
+  },
+  "webRequestSetupTitle": {
+    "message": "Экспериментальный сетевой брандмауэр",
+    "description": "Diagnostics panel title for the optional Experimental WebRequest package"
+  },
+  "webRequestSetupExperimental": {
+    "message": "Откройте Chrome с помощью start-experimental-chrome.cmd из папки расширения. При первом запуске загрузите эту папку через «Загрузить распакованное расширение». Средство запуска использует отдельный профиль; вернитесь сюда и нажмите «Обновить диагностику», чтобы проверить доступ.",
+    "description": "Diagnostics setup steps shown in the Experimental WebRequest package; keep start-experimental-chrome.cmd unchanged"
+  },
+  "webRequestSetupStandard": {
+    "message": "Пакет Experimental WebRequest добавляет прямую блокировку брандмауэром, в том числе для впервые посещённых доменов. Установите отдельный пакет и откройте Chrome с помощью входящего в него средства запуска.",
+    "description": "Diagnostics note in the standard package about the separate Experimental WebRequest package; keep the package name unchanged"
+  },
+  "webRequestSetupLimits": {
+    "message": "Фильтрация DNR, allow и noop продолжают действовать. Эта функция не снимает квоты и не восстанавливает полный движок uBO; расширение не может само изменить параметры запуска Chrome.",
+    "description": "Diagnostics note on the limits of the experimental firewall; keep DNR, allow, noop and uBO unchanged"
+  },
+  "webRequestSetupGuide": {
+    "message": "Руководство по установке, проверке и удалению",
+    "description": "Link text to the Experimental WebRequest documentation"
+  },
+  "reportGitHubConfirm": {
+    "message": "Будет открыт заполненный отчёт на GitHub с источником (origin) сайта и сведениями для диагностики, показанными на этой странице. Ничего не публикуется, пока вы не отправите отчёт там. Продолжить?",
+    "description": "Confirmation shown before the report page opens a prefilled public GitHub issue"
+  },
+  "reportIssueTrackerInfo": {
+    "message": "Сообщайте о проблемах с фильтрами на определённых сайтах в <a href=\"https://github.com/kayurachann/uBlock-Plus/issues\">трекер ошибок <code>uBlock Plus+</code></a>. <u>Требуется учётная запись GitHub.</u>",
+    "description": "Report page introduction; replaces supportS3P1, which names the upstream uAssets tracker. Keep the HTML markup, including the <a href> link, and the URL unchanged"
+  },
+  "protectionProfileSelectRequired": {
+    "message": "Выберите профиль защиты, который нужно применить.",
+    "description": "Dashboard status when Apply profile is clicked while no protection profile is selected"
+  },
+  "editorApplyFailed": {
+    "message": "Не удалось применить изменения: $1",
+    "description": "Dashboard Advanced editors: applying the edited text failed. $1 is the error message"
+  },
+  "autoUpdateRestartRequired": {
+    "message": "Разрешение получено. uBlock Plus+ один раз перезапустится, чтобы подключиться к программе обновления.",
+    "description": "Dashboard settings: permission granted, the extension must restart once"
+  },
+  "autoUpdateRestartNow": {
+    "message": "Перезапустить сейчас",
+    "description": "Dashboard settings: button restarting the extension to enable the updater connection"
+  },
+  "autoUpdateRestarting": {
+    "message": "Перезапуск… эта страница откроется снова автоматически.",
+    "description": "Dashboard settings: the extension is restarting; this page reopens automatically"
+  },
+  "autoUpdateDownloadingVersion": {
+    "message": "Загрузка $1…",
+    "description": "Dashboard settings, Updates: live status while a new version downloads. $1 is the version"
+  },
+  "autoUpdateProgress": {
+    "message": "$1 из $2 МиБ",
+    "description": "Dashboard settings, Updates: download progress. $1 is the downloaded size, $2 the total size, both in MiB"
+  },
+  "autoUpdateHeld": {
+    "message": "Версия $1 не устанавливается автоматически, потому что вы восстановили предыдущую версию. Чтобы всё же установить её, нажмите «Установить сейчас».",
+    "description": "Dashboard settings, Updates: after the user restored an earlier version, automatic installation skips the version restored from. $1 is that version"
+  },
+  "autoUpdateCheckThrottled": {
+    "message": "Последняя проверка была меньше минуты назад. Повторите попытку через $1 с.",
+    "description": "Dashboard settings, Updates: Check now was used again within a minute. $1 is a number of seconds"
+  },
+  "autoUpdateIncognito": {
+    "message": "Управляйте обновлениями из обычного окна, а не из окна в режиме инкогнито.",
+    "description": "Dashboard settings, Updates: the page is open in an incognito window, where update controls are disabled"
+  },
+  "autoUpdateManualOnly": {
+    "message": "Автоматическая установка работает только в Windows. Чтобы обновить расширение, замените файлы в его папке файлами нового выпуска, затем перезагрузите uBlock Plus+ на странице расширений.",
+    "description": "Dashboard settings, Updates: the native updater exists only for Windows; on other systems the user updates by hand"
+  },
+  "autoUpdatePolicyOff": {
+    "message": "Администратор отключил проверку обновлений.",
+    "description": "Dashboard settings, Updates: managed storage autoUpdate is \"off\""
+  },
+  "autoUpdatePolicyNotify": {
+    "message": "Администратор разрешает только уведомления об обновлениях; новые версии не устанавливаются автоматически.",
+    "description": "Dashboard settings, Updates: managed storage allows notifications only (autoUpdate \"notify\", or the dashboard is locked)"
+  },
+  "autoUpdateErrorPolicy": {
+    "message": "Администратор не разрешает это действие.",
+    "description": "Dashboard settings, Updates: an action or setting was refused by the administrator policy"
+  },
+  "autoUpdateErrorFiltersBusy": {
+    "message": "Идёт обновление списков фильтров. Повторите попытку, когда оно завершится.",
+    "description": "Dashboard settings, Updates: an install, restore or restart was refused because a filter list update is running"
+  },
+  "autoUpdateErrorUpdateBusy": {
+    "message": "Уже выполняется другое обновление. Повторите попытку чуть позже.",
+    "description": "Dashboard settings, Updates: another install or restore (in this browser or from the command-line updater) is running"
+  },
+  "autoUpdateErrorSignature": {
+    "message": "Пакет не подписан доверенным ключом выпусков uBlock Plus+, поэтому он не был установлен.",
+    "description": "Dashboard settings, Updates: the updater found no valid signature from a trusted release key"
+  },
+  "autoUpdateErrorPackage": {
+    "message": "Загруженный пакет не является подходящим для этой копии выпуском uBlock Plus+, поэтому он не был установлен.",
+    "description": "Dashboard settings, Updates: the downloaded package is invalid, too large, not staged, or not the expected edition or version"
+  },
+  "autoUpdateErrorUnexpectedFiles": {
+    "message": "В папке расширения есть файлы, которые не относятся к uBlock Plus+. Переместите их из папки и повторите попытку. Ничего не изменено.",
+    "description": "Dashboard settings, Updates: the updater refused to replace a folder containing files which are not part of the extension"
+  },
+  "autoUpdateErrorNoBackup": {
+    "message": "Нет предыдущей версии для восстановления.",
+    "description": "Dashboard settings, Updates: restore failed because the updater has no backup of an earlier version"
+  },
+  "autoUpdateErrorRollbackFailed": {
+    "message": "Не удалось восстановить предыдущую версию. Подробности в %LOCALAPPDATA%\\uBlockPlus\\Updater\\updater.log.",
+    "description": "Dashboard settings, Updates: the updater could not restore the earlier version"
+  },
+  "autoUpdateErrorApplyFailed": {
+    "message": "Не удалось установить новую версию. Подробности в %LOCALAPPDATA%\\uBlockPlus\\Updater\\updater.log.",
+    "description": "Dashboard settings, Updates: the updater could not back up the installed version or replace the extension files"
+  },
+  "autoUpdateErrorUnsafeFolder": {
+    "message": "Программа обновления не изменяет эту папку расширения: это корень диска или системная либо профильная папка, в ней есть ссылки, или её могут изменять другие пользователи этого ПК. Переместите uBlock Plus+ в свой профиль, например в %LOCALAPPDATA%\\uBlockPlus\\Extension, загрузите расширение оттуда и повторите настройку.",
+    "description": "Dashboard settings, Updates: the updater refuses to manage the extension folder (drive root, system or profile folder, links)"
+  },
+  "autoUpdateErrorFolderMismatch": {
+    "message": "Программа обновления управляет папкой с другой версией, чем у этого расширения. Выполните команду настройки из папки, загруженной через «Загрузить распакованное расширение».",
+    "description": "Dashboard settings, Updates: the folder the updater manages holds another (older or unknown) version than the running extension"
+  },
+  "autoUpdateErrorNotOffered": {
+    "message": "Эта версия недоступна в выбранном канале выпусков.",
+    "description": "Dashboard settings, Updates: Install now asked for a version which the selected release channel does not offer"
+  },
+  "autoUpdateErrorAmbiguous": {
+    "message": "Программа обновления зарегистрирована для нескольких папок с этим ID расширения. Выполните updater\\install-updater.cmd -Replace из папки, загруженной через «Загрузить распакованное расширение».",
+    "description": "Dashboard settings, Updates: the updater has several folders registered for this extension ID and cannot tell which one to update"
+  },
+  "autoUpdateErrorUpdater": {
+    "message": "Программа обновления сообщила об ошибке. Подробности в %LOCALAPPDATA%\\uBlockPlus\\Updater\\updater.log.",
+    "description": "Dashboard settings, Updates: the native updater reported an error without a more specific explanation (invalid configuration, internal error, unexpected reply)"
+  },
+  "autoUpdateErrorUndone": {
+    "message": "Прерванное обновление отменено, предыдущая версия восстановлена. Больше ничего не изменено.",
+    "description": "Dashboard settings: the updater restored the previous version after an interrupted update"
   }
 }

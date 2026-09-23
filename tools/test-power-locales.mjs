@@ -49,7 +49,27 @@ const powerKeyPattern = new RegExp(
     'ActionFailed|ToolFailed|PermissionDenied|PermissionFailed|ReloadFailed|' +
     'Retry|More|Less|ParentScope))'
 );
+// Fork surfaces added after the Power UI: updates, firewall, logger, restore
+// and report messages, and dashboard statuses. The same checks apply to them.
+// Name single keys in full: a bare "reset" would take in upstream keys.
+const forkKeyPattern = new RegExp(
+    '^(?:autoUpdate|firewall|logger|webRequestSetup|restore|siteRules|' +
+    'report|backupFailed$|resetFailed$|resetSucceeded$|editorApplyFailed$|' +
+    'defaultFilteringModeFailed$|customFiltersSaveFailed$|protectionProfile|' +
+    'pickerQuit$)'
+);
 const legitimateEnglishCognates = new Set([
+    'de:autoUpdatePopupAvailable',
+    'de:loggerTab',
+    'de:loggerKindScriptlet',
+    'de:loggerKindSystem',
+    'es:loggerKindScriptlet',
+    'es:loggerPhaseError',
+    'fr:loggerKindScriptlet',
+    'fr:loggerPause',
+    ...priorityLocales
+        .filter(locale => locale !== 'en')
+        .map(locale => `${locale}:loggerKindDom`),
     'de:popupPolicyHostnameLabel',
     'de:filterStoreCommunity',
     'es:filterStoreGlobal',
@@ -97,8 +117,18 @@ for ( const locale of priorityLocales ) {
 const english = localeMessages.get('en');
 const englishKeys = Object.keys(english).sort();
 const powerKeys = englishKeys.filter(key => powerKeyPattern.test(key));
+const forkKeys = englishKeys.filter(key =>
+    powerKeyPattern.test(key) === false && forkKeyPattern.test(key)
+);
 
 assert(powerKeys.length >= 190, 'Expected the complete Power UI locale surface');
+assert(forkKeys.length >= 140, 'Expected the update, firewall and logger surface');
+for ( const key of [
+    'autoUpdateInstallNow', 'firewallScope', 'loggerTabFrame', 'restoreFailed',
+    'resetSucceeded', 'defaultFilteringModeFailed', 'customFiltersSaveFailed',
+] ) {
+    assert(forkKeys.includes(key), `${key} must be checked`);
+}
 
 for ( const locale of priorityLocales ) {
     const messages = localeMessages.get(locale);
@@ -107,7 +137,7 @@ for ( const locale of priorityLocales ) {
         englishKeys,
         `${locale} must keep key parity with the default locale`
     );
-    for ( const key of powerKeys ) {
+    for ( const key of [ ...powerKeys, ...forkKeys ] ) {
         const message = messages[key]?.message;
         assert.equal(
             typeof message,
@@ -136,6 +166,26 @@ for ( const locale of priorityLocales ) {
         popupCompiledRuleMarkers.get(locale),
         `${locale}: popup policy must describe filter rules and trusted sites`
     );
+    // No UI shows a mode called "Off": name the no-filtering mode by its label.
+    for ( const key of [ 'firewallScope', 'firewallTestScope', 'firewallOutcomeOff' ] ) {
+        assert.ok(
+            messages[key].message.includes(messages.filteringMode0Name.message),
+            `${locale}: ${key} must name the “${messages.filteringMode0Name.message}” mode`
+        );
+    }
+}
+
+// Vietnamese Chrome and this catalog translate these UI terms.
+const viEnglishUITerms = new RegExp(
+    '\\b(?:[Rr]equest|[Ff]irewall|Off|Load unpacked|[Ll]auncher|[Pp]rofile|' +
+    '[Ee]xtension|[Hh]ostname|[Tt]ab|[Ff]rame|[Rr]efresh)\\b'
+);
+for ( const key of forkKeys ) {
+    // Literal Windows paths and file names (…\uBlockPlus\Extension,
+    // updater\install-updater.cmd) are not UI terms.
+    const message = localeMessages.get('vi')[key].message
+        .replace(/\S*\\\S*/g, '');
+    assert.doesNotMatch(message, viEnglishUITerms, `vi: ${key} keeps an English UI term`);
 }
 
 const dashboard = await readFile(
@@ -156,6 +206,6 @@ for ( const key of [
 }
 
 console.log(
-    `Power locale tests passed (${powerKeys.length} keys, ` +
+    `Power locale tests passed (${powerKeys.length + forkKeys.length} keys, ` +
     `${priorityLocales.length} locales)`
 );

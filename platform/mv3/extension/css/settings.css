@@ -34,18 +34,23 @@ body[data-forbid~="dashboard"] section[data-pane="settings"],
 body[data-forbid~="dashboard"] #dashboard-nav [data-pane="rulesets"],
 body[data-forbid~="dashboard"] section[data-pane="rulesets"],
 body[data-forbid~="dashboard"] #dashboard-nav [data-pane="filters"],
-body[data-forbid~="dashboard"] section[data-pane="filters"] {
+body[data-forbid~="dashboard"] section[data-pane="filters"],
+body[data-forbid~="dashboard"] #dashboard-nav [data-pane="develop"],
+body[data-forbid~="dashboard"] section[data-pane="develop"] {
     display: none;
     }
 body[data-forbid~="filteringMode"] section[data-pane="settings"] > div:has(> h3[data-i18n="defaultFilteringModeSectionLabel"]),
-body[data-forbid~="filteringMode"] section[data-pane="settings"] > div:has(> h3[data-i18n="filteringMode0Name"]) {
+body[data-forbid~="filteringMode"] section[data-pane="settings"] > div:has(> h3[data-i18n="filteringMode0Name"]),
+body[data-forbid~="filteringMode"] #protectionProfiles {
     display: none;
     }
 body[data-forbid~="picker"] #dashboard-nav [data-pane="filters"],
 body[data-forbid~="picker"] section[data-pane="filters"] {
     display: none;
     }
-body[data-forbid~="develop"] #developerMode {
+body[data-forbid~="develop"] #developerMode,
+body[data-forbid~="develop"] #dashboard-nav [data-pane="develop"],
+body[data-forbid~="develop"] section[data-pane="develop"] {
     display: none;
     }
 

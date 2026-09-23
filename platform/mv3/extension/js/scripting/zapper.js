@@ -37,7 +37,7 @@ if ( uBlockPlusOverlay.file === '/zapper-ui.html' ) { return; }
 // With touch-driven devices, first highlight the element and remove only
 // when tapping again the highlighted area.
 
-function zapElementAtPoint(mx, my, options) {
+function zapElementAtPoint(mx, my, options = {}) {
     if ( options.highlight ) {
         const elem = uBlockPlusOverlay.elementFromPoint(mx, my);
         if ( elem ) {

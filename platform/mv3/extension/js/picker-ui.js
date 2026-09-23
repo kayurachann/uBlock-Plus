@@ -114,6 +114,13 @@ function onKeyPressed(ev) {
     }
 }
 
+// The close control is a focusable role="button" element.
+function onQuitKeyPressed(ev) {
+    if ( ev.key !== 'Enter' && ev.key !== ' ' ) { return; }
+    ev.preventDefault();
+    quitPicker();
+}
+
 /******************************************************************************/
 
 function onMinimizeClicked() {
@@ -380,6 +387,7 @@ function startPicker() {
     dom.on('#minimize', 'click', onMinimizeClicked);
     dom.on('textarea', 'input', onFilterTextChanged);
     dom.on('#quit', 'click', quitPicker);
+    dom.on('#quit', 'keydown', onQuitKeyPressed);
     dom.on('#slider', 'input', onSliderChanged);
     dom.on('#pick', 'click', resetPicker);
     dom.on('#preview', 'click', onPreviewClicked);

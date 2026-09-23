@@ -41,6 +41,7 @@ This directory contains the user, architecture, security and community documenta
 | [README screenshot provenance](assets/readme/README.md) | Actual Chrome image sources, build hashes, capture settings and older illustrations. |
 | [POWER-RUNTIME.md](POWER-RUNTIME.md) | DNR quota accounting, service-worker lifecycle, popup runtime and optional-tier boundaries. |
 | [FILTER-STORE.md](FILTER-STORE.md) | Catalog schema, repositories, trust tiers and review workflow. |
+| [AUTO-UPDATE.md](AUTO-UPDATE.md) | Automatic updates: Windows updater setup, settings, native messaging protocol, verification chain, threats and release publishing. |
 | [PRIVACY.md](PRIVACY.md) | Local data, network access, permissions and retention. |
 | [THREAT-MODEL.md](THREAT-MODEL.md) | Assets, trust boundaries and supply-chain threats. |
 | [ROADMAP.md](ROADMAP.md) | Current, next and research work without release-date promises. |

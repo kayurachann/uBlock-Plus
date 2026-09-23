@@ -202,11 +202,14 @@ try {
         await message({ what: 'setMemoryProfile', profile: selected, deviceMemoryGiB: 2 });
         for ( const kind of [ 'cold-1', 'cold-2', 'cold-3', 'warm', 'off', 're-enabled' ] ) {
             // Direct test-profile writes preserve fixture dictionaries while
-            // exercising the content script's own Off predicate.
+            // exercising the content script's own Off predicate. Like the
+            // worker, update the effective session copy before local storage.
             await dashboard.evaluate(async ({ off, clear, modes }) => {
-                await chrome.storage.local.set({ filteringModeDetails: {
+                const filteringModeDetails = {
                     ...modes, none: off ? [ 'perf.localhost' ] : [],
-                } });
+                };
+                await chrome.storage.session.set({ filteringModeDetails });
+                await chrome.storage.local.set({ filteringModeDetails });
                 if ( clear ) { await chrome.storage.session.remove('cache.css.perf.localhost'); }
             }, { off: kind === 'off', clear: kind !== 'warm', modes });
             await site.goto(url);
@@ -245,6 +248,7 @@ try {
             Object.hasOwn(await chrome.storage.session.get('cache.css.perf.localhost'),
                 'cache.css.perf.localhost'));
         const resetFixture = async () => dashboard.evaluate(async modes => {
+            await chrome.storage.session.set({ filteringModeDetails: modes });
             await chrome.storage.local.set({ filteringModeDetails: modes });
             await chrome.storage.session.remove('cache.css.perf.localhost');
         }, modes);
@@ -304,7 +308,9 @@ try {
         await inject([ 'js/scripting/css-specific.js' ]);
         await waitForMetrics(metrics => metrics.paused);
         await dashboard.evaluate(async modes => {
-            await chrome.storage.local.set({ filteringModeDetails: { ...modes, none: [ 'perf.localhost' ] } });
+            const filteringModeDetails = { ...modes, none: [ 'perf.localhost' ] };
+            await chrome.storage.session.set({ filteringModeDetails });
+            await chrome.storage.local.set({ filteringModeDetails });
             await chrome.storage.session.remove('cache.css.perf.localhost');
         }, modes);
         await exec('release');

@@ -346,6 +346,13 @@ async function register(generation) {
     const legacyWarning = 'Scriptlet execution is temporarily deferred because the active ' +
         'compiled generation predates shared exceptions. Network rules and cached sources ' +
         'are retained; the normal compiler retry will restore scriptlets after rebuilding.';
+    // Written by the compiler, e.g. for unsafe regex scopes in imported lists.
+    const storedWarnings = await localRead(
+        compiledStorageKey(generation, 'importedFilters.scriptletWarnings')
+    );
+    const compileWarnings = Array.isArray(storedWarnings)
+        ? storedWarnings.filter(warning => typeof warning === 'string')
+        : [];
     const fallback = async ( ) => {
         if ( legacyDeferred ) {
             for ( const { id } of shared.stock ) { shared.nativeExclusions.set(id, [ '*' ]); }
@@ -358,7 +365,7 @@ async function register(generation) {
             'unrelated scriptlets in the same files may also be skipped. Enable ' +
             'Allow User Scripts and reload the extension for exact exceptions.',
         ] : [];
-        await localWrite(SCRIPTLET_WARNINGS_KEY, warnings);
+        await localWrite(SCRIPTLET_WARNINGS_KEY, [ ...warnings, ...compileWarnings ]);
         const nativeStockScriptlets = prepareNativeStockScriptlets(shared, modes);
         const previousNativeScripts = await removeNativeStockScriptlets();
         try {
@@ -461,7 +468,9 @@ async function register(generation) {
             'user-script data at document_start; affected packaged files are ' +
             'conservatively skipped on exception scopes to preserve fail-open behavior.',
         ] : [];
-        await localWrite(SCRIPTLET_WARNINGS_KEY, warnings).catch(reason => {
+        await localWrite(SCRIPTLET_WARNINGS_KEY, [
+            ...warnings, ...compileWarnings,
+        ]).catch(reason => {
             ublockPlusLog(`Unable to clear scriptlet warnings: ${reason}`);
         });
         for ( const [ prefix, source ] of [

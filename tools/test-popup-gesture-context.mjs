@@ -64,7 +64,7 @@ const click = (state, target = anchor, options = {}) => {
 
 {
     const state = collector();
-    equal(state.context(), { at: 0, sequence: 0, targetURL: '' });
+    equal(state.context(), { at: 0, sequence: 0, targetURL: '', recent: [] });
     click(state);
     const first = state.context();
     equal(first.sequence, 1, 'pointerdown/click is one activation');
@@ -267,6 +267,100 @@ for ( const scenario of [ 'synthetic', 'programmatic', 'expired', 'wrong-form',
     equal((await open(4)).action, 'allow',
         'A distinct rapid click authorizes its own window');
     equal(removed, [ 3 ], 'Only the extra window from the reused activation is removed');
+}
+
+// Rapid activations are all reported, each with its own target. The worker can
+// handle the resulting tabs only after the last click (for example while it
+// cold-starts), so a single "latest activation" record is not enough.
+{
+    const state = collector();
+    const siteA = { localName: 'a', href: 'https://site-a.example/article' };
+    const siteB = { localName: 'a', href: 'https://site-b.example/article' };
+    const middleClick = target => {
+        state.emit('pointerdown', { target, button: 1 });
+        state.emit('auxclick', { target, button: 1, detail: 1 });
+    };
+    middleClick(siteA);
+    state.advance(80);
+    middleClick(siteB);
+    const reported = state.context();
+    equal(reported.sequence, 2);
+    equal(reported.targetURL, siteB.href, 'Top-level fields keep the latest');
+    equal(reported.recent, [
+        { at: 1000, sequence: 1, targetURL: siteA.href },
+        { at: 1080, sequence: 2, targetURL: siteB.href },
+    ], 'Each activation keeps its own navigation target');
+
+    // The click phase of one activation refines only that activation.
+    state.advance(20);
+    state.emit('pointerdown', { target: { localName: 'span' }, button: 0 });
+    state.emit('click', { target: anchor, detail: 1 });
+    equal(state.context().recent.map(entry => entry.targetURL),
+        [ siteA.href, siteB.href, anchor.href ]);
+
+    // Form refinement updates the activation which submitted the form.
+    const fixture = formFixture('post');
+    state.advance(20);
+    click(state, { localName: 'span' });
+    submit(state, fixture);
+    equal(state.context().recent.at(-1), {
+        at: 1120, sequence: 4, targetURL: fixture.form.action,
+    });
+    equal(state.context().recent.at(-2).targetURL, anchor.href);
+
+    // Expired activations are not reported, and the history is bounded.
+    state.advance(5_001);
+    equal(state.context().recent, [], 'Expired activations are not reported');
+    for ( let i = 0; i < 12; i++ ) { click(state); }
+    equal(state.context().recent.map(entry => entry.sequence),
+        [ 9, 10, 11, 12, 13, 14, 15, 16 ], 'At most eight activations');
+}
+
+// Two rapid middle-clicks whose tabs are both handled after the second click
+// must each keep their own tab, in either processing order. A third tab with
+// no activation of its own still gets no token.
+for ( const order of [ [ 2, 3 ], [ 3, 2 ] ] ) {
+    const state = collector();
+    const removed = [];
+    const opener = { id: 1, url: 'https://search.example/results' };
+    const targets = new Map([
+        [ 2, 'https://site-a.example/article' ],
+        [ 3, 'https://site-b.example/article' ],
+        [ 4, 'https://unrelated-ad.example/landing' ],
+    ]);
+    const tabs = new Map([ [ 1, opener ] ]);
+    const blocker = createPopupBlocker({
+        tabs: {
+            async get(id) { return tabs.get(id); },
+            async remove(id) { removed.push(id); tabs.delete(id); },
+        },
+        now: ( ) => state.time(),
+        getFilteringMode: async ( ) => 3,
+        getGestureContexts: async ( ) => [ { ...state.context(), frameId: 0 } ],
+        getSourceContext: async ( ) => ({
+            topURL: opener.url, topContextComplete: true,
+            initiatorURL: opener.url, initiatorContextComplete: true,
+        }),
+    });
+    for ( const id of [ 2, 3 ] ) {
+        const target = { localName: 'a', href: targets.get(id) };
+        state.emit('pointerdown', { target, button: 1 });
+        state.emit('auxclick', { target, button: 1, detail: 1 });
+        state.advance(60);
+    }
+    const open = async id => {
+        tabs.set(id, { id, openerTabId: 1, url: targets.get(id) });
+        return blocker.onNavigationTarget({
+            tabId: id, sourceTabId: 1, sourceFrameId: 0, url: targets.get(id),
+        });
+    };
+    for ( const id of order ) {
+        equal((await open(id)).reason, 'trusted-navigation-target',
+            `Tab ${id} keeps its own activation; order ${order}`);
+    }
+    equal((await open(4)).action, 'blocked',
+        'Another tab cannot reuse either activation');
+    equal(removed, [ 4 ]);
 }
 
 console.log(`Popup gesture context tests passed (${checks} checks).`);

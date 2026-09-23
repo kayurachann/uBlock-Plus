@@ -327,6 +327,12 @@ for ( const relativePath of [
     'platform/mv3/extension/js/offscreen/fetch-list.js',
     'platform/mv3/extension/js/ruleset-manager.js',
     'platform/mv3/extension/js/verified-source-handoff.js',
+    'platform/mv3/extension/js/update-core.js',
+    'platform/mv3/extension/js/update-manager.js',
+    'platform/mv3/extension/js/update-ui.js',
+    'tools/package-files.mjs',
+    'tools/release-signing.mjs',
+    'tools/run-tests.mjs',
     'tools/set-product-name.mjs',
     'tools/test-backup-schema.mjs',
     'tools/validate-mv3.mjs',
@@ -334,6 +340,34 @@ for ( const relativePath of [
     execFileSync(process.execPath, [ '--check', path.join(root, relativePath) ], {
         stdio: 'pipe',
     });
+}
+
+// Automatic updates: consent-gated permission, packaged updater, fixed host
+// name, and update messages accepted from extension pages only.
+{
+    const background = await fs.readFile(path.join(extensionRoot, 'js', 'background.js'), 'utf8');
+    const core = await fs.readFile(path.join(extensionRoot, 'js', 'update-core.js'), 'utf8');
+    const installer = await fs.readFile(path.join(mv3Root, 'updater', 'install-updater.ps1'), 'utf8');
+    assert(manifest.permissions.includes('nativeMessaging') === false,
+        'nativeMessaging must never be a required permission');
+    assert(manifest.optional_permissions.includes('nativeMessaging'),
+        'The updater permission is optional and granted from Settings > Updates');
+    const guard = background.slice(background.indexOf('function onUpdateMessage('), background.indexOf('function onUpdateMessage(') + 600);
+    assert(guard.includes('sender?.id !== runtime.id') && guard.includes('startsWith(`${UBLOCK_PLUS_ORIGIN}/`)'),
+        'Update messages must come from extension pages only');
+    // An update may be the fix for a failed or slow start.
+    const independentUpdateStart = /updateManager\.initialize\(\)\.catch\(/.test(background) &&
+        background.includes('isFullyInitialized.then(( ) => updateManager.initialize())') === false;
+    assert(independentUpdateStart, 'Update state is initialized independently of start()');
+    const hostName = /UPDATE_HOST_NAME = '([^']+)'/.exec(core)?.[1];
+    assert(typeof hostName === 'string' && installer.includes(`$HostName = '${hostName}'`),
+        'The extension and the installer must use the same native host name');
+    for ( const script of [ 'make-mv3.ps1', 'make-mv3.sh' ] ) {
+        const text = await fs.readFile(path.join(root, 'tools', script), 'utf8');
+        assert(text.includes('updater'), `tools/${script} must package the Windows updater`);
+        assert(text.includes('tools/package-files.mjs'),
+            `tools/${script} must list the package files for the updater`);
+    }
 }
 
 for ( const [ relativePath, stagedDependency ] of [

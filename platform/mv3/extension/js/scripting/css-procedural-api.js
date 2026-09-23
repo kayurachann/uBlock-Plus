@@ -578,6 +578,9 @@ class PSelectorRoot extends PSelector {
         this.cost = 0;
         this.lastAllowanceTime = 0;
         this.action = o.action;
+        this.logger = undefined;
+        this.loggedMatches = 0;
+        this.loggedAt = 0;
     }
     prime(input) {
         try {
@@ -679,18 +682,41 @@ class ProceduralFilterer {
                 pselector.budget = -0x7FFFFFFF;
             }
             t0 = t1;
-            if ( nodes.length === 0 ) { continue; }
-            this.processNodes(nodes, pselector.action);
-            if ( typeof self.ublockPlusLogger === 'function' ) {
-                try {
-                    self.ublockPlusLogger(pselector.raw, nodes.length, pselector.action?.[0]);
-                } catch {
-                    // Diagnostics must never interrupt filtering or unstyling.
-                }
+            if ( nodes.length === 0 ) {
+                pselector.loggedMatches = 0;
+                continue;
             }
+            this.processNodes(nodes, pselector.action);
+            this.logMatches(pselector, nodes.length, t0);
         }
 
         this.unprocessNodes(toUnstyle);
+    }
+
+    // A commit follows every DOM mutation batch. Report a selector again only
+    // when its match count changes or a new logger session starts, so that
+    // identical reports do not evict other entries from the logger buffer.
+    // The logger silently drops reports past its rate limit: an unchanged
+    // count is reported again after a 5-second cooldown so that a dropped
+    // report does not leave the selector missing from the logger for good.
+    logMatches(pselector, matches, now) {
+        const logger = self.ublockPlusLogger;
+        if ( typeof logger !== 'function' ) { return; }
+        if (
+            logger === pselector.logger &&
+            matches === pselector.loggedMatches &&
+            (now - pselector.loggedAt) < 5000
+        ) {
+            return;
+        }
+        pselector.logger = logger;
+        pselector.loggedMatches = matches;
+        pselector.loggedAt = now;
+        try {
+            logger(pselector.raw, matches, pselector.action?.[0]);
+        } catch {
+            // Diagnostics must never interrupt filtering or unstyling.
+        }
     }
 
     styleTokenFromStyle(style) {

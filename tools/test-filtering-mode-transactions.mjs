@@ -12,8 +12,10 @@ const RESTORE_KEY = 'filteringModeRestoreLevels';
 const TRANSACTION_KEY = 'filteringModeTransaction';
 const defaults = { none: [], basic: [], optimal: [ 'all-urls' ], complete: [] };
 const broadcasts = [];
+// Writes of every area, in order: `${area}:${key}`.
+const writeLog = [];
 
-function makeStorageArea(initial = {}) {
+function makeStorageArea(name, initial = {}) {
     const values = new Map(Object.entries(initial));
     const failures = new Map();
     const writes = [];
@@ -37,6 +39,7 @@ function makeStorageArea(initial = {}) {
             }
             for ( const [ key, value ] of Object.entries(entries) ) {
                 writes.push(key);
+                writeLog.push(`${name}:${key}`);
                 values.set(key, structuredClone(value));
             }
         },
@@ -52,14 +55,15 @@ function makeStorageArea(initial = {}) {
     };
 }
 
-const local = makeStorageArea({ [MODE_KEY]: defaults });
-const session = makeStorageArea();
+const local = makeStorageArea('local', { [MODE_KEY]: defaults });
+const session = makeStorageArea('session');
 let dynamicRules = [];
 let sessionRules = [];
 let dynamicFailures = 0;
 let sessionFailures = 0;
 let dynamicGate;
 let dynamicUpdates = 0;
+let grantedOrigins = [ '<all_urls>' ];
 const filtered = (rules, options) => structuredClone(options?.ruleIds
     ? rules.filter(rule => options.ruleIds.includes(rule.id))
     : rules);
@@ -98,12 +102,12 @@ globalThis.chrome = {
         },
     },
     i18n: { getMessage() { return ''; } },
-    permissions: { async getAll() { return { origins: [ '<all_urls>' ] }; } },
+    permissions: { async getAll() { return { origins: grantedOrigins.slice() }; } },
     runtime: {
         getManifest() { return { permissions: [] }; },
         getURL(value = '') { return `chrome-extension://test/${value}`; },
     },
-    storage: { local, session, managed: makeStorageArea() },
+    storage: { local, session, managed: makeStorageArea('managed') },
     tabs: { TAB_ID_NONE: -1 },
 };
 
@@ -341,5 +345,106 @@ assert.equal(local.values.has(TRANSACTION_KEY), false);
 await modes.setDefaultFilteringMode(0);
 assert.equal(await modes.getFilteringModeRestoreLevel('unknown.example'), 1);
 await assert.rejects(modes.setFilteringMode('site.example', 4), /Invalid/);
+
+// A profile which never changed a mode has no stored modes. Content scripts
+// read that record directly, so the worker stores the unchanged defaults.
+// A failed read still writes nothing.
+local.values.delete(MODE_KEY);
+local.values.delete(RESTORE_KEY);
+local.failures.set('get', 1);
+modes = await restart();
+await assert.rejects(modes.getFilteringModeDetails(), /storage read/);
+assert.equal(local.values.has(MODE_KEY), false);
+assert.equal(await modes.getFilteringMode('fresh.example'), 2);
+assert.deepEqual(local.values.get(MODE_KEY), defaults);
+assert.deepEqual(session.values.get(MODE_KEY), defaults);
+local.failures.set(MODE_KEY, 1);
+local.values.delete(MODE_KEY);
+modes = await restart();
+assert.equal(await modes.getFilteringMode('fresh.example'), 2,
+    'a failed defaults write does not stop the worker from loading the modes');
+modes = await restart();
+await modes.getFilteringModeDetails();
+assert.deepEqual(local.values.get(MODE_KEY), defaults);
+
+// Without broad host access, permission sync downgrades a lost elevated site
+// even below a trusted parent. The parent guard applies to user edits only;
+// it must not make every permission sync and browser start throw.
+const nestedTrusted = {
+    none: [ 'example.com' ], basic: [ 'all-urls' ], optimal: [ 'sub.example.com' ], complete: [],
+};
+grantedOrigins = [ '*://*.sub.example.com/*' ];
+local.values.set('permissions.hostnames', [ 'sub.example.com' ]);
+await modes.setFilteringModeDetails(nestedTrusted);
+assert.equal(await modes.syncWithBrowserPermissions(), false);
+assert.deepEqual(local.values.get(MODE_KEY), nestedTrusted);
+grantedOrigins = [];
+assert.equal(await modes.syncWithBrowserPermissions(), true);
+assert.deepEqual(local.values.get(MODE_KEY).optimal, []);
+assert.deepEqual(local.values.get(MODE_KEY).none, [ 'example.com' ]);
+assert.deepEqual(local.values.get(MODE_KEY).basic, [ 'all-urls' ]);
+assert.equal(await modes.getFilteringMode('sub.example.com'), 0);
+assert.equal(await modes.getFilteringMode('other.example'), 1);
+assert.equal(await modes.syncWithBrowserPermissions(), false, 'the repaired modes are stable');
+// A newly granted child of a trusted parent keeps the parent's level.
+grantedOrigins = [ '*://*.child.example.com/*' ];
+assert.equal(await modes.syncWithBrowserPermissions(), false);
+assert.deepEqual(local.values.get(MODE_KEY).optimal, []);
+assert.equal(await modes.getFilteringMode('child.example.com'), 0);
+grantedOrigins = [ '<all_urls>' ];
+
+// With split incognito, the incognito worker shares storage.local with the
+// regular worker but not the mode mutation queue. A journal it sees may be a
+// live write of the regular worker: use the committed modes without rolling
+// back or writing anything. The regular worker still recovers the journal.
+await modes.setFilteringModeDetails(defaults);
+const liveModes = { ...defaults, none: [ 'live.example' ] };
+local.values.set(MODE_KEY, liveModes);
+local.values.set(TRANSACTION_KEY, {
+    version: 1, previousModes: defaults, previousRestoreLevels: {},
+});
+chrome.extension = { inIncognitoContext: true };
+modes = await restart();
+const writesBeforeIncognito = local.writes.length;
+const sessionWritesBeforeIncognito = session.writes.length;
+const dnrBeforeIncognito = dynamicUpdates;
+assert.equal(await modes.getFilteringMode('live.example'), 2);
+assert.deepEqual(await modes.getFilteringModeDetails(true), defaults);
+await assert.rejects(modes.setFilteringMode('other.example', 0), /recovery is required/);
+// Only the administrator policy cache may be refreshed.
+assert.deepEqual(local.writes.slice(writesBeforeIncognito)
+    .filter(key => key.startsWith('admin.') === false), []);
+assert.equal(session.writes.slice(sessionWritesBeforeIncognito).includes(MODE_KEY), false);
+assert.equal(dynamicUpdates, dnrBeforeIncognito);
+assert.deepEqual(local.values.get(MODE_KEY), liveModes);
+assert.equal(local.values.has(TRANSACTION_KEY), true);
+local.values.delete(TRANSACTION_KEY);
+assert.equal(await modes.getFilteringMode('live.example'), 0,
+    'the incognito worker reads storage again once the journal is committed');
+local.values.set(MODE_KEY, liveModes);
+local.values.set(TRANSACTION_KEY, {
+    version: 1, previousModes: defaults, previousRestoreLevels: {},
+});
+delete chrome.extension;
+modes = await restart();
+assert.equal(await modes.getFilteringMode('live.example'), 2);
+await assertCommittedDefault();
+
+// css-specific.js takes Off scopes from the effective session copy whenever
+// it exists. Commits and rollbacks update it before the stored modes, so a
+// newly trusted site is never filtered through a stale session copy.
+const modeWrites = ( ) => writeLog.filter(entry => entry.endsWith(`:${MODE_KEY}`));
+writeLog.length = 0;
+await modes.setFilteringMode('order.example', 0);
+assert.deepEqual(modeWrites(), [ `session:${MODE_KEY}`, `local:${MODE_KEY}` ]);
+writeLog.length = 0;
+local.failures.set(RESTORE_KEY, 1);
+await assert.rejects(modes.setFilteringMode('order.example', 2), /storage/);
+assert.deepEqual(modeWrites(), [
+    `session:${MODE_KEY}`, `local:${MODE_KEY}`,
+    `session:${MODE_KEY}`, `local:${MODE_KEY}`,
+], 'the rollback also writes the session copy first');
+assert.equal(await modes.getFilteringMode('order.example'), 0);
+assert.deepEqual(session.values.get(MODE_KEY).none, local.values.get(MODE_KEY).none);
 
 console.log('Filtering-mode transaction and site-power tests passed.');

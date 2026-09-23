@@ -28,9 +28,13 @@ import {
     sendMessage,
 } from './ext.js';
 
+import {
+    migrateLegacyImportedLists,
+    normalizeBackupObject,
+} from './backup-schema.js';
 import { POWER_UI_STORAGE_KEY } from './power-ui-core.js';
 import { getImportedLists } from './imported-lists.js';
-import { normalizeBackupObject } from './backup-schema.js';
+import { rulesFromText } from './dnr-parser.js';
 
 /******************************************************************************/
 
@@ -131,14 +135,102 @@ export async function backupToObject(currentConfig) {
 
 /******************************************************************************/
 
+// Whether writing these modes and restore levels would change anything. A
+// backup holds the effective modes, which include administrator Off scopes,
+// while the stored record holds the user's own modes: matching either one
+// leaves the modes which apply unchanged.
+async function filteringModesDiffer(modes, restoreLevels, defaultModes) {
+    const [ effectiveModes, storedModes, currentLevels ] = await Promise.all([
+        sendMessage({ what: 'getFilteringModeDetails' }),
+        browser.storage.local.get('filteringModeDetails').then(
+            bin => bin?.filteringModeDetails ?? defaultModes,
+            ( ) => null
+        ),
+        sendMessage({ what: 'getFilteringModeRestoreLevels' }),
+    ]);
+    const sameModes = other => [ 'none', 'basic', 'optimal', 'complete' ].every(level => {
+        if ( Array.isArray(other?.[level]) === false ) { return false; }
+        const hostnames = new Set(other[level]);
+        return hostnames.size === modes[level].length &&
+            modes[level].every(hn => hostnames.has(hn));
+    });
+    const levels = Object.entries(currentLevels ?? {});
+    if ( levels.length !== Object.keys(restoreLevels).length ) { return true; }
+    if ( levels.some(([ hn, level ]) => restoreLevels[hn] !== level) ) { return true; }
+    return sameModes(effectiveModes) === false && sameModes(storedModes) === false;
+}
+
+// Backups store the developer DNR draft without its blank lines.
+const dnrDraftLines = text => text.split(/\n+/).join('\n');
+
+/******************************************************************************/
+
+// Resolves to a summary of the valid backup parts which could not be applied
+// as saved: { developerSkipped, filteringModesSkipped, firewallRulesSkipped,
+// importedListsDisabled, importedListsSkipped }.
 export async function restoreFromObject(targetConfig) {
     // Validate and clone every field before the first mutation. A malformed
     // backup must fail closed instead of partially resetting live settings.
     targetConfig = normalizeBackupObject(targetConfig);
-    if ( targetConfig.firewallRules?.length ) {
-        await sendMessage({ what: 'previewFirewallRules', text: targetConfig.firewallRules.join('\n') });
+    const legacyLists = migrateLegacyImportedLists(targetConfig);
+    if ( legacyLists.importedLists.length !== 0 ) {
+        targetConfig.importedLists = legacyLists.importedLists;
     }
-    const defaultConfig = await sendMessage({ what: 'getDefaultConfig' });
+    const summary = {
+        developerSkipped: false,
+        filteringModesSkipped: false,
+        firewallRulesSkipped: false,
+        importedListsDisabled: legacyLists.disabled,
+        importedListsSkipped: legacyLists.skipped,
+    };
+    // Chromium before 145 has no top-domain DNR condition. Such a browser
+    // cannot activate firewall rules, which must not block restoring the
+    // rest of the backup.
+    let firewallSupported = true;
+    if ( targetConfig.firewallRules?.length ) {
+        const firewallState = await sendMessage({ what: 'getFirewallState' });
+        firewallSupported = firewallState?.supported !== false;
+        if ( firewallSupported ) {
+            await sendMessage({ what: 'previewFirewallRules', text: targetConfig.firewallRules.join('\n') });
+        }
+    }
+    const [ defaultConfig, optionsPageData ] = await Promise.all([
+        sendMessage({ what: 'getDefaultConfig' }),
+        sendMessage({ what: 'getOptionsPageData' }),
+    ]);
+    // The worker rejects changes to features the administrator disabled.
+    // Skip those steps rather than stop the restore halfway through.
+    const { disabledFeatures } = optionsPageData ?? {};
+    const isLocked = feature =>
+        Array.isArray(disabledFeatures) && disabledFeatures.includes(feature);
+    const developerLocked = isLocked('develop');
+    const modesLocked = isLocked('filteringMode');
+    // Report only skipped steps which would have changed something.
+    if ( modesLocked ) {
+        summary.filteringModesSkipped = await filteringModesDiffer(
+            targetConfig.filteringModes ?? defaultConfig.filteringModes,
+            targetConfig.filteringModeRestoreLevels ?? {},
+            defaultConfig.filteringModes
+        );
+    }
+    if ( developerLocked ) {
+        const dnrText = await localRead('userDnrRules');
+        summary.developerSkipped = targetConfig.developerMode === true ||
+            dnrDraftLines(targetConfig.dnrRules?.join('\n') ?? '') !==
+                dnrDraftLines(typeof dnrText === 'string' ? dnrText : '');
+    }
+    // A syntax error in developer DNR rules is invalid input: reject it here
+    // rather than after the other settings were replaced. Drafts only become
+    // active in developer mode, so inactive drafts are restored unchanged.
+    if ( developerLocked === false &&
+        (targetConfig.developerMode ?? defaultConfig.developerMode) === true &&
+        targetConfig.dnrRules?.length ) {
+        const { bad } = rulesFromText(targetConfig.dnrRules.join('\n'));
+        if ( bad.length !== 0 ) {
+            const lines = bad.slice(0, 16).map(index => index + 1).join(', ');
+            throw new TypeError(`dnrRules has invalid DNR syntax at line(s) ${lines}`);
+        }
+    }
 
     await sendMessage({
         what: 'setAutoReload',
@@ -150,10 +242,12 @@ export async function restoreFromObject(targetConfig) {
         state: targetConfig.showBlockedCount ?? defaultConfig.showBlockedCount
     });
 
-    await sendMessage({
-        what: 'setDeveloperMode',
-        state: targetConfig.developerMode ?? defaultConfig.developerMode
-    });
+    if ( developerLocked === false ) {
+        await sendMessage({
+            what: 'setDeveloperMode',
+            state: targetConfig.developerMode ?? defaultConfig.developerMode
+        });
+    }
 
     await sendMessage({
         what: 'setStrictBlockMode',
@@ -272,11 +366,13 @@ export async function restoreFromObject(targetConfig) {
         enabledRulesets: Array.from(enabledRulesets),
     });
 
-    await sendMessage({
-        what: 'setFilteringModeDetails',
-        modes: targetConfig.filteringModes ?? defaultConfig.filteringModes,
-        restoreLevels: targetConfig.filteringModeRestoreLevels ?? {},
-    });
+    if ( modesLocked === false ) {
+        await sendMessage({
+            what: 'setFilteringModeDetails',
+            modes: targetConfig.filteringModes ?? defaultConfig.filteringModes,
+            restoreLevels: targetConfig.filteringModeRestoreLevels ?? {},
+        });
+    }
 
     await sendMessage({ what: 'removeAllCustomFilters', hostname: '*' });
     const cosmeticFilters = targetConfig.cosmeticFilters;
@@ -313,6 +409,23 @@ export async function restoreFromObject(targetConfig) {
         text: targetConfig.sandboxFilters?.join('\n') ?? '',
     });
 
+    // Firewall text was validated up front. Apply it before the DNR step so
+    // that a late browser rejection of DNR rules cannot skip it.
+    try {
+        await sendMessage({
+            what: 'applyFirewallRules',
+            text: targetConfig.firewallRules?.join('\n') ?? '',
+            permanent: true,
+        });
+    } catch ( reason ) {
+        if ( firewallSupported ) { throw reason; }
+        summary.firewallRulesSkipped = true;
+    }
+
+    // Developer DNR rules are a locked developer feature: keep the saved
+    // draft, which the worker does not activate under the lock.
+    if ( developerLocked ) { return summary; }
+
     const dnrRules = targetConfig.dnrRules ?? [];
     const previousDNRRules = (await browser.storage.local.get('userDnrRules')).userDnrRules;
     if ( dnrRules.length !== 0 ) {
@@ -335,9 +448,5 @@ export async function restoreFromObject(targetConfig) {
         throw reason;
     }
 
-    await sendMessage({
-        what: 'applyFirewallRules',
-        text: targetConfig.firewallRules?.join('\n') ?? '',
-        permanent: true,
-    });
+    return summary;
 }

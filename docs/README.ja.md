@@ -5,7 +5,7 @@
 
 <img src="assets/readme/hero.png" alt="Chromiumのページが読み込まれる前に、広告、トラッカー、Cookie、その他の不要なWebリクエストを盾がフィルタリングするイメージ" width="1100">
 
-<sub>コンセプトイラスト · v1.0.0は手動更新のサイドロード用プレリリースです</sub>
+<sub>コンセプトイラスト · Windowsでは任意の自動更新に対応したサイドロード用プレリリースです</sub>
 
 # uBlock Plus+
 
@@ -30,7 +30,7 @@
 uBlock Plus+は、Chromium MV3向けに独立して開発されているGPLライセンスのコンテンツブロッカーです。実績のある上流のフィルタリング／コンパイラ基盤に、コミュニティのFilter Store、移行可能な設定、明示的な上級者向け制御、メモリを意識した動作を組み合わせています。プロジェクト運営のテレメトリサービスやリモート実行コードは使用しません。
 
 > [!IMPORTANT]
-> **リリース状況:** v1.0.0は手動サイドロード向けのプレリリースで、自動更新されません。uBlock Plus+は独立したフォークであり、uBlock Originの公式リリースではなく、Raymond Hill氏の推奨を受けたものでもありません。Chrome MV3では、元のMV2拡張機能で利用できたブロッキング機能のすべてが公開されているわけではありません。サイドロードによりChrome Web Storeの配布ポリシーは回避できますが、DNRの上限、Service Workerのライフサイクル規則、ブラウザのセキュリティ境界がなくなるわけでは**ありません**。[正直な互換性一覧](FEATURE-MATRIX.md)を参照してください。
+> **リリース状況:** **パッケージ化されていない拡張機能を読み込む**で一度だけインストールするサイドロード用プレリリースで、任意の[Windows用アップデーター](AUTO-UPDATE.md)を使えば以降のリリースが自動的にインストールされます。uBlock Plus+は独立したフォークであり、uBlock Originの公式リリースではなく、Raymond Hill氏の推奨を受けたものでもありません。Chrome MV3では、元のMV2拡張機能で利用できたブロッキング機能のすべてが公開されているわけではありません。サイドロードによりChrome Web Storeの配布ポリシーは回避できますが、DNRの上限、Service Workerのライフサイクル規則、ブラウザのセキュリティ境界がなくなるわけでは**ありません**。[正直な互換性一覧](FEATURE-MATRIX.md)を参照してください。
 
 ## 選択権を中心にした設計
 
@@ -112,7 +112,7 @@ Power UIの全文字列は、英語、ドイツ語、スペイン語、フラン
 <img src="assets/readme/memory-settings.png" alt="Autoモード、実効Balanced設定、ローカルストレージ診断を表示する実際のuBlock Plus+ Memory Profile設定">
 
 <strong>Memory Profile</strong><br>
-Auto、Balanced、Low-memoryを選択し、実際のRAM使用量ではなくローカルのキャッシュ／ストレージ指標を確認できます。
+Auto、Balanced、Low memoryを選択し、実際のRAM使用量ではなくローカルのキャッシュ／ストレージ指標を確認できます。
 
 </td>
 </tr>
@@ -131,20 +131,28 @@ Auto、Balanced、Low-memoryを選択し、実際のRAM使用量ではなくロ�
 ### リリースをインストール
 
 1. [GitHub Releases](https://github.com/kayurachann/uBlock-Plus/releases)から`uBlock-Plus_*.chromium.zip`と対応する`.sha256`ファイルをダウンロードします。
-2. チェックサムを検証してから、ZIPを固定のフォルダーに展開します。
+2. チェックサムを検証してから、ユーザープロファイル内に新しく作った、拡張機能専用の空のフォルダーにZIPを展開します。Windowsでは`%LOCALAPPDATA%\uBlockPlus\Extension`をおすすめします。ドライブのルート、`C:\`の直下に作ったフォルダー、およびその中のフォルダー（`C:\Extensions`や`C:\Extensions\uBlock-Plus`など）は使わないでください。Windows用アップデーターは、ドライブのルート、システムフォルダーやプロファイルフォルダーそのもの、PCのほかのユーザーが変更できるフォルダーを拒否します。すでにそのようなフォルダーにインストールしている場合は、`%LOCALAPPDATA%\uBlockPlus\Extension`に移してください。[フォルダーの条件](AUTO-UPDATE.md#folder-rules)と[既存のインストールの移動](AUTO-UPDATE.md#moving-an-existing-installation)を参照してください。
 3. `chrome://extensions`または`edge://extensions`を開きます。
-4. **デベロッパーモード**を有効にし、**パッケージ化されていない拡張機能を読み込む**を選び、`manifest.json`を含む展開先フォルダーを指定します。
+4. **デベロッパーモード**を有効にし、**パッケージ化されていない拡張機能を読み込む**を選び、`manifest.json`を含む展開先フォルダーを指定します。その後も**デベロッパーモード**はオンのままにしてください。オフにすると、Chromeはパッケージ化されていない拡張機能を無効にします。
 5. Chrome 138以降では拡張機能の**詳細**ページを開き、**ユーザースクリプトを許可**を有効にします。Chrome 130～137では、代わりに全体の**デベロッパーモード**スイッチを使用します。インストール後にいずれかのスイッチを変更した場合は、拡張機能カードの**再読み込み**をクリックし、Service Workerのコンテキストに新しいAPI状態を認識させてください。これにより、対応するインポート済みコスメティックフィルタと、同梱許可リスト内のスクリプトレットを登録できます。Chromeの[`userScripts`ガイド](https://developer.chrome.com/docs/extensions/reference/api/userScripts)も参照してください。
 
 > [!NOTE]
-> サイドロードした拡張機能はChrome Web Store経由では更新されません。[Releases](https://github.com/kayurachann/uBlock-Plus/releases)を確認し、新しいバージョンが公開されたら展開済みビルドを置き換えてください。このリポジトリのアーティファクトだけをインストールし、提供されるSHA-256チェックサムを検証してください。
+> どのインストール環境でも、約6時間ごとに`api.github.com`で新しいリリースの有無が確認されます。閲覧データは送信されません。Windowsでは、1.2.0以降に同梱されたアップデーターが新しいバージョンを自動的にインストールします。設定は一度だけです。読み込んだ拡張機能フォルダー内の`updater\install-updater.cmd`をダブルクリックし（管理者権限は不要）、**ダッシュボード → 設定 → アップデート**で**アップデーターを許可**を選択します。Chromeがネイティブアプリケーションとの通信の許可を求めたら許可してください。その後uBlock Plus+が一度だけ再起動し、**アップデート**セクションを再び開きます。代わりに**今すぐ再起動**が表示された場合は、それを選択してください。以降の新しいバージョンは、ダウンロード後にSHA-256チェックサムと拡張機能の同一性を検証し、以前のバージョンをバックアップしたうえでインストールされます。フォルダーにuBlock Plus+に含まれないファイルがある間、アップデーターは何も変更しません。アップデーターを使わない場合（macOSやLinuxなど）は[Releases](https://github.com/kayurachann/uBlock-Plus/releases)を確認し、フォルダーの中身を新しいバージョンに置き換えてから拡張機能を再読み込みしてください。そのフォルダーのアップデーターを削除するには、コマンドプロンプトで`"%LOCALAPPDATA%\uBlockPlus\Extension\updater\install-updater.cmd" -Uninstall`を実行します（別のフォルダーの場合はそのパスを使います）。ブラウザーへの登録は、ほかに登録済みのインストールが残っていない場合にだけ削除されます。このリポジトリのアーティファクトだけをインストールし、提供されるSHA-256チェックサムを検証してください。詳細とトラブルシューティングは[AUTO-UPDATE.md](AUTO-UPDATE.md)を参照してください。
+
+手順1と2、およびアップデーターの設定は、次のPowerShellコマンドでまとめて行うこともできます。最新のリリースを`%LOCALAPPDATA%\uBlockPlus\Extension`にダウンロードします。このフォルダーは空か、まだ存在しない必要があります。その後、このフォルダーをパッケージ化されていない拡張機能として読み込み、**アップデーターを許可**を選択してください。
+
+```powershell
+$installer = Join-Path $env:TEMP 'install-updater.ps1'
+Invoke-WebRequest -UseBasicParsing https://raw.githubusercontent.com/kayurachann/uBlock-Plus/main/platform/mv3/updater/install-updater.ps1 -OutFile $installer
+powershell -ExecutionPolicy Bypass -File $installer
+```
 
 <details>
 <summary><strong>Windowsでリリースのチェックサムを検証</strong></summary>
 
 ```powershell
-(Get-FileHash .\uBlock-Plus_1.0.0.chromium.zip -Algorithm SHA256).Hash
-Get-Content .\uBlock-Plus_1.0.0.chromium.zip.sha256
+(Get-FileHash .\uBlock-Plus_1.2.0.chromium.zip -Algorithm SHA256).Hash
+Get-Content .\uBlock-Plus_1.2.0.chromium.zip.sha256
 ```
 
 16進ハッシュは一致していなければなりません（大文字と小文字は区別されません）。
@@ -161,6 +169,8 @@ Get-Content .\uBlock-Plus_1.0.0.chromium.zip.sha256
 ```powershell
 git clone --recurse-submodules https://github.com/kayurachann/uBlock-Plus.git
 cd uBlock-Plus
+# Windowsは既定で署名のないローカルスクリプトをブロックします。このウィンドウでのみ許可します。
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 $version = (Get-Content -Raw package.json | ConvertFrom-Json).version
 .\tools\make-mv3.ps1 -Platform chromium -Version $version
 ```
@@ -206,7 +216,7 @@ tools/make-mv3.sh chromium "$VERSION"
 | リモートソース | HTTPSカタログとリストは上限付きデータとして解析され、リダイレクト、不正なスキーマ、実行可能なペイロードは拒否されます。 |
 | Filter Storeの信頼性 | 組み込み項目とカスタム項目には信頼レベルが表示されます。コミュニティでの人気だけで項目が`verified`に昇格することはありません。 |
 | 拡張機能コード | JavaScript、スクリプトレット、リダイレクトリソースは、レビュー済みの拡張機能パッケージ内に同梱され、実行時URLから取得されることはありません。 |
-| 権限 | 中核となるフィルタリング権限は文書化されています。Chromeの`privacy`権限は、ユーザーが該当する制御を有効にした場合にだけ要求され、取り消せます。 |
+| 権限 | 中核となるフィルタリング権限は文書化されています。Chromeの`privacy`権限は、ユーザーが該当する制御を有効にした場合にだけ要求され、取り消せます。任意の`nativeMessaging`権限は、ユーザーが**アップデーターを許可**を選択したときにだけ要求されます。 |
 | ローカルデータ | 設定、コンパイル済みフィルタ、ストレージ容量の診断は、ユーザーが明示的にエクスポートしない限り端末内に留まります。 |
 | リリースの完全性 | CIはChromiumアーティファクトをビルドして検証し、リリースにはSHA-256チェックサムが含まれます。 |
 
@@ -216,7 +226,7 @@ tools/make-mv3.sh chromium "$VERSION"
 
 | 現在利用可能 | MV3による制約 | 将来の研究—任意 |
 | --- | --- | --- |
-| DNRネットワークブロック、コスメティックフィルタリング、同梱スクリプトレット、カスタム／インポートリスト、Filter Store、ピッカー／ザッパー、コンテキスト対応のホスト別ポップアップポリシー、同梱stock `$popup`ルールと対応するインポート済み`$popup`／`$popunder`サブセットのオブザーバー実行（realm・ソース行・種別のみの秘匿化された来歴）、バックアップ／復元 | リクエストのライブログ、プロシージャルフィルタ、非同期ポップアップ監視、動的ファイアウォールの意味論、レスポンスヘッダー操作、リダイレクト動作はMV2と完全には同等ではありません | Managed Enterpriseアダプターと、別途インストールするオープンソースのネイティブコンパニオン。RFC、同意、セキュリティレビューが前提です |
+| DNRネットワークブロック、コスメティックフィルタリング、同梱スクリプトレット、カスタム／インポートリスト、Filter Store、ピッカー／ザッパー、コンテキスト対応のホスト別ポップアップポリシー、同梱stock `$popup`ルールと対応するインポート済み`$popup`／`$popunder`サブセットのオブザーバー実行（realm・ソース行・種別のみの秘匿化された来歴）、バックアップ／復元 | リクエストのライブログ、プロシージャルフィルタ、非同期ポップアップ監視、動的ファイアウォールの意味論、レスポンスヘッダー操作、リダイレクト動作はMV2と完全には同等ではありません | Managed Enterpriseアダプターと、別途インストールするフィルタリング用（DNS／プロキシなど）のオープンソースのネイティブコンパニオン。RFC、同意、セキュリティレビューが前提です。現在出荷されているネイティブコンポーネントは、ユーザー自身がインストールする任意のWindows用アップデーター（1.2.0以降）だけです |
 
 対応しているインポート済みポップアップフィルタのサブセットは、オブザーバーランタイムで適用されます。`domainType`、`requestMethods`、`responseHeaders`など正確に表現できない条件は近似せず、明示的に保留されます。保留された`allow`条件は保守的なfail-openガードとして保持され、ガードができるのは判断の保留だけで、近似的な許可やブロックは行いません。適用はMV3の非同期なタブ／ナビゲーションイベントに従うため、MV2の同期処理と完全に同等ではありません。動的DNRルールとセッションDNRルールは単一の1,000件のregex枠を共有し、それぞれが1,000件を持つわけではありません。
 
@@ -250,7 +260,7 @@ tools/make-mv3.sh chromium "$VERSION"
 <td valign="top">
 
 - Managed Enterpriseアダプター
-- 任意のネイティブコンパニオンの調査
+- フィルタリング用の任意のネイティブコンパニオンの調査
 - 署名付きカタログの来歴と失効
 
 </td>

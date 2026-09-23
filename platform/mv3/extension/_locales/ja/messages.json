@@ -1061,5 +1061,729 @@
   },
   "popupRecentBlocks": {
     "message": "このサイトで最近ブロックしたポップアップ: $1 件"
+  },
+  "autoUpdateSectionLabel": {
+    "message": "アップデート",
+    "description": "Dashboard settings: heading of the automatic update section"
+  },
+  "autoUpdateDescription": {
+    "message": "uBlock Plus+ は GitHub Releases で新しいバージョンを確認し、任意の Windows アップデーターを使えば再インストールせずにインストールできます。確認時は api.github.com に 1 件のリクエストを送るだけで、閲覧データは送信しません。",
+    "description": "Dashboard settings: explanation of automatic updates and their network use"
+  },
+  "autoUpdateCheckLabel": {
+    "message": "新しいバージョンを自動的に確認する",
+    "description": "Dashboard settings: checkbox to enable periodic update checks"
+  },
+  "autoUpdateInstallLabel": {
+    "message": "新しいバージョンが見つかったとき：",
+    "description": "Dashboard settings: label of the install mode selector"
+  },
+  "autoUpdateInstallAuto": {
+    "message": "自動的にインストールする",
+    "description": "Dashboard settings: install mode option"
+  },
+  "autoUpdateInstallNotify": {
+    "message": "通知のみ",
+    "description": "Dashboard settings: install mode option"
+  },
+  "autoUpdateChannelLabel": {
+    "message": "リリースチャンネル：",
+    "description": "Dashboard settings: label of the release channel selector"
+  },
+  "autoUpdateChannelPreview": {
+    "message": "プレビュー（プレリリースを含む）",
+    "description": "Dashboard settings: release channel option"
+  },
+  "autoUpdateChannelStable": {
+    "message": "安定版のみ",
+    "description": "Dashboard settings: release channel option"
+  },
+  "autoUpdateCheckNow": {
+    "message": "今すぐ確認",
+    "description": "Dashboard settings: button that checks for updates immediately"
+  },
+  "autoUpdateInstallNow": {
+    "message": "今すぐインストール",
+    "description": "Dashboard settings: button that installs the available update"
+  },
+  "autoUpdateReleaseNotes": {
+    "message": "リリースノート",
+    "description": "Dashboard settings: link to the release page of the available version"
+  },
+  "autoUpdateGrantButton": {
+    "message": "アップデーターを許可",
+    "description": "Dashboard settings: button requesting the optional nativeMessaging permission"
+  },
+  "autoUpdateSetupSteps": {
+    "message": "Windows での初回のみの設定：「パッケージ化されていない拡張機能を読み込む」で選んだフォルダを開き、updater\\install-updater.cmd をダブルクリックしてから、ここで「アップデーターを許可」を選択します。それでもアクセスが拒否される場合は、そのフォルダで次のコマンドを実行してください：",
+    "description": "Dashboard settings: one-time setup instructions for the Windows updater"
+  },
+  "autoUpdateCopy": {
+    "message": "コピー",
+    "description": "Dashboard settings: copy the setup command to the clipboard"
+  },
+  "autoUpdateCopied": {
+    "message": "コピーしました",
+    "description": "Dashboard settings: confirmation after copying the setup command"
+  },
+  "autoUpdateRollback": {
+    "message": "バージョン $1 に戻す",
+    "description": "Dashboard settings: button restoring the previous version. $1 is a version number"
+  },
+  "autoUpdateDevBuild": {
+    "message": "開発ビルド $1：自動アップデートは無効です。",
+    "description": "Dashboard settings: status for local development builds. $1 is the version"
+  },
+  "autoUpdateApplying": {
+    "message": "$1 をインストール中…",
+    "description": "Dashboard settings: files are being replaced. $1 is the version"
+  },
+  "autoUpdatePreparing": {
+    "message": "$1 のインストールを準備中…",
+    "description": "Dashboard settings: update is starting. $1 is the version"
+  },
+  "autoUpdateAvailable": {
+    "message": "バージョン $1 が利用可能です（インストール済み：$2）。",
+    "description": "Dashboard settings: a newer version exists. $1 new version, $2 installed version"
+  },
+  "autoUpdateUpToDate": {
+    "message": "バージョン $1 は最新です。最終確認：$2。",
+    "description": "Dashboard settings: no newer version. $1 installed version, $2 date and time of the last check"
+  },
+  "autoUpdateNeverChecked": {
+    "message": "インストール済みのバージョン：$1。まだアップデートを確認していません。",
+    "description": "Dashboard settings: no check has run yet. $1 installed version"
+  },
+  "autoUpdateManagedInstall": {
+    "message": "このコピーはパッケージとしてインストールされています。更新はブラウザまたは管理者が管理します。",
+    "description": "Dashboard settings: the extension was not loaded unpacked"
+  },
+  "autoUpdatePermissionNeeded": {
+    "message": "自動インストールには Windows アップデーターとあなたの許可が必要です。",
+    "description": "Dashboard settings: automatic installation is not set up yet"
+  },
+  "autoUpdateConnectedAuto": {
+    "message": "アップデーター $1 に接続済み。新しいバージョンは自動的にインストールされ、拡張機能は自動で再読み込みされます。",
+    "description": "Dashboard settings: updater connected, automatic mode. $1 updater version"
+  },
+  "autoUpdateConnectedNotify": {
+    "message": "アップデーター $1 に接続済み。新しいバージョンが利用可能になったら「今すぐインストール」を選択してください。",
+    "description": "Dashboard settings: updater connected, notify-only mode. $1 updater version"
+  },
+  "autoUpdateUpdated": {
+    "message": "$1 から $2 にアップデートしました。",
+    "description": "Dashboard settings: result of the last update. $1 previous version, $2 new version"
+  },
+  "autoUpdateRolledBack": {
+    "message": "バージョン $2 に戻しました（以前：$1）。",
+    "description": "Dashboard settings: result of a rollback. $1 version before, $2 restored version"
+  },
+  "autoUpdatePermissionDenied": {
+    "message": "権限は許可されませんでした。",
+    "description": "Dashboard settings: the permission request was declined"
+  },
+  "autoUpdateErrorMissing": {
+    "message": "Windows アップデーターはまだインストールされていません。",
+    "description": "Dashboard settings: native updater not registered"
+  },
+  "autoUpdateErrorForbidden": {
+    "message": "アップデーターは別の拡張機能フォルダまたは ID 用に登録されています。下のコマンドを実行してください。",
+    "description": "Dashboard settings: native updater registered for another extension ID"
+  },
+  "autoUpdateErrorFailed": {
+    "message": "アップデーターが予期せず停止しました。詳細は %LOCALAPPDATA%\\uBlockPlus\\Updater\\updater.log にあります。",
+    "description": "Dashboard settings: native updater crashed or exited"
+  },
+  "autoUpdateErrorChecksum": {
+    "message": "ダウンロードしたパッケージが公開されたチェックサムと一致しなかったため、破棄しました。",
+    "description": "Dashboard settings: package checksum mismatch"
+  },
+  "autoUpdateErrorRateLimited": {
+    "message": "GitHub がリクエストを制限しています。次の確認まで待機します。",
+    "description": "Dashboard settings: GitHub API rate limit"
+  },
+  "autoUpdateErrorNetwork": {
+    "message": "GitHub に接続できませんでした。次の確認で再試行します。",
+    "description": "Dashboard settings: network failure during a check"
+  },
+  "autoUpdateErrorReload": {
+    "message": "拡張機能は再読み込みされましたが、バージョンが変わっていません。アップデーターのログを確認してください。",
+    "description": "Dashboard settings: after reload the version did not change"
+  },
+  "autoUpdateErrorInterrupted": {
+    "message": "前回のアップデートは完了前に中断されました。",
+    "description": "Dashboard settings: the previous update did not finish"
+  },
+  "autoUpdateErrorGeneric": {
+    "message": "アップデートの問題：$1",
+    "description": "Dashboard settings: other update error. $1 is the error message"
+  },
+  "autoUpdatePopupAvailable": {
+    "message": "更新 $1",
+    "description": "Popup: compact indicator that a newer version is available. $1 is the version"
+  },
+  "autoUpdatePopupAvailableTitle": {
+    "message": "バージョン $1 が利用可能です。アップデート設定を開きます。",
+    "description": "Popup: tooltip of the update indicator. $1 is the version"
+  },
+  "firewallTitle": {
+    "message": "動的ファイアウォール",
+    "description": "Dynamic firewall panel heading in Site rules"
+  },
+  "firewallDescription": {
+    "message": "1 行に 1 つ: 送信元 宛先 種類 動作。* はすべてのホスト名を表します。block はブロック、allow は許可、noop はファイアウォールだけを迂回し、フィルターリストは引き続き適用されます。",
+    "description": "Dynamic firewall rule syntax. Keep *, block, allow and noop untranslated."
+  },
+  "firewallScope": {
+    "message": "Chrome 145 以降で、iframe を含むタブ内のネットワークリクエストに適用されます。「フィルタリングなし」モードが優先されます。インラインスクリプト、メインページのナビゲーション、タブ外のリクエストは対象外です。1p/3p ルールは最上位ページと Public Suffix List を使用します。新しいサイトでは、Chrome が範囲を更新する間に最初のリクエストが通過することがあります。",
+    "description": "Dynamic firewall coverage and limits. Quote the no-filtering mode by its filteringMode0Name label."
+  },
+  "firewallValidate": {
+    "message": "検証",
+    "description": "Button: check the firewall draft without applying it"
+  },
+  "firewallApplySession": {
+    "message": "このセッションに適用",
+    "description": "Button: apply firewall rules until the browser session ends"
+  },
+  "firewallSavePermanent": {
+    "message": "永続的に保存",
+    "description": "Button: save firewall rules across browser restarts"
+  },
+  "firewallLoadPermanent": {
+    "message": "永続ルールを読み込む",
+    "description": "Button: load the saved permanent firewall rules into the editor"
+  },
+  "firewallImportFile": {
+    "message": "ファイルをインポート",
+    "description": "Button: import firewall rules from a text file"
+  },
+  "firewallExportFile": {
+    "message": "ファイルをエクスポート",
+    "description": "Button: export the firewall editor text to a file"
+  },
+  "firewallStatusRules": {
+    "message": "有効な Chrome ルール: $1 件。このセッションで認識したドメイン: $2 件。",
+    "description": "Firewall status. $1: active native Chrome rules; $2: registrable domains recognized in this browser session"
+  },
+  "firewallStatusDeferred": {
+    "message": "$1 個のセルはページの文脈が必要です。推測によるブロックは行いません。",
+    "description": "Firewall status. $1: cells that need to know the top page before deciding 1p/3p"
+  },
+  "firewallStatusOmitted": {
+    "message": "Chrome のルール上限に達しました。1p/3p セルは、最近認識した $1 個のドメインにのみ適用されます。",
+    "description": "Firewall status when Chrome's session-rule limit forced older learned domains out. $1: domains still covered"
+  },
+  "firewallStatusScopeError": {
+    "message": "新しく訪れたドメインを 1p/3p の範囲に追加できませんでした: $1",
+    "description": "Firewall status when a newly visited domain could not be added to the native 1p/3p scope. $1: technical error message"
+  },
+  "firewallStatusTemporary": {
+    "message": "一時ルールが有効です。",
+    "description": "Firewall status: session-only rules are active"
+  },
+  "firewallStatusPermanent": {
+    "message": "永続ルールが有効です。",
+    "description": "Firewall status: saved permanent rules are active"
+  },
+  "firewallPreviewRules": {
+    "message": "検証済み: 予定される Chrome ルール $1 件。",
+    "description": "Result of validating a firewall draft. $1: proposed native Chrome rules"
+  },
+  "firewallPreviewOmitted": {
+    "message": "Chrome のルール上限に収めるため、認識済みの $1 個のドメインが 1p/3p の範囲から外れます。",
+    "description": "Validation notice. $1: recognized domains that would leave the 1p/3p scope to fit Chrome's rule limit"
+  },
+  "firewallUnsupported": {
+    "message": "ファイアウォールには Chrome 145 以降が必要です。既存のフィルタリングは引き続き利用できます。",
+    "description": "Shown when the browser lacks the native conditions the firewall needs"
+  },
+  "firewallPermanentLoaded": {
+    "message": "永続ルールを下書きに読み込みました。有効にするには適用してください。",
+    "description": "Shown after loading permanent firewall rules into the editor"
+  },
+  "firewallImportTooLarge": {
+    "message": "ファイルサイズの上限: 128 KiB",
+    "description": "Error when an imported firewall file is too large"
+  },
+  "firewallTestTitle": {
+    "message": "ルールをテストして説明",
+    "description": "Heading of the firewall request tester"
+  },
+  "firewallTestScope": {
+    "message": "現在の「フィルタリングなし」設定でエディターの下書きをテストします。リクエストは送信されず、URL は保存されず、保護も変わりません。説明するのはファイアウォールだけで、すべてのフィルターリスト、ブラウザーの権限、割り当て、適用のタイミングはシミュレートしません。",
+    "description": "Explains what the firewall tester does and does not simulate. Quote the no-filtering mode by its filteringMode0Name label."
+  },
+  "firewallTestSource": {
+    "message": "最上位ページ: ホスト名または HTTP(S) URL",
+    "description": "Firewall tester field label for the top-level page"
+  },
+  "firewallTestDestination": {
+    "message": "宛先リソース: ホスト名または HTTP(S) URL",
+    "description": "Firewall tester field label for the requested resource"
+  },
+  "firewallTestType": {
+    "message": "リクエストの種類",
+    "description": "Firewall tester field label for the request type"
+  },
+  "firewallTestRequest": {
+    "message": "リクエストをテスト",
+    "description": "Button: run the firewall tester"
+  },
+  "firewallTestChanged": {
+    "message": "入力が変更されました。もう一度テストしてください。",
+    "description": "Firewall tester: inputs changed while a test was running"
+  },
+  "firewallTestFirstParty": {
+    "message": "ファーストパーティ (1p)",
+    "description": "Firewall tester result: same party as the top page"
+  },
+  "firewallTestThirdParty": {
+    "message": "サードパーティ (3p)",
+    "description": "Firewall tester result: different party from the top page"
+  },
+  "firewallOutcomeBlock": {
+    "message": "下書き: block — 優先されたセルはブロックを指定しています。",
+    "description": "Firewall tester outcome. Keep block untranslated."
+  },
+  "firewallOutcomeAllow": {
+    "message": "下書き: allow — 優先されたセルは許可を指定しています。",
+    "description": "Firewall tester outcome. Keep allow untranslated."
+  },
+  "firewallOutcomeNoop": {
+    "message": "下書き: noop — ファイアウォールを迂回します。フィルターリストによるブロックは引き続き起こり得ます。",
+    "description": "Firewall tester outcome. Keep noop untranslated."
+  },
+  "firewallOutcomeNoMatch": {
+    "message": "一致するファイアウォールのセルはありません。フィルターリストによるブロックは引き続き起こり得ます。",
+    "description": "Firewall tester outcome when no cell matches"
+  },
+  "firewallOutcomeOff": {
+    "message": "このページには「フィルタリングなし」が適用され、ファイアウォールの下書きより優先されます。",
+    "description": "Firewall tester outcome when the site is in the no-filtering mode. Quote the mode by its filteringMode0Name label."
+  },
+  "firewallOutcomeUnknown": {
+    "message": "モードまたはドメインの文脈が利用できません。推測による判定は行いません (fail-open)。",
+    "description": "Firewall tester outcome when mode or party information is unavailable"
+  },
+  "loggerTitle": {
+    "message": "ロガー",
+    "description": "Logger page title"
+  },
+  "loggerIntro": {
+    "message": "1 つのタブの診断情報を記録します。記録はこの拡張機能のセッション内だけに保持され、最後のロガーを閉じると消去されます。アップロードや閲覧履歴の保存は行いません。",
+    "description": "Logger page introduction"
+  },
+  "loggerTab": {
+    "message": "タブ",
+    "description": "Logger label for the browser tab selector"
+  },
+  "loggerStart": {
+    "message": "記録を開始",
+    "description": "Logger button: start capturing"
+  },
+  "loggerPause": {
+    "message": "一時停止",
+    "description": "Logger button: pause capturing"
+  },
+  "loggerClear": {
+    "message": "消去",
+    "description": "Logger button: clear records"
+  },
+  "loggerExport": {
+    "message": "秘匿化した JSON をエクスポート",
+    "description": "Logger button: export redacted records as JSON"
+  },
+  "loggerSearch": {
+    "message": "検索",
+    "description": "Logger search field label"
+  },
+  "loggerSearchPlaceholder": {
+    "message": "URL、ルール ID、セレクター、ソース",
+    "description": "Logger search field placeholder"
+  },
+  "loggerKind": {
+    "message": "種類",
+    "description": "Logger event-kind filter label"
+  },
+  "loggerKindAll": {
+    "message": "すべてのイベント",
+    "description": "Logger event-kind filter: all events"
+  },
+  "loggerKindNetwork": {
+    "message": "ネットワーク",
+    "description": "Logger event kind: browser network observation"
+  },
+  "loggerKindDnr": {
+    "message": "ネイティブ DNR の一致",
+    "description": "Logger event kind: native declarativeNetRequest rule matches"
+  },
+  "loggerKindCosmetic": {
+    "message": "要素隠蔽",
+    "description": "Logger event kind: cosmetic filtering"
+  },
+  "loggerKindDom": {
+    "message": "DOM",
+    "description": "Logger event kind: DOM diagnostics"
+  },
+  "loggerKindScriptlet": {
+    "message": "スクリプトレット",
+    "description": "Logger event kind: scriptlets"
+  },
+  "loggerKindSystem": {
+    "message": "システム",
+    "description": "Logger event kind: system events"
+  },
+  "loggerColumnKind": {
+    "message": "種類 / 段階",
+    "description": "Logger table column: event kind and phase"
+  },
+  "loggerColumnSource": {
+    "message": "根拠の取得元",
+    "description": "Logger table column: which API produced the evidence"
+  },
+  "loggerColumnDetail": {
+    "message": "リクエスト / 診断",
+    "description": "Logger table column: request or diagnostic details"
+  },
+  "loggerInitial": {
+    "message": "記録はオフです。タブを選んで開始してください。",
+    "description": "Logger status before capture starts"
+  },
+  "loggerSummary": {
+    "message": "このロガーで証明できること",
+    "description": "Logger heading of the evidence explanation"
+  },
+  "loggerDetailNetwork": {
+    "message": "ネットワークはブラウザーによる読み取り専用の観測で、完了したリクエストも含みます。エラーだけではどの拡張機能がブロックしたかは特定できません。ブラウザーが隠すリクエストや、観測前に遮断された一部のリクエストは表示されないことがあります。",
+    "description": "Logger evidence explanation: network events"
+  },
+  "loggerDetailDnr": {
+    "message": "ネイティブ DNR の一致は、Chrome が選んだこの拡張機能のルールを示します。ルール本文の取得は別処理で、アトミックではありません。利用可否は Chrome のフィードバック API とインストール形態によります。",
+    "description": "Logger evidence explanation: native DNR matches"
+  },
+  "loggerDetailCosmetic": {
+    "message": "要素隠蔽はスタイルシートが挿入されたことを示すだけで、要素が隠れたことの証明にはなりません。DOM は実際に適用された手続き型フィルターと、CSS セレクターに一致する要素があるというスナップショットを区別します。スナップショットは 1 つのスタイルシートにつき最大 32 個のセレクターグループを調べ、表示状態やメディア条件の有効化は証明しません。報告はフレームごとに毎秒 32 件までで、オブザーバーの読み込み前の効果は対象外です。",
+    "description": "Logger evidence explanation: cosmetic and DOM events"
+  },
+  "loggerDetailScriptlet": {
+    "message": "スクリプトレットの報告は、登録と例外・フォールバック処理を対象とします。このビルドは実行試行の報告を出さず、個々のスクリプトレットの効果も確認しません。ページからのメッセージは MAIN ワールドで実行された信頼できる証拠ではありません。全体の登録イベントはタブ −1 を使用します。",
+    "description": "Logger evidence explanation: scriptlets"
+  },
+  "loggerDetailCapture": {
+    "message": "記録を開始すると、任意のネットワーク観測権限を求めます。拒否しても、利用可能な DNR とコンテンツの診断は使えます。記録は最大 4 つのロガーウィンドウ全体で最大 512 件保持されます。タブを閉じるか一時停止すると収集は止まり、ロガーウィンドウを閉じると、ほかの開いているロガーウィンドウに表示されていない記録は消去されます。Chrome がワーカーを停止し、この一時的な履歴を消去することがあります。",
+    "description": "Logger evidence explanation: permission, limits and record lifetime"
+  },
+  "loggerDetailExport": {
+    "message": "表示中の URL には個人的なクエリ文字列が含まれることがあります。エクスポートでは認証情報、クエリ文字列、フラグメント、診断の自由記述を取り除きますが、URL のパスには個人を特定できる情報が残る場合があります。共有する前にエクスポートしたファイルを確認してください。",
+    "description": "Logger evidence explanation: private data and export redaction"
+  },
+  "loggerEmpty": {
+    "message": "まだイベントはありません。記録を開始してから、選択したページを再読み込みするか操作してください。",
+    "description": "Logger placeholder when there are no events"
+  },
+  "loggerCapturing": {
+    "message": "記録中です。",
+    "description": "Logger status: capturing"
+  },
+  "loggerPaused": {
+    "message": "一時停止中です。",
+    "description": "Logger status: paused"
+  },
+  "loggerNetworkAttached": {
+    "message": "ネットワーク観測: 接続済み。",
+    "description": "Logger state: browser network observation is attached"
+  },
+  "loggerNetworkUnavailable": {
+    "message": "ネットワーク観測: 利用できません。",
+    "description": "Logger state: browser network observation is unavailable"
+  },
+  "loggerNativeAttached": {
+    "message": "ネイティブ DNR リスナー: 接続済み。",
+    "description": "Logger state: native DNR match listener is attached"
+  },
+  "loggerNativeUnavailable": {
+    "message": "ネイティブ DNR リスナー: 利用できません。",
+    "description": "Logger state: native DNR match listener is unavailable"
+  },
+  "loggerRecordCount": {
+    "message": "記録 $1/$2 件。破棄した古い記録 $3 件。",
+    "description": "Logger counters. $1: records shown; $2: record limit; $3: older records discarded"
+  },
+  "loggerTabFrame": {
+    "message": "タブ $1、フレーム $2",
+    "description": "Logger row context. $1: browser tab ID; $2: frame ID"
+  },
+  "loggerPermissionRefused": {
+    "message": "ネットワーク権限が許可されませんでした。ほかの診断は引き続き利用できます。",
+    "description": "Logger status when the optional network permission was refused"
+  },
+  "loggerDisconnected": {
+    "message": "ロガーとの接続が終了しました。一時的な履歴は消去されました。再接続するには記録を開始してください。",
+    "description": "Logger status after the connection to the extension ended"
+  },
+  "loggerPhaseRequested": {
+    "message": "リクエスト開始",
+    "description": "Logger event phase: a network request started (English keeps the technical phase name)"
+  },
+  "loggerPhaseCompleted": {
+    "message": "完了",
+    "description": "Logger event phase: a network request completed (English keeps the technical phase name)"
+  },
+  "loggerPhaseError": {
+    "message": "エラー",
+    "description": "Logger event phase: a network request failed (English keeps the technical phase name)"
+  },
+  "loggerPhaseRedirected": {
+    "message": "リダイレクト",
+    "description": "Logger event phase: a network request was redirected (English keeps the technical phase name)"
+  },
+  "loggerPhaseBlocked": {
+    "message": "ブロック済み",
+    "description": "Logger event phase: the optional webRequest firewall supplement canceled a network request (English keeps the technical phase name)"
+  },
+  "loggerPhaseMatched": {
+    "message": "ルール一致",
+    "description": "Logger event phase: a native rule matched (English keeps the technical phase name)"
+  },
+  "loggerPhaseStylesheetInserted": {
+    "message": "スタイルシート挿入",
+    "description": "Logger event phase: a cosmetic stylesheet was inserted (English keeps the technical phase name)"
+  },
+  "loggerPhaseSelectorPresent": {
+    "message": "セレクターに一致あり",
+    "description": "Logger event phase: a CSS selector matched elements in a snapshot (English keeps the technical phase name)"
+  },
+  "loggerPhaseProceduralApplied": {
+    "message": "手続き型フィルター適用",
+    "description": "Logger event phase: a procedural cosmetic filter was applied (English keeps the technical phase name)"
+  },
+  "loggerPhaseRegistered": {
+    "message": "登録済み",
+    "description": "Logger event phase: scriptlets were registered (English keeps the technical phase name)"
+  },
+  "loggerPhaseExceptionApplied": {
+    "message": "例外適用",
+    "description": "Logger event phase: a scriptlet exception was applied (English keeps the technical phase name)"
+  },
+  "loggerRequestId": {
+    "message": "リクエスト $1",
+    "description": "Logger row detail. $1: browser request ID"
+  },
+  "loggerLanguageTag": {
+    "message": "ja",
+    "description": "Not displayed. BCP 47 language tag of this catalog, used as the lang attribute of the logger page"
+  },
+  "pickerQuit": {
+    "message": "終了",
+    "description": "Tooltip and accessible name for the close button of the element picker and custom-filter remover (unpicker) panels"
+  },
+  "restoreSucceeded": {
+    "message": "設定を復元しました。",
+    "description": "Dashboard status after a backup file was restored"
+  },
+  "restoreFailed": {
+    "message": "設定を復元できませんでした: $1",
+    "description": "Dashboard status when restoring a backup failed; $1 is the technical reason"
+  },
+  "backupFailed": {
+    "message": "バックアップを作成できませんでした: $1",
+    "description": "Dashboard status when creating a backup file failed; $1 is the technical reason"
+  },
+  "resetSucceeded": {
+    "message": "デフォルトの設定に戻しました。",
+    "description": "Dashboard status after all settings were reset to their defaults"
+  },
+  "resetFailed": {
+    "message": "設定をリセットできませんでした: $1",
+    "description": "Dashboard status when resetting settings failed; $1 is the technical reason"
+  },
+  "restoreFirewallUnsupported": {
+    "message": "ファイアウォールルールは復元されませんでした。このブラウザーは対応していません（Chrome 145 以降が必要です）。",
+    "description": "Restore warning: the backup contains firewall rules, which this browser version cannot use"
+  },
+  "restoreImportedListsDisabled": {
+    "message": "インポートしたリスト $1 件は復元されましたが、無効のままです。有効なリストのソースデータは合計 20 MiB までです。",
+    "description": "Restore warning; $1 is the number of imported filter lists which were restored but not enabled"
+  },
+  "restoreImportedListsSkipped": {
+    "message": "インポートしたリスト $1 件を復元できませんでした。対応するのは、認証情報を含まない HTTPS アドレスのリスト最大 32 件です。",
+    "description": "Restore warning; $1 is the number of imported filter lists which could not be restored"
+  },
+  "restoreFilteringModesLocked": {
+    "message": "フィルタリングモードは変更されていません。管理者が管理しています。",
+    "description": "Restore or reset warning: the managed disabledFeatures policy includes filteringMode, so the site filtering modes were not changed"
+  },
+  "restoreDeveloperLocked": {
+    "message": "開発者モードと独自DNRルールは変更されていません。管理者が開発者向け機能を無効にしています。",
+    "description": "Restore or reset warning: the managed disabledFeatures policy includes develop, so developer mode and custom DNR rules were not changed"
+  },
+  "defaultFilteringModeFailed": {
+    "message": "デフォルトのフィルタリングモードを変更できませんでした: $1",
+    "description": "Dashboard status when changing the default filtering mode failed; $1 is the technical reason"
+  },
+  "customFiltersSaveFailed": {
+    "message": "カスタムフィルターを保存できませんでした: $1",
+    "description": "Dashboard status when saving My filters or the filter sandbox failed; $1 is the technical reason"
+  },
+  "siteRulesInvalidHostname": {
+    "message": "「$1」は有効なホスト名ではありません。1 行に 1 つのホスト名を、ワイルドカード、パス、「https://」なしで入力してください。",
+    "description": "Site rules validation error; $1 is the rejected line exactly as typed"
+  },
+  "siteRulesDuplicateHostname": {
+    "message": "「$1」が複数のフィルタリングレベルに指定されています。1 つのホスト名は 1 つのレベルにのみ指定できます。",
+    "description": "Site rules validation error; $1 is a hostname listed in more than one filtering level"
+  },
+  "siteRulesDefaultRequired": {
+    "message": "「$1」の行をちょうど 1 つ残してください。この行が、他のすべてのサイトのデフォルトのフィルタリングレベルを決めます。",
+    "description": "Site rules validation error; $1 is the literal token all-urls, which must not be translated"
+  },
+  "siteRulesChangedElsewhere": {
+    "message": "このページで読み込んだ後に、サイト別ルールが別の場所で変更されました。編集内容は保持されています。もう一度保存するとその変更を上書きします。編集を破棄するにはページを再読み込みしてください。",
+    "description": "Site rules conflict: the stored rules changed after the page loaded them; the user's edits were not saved"
+  },
+  "siteRulesSaveFailed": {
+    "message": "サイト別ルールを保存できませんでした: $1",
+    "description": "Dashboard status when valid site rules could not be saved; $1 is the technical reason"
+  },
+  "webRequestSetupTitle": {
+    "message": "試験運用版ネットワークファイアウォール",
+    "description": "Diagnostics panel title for the optional Experimental WebRequest package"
+  },
+  "webRequestSetupExperimental": {
+    "message": "拡張機能フォルダー内の start-experimental-chrome.cmd で Chrome を開きます。初回は「パッケージ化されていない拡張機能を読み込む」でそのフォルダーを読み込んでください。ランチャーは専用のプロファイルを使います。ここに戻り「診断を更新」でアクセスを確認してください。",
+    "description": "Diagnostics setup steps shown in the Experimental WebRequest package; keep start-experimental-chrome.cmd unchanged"
+  },
+  "webRequestSetupStandard": {
+    "message": "Experimental WebRequest パッケージは、初めて訪れるドメインを含め、ファイアウォールによる直接ブロックを追加します。別パッケージをインストールし、同梱のランチャーで Chrome を開いてください。",
+    "description": "Diagnostics note in the standard package about the separate Experimental WebRequest package; keep the package name unchanged"
+  },
+  "webRequestSetupLimits": {
+    "message": "DNR フィルタリング、allow、noop は引き続き適用されます。この機能はクォータを撤廃せず、uBO の完全なエンジンも復元しません。拡張機能が Chrome の起動引数を自ら変更することはできません。",
+    "description": "Diagnostics note on the limits of the experimental firewall; keep DNR, allow, noop and uBO unchanged"
+  },
+  "webRequestSetupGuide": {
+    "message": "インストール・確認・削除ガイド",
+    "description": "Link text to the Experimental WebRequest documentation"
+  },
+  "reportGitHubConfirm": {
+    "message": "サイトのオリジンと、このページに表示されているトラブルシューティング情報を記入済みの報告を GitHub で開きます。GitHub で送信するまでは何も公開されません。続行しますか？",
+    "description": "Confirmation shown before the report page opens a prefilled public GitHub issue"
+  },
+  "reportIssueTrackerInfo": {
+    "message": "特定のウェブサイトでのフィルターの問題は <a href=\"https://github.com/kayurachann/uBlock-Plus/issues\"><code>uBlock Plus+</code> の issue tracker</a> に報告してください。<u>GitHub アカウントが必要です。</u>",
+    "description": "Report page introduction; replaces supportS3P1, which names the upstream uAssets tracker. Keep the HTML markup, including the <a href> link, and the URL unchanged"
+  },
+  "protectionProfileSelectRequired": {
+    "message": "適用する保護プロファイルを選択してください。",
+    "description": "Dashboard status when Apply profile is clicked while no protection profile is selected"
+  },
+  "editorApplyFailed": {
+    "message": "変更を適用できませんでした：$1",
+    "description": "Dashboard Advanced editors: applying the edited text failed. $1 is the error message"
+  },
+  "autoUpdateRestartRequired": {
+    "message": "権限が許可されました。アップデーターに接続するため、uBlock Plus+ を一度再起動します。",
+    "description": "Dashboard settings: permission granted, the extension must restart once"
+  },
+  "autoUpdateRestartNow": {
+    "message": "今すぐ再起動",
+    "description": "Dashboard settings: button restarting the extension to enable the updater connection"
+  },
+  "autoUpdateRestarting": {
+    "message": "再起動しています…このページは自動的に再度開きます。",
+    "description": "Dashboard settings: the extension is restarting; this page reopens automatically"
+  },
+  "autoUpdateDownloadingVersion": {
+    "message": "$1 をダウンロード中…",
+    "description": "Dashboard settings, Updates: live status while a new version downloads. $1 is the version"
+  },
+  "autoUpdateProgress": {
+    "message": "$1 / $2 MiB",
+    "description": "Dashboard settings, Updates: download progress. $1 is the downloaded size, $2 the total size, both in MiB"
+  },
+  "autoUpdateHeld": {
+    "message": "以前のバージョンに戻したため、バージョン $1 は自動ではインストールされません。それでもインストールするには「今すぐインストール」を選択してください。",
+    "description": "Dashboard settings, Updates: after the user restored an earlier version, automatic installation skips the version restored from. $1 is that version"
+  },
+  "autoUpdateCheckThrottled": {
+    "message": "前回の確認から 1 分経っていません。$1 秒後にもう一度お試しください。",
+    "description": "Dashboard settings, Updates: Check now was used again within a minute. $1 is a number of seconds"
+  },
+  "autoUpdateIncognito": {
+    "message": "アップデートはシークレット ウィンドウではなく、通常のウィンドウから管理してください。",
+    "description": "Dashboard settings, Updates: the page is open in an incognito window, where update controls are disabled"
+  },
+  "autoUpdateManualOnly": {
+    "message": "自動インストールは Windows でのみ利用できます。アップデートするには、拡張機能フォルダ内のファイルを新しいリリースのファイルに置き換えてから、拡張機能ページで uBlock Plus+ を再読み込みしてください。",
+    "description": "Dashboard settings, Updates: the native updater exists only for Windows; on other systems the user updates by hand"
+  },
+  "autoUpdatePolicyOff": {
+    "message": "管理者がアップデートの確認を無効にしています。",
+    "description": "Dashboard settings, Updates: managed storage autoUpdate is \"off\""
+  },
+  "autoUpdatePolicyNotify": {
+    "message": "管理者はアップデートの通知のみを許可しています。新しいバージョンは自動ではインストールされません。",
+    "description": "Dashboard settings, Updates: managed storage allows notifications only (autoUpdate \"notify\", or the dashboard is locked)"
+  },
+  "autoUpdateErrorPolicy": {
+    "message": "管理者によって許可されていません。",
+    "description": "Dashboard settings, Updates: an action or setting was refused by the administrator policy"
+  },
+  "autoUpdateErrorFiltersBusy": {
+    "message": "フィルターリストを更新中です。完了してからもう一度お試しください。",
+    "description": "Dashboard settings, Updates: an install, restore or restart was refused because a filter list update is running"
+  },
+  "autoUpdateErrorUpdateBusy": {
+    "message": "別のアップデートが実行中です。しばらくしてからもう一度お試しください。",
+    "description": "Dashboard settings, Updates: another install or restore (in this browser or from the command-line updater) is running"
+  },
+  "autoUpdateErrorSignature": {
+    "message": "パッケージが信頼できる uBlock Plus+ のリリース鍵で署名されていないため、インストールしませんでした。",
+    "description": "Dashboard settings, Updates: the updater found no valid signature from a trusted release key"
+  },
+  "autoUpdateErrorPackage": {
+    "message": "ダウンロードしたパッケージはこのコピー用の有効な uBlock Plus+ リリースではないため、インストールしませんでした。",
+    "description": "Dashboard settings, Updates: the downloaded package is invalid, too large, not staged, or not the expected edition or version"
+  },
+  "autoUpdateErrorUnexpectedFiles": {
+    "message": "拡張機能フォルダに uBlock Plus+ 以外のファイルがあります。それらをフォルダの外に移動してから、もう一度お試しください。何も変更されていません。",
+    "description": "Dashboard settings, Updates: the updater refused to replace a folder containing files which are not part of the extension"
+  },
+  "autoUpdateErrorNoBackup": {
+    "message": "戻せる以前のバージョンがありません。",
+    "description": "Dashboard settings, Updates: restore failed because the updater has no backup of an earlier version"
+  },
+  "autoUpdateErrorRollbackFailed": {
+    "message": "以前のバージョンに戻せませんでした。詳細は %LOCALAPPDATA%\\uBlockPlus\\Updater\\updater.log にあります。",
+    "description": "Dashboard settings, Updates: the updater could not restore the earlier version"
+  },
+  "autoUpdateErrorApplyFailed": {
+    "message": "新しいバージョンをインストールできませんでした。詳細は %LOCALAPPDATA%\\uBlockPlus\\Updater\\updater.log にあります。",
+    "description": "Dashboard settings, Updates: the updater could not back up the installed version or replace the extension files"
+  },
+  "autoUpdateErrorUnsafeFolder": {
+    "message": "アップデーターはこの拡張機能フォルダを変更しません。ドライブのルートやシステム・プロファイルのフォルダである、リンクを含んでいる、またはこの PC のほかのユーザーが変更できるためです。uBlock Plus+ をユーザープロファイル内（例：%LOCALAPPDATA%\\uBlockPlus\\Extension）に移動し、そこから読み込んでから、もう一度設定してください。",
+    "description": "Dashboard settings, Updates: the updater refuses to manage the extension folder (drive root, system or profile folder, links)"
+  },
+  "autoUpdateErrorFolderMismatch": {
+    "message": "アップデーターが管理しているフォルダには、この拡張機能とは異なるバージョンが入っています。「パッケージ化されていない拡張機能を読み込む」で読み込んだフォルダから設定コマンドを実行してください。",
+    "description": "Dashboard settings, Updates: the folder the updater manages holds another (older or unknown) version than the running extension"
+  },
+  "autoUpdateErrorNotOffered": {
+    "message": "このバージョンは選択したリリースチャンネルでは提供されていません。",
+    "description": "Dashboard settings, Updates: Install now asked for a version which the selected release channel does not offer"
+  },
+  "autoUpdateErrorAmbiguous": {
+    "message": "アップデーターは、この拡張機能 ID で複数のフォルダに登録されています。「パッケージ化されていない拡張機能を読み込む」で読み込んだフォルダから updater\\install-updater.cmd -Replace を実行してください。",
+    "description": "Dashboard settings, Updates: the updater has several folders registered for this extension ID and cannot tell which one to update"
+  },
+  "autoUpdateErrorUpdater": {
+    "message": "アップデーターがエラーを報告しました。詳細は %LOCALAPPDATA%\\uBlockPlus\\Updater\\updater.log にあります。",
+    "description": "Dashboard settings, Updates: the native updater reported an error without a more specific explanation (invalid configuration, internal error, unexpected reply)"
+  },
+  "autoUpdateErrorUndone": {
+    "message": "中断されたアップデートを取り消し、以前のバージョンを復元しました。ほかには何も変更していません。",
+    "description": "Dashboard settings: the updater restored the previous version after an interrupted update"
   }
 }

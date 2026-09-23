@@ -115,6 +115,11 @@ cp platform/mv3/"$PLATFORM"/img/* "$OUTPUT_DIR"/img/ 2>/dev/null || :
 cp -R platform/mv3/extension/_locales "$OUTPUT_DIR"/
 node tools/merge-mv3-locale-fallbacks.mjs "$OUTPUT_DIR"
 cp platform/mv3/README.md "$OUTPUT_DIR/"
+if [ "$PLATFORM" = "chromium" ] || [ "$PLATFORM" = "edge" ]; then
+    # Optional Windows updater, installed from the extension folder
+    mkdir -p "$OUTPUT_DIR"/updater
+    cp platform/mv3/updater/* "$OUTPUT_DIR"/updater/
+fi
 
 # Libraries
 mkdir -p "$OUTPUT_DIR"/lib/codemirror
@@ -203,6 +208,12 @@ elif [ "$PLATFORM" = "safari" ]; then
     node platform/mv3/safari/patch-extension.js packageDir="$OUTPUT_DIR"
 fi
 
+if [ -d "$OUTPUT_DIR"/updater ]; then
+    # The Windows updater deletes only files that the installed package
+    # listed, never files a user put into the extension folder.
+    node tools/package-files.mjs "$OUTPUT_DIR"
+fi
+
 if [ "$FULL" = "yes" ]; then
     EXTENSION="zip"
     if [ "$PLATFORM" = "firefox" ]; then
@@ -213,8 +224,11 @@ if [ "$FULL" = "yes" ]; then
     PACKAGE_DIR=$(mktemp -d)
     mkdir -p "$PACKAGE_DIR"
     cp -R "$OUTPUT_DIR"/* "$PACKAGE_DIR"/
+    rm -f "$PACKAGE_DIR"/log.txt
+    if [ -d "$PACKAGE_DIR"/updater ]; then
+        node tools/package-files.mjs "$PACKAGE_DIR"
+    fi
     cd "$PACKAGE_DIR" > /dev/null
-    rm -f ./log.txt
     zip "$PACKAGE_NAME" -qr ./*
     cd - > /dev/null
     cp "$PACKAGE_DIR"/"$PACKAGE_NAME" dist/build/

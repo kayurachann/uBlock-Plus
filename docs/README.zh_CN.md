@@ -5,7 +5,7 @@
 
 <img src="assets/readme/hero.png" alt="盾牌在 Chromium 页面加载前过滤广告、跟踪器、Cookie 和其他不需要的网络请求的插图" width="1100">
 
-<sub>概念插图 · v1.0.0 是需要手动更新的侧载预发布版本</sub>
+<sub>概念插图 · 侧载预发布版本，在 Windows 上可选择自动更新</sub>
 
 # uBlock Plus+
 
@@ -30,7 +30,7 @@
 uBlock Plus+ 是一款面向 Chromium MV3、采用 GPL 许可证的独立内容拦截器。它将经过验证的上游过滤与编译基础，与社区 Filter Store、可移植配置、明确的高级用户控制以及注重内存的运行方式结合起来，同时不使用项目遥测服务，也不加载远程可执行代码。
 
 > [!IMPORTANT]
-> **发布状态：** v1.0.0 是供手动侧载的预发布版本，不会自动更新。uBlock Plus+ 是独立分支，不是 uBlock Origin 的官方版本，也未得到 Raymond Hill 的认可。Chrome MV3 并未提供原 MV2 扩展可用的全部拦截原语。侧载可以避开 Chrome 应用商店的分发政策，但**不会**消除 DNR 配额、Service Worker 生命周期规则或浏览器安全边界。请参阅[如实说明的兼容性矩阵](FEATURE-MATRIX.md)。
+> **发布状态：** 本项目以侧载预发布版本分发，只需通过**加载已解压的扩展程序**安装一次；可选的 [Windows 更新程序](AUTO-UPDATE.md)会自动安装后续版本。uBlock Plus+ 是独立分支，不是 uBlock Origin 的官方版本，也未得到 Raymond Hill 的认可。Chrome MV3 并未提供原 MV2 扩展可用的全部拦截原语。侧载可以避开 Chrome 应用商店的分发政策，但**不会**消除 DNR 配额、Service Worker 生命周期规则或浏览器安全边界。请参阅[如实说明的兼容性矩阵](FEATURE-MATRIX.md)。
 
 ## 围绕你的选择而设计
 
@@ -112,7 +112,7 @@ uBlock Plus+ 是一款面向 Chromium MV3、采用 GPL 许可证的独立内容�
 <img src="assets/readme/memory-settings.png" alt="真实的 uBlock Plus+ 内存配置界面，显示自动模式、当前生效的平衡模式和本地存储诊断">
 
 <strong>内存配置</strong><br>
-选择自动、平衡或低内存模式，并检查本地缓存与存储指标；这些指标并非实时 RAM 使用量。
+选择自动、均衡或低内存模式，并检查本地缓存与存储指标；这些指标并非实时 RAM 使用量。
 
 </td>
 </tr>
@@ -131,20 +131,28 @@ uBlock Plus+ 是一款面向 Chromium MV3、采用 GPL 许可证的独立内容�
 ### 安装发布版本
 
 1. 从 [GitHub Releases](https://github.com/kayurachann/uBlock-Plus/releases) 下载 `uBlock-Plus_*.chromium.zip` 及其对应的 `.sha256` 文件。
-2. 验证校验和，然后将 ZIP 解压到一个固定文件夹。
+2. 验证校验和，然后将 ZIP 解压到用户配置文件中一个新建的、仅用于本扩展的空文件夹；在 Windows 上推荐使用 `%LOCALAPPDATA%\uBlockPlus\Extension`。不要使用驱动器根目录、直接在 `C:\` 下创建的文件夹或其中的任何文件夹（例如 `C:\Extensions` 或 `C:\Extensions\uBlock-Plus`）：Windows 更新程序会拒绝驱动器根目录、系统文件夹和配置文件文件夹本身，以及本机其他用户可以修改的文件夹。如果已经安装在这样的文件夹中，请移到 `%LOCALAPPDATA%\uBlockPlus\Extension`；参阅[文件夹规则](AUTO-UPDATE.md#folder-rules)和[移动现有安装](AUTO-UPDATE.md#moving-an-existing-installation)。
 3. 打开 `chrome://extensions` 或 `edge://extensions`。
-4. 启用**开发者模式**，选择**加载已解压的扩展程序**，然后选择包含 `manifest.json` 的解压文件夹。
+4. 启用**开发者模式**，选择**加载已解压的扩展程序**，然后选择包含 `manifest.json` 的解压文件夹。之后请保持**开发者模式**开启；关闭后 Chrome 会停用已解压的扩展程序。
 5. 在 Chrome 138 及更高版本中，打开该扩展的**详细信息**页面并启用**允许用户脚本**。Chrome 130–137 改用全局**开发者模式**开关。如果安装后更改了任一开关，请点击扩展卡片上的**重新加载**，让其 Service Worker 上下文识别新的 API 状态。这样，受支持的导入外观过滤器和内置白名单 scriptlet 才能完成注册。请参阅 Chrome 的 [`userScripts` 指南](https://developer.chrome.com/docs/extensions/reference/api/userScripts)。
 
 > [!NOTE]
-> 侧载扩展不会通过 Chrome 应用商店更新。请关注 [Releases](https://github.com/kayurachann/uBlock-Plus/releases)，并在新版本发布后替换已解压的构建。只安装来自本仓库的构件，并验证随附的 SHA-256 校验和。
+> 每个安装副本大约每六小时通过 `api.github.com` 检查一次新版本，不会发送浏览数据。在 Windows 上，1.2.0 及更高版本附带的更新程序会自动安装新版本。只需设置一次：在已加载的扩展文件夹中双击 `updater\install-updater.cmd`（无需管理员权限），然后在**控制面板 → 设置 → 更新**中选择**允许更新程序**。Chrome 会请求与本机应用程序通信的权限，请允许；随后 uBlock Plus+ 会重新启动一次，并重新打开**更新**部分。如果显示的是**立即重新启动**，请点击该按钮。此后，新版本会先下载，再通过 SHA-256 校验和与扩展身份验证，并在备份旧版本后安装。只要文件夹中还有不属于 uBlock Plus+ 的文件，更新程序就不会做任何更改。不使用更新程序时（例如在 macOS 或 Linux 上），请关注 [Releases](https://github.com/kayurachann/uBlock-Plus/releases)，用新版本替换文件夹内容，然后重新加载扩展。要移除该文件夹的更新程序，请打开命令提示符并运行 `"%LOCALAPPDATA%\uBlockPlus\Extension\updater\install-updater.cmd" -Uninstall`（如果文件夹不同，请改用其路径）；只有在没有其他已注册的安装副本时，才会删除浏览器中的注册。只安装来自本仓库的构件，并验证随附的 SHA-256 校验和。详情和故障排除请参阅 [AUTO-UPDATE.md](AUTO-UPDATE.md)。
+
+也可以用以下 PowerShell 命令一次完成第 1、2 步并安装更新程序。这些命令会把最新版本下载到 `%LOCALAPPDATA%\uBlockPlus\Extension`，该文件夹必须为空或尚不存在。然后将此文件夹作为已解压的扩展程序加载，并选择**允许更新程序**。
+
+```powershell
+$installer = Join-Path $env:TEMP 'install-updater.ps1'
+Invoke-WebRequest -UseBasicParsing https://raw.githubusercontent.com/kayurachann/uBlock-Plus/main/platform/mv3/updater/install-updater.ps1 -OutFile $installer
+powershell -ExecutionPolicy Bypass -File $installer
+```
 
 <details>
 <summary><strong>在 Windows 上验证发布包校验和</strong></summary>
 
 ```powershell
-(Get-FileHash .\uBlock-Plus_1.0.0.chromium.zip -Algorithm SHA256).Hash
-Get-Content .\uBlock-Plus_1.0.0.chromium.zip.sha256
+(Get-FileHash .\uBlock-Plus_1.2.0.chromium.zip -Algorithm SHA256).Hash
+Get-Content .\uBlock-Plus_1.2.0.chromium.zip.sha256
 ```
 
 两个十六进制哈希值必须一致，字母大小写无关。
@@ -161,6 +169,8 @@ Get-Content .\uBlock-Plus_1.0.0.chromium.zip.sha256
 ```powershell
 git clone --recurse-submodules https://github.com/kayurachann/uBlock-Plus.git
 cd uBlock-Plus
+# Windows 默认阻止未签名的本地脚本；仅在此窗口中允许。
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 $version = (Get-Content -Raw package.json | ConvertFrom-Json).version
 .\tools\make-mv3.ps1 -Platform chromium -Version $version
 ```
@@ -206,7 +216,7 @@ tools/make-mv3.sh chromium "$VERSION"
 | 远程来源 | HTTPS 目录和列表会作为有界数据解析；重定向、格式错误的架构和可执行载荷会被拒绝。 |
 | Filter Store 信任 | 内置和自定义条目都会显示其信任等级。仅凭社区热度绝不会把条目提升为 `verified`。 |
 | 扩展代码 | JavaScript、scriptlet 和重定向资源均随经过审查的扩展包提供，绝不会从运行时 URL 加载。 |
-| 权限 | 核心过滤权限已有文档说明。只有用户启用相关控制时才会请求 Chrome 的 `privacy` 权限，而且该权限可以撤销。 |
+| 权限 | 核心过滤权限已有文档说明。只有用户启用相关控制时才会请求 Chrome 的 `privacy` 权限，而且该权限可以撤销。可选的 `nativeMessaging` 权限只在用户选择**允许更新程序**时才会请求。 |
 | 本地数据 | 设置、已编译过滤器和存储大小诊断信息保留在设备上，除非用户明确导出。 |
 | 发布完整性 | CI 会构建并验证 Chromium 构件；发布包附带 SHA-256 校验和。 |
 
@@ -216,7 +226,7 @@ tools/make-mv3.sh chromium "$VERSION"
 
 | 当前可用 | 受 MV3 限制 | 未来研究——可选 |
 | --- | --- | --- |
-| DNR 网络拦截、外观过滤、内置 scriptlet、自定义/导入列表、Filter Store、元素选择器/移除器、可感知上下文的按主机弹出窗口策略、通过观察器执行已打包的 stock `$popup` 规则和受支持的导入 `$popup`/`$popunder` 子集并仅保留经过删减的 realm/源行/类型来源信息，以及备份/恢复 | 实时请求日志、过程式过滤器、异步弹出窗口观察、动态防火墙语义、响应头操作和重定向行为无法提供与 MV2 完全一致的效果 | 托管式企业适配器，以及独立安装的开源原生伴侣程序；均须经过 RFC、用户同意和安全审查 |
+| DNR 网络拦截、外观过滤、内置 scriptlet、自定义/导入列表、Filter Store、元素选择器/移除器、可感知上下文的按主机弹出窗口策略、通过观察器执行已打包的 stock `$popup` 规则和受支持的导入 `$popup`/`$popunder` 子集并仅保留经过删减的 realm/源行/类型来源信息，以及备份/恢复 | 实时请求日志、过程式过滤器、异步弹出窗口观察、动态防火墙语义、响应头操作和重定向行为无法提供与 MV2 完全一致的效果 | 托管式企业适配器，以及独立安装、用于过滤（例如 DNS/代理）的开源原生伴侣程序；均须经过 RFC、用户同意和安全审查。目前唯一发布的原生组件是由用户自行安装的可选 Windows 更新程序（自 1.2.0 起） |
 
 受支持的导入弹出窗口过滤器子集现由观察器运行时执行。无法精确表达的条件（例如域类型、请求方法或响应头条件）会被明确延后，而不会近似执行。延后的 `allow` 条件会作为保守的 fail-open 守卫保留；守卫只能延后决策，绝不能近似地放行或拦截。由于执行依赖 MV3 的异步标签页和导航事件，因此并非与 MV2 的同步处理完全等同。动态与会话 DNR 规则共用一个 1,000 条正则规则配额，并非各有 1,000 条。
 
@@ -250,7 +260,7 @@ tools/make-mv3.sh chromium "$VERSION"
 <td valign="top">
 
 - 托管式企业适配器
-- 可选原生伴侣程序研究
+- 用于过滤的可选原生伴侣程序研究
 - 已签名目录的来源证明与撤销机制
 
 </td>

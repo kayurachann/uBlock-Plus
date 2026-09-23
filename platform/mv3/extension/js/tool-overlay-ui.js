@@ -36,11 +36,18 @@ export const toolOverlay = {
 
     start(onmessage) {
         this.onmessage = onmessage;
-        globalThis.addEventListener('message', ev => {
+        // The content script navigated this frame with a secret fragment.
+        // A page can post messages here but cannot read that fragment, so
+        // other messages are ignored without consuming the handshake.
+        const secret = globalThis.location.hash.slice(1);
+        const onStartOverlay = ev => {
             const msg = ev.data || {};
             if ( msg.what !== 'startOverlay' ) { return; }
+            if ( secret === '' || msg.secret !== secret ) { return; }
+            if ( ev.source !== globalThis.parent ) { return; }
             if ( Array.isArray(ev.ports) === false ) { return; }
             if ( ev.ports.length === 0 ) { return; }
+            globalThis.removeEventListener('message', onStartOverlay);
             toolOverlay.port = ev.ports[0];
             toolOverlay.port.onmessage = ev => {
                 this.onMessage(ev.data || {});
@@ -59,7 +66,8 @@ export const toolOverlay = {
                 height: msg.height,
             });
             dom.cl.remove(dom.body, 'loading');
-        }, { once: true });
+        };
+        globalThis.addEventListener('message', onStartOverlay);
     },
 
     stop() {

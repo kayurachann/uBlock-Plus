@@ -20,6 +20,7 @@ import {
     MAX_POPUP_POLICIES,
     POPUP_POLICY_MODES,
     appendPopupDiagnostic,
+    directHostnameLineage,
     evaluatePopupCandidate,
     normalizePopupHostname,
     normalizePopupPolicies,
@@ -38,6 +39,7 @@ const GESTURE_TTL_MS = 5_000;
 const BURST_WINDOW_MS = 2_000;
 const CANDIDATE_TTL_MS = 30_000;
 const MAX_TRANSIENT_ENTRIES = 256;
+const MAX_RECENT_GESTURES = 8;
 const COMPILED_POPUP_REALMS = Object.freeze([ 'sandbox', 'imported' ]);
 const PROTECTED_POPUP_PROTOCOLS = new Set([
     'chrome:',
@@ -107,7 +109,14 @@ function contextURLDetails(raw) {
             url = `${parsed.protocol}${parsed.pathname.slice(0, 256)}`;
         }
     }
-    return { url, complete: false };
+    // Filters anchored to another hostname can be ruled out only when the
+    // kept URL names the original host; the dropped path never arrives.
+    let truncated = false;
+    try {
+        truncated = new URL(url).hostname === parsed.hostname;
+    } catch {
+    }
+    return { url, complete: false, truncated };
 }
 
 function sameNavigationTarget(a, b) {
@@ -120,6 +129,11 @@ function sameNavigationTarget(a, b) {
     } catch {
         return false;
     }
+}
+
+// A fragment change does not load another document.
+function sameDocumentURL(a, b) {
+    return a === b || sameNavigationTarget(a, b);
 }
 
 function boundedMapSet(map, key, value) {
@@ -376,6 +390,7 @@ export function createPopupBlocker(dependencies = {}) {
                 openerTabId: entry.openerTabId,
                 targetURL: checkpointURL(entry.targetURL),
                 targetURLComplete: false,
+                targetURLTruncated: false,
                 originalOpenerURL: checkpointURL(entry.originalOpenerURL),
                 originalOpenerURLComplete: false,
                 initiatorURL,
@@ -536,6 +551,7 @@ export function createPopupBlocker(dependencies = {}) {
                 }
                 candidate.targetURL = nextTargetURL;
                 candidate.targetURLComplete = target.complete;
+                candidate.targetURLTruncated = target.truncated === true;
             }
             if ( validTabId(context.sourceFrameId) ) {
                 if ( candidate.sourceFrameId !== context.sourceFrameId ) {
@@ -556,6 +572,7 @@ export function createPopupBlocker(dependencies = {}) {
             openerTabId,
             targetURL: target.url,
             targetURLComplete: target.complete,
+            targetURLTruncated: target.truncated === true,
             originalOpenerURL: '',
             originalOpenerURLComplete: false,
             initiatorURL: '',
@@ -631,6 +648,37 @@ export function createPopupBlocker(dependencies = {}) {
         }
     }
 
+    // A frame reports its few latest activations, so rapid clicks which are
+    // processed after the fact each keep their own token. Newest first.
+    function unusedActivations(tabId, contexts, timestamp) {
+        return contexts.flatMap(context => {
+            const entries = Array.isArray(context?.recent)
+                ? context.recent.slice(-MAX_RECENT_GESTURES)
+                : [ context ];
+            return entries.map(entry => ({
+                at: entry?.at,
+                sequence: entry?.sequence,
+                targetURL: entry?.targetURL,
+                frameId: context?.frameId,
+            }));
+        }).filter(context =>
+            validTabId(context.frameId) &&
+            Number.isSafeInteger(context.sequence) &&
+            context.sequence > 0 &&
+            validRecentTimestamp(context.at, timestamp, GESTURE_TTL_MS)
+        ).map(context => ({
+            ...context,
+            fingerprint: [
+                tabId,
+                context.frameId,
+                context.sequence,
+                context.at,
+            ].join(':'),
+        })).filter(context =>
+            consumedGestures.has(context.fingerprint) === false
+        ).sort((a, b) => b.at - a.at);
+    }
+
     async function resolveGesture(candidate) {
         if ( candidate.gestureResolved ) { return; }
         const timestamp = now();
@@ -658,28 +706,47 @@ export function createPopupBlocker(dependencies = {}) {
             candidate.gestureResolved = true;
             return;
         }
-        const eligible = contexts.filter(context =>
-            validTabId(context?.frameId) &&
-            Number.isSafeInteger(context?.sequence) &&
-            context.sequence > 0 &&
-            validRecentTimestamp(context?.at, timestamp, GESTURE_TTL_MS)
-        ).sort((a, b) => b.at - a.at);
-        for ( const context of eligible ) {
-            const fingerprint = [
-                candidate.openerTabId,
-                context.frameId,
-                context.sequence,
-                context.at,
-            ].join(':');
-            if ( consumedGestures.has(fingerprint) ) { continue; }
+        const eligible = unusedActivations(
+            candidate.openerTabId,
+            contexts,
+            timestamp
+        );
+        // Prefer the activation whose navigation target is this tab; any
+        // other fresh activation may belong to a tab not yet processed.
+        const gesture = eligible.find(context =>
+            sameNavigationTarget(context.targetURL, candidate.targetURL)
+        ) || eligible[0];
+        if ( gesture !== undefined ) {
             candidate.hasRecentUserGesture = true;
-            candidate.gestureAt = context.at;
-            candidate.gestureFingerprint = fingerprint;
-            candidate.gestureTargetURL = boundedContextURL(context.targetURL);
-            boundedMapSet(consumedGestures, fingerprint, timestamp);
-            break;
+            candidate.gestureAt = gesture.at;
+            candidate.gestureFingerprint = gesture.fingerprint;
+            candidate.gestureTargetURL = boundedContextURL(gesture.targetURL);
+            boundedMapSet(consumedGestures, gesture.fingerprint, timestamp);
         }
         candidate.gestureResolved = true;
+    }
+
+    // Only a link or form which the user activated in the tab's own document
+    // and which targets exactly this URL counts; a script navigating away
+    // after an unrelated click does not.
+    async function probeUserNavigation(candidate, url) {
+        let contexts = [];
+        try {
+            const response = await getGestureContexts(candidate.tabId, 0);
+            if ( Array.isArray(response) ) { contexts = response; }
+        } catch ( reason ) {
+            log(`popup navigation context unavailable: ${reason}`);
+        }
+        if ( candidates.get(candidate.tabId) !== candidate ) { return false; }
+        const timestamp = now();
+        const activation = unusedActivations(
+            candidate.tabId,
+            contexts,
+            timestamp
+        ).find(context => sameNavigationTarget(context.targetURL, url));
+        if ( activation === undefined ) { return false; }
+        boundedMapSet(consumedGestures, activation.fingerprint, timestamp);
+        return true;
     }
 
     function persistDiagnostic(value) {
@@ -730,7 +797,10 @@ export function createPopupBlocker(dependencies = {}) {
                 if ( closingTab === undefined || closingTab.discarded === true ) {
                     result = { action: 'allow', reason: 'popup-tab-unavailable' };
                 } else if ( closeTabId === candidate.tabId &&
-                    boundedContextURL(currentURL) !== candidate.targetURL ) {
+                    sameDocumentURL(
+                        boundedContextURL(currentURL),
+                        candidate.targetURL
+                    ) === false ) {
                     result = { action: 'defer', reason: 'popup-context-changed' };
                 } else {
                     const modes = await Promise.all([
@@ -796,6 +866,10 @@ export function createPopupBlocker(dependencies = {}) {
             result.reason === 'strict-related-hostname-user-gesture'
         ) ) {
             candidate.trustedDestinationAccepted = true;
+            // Deliberately fixed: following each later hostname would let a
+            // chain of lineage steps drift into an unrelated site. Only a
+            // navigation the user started moves it (see onTabUpdated).
+            candidate.acceptedHostname = filteringHostname(candidate.targetURL);
         }
 
         if ( result.action === 'block' ) {
@@ -832,6 +906,7 @@ export function createPopupBlocker(dependencies = {}) {
             kind: input.kind,
             targetURL: input.targetURL,
             targetURLComplete: input.targetURLComplete !== false,
+            targetURLTruncated: input.targetURLTruncated === true,
             initiatorURL: input.initiatorURL,
             topURL: input.topURL,
             initiatorContextComplete: input.initiatorContextComplete,
@@ -850,7 +925,15 @@ export function createPopupBlocker(dependencies = {}) {
         };
     }
 
-    async function evaluateCandidate(candidate, fallbackTab) {
+    // `trustedNavigation`: the user opened this tab and it later navigated
+    // within the accepted hostname lineage, or followed a link the user
+    // activated in it. That is ordinary browsing inside the tab, not another
+    // popup, so only compiled filters may close it.
+    async function evaluateCandidate(
+        candidate,
+        fallbackTab,
+        trustedNavigation = false
+    ) {
         if ( isEnabled() !== true ) {
             candidates.delete(candidate.tabId);
             await persistTransient();
@@ -905,12 +988,13 @@ export function createPopupBlocker(dependencies = {}) {
             candidate.gestureTargetURL,
             targetURL
         );
-        if ( candidate.hasRecentUserGesture !== true ||
+        if ( trustedNavigation || candidate.hasRecentUserGesture !== true ||
             gestureTargetMatches !== true ) {
             const compiledResult = await evaluateCompiledCandidate(candidate, {
                 kind: 'popup',
                 targetURL,
                 targetURLComplete: candidate.targetURLComplete === true,
+                targetURLTruncated: candidate.targetURLTruncated === true,
                 initiatorURL: candidate.initiatorURL || openerURL,
                 topURL: filteringSiteURL,
                 initiatorContextComplete:
@@ -938,6 +1022,14 @@ export function createPopupBlocker(dependencies = {}) {
             // A trusted exact click suppresses popup matching, but deliberately
             // does not suppress the later, independently detected popunder.
             candidate.compiledPopupAllowed = false;
+        }
+        if ( trustedNavigation ) {
+            return {
+                action: 'allow',
+                reason: 'trusted-destination-navigation',
+                openerHostname,
+                targetHostname: normalizePopupHostname(targetURL),
+            };
         }
         const { mode, matchedHostname } = resolvePopupPolicy(
             policies,
@@ -1025,6 +1117,36 @@ export function createPopupBlocker(dependencies = {}) {
         await resolveGesture(candidate);
         await persistTransient();
         return evaluateCandidate(candidate);
+    }
+
+    // webNavigation.onBeforeNavigate for a top frame. The document which the
+    // user clicked in is still loaded at this point; by the time tabs.onUpdated
+    // reports the new URL it has been replaced. A tab the user opened may then
+    // follow the user's own link to another site, which is ordinary browsing
+    // rather than another popup.
+    async function onBeforeNavigate(details) {
+        if ( isEnabled() !== true ) { return; }
+        if ( validTabId(details?.tabId) === false || details.frameId !== 0 ||
+            typeof details.url !== 'string' ) {
+            return;
+        }
+        await ready;
+        if ( stateLoaded !== true ) { return; }
+        const candidate = candidates.get(details.tabId);
+        if ( candidate?.trustedDestinationAccepted !== true ) { return; }
+        // A later navigation start supersedes this one, whether or not the
+        // user started it.
+        const probe = probeUserNavigation(candidate, details.url)
+            .catch(( ) => false);
+        candidate.userNavigationProbe = probe;
+        candidate.userNavigation = false;
+        const userNavigation = await probe;
+        if ( candidate.userNavigationProbe !== probe ) { return; }
+        candidate.userNavigationProbe = undefined;
+        candidate.userNavigation = userNavigation;
+        if ( userNavigation && candidates.get(candidate.tabId) === candidate ) {
+            await persistTransient();
+        }
     }
 
     async function evaluatePopunderCandidate(candidate) {
@@ -1123,7 +1245,13 @@ export function createPopupBlocker(dependencies = {}) {
             return { action: 'allow', reason: 'popup-blocker-disabled' };
         }
         let directResult;
-        const candidate = candidates.get(tabId);
+        let candidate = candidates.get(tabId);
+        // Judge a navigation only once its start has been checked against
+        // the old document's activations; later updates keep their order.
+        while ( candidate?.userNavigationProbe !== undefined ) {
+            await candidate.userNavigationProbe;
+            candidate = candidates.get(tabId);
+        }
         if ( candidate !== undefined ) {
             const lifetime = enforceCandidateLifetime(candidate, now());
             if ( lifetime.candidateExpired ) {
@@ -1136,31 +1264,74 @@ export function createPopupBlocker(dependencies = {}) {
             } else {
                 const targetURL = changeInfo?.url || tabURL(tab);
                 let targetChanged = false;
+                let trustedNavigation = false;
                 if ( targetURL !== '' ) {
                     const target = contextURLDetails(targetURL);
                     const nextTargetURL = target.url;
-                    targetChanged = candidate.targetURL !== nextTargetURL ||
-                        candidate.targetURLComplete !== target.complete;
-                    if ( candidate.targetURL !== nextTargetURL ) {
-                        candidate.compiledPopupAllowed = false;
-                        candidate.trustedDestinationAccepted = false;
+                    // A fragment change keeps the document, so the earlier
+                    // decision, and any evaluation still in flight for it,
+                    // remain valid.
+                    targetChanged =
+                        candidate.targetURLComplete !== target.complete ||
+                        (candidate.targetURLTruncated === true) !==
+                            (target.truncated === true) ||
+                        sameDocumentURL(
+                            candidate.targetURL,
+                            nextTargetURL
+                        ) === false;
+                    if ( targetChanged ) {
+                        const nextHostname = filteringHostname(nextTargetURL);
+                        // A navigation the user started may still be sent to
+                        // another host by a server redirect. The user chose
+                        // that destination, so it becomes the new anchor.
+                        const userNavigation =
+                            candidate.userNavigation === true &&
+                            nextHostname !== '';
+                        candidate.userNavigation = false;
+                        trustedNavigation =
+                            candidate.trustedDestinationAccepted === true && (
+                                userNavigation ||
+                                directHostnameLineage(
+                                    candidate.acceptedHostname || '',
+                                    nextHostname
+                                )
+                            );
+                        if ( trustedNavigation && userNavigation ) {
+                            candidate.acceptedHostname = nextHostname;
+                        }
+                        if ( candidate.targetURL !== nextTargetURL ) {
+                            candidate.compiledPopupAllowed = false;
+                            if ( trustedNavigation === false ) {
+                                candidate.trustedDestinationAccepted = false;
+                            }
+                        }
+                        candidate.targetURL = nextTargetURL;
+                        candidate.targetURLComplete = target.complete;
+                        candidate.targetURLTruncated = target.truncated === true;
                     }
-                    candidate.targetURL = nextTargetURL;
-                    candidate.targetURLComplete = target.complete;
                 }
                 // Finishing a slow load, changing the title, or starting audio
                 // does not create another popup. Keep an accepted destination
                 // after its gesture TTL while still inspecting every redirect
-                // and unresolved about:blank candidate.
+                // and unresolved about:blank candidate. A navigation which
+                // stays within an accepted destination's hostname lineage is
+                // checked against compiled filters only.
                 if ( targetChanged || candidate.lastSignature === '' ) {
                     await resolveGesture(candidate);
-                    directResult = await evaluateCandidate(candidate, tab);
+                    directResult = await evaluateCandidate(
+                        candidate,
+                        tab,
+                        trustedNavigation
+                    );
                 }
             }
         }
 
         let popunderResult;
         if ( typeof changeInfo?.url === 'string' && changeInfo.url !== '' ) {
+            // Every URL change of every tab arrives here. Decisions persist
+            // themselves; only an expiry removed here needs a checkpoint.
+            let expired = false;
             for ( const popupCandidate of Array.from(candidates.values()) ) {
                 if ( popupCandidate.openerTabId !== tabId ) { continue; }
                 if ( enforceCandidateLifetime(
@@ -1168,6 +1339,7 @@ export function createPopupBlocker(dependencies = {}) {
                     now()
                 ).candidateExpired ) {
                     candidates.delete(popupCandidate.tabId);
+                    expired = true;
                     continue;
                 }
                 popupCandidate.popunderObserved = true;
@@ -1178,7 +1350,7 @@ export function createPopupBlocker(dependencies = {}) {
                     popunderResult = result;
                 }
             }
-            await persistTransient();
+            if ( expired ) { await persistTransient(); }
         }
         return popunderResult || directResult;
     }
@@ -1186,7 +1358,9 @@ export function createPopupBlocker(dependencies = {}) {
     async function onTabRemoved(tabId) {
         await ready;
         if ( stateLoaded !== true ) { return; }
-        let modified = candidates.delete(tabId) || bursts.delete(tabId);
+        const removedCandidate = candidates.delete(tabId);
+        const removedBurst = bursts.delete(tabId);
+        let modified = removedCandidate || removedBurst;
         for ( const [ candidateTabId, candidate ] of candidates ) {
             if ( candidate.openerTabId !== tabId ) { continue; }
             candidates.delete(candidateTabId);
@@ -1311,6 +1485,7 @@ export function createPopupBlocker(dependencies = {}) {
         clearDiagnostics,
         getDiagnostics,
         getPolicies,
+        onBeforeNavigate,
         onNavigationTarget,
         onTabCreated,
         onTabRemoved,

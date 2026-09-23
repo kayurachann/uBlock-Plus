@@ -1,0 +1,331 @@
+name: Release
+
+# Publishes the tested packages that the in-extension updater installs. Push a
+# tag named v<package.json version> (for example v1.2.0) to publish.
+#
+# The build job runs third-party npm code (tests, lint) with read-only
+# permissions and no secrets. Only the publish job, which installs nothing,
+# sees the release signing key and may write the release.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing tag to build and publish, for example v1.2.0
+        required: true
+        type: string
+      prerelease:
+        description: Mark the GitHub release as a pre-release
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build and verify
+    runs-on: windows-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    env:
+      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+
+    steps:
+      - name: Clone tag and submodules
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          persist-credentials: false
+          submodules: recursive
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.22.0
+          cache: npm
+
+      - name: Set up npm
+        run: npm install --global npm@11.19.1
+
+      - name: Check that the tag matches the package version
+        id: version
+        shell: pwsh
+        run: |
+          $version = (Get-Content -Raw package.json | ConvertFrom-Json).version
+          if ( $env:RELEASE_TAG -cne "v$version" ) {
+              throw "Tag $env:RELEASE_TAG does not match package.json version $version"
+          }
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      - name: Install lint dependencies
+        # No dependency needs an install script.
+        run: npm ci --ignore-scripts
+
+      - name: Test
+        run: npm test
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build standard package
+        shell: pwsh
+        run: ./tools/make-mv3.ps1 -Platform chromium -Version '${{ steps.version.outputs.version }}'
+
+      - name: Validate standard package
+        run: node tools/validate-mv3.mjs dist/build/uBlockPlus.chromium --release
+
+      - name: Build experimental WebRequest package
+        shell: pwsh
+        run: ./tools/make-mv3.ps1 -Platform chromium -Version '${{ steps.version.outputs.version }}' -ExperimentalWebRequest
+
+      - name: Validate experimental package
+        run: node tools/validate-mv3.mjs dist/build/uBlockPlus.experimental.chromium --release --experimental-webrequest
+
+      - name: Upload packages
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-packages
+          if-no-files-found: error
+          retention-days: 7
+          path: |
+            dist/build/uBlock-Plus_${{ steps.version.outputs.version }}.chromium.zip
+            dist/build/uBlock-Plus_${{ steps.version.outputs.version }}.chromium.zip.sha256
+            dist/build/uBlock-Plus_${{ steps.version.outputs.version }}.experimental.chromium.zip
+            dist/build/uBlock-Plus_${{ steps.version.outputs.version }}.experimental.chromium.zip.sha256
+
+  publish:
+    name: Sign and publish
+    needs: build
+    runs-on: windows-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    env:
+      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+      VERSION: ${{ needs.build.outputs.version }}
+
+    steps:
+      # A fresh checkout: nothing from the build job's workspace runs here, and
+      # no dependency is installed. tools/release-signing.mjs uses node:crypto.
+      - name: Clone tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.22.0
+
+      - name: Check that the tag matches the package version
+        shell: pwsh
+        run: |
+          $version = (Get-Content -Raw package.json | ConvertFrom-Json).version
+          if ( $env:RELEASE_TAG -cne "v$version" -or $env:VERSION -cne $version ) {
+              throw "Tag $env:RELEASE_TAG, build $env:VERSION and package.json version $version differ"
+          }
+
+      - name: Download packages
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-packages
+          path: dist/build
+
+      - name: Verify packages and checksums
+        shell: pwsh
+        run: |
+          $version = $env:VERSION
+          $names = @("uBlock-Plus_$version.chromium.zip", "uBlock-Plus_$version.experimental.chromium.zip")
+          $wanted = @($names | ForEach-Object { $_; "$_.sha256" } | Sort-Object)
+          $present = @(Get-ChildItem -LiteralPath dist/build -File -Recurse | ForEach-Object { $_.Name } | Sort-Object)
+          if ( ($present -join '|') -cne ($wanted -join '|') ) {
+              throw "The build artifact must hold exactly $($wanted -join ', '); it holds $($present -join ', ')"
+          }
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          foreach ( $name in $names ) {
+              $zip = Join-Path dist/build $name
+              $line = (Get-Content -Raw "$zip.sha256").Trim()
+              $expected = ($line -split '\s+')[0]
+              $actual = (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash
+              if ( $line -notmatch "^[0-9a-f]{64}  $([regex]::Escape($name))$" -or $expected -ne $actual ) {
+                  throw "Checksum file for $name is malformed or does not match"
+              }
+              $archive = [IO.Compression.ZipFile]::OpenRead((Resolve-Path $zip))
+              try {
+                  $manifest = $archive.GetEntry('manifest.json')
+                  if ( $null -eq $manifest ) { throw "$name has no manifest.json at its root" }
+                  $reader = New-Object IO.StreamReader $manifest.Open()
+                  $packaged = ($reader.ReadToEnd() | ConvertFrom-Json).version
+                  $reader.Dispose()
+                  if ( $packaged -cne $version ) { throw "$name declares version $packaged" }
+                  foreach ( $required in 'updater/ublock-plus-updater.ps1', 'updater/package-files.json' ) {
+                      if ( $null -eq $archive.GetEntry($required) ) { throw "$name does not ship $required" }
+                  }
+              } finally {
+                  $archive.Dispose()
+              }
+          }
+
+      - name: Sign packages for the updater
+        shell: pwsh
+        env:
+          UBP_RELEASE_SIGNING_KEY: ${{ secrets.UBP_RELEASE_SIGNING_KEY }}
+        run: |
+          $keys = (Get-Content -Raw platform/mv3/updater/release-signing-keys.json | ConvertFrom-Json).keys
+          if ( @($keys).Count -eq 0 ) {
+              Write-Host 'No release signing key is published; packages are protected by checksum and provenance only.'
+              exit 0
+          }
+          # Updaters that trust a published key refuse unsigned packages.
+          if ( [string]::IsNullOrWhiteSpace($env:UBP_RELEASE_SIGNING_KEY) ) {
+              throw 'A release signing key is published but the UBP_RELEASE_SIGNING_KEY secret is missing'
+          }
+          # The secret may hold several PEM keys (during a key rotation); the
+          # .sig then carries one signature per key.
+          node tools/release-signing.mjs sign "dist/build/uBlock-Plus_$env:VERSION.chromium.zip" "dist/build/uBlock-Plus_$env:VERSION.experimental.chromium.zip"
+          if ( $LASTEXITCODE -ne 0 ) { throw 'Signing failed' }
+
+      - name: Check that updaters of the previous release accept the packages
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Updaters trust the key set of the release they installed last, so a
+          # key rotation must sign with the old and the new key for a while.
+          function ConvertTo-SortKey([string] $Value) {
+              (@($Value.Split('.')) + @('0', '0', '0') | Select-Object -First 4 | ForEach-Object { '{0:D5}' -f [int] $_ }) -join '.'
+          }
+          $current = ConvertTo-SortKey $env:VERSION
+          $tags = @(gh release list --repo $env:GITHUB_REPOSITORY --exclude-drafts --limit 100 --json tagName --jq '.[].tagName')
+          if ( $LASTEXITCODE -ne 0 ) { throw 'Listing the releases failed' }
+          $previous = $tags | Where-Object { $_ -cmatch '^v[0-9]{1,5}(\.[0-9]{1,5}){0,3}$' } |
+              Where-Object { (ConvertTo-SortKey $_.Substring(1)) -lt $current } |
+              Sort-Object { ConvertTo-SortKey $_.Substring(1) } | Select-Object -Last 1
+          if ( $null -eq $previous ) {
+              Write-Host 'There is no earlier release.'
+              exit 0
+          }
+          # gh reports a missing file on stderr, which is kept apart from the
+          # JSON and must not stop this script (Windows PowerShell stops on
+          # redirected native stderr).
+          $ErrorActionPreference = 'Continue'
+          $output = @(gh api "repos/$env:GITHUB_REPOSITORY/contents/platform/mv3/updater/release-signing-keys.json?ref=$previous" -H 'Accept: application/vnd.github.raw+json' 2>&1)
+          $status = $LASTEXITCODE
+          $ErrorActionPreference = 'Stop'
+          $json = @($output | Where-Object { $_ -is [string] }) -join "`n"
+          $errors = @($output | Where-Object { $_ -isnot [string] }) -join ' '
+          if ( $status -ne 0 ) {
+              if ( $errors -match 'HTTP 404' ) {
+                  Write-Host "$previous ships no release signing keys."
+                  exit 0
+              }
+              throw "Reading the release signing keys of $previous failed: $errors"
+          }
+          $keysFile = Join-Path $env:RUNNER_TEMP 'previous-release-signing-keys.json'
+          [IO.File]::WriteAllText($keysFile, $json)
+          if ( @(($json | ConvertFrom-Json).keys).Count -eq 0 ) {
+              Write-Host "$previous ships no release signing keys."
+              exit 0
+          }
+          node tools/release-signing.mjs verify --keys $keysFile "dist/build/uBlock-Plus_$env:VERSION.chromium.zip" "dist/build/uBlock-Plus_$env:VERSION.experimental.chromium.zip"
+          if ( $LASTEXITCODE -ne 0 ) {
+              throw "Updaters that installed $previous would refuse these packages: sign with a key of $previous as well (see 'generate' in tools/release-signing.mjs)"
+          }
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: |
+            dist/build/uBlock-Plus_${{ needs.build.outputs.version }}.chromium.zip
+            dist/build/uBlock-Plus_${{ needs.build.outputs.version }}.experimental.chromium.zip
+
+      - name: Publish GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRERELEASE: ${{ github.event_name != 'workflow_dispatch' || inputs.prerelease }}
+        run: |
+          $version = $env:VERSION
+          # An updater that sees a package must also find its checksum and
+          # signature: gh keeps a new release a draft until every asset is
+          # uploaded, and packages are added to an existing release last.
+          $assets = @()
+          $zips = @("dist/build/uBlock-Plus_$version.chromium.zip", "dist/build/uBlock-Plus_$version.experimental.chromium.zip")
+          foreach ( $zip in $zips ) {
+              $assets += "$zip.sha256"
+              if ( Test-Path -LiteralPath "$zip.sig" ) { $assets += "$zip.sig" }
+          }
+          $assets += $zips
+          $notes = @"
+          ## Install or update
+
+          **Standard package:** [uBlock-Plus_$version.chromium.zip](https://github.com/$env:GITHUB_REPOSITORY/releases/download/$env:RELEASE_TAG/uBlock-Plus_$version.chromium.zip) and its [SHA-256 file](https://github.com/$env:GITHUB_REPOSITORY/releases/download/$env:RELEASE_TAG/uBlock-Plus_$version.chromium.zip.sha256). Extract it into a new, empty folder in your user profile, for example ``%LOCALAPPDATA%\uBlockPlus\Extension``, and choose **Load unpacked** at ``chrome://extensions``. To update an existing unpacked installation by hand, replace the contents of its folder and click **Reload**.
+
+          **Automatic updates:** installations with the Windows updater (``updater\install-updater.cmd``, see Settings → Updates) in **Install it automatically** mode install this version by themselves. In **Only notify me** mode, when your administrator allows update notifications only, or after you went back from this version with **Restore version**, select **Install now** in Settings → Updates. While this release is marked as a pre-release, installations set to **Stable releases only** ignore it. Other installations that check for updates show that it is available.
+
+          The packages were built from this tag by GitHub Actions, and their provenance can be verified with ``gh attestation verify <zip> --repo $env:GITHUB_REPOSITORY``.
+          "@
+          $notesFile = Join-Path $env:RUNNER_TEMP 'release-notes.md'
+          Set-Content -LiteralPath $notesFile -Value $notes -Encoding utf8
+          # "release not found" goes to stderr, which must not stop this script.
+          $ErrorActionPreference = 'Continue'
+          gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY *> $null
+          $exists = $LASTEXITCODE -eq 0
+          $ErrorActionPreference = 'Stop'
+          if ( -not $exists ) {
+              $flags = @('--verify-tag', '--title', "uBlock Plus+ $version", '--notes-file', $notesFile, '--generate-notes')
+              if ( $env:PRERELEASE -eq 'true' ) { $flags += '--prerelease' }
+              gh release create $env:RELEASE_TAG @assets --repo $env:GITHUB_REPOSITORY @flags
+              if ( $LASTEXITCODE -ne 0 ) { throw 'Creating the release failed' }
+              exit 0
+          }
+          # The release exists (created by hand, or by an earlier run). Assets
+          # are never replaced, and every asset already there must be the one
+          # this run built: a checksum or signature must never sit next to a
+          # different package. Nothing is uploaded unless all of them match.
+          $existing = @(gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --json assets -q '.assets[].name')
+          if ( $LASTEXITCODE -ne 0 ) { throw 'Reading the release assets failed' }
+          $download = Join-Path $env:RUNNER_TEMP 'existing-assets'
+          New-Item -ItemType Directory -Path $download -Force | Out-Null
+          $missing = @()
+          foreach ( $asset in $assets ) {
+              $name = Split-Path -Leaf $asset
+              if ( $existing -cnotcontains $name ) {
+                  $missing += $asset
+                  continue
+              }
+              gh release download $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --pattern $name --dir $download --clobber
+              if ( $LASTEXITCODE -ne 0 ) { throw "Downloading the existing $name failed" }
+              $theirs = (Get-FileHash -LiteralPath (Join-Path $download $name) -Algorithm SHA256).Hash
+              $ours = (Get-FileHash -LiteralPath $asset -Algorithm SHA256).Hash
+              if ( $theirs -cne $ours ) {
+                  throw "Release $env:RELEASE_TAG already has a $name that differs from this build. Delete that asset (or the release) and run this workflow again."
+              }
+          }
+          # gh uploads the files of one call concurrently: checksums and
+          # signatures first, then the packages.
+          $sidecars = @($missing | Where-Object { $_ -notlike '*.zip' })
+          $packages = @($missing | Where-Object { $_ -like '*.zip' })
+          if ( $sidecars.Count -ne 0 ) {
+              gh release upload $env:RELEASE_TAG @sidecars --repo $env:GITHUB_REPOSITORY
+              if ( $LASTEXITCODE -ne 0 ) { throw 'Uploading the missing checksums and signatures failed' }
+          }
+          if ( $packages.Count -ne 0 ) {
+              gh release upload $env:RELEASE_TAG @packages --repo $env:GITHUB_REPOSITORY
+              if ( $LASTEXITCODE -ne 0 ) { throw 'Uploading the missing packages failed' }
+          }

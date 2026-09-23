@@ -33,7 +33,9 @@ if ( self.uBlockPlusOverlay ) {
 self.uBlockPlusOverlay = {
     file: '',
     webext: typeof browser === 'object' ? browser : chrome,
-    url: new URL(document.baseURI),
+    // Filters are saved for the document's own host. A page controls its
+    // base URL, while an about:blank frame inherits its creator's origin.
+    url: new URL(self.origin !== 'null' ? self.origin : document.baseURI),
     port: null,
     highlightedElements: [],
     secretAttr: (( ) => {
@@ -311,6 +313,14 @@ self.uBlockPlusOverlay = {
     async install(file, onmessage) {
         this.file = file;
         const dynamicURL = new URL(this.webext.runtime.getURL(file));
+        // The page can post to the tool frame, but cannot read the fragment
+        // of a cross-origin frame it did not navigate: only a handshake
+        // carrying this secret opens the channel.
+        const secret = Array.from(
+            crypto.getRandomValues(new Uint32Array(4)),
+            a => a.toString(36).padStart(7, '0')
+        ).join('');
+        dynamicURL.hash = secret;
         return new Promise(resolve => {
             const frame = document.createElement('iframe');
             const secretAttr = this.secretAttr;
@@ -334,7 +344,8 @@ self.uBlockPlusOverlay = {
                 frame.contentWindow.postMessage(
                     {
                         what: 'startOverlay',
-                        url: document.baseURI,
+                        secret,
+                        url: this.url.href,
                         width: self.innerWidth,
                         height: self.innerHeight,
                     },
