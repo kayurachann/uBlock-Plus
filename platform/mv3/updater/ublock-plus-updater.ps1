@@ -313,14 +313,30 @@ function Test-LinkItem {
     return $linkType -eq 'Junction' -or $linkType -eq 'SymbolicLink'
 }
 
+function Get-AccessRules {
+    param([Parameter(Mandatory)][string] $Path)
+    # Windows PowerShell reads permissions through .NET, not Get-Acl: started
+    # from PowerShell 7, powershell.exe inherits a module path from which the
+    # module providing Get-Acl cannot load.
+    $sections = [Security.AccessControl.AccessControlSections]::Access
+    if ( $PSVersionTable.PSEdition -eq 'Core' ) {
+        $security = Get-Acl -LiteralPath $Path
+    } elseif ( [IO.Directory]::Exists($Path) ) {
+        $security = [IO.Directory]::GetAccessControl($Path, $sections)
+    } else {
+        $security = [IO.File]::GetAccessControl($Path, $sections)
+    }
+    return $security.GetAccessRules($true, $true, [Security.Principal.SecurityIdentifier])
+}
+
 function Get-SharedRights {
     param([Parameter(Mandatory)][string] $Path)
     # The rights that groups of every account of this PC hold on $Path itself.
     # Inherit-only entries apply to new children only, which then carry them.
     try {
-        $rules = (Get-Acl -LiteralPath $Path).GetAccessRules($true, $true, [Security.Principal.SecurityIdentifier])
+        $rules = Get-AccessRules $Path
     } catch {
-        Stop-Updater 'unsafe-extension-dir' "Could not read the permissions of $Path"
+        Stop-Updater 'unsafe-extension-dir' "Could not read the permissions of $($Path): $($_.Exception.Message)"
     }
     $rights = 0
     foreach ( $rule in $rules ) {

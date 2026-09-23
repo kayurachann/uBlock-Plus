@@ -151,6 +151,23 @@ const base = `http://127.0.0.1:${server.address().port}`;
 // Fixture folders
 
 const fixture = await mkdtemp(path.join(os.tmpdir(), 'ubp-updater-test-'));
+// Windows PowerShell started from PowerShell 7 (as in a PowerShell 7 terminal
+// or a GitHub Actions step) inherits a module path from which it cannot load
+// Microsoft.PowerShell.Security, and so has no Get-Acl. Every PowerShell
+// process of this test runs with such a module first on its path.
+if ( spawnSync(powershell, [ '-NoProfile', '-Command', '$PSVersionTable.PSEdition' ],
+    { encoding: 'utf8' }).stdout.trim() === 'Desktop' ) {
+    const modules = path.join(fixture, 'PSModules');
+    await mkdir(path.join(modules, 'Microsoft.PowerShell.Security'), { recursive: true });
+    await writeFile(path.join(modules, 'Microsoft.PowerShell.Security', 'Microsoft.PowerShell.Security.psd1'),
+        "@{ ModuleVersion = '7.0.0.0'; GUID = 'a94c8c7e-9810-47c0-b8af-65089c13a35a'; " +
+        "PowerShellVersion = '7.0'; CompatiblePSEditions = @('Core'); " +
+        "NestedModules = 'Microsoft.PowerShell.Security.dll'; CmdletsToExport = @('Get-Acl', 'Set-Acl') }\r\n");
+    process.env.PSModulePath = [ modules, process.env.PSModulePath ].filter(Boolean).join(';');
+    const probe = spawnSync(powershell, [ '-NoProfile', '-Command', 'Get-Acl -LiteralPath $env:TEMP | Out-Null' ],
+        { encoding: 'utf8' });
+    assert.match(probe.stderr, /CouldNotAutoloadMatchingModule/, 'The module path hides Get-Acl as PowerShell 7 does');
+}
 const installRoot = path.join(fixture, 'Updater');
 const extensionDir = path.join(fixture, 'Extensions', 'uBlock-Plus');
 async function writePackage(directory, entries) {
