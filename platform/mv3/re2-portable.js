@@ -137,6 +137,52 @@ function parseClass(re, i) {
     return [ 'unterminated-class' ];
 }
 
+// Flag groups, `(?i:…)`, are RE2 syntax which JS accepts only from V8 12.5
+// (Node 23): Node 22 would reject them, and the verdict, hence the packaged
+// rulesets, would depend on the Node version running the build. The JS
+// syntax check gets a plain group instead; the parser below checks the flags
+// themselves. A bare `(?i)` stays: no JS engine accepts it, so it stays
+// outside the portable subset whatever the Node version.
+export function withoutInlineFlags(re) {
+    let out = '';
+    let inClass = false;
+    for ( let i = 0; i < re.length; i++ ) {
+        const c = re[i];
+        if ( c === '\\' ) {
+            out += re.slice(i, i + 2);
+            i += 1;
+            continue;
+        }
+        if ( inClass ) {
+            if ( c === ']' ) { inClass = false; }
+            out += c;
+            continue;
+        }
+        if ( c === '[' ) {
+            inClass = true;
+            // A `]` right after `[` or `[^` is a literal.
+            const start = re[i + 1] === '^' ? i + 2 : i + 1;
+            if ( re[start] === ']' ) {
+                out += re.slice(i, start + 1);
+                i = start;
+                continue;
+            }
+            out += c;
+            continue;
+        }
+        if ( c === '(' && re[i + 1] === '?' ) {
+            const match = reGroupFlags.exec(re.slice(i + 2));
+            if ( match !== null && match[1] !== '' && match[2] === ':' ) {
+                out += '(?:';
+                i += 1 + match[0].length;
+                continue;
+            }
+        }
+        out += c;
+    }
+    return out;
+}
+
 export function re2PortableReason(re) {
     if ( typeof re !== 'string' || re === '' ) { return 'empty'; }
     if ( re.length > MAX_LENGTH ) { return 'too-long'; }
@@ -144,7 +190,7 @@ export function re2PortableReason(re) {
     // depending on RE2's encoding mode.
     if ( /^[\x00-\x7F]*$/.test(re) === false ) { return 'non-ascii'; }
     try {
-        new RegExp(re);
+        new RegExp(withoutInlineFlags(re));
     } catch {
         return 'invalid-js-syntax';
     }

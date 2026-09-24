@@ -13,8 +13,8 @@
 // runs. The Chrome verdicts below were measured with Chrome 153's
 // declarativeNetRequest.isRegexSupported() on the stock lists.
 
+import { re2PortableReason, withoutInlineFlags } from '../platform/mv3/re2-portable.js';
 import assert from 'node:assert/strict';
-import { re2PortableReason } from '../platform/mv3/re2-portable.js';
 
 const rejects = (regex, reason) => {
     const actual = re2PortableReason(regex);
@@ -126,6 +126,15 @@ accepts('[]a]');
 rejects('[]', 'unterminated-class');
 rejects('[^]', 'unterminated-class');
 accepts('(?i:abc)(?-i:def)');
+// The JS syntax check never sees flag groups, whatever the Node version:
+// Node 22 rejects them, Node 23+ accepts them. A bare (?s) is left for JS to
+// reject in every version.
+assert.equal(withoutInlineFlags('(?i:abc)(?-i:def)(?s)x'), '(?:abc)(?:def)(?s)x');
+assert.equal(withoutInlineFlags('\\(?i:a[(?i:])'), '\\(?i:a[(?i:])',
+    'An escaped parenthesis or a class is not a group');
+assert.equal(withoutInlineFlags('[]](?m:x)'), '[]](?:x)');
+assert.equal(withoutInlineFlags('(?:a)(?<n>b)(?=c)'), '(?:a)(?<n>b)(?=c)',
+    'Other groups are unchanged');
 rejects('(?i)abc');
 rejects('é', 'non-ascii');
 rejects('', 'empty');
