@@ -634,6 +634,12 @@ const dnrErrorReasons = [
     [ /^Incompatible with DNR: /, 'unsupported-option' ],
     [ /^Can't salvage rule with unsupported domain= option: /, 'unsupported-domain' ],
     [ /^regexFilter is not RE2-compatible: /, 'unsupported-regex' ],
+    // Chromium builds: platform/mv3/stock-regex.js, from Chrome's own RE2
+    // (isRegexSupported()) and the portable RE2 subset every supported
+    // Chrome accepts (platform/mv3/re2-portable.js)
+    [ /^regexFilter rejected by Chrome RE2 \(syntaxError\): /, 'unsupported-regex-syntax' ],
+    [ /^regexFilter rejected by Chrome RE2 \(memoryLimitExceeded\): /, 'unsupported-regex-memory' ],
+    [ /^regexFilter outside the portable RE2 subset/, 'unsupported-regex-syntax' ],
     [ /^Unsupported regex-based removeParam: /, 'unsupported-removeparam-regex' ],
     [ /^Unsupported negated removeParam: /, 'unsupported-removeparam-negated' ],
     [ /^strict1p not supported/, 'unsupported-strict-first-party' ],

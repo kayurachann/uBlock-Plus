@@ -552,7 +552,7 @@
     "description": "Label for a checkbox in the options page"
   },
   "enablePopupBlockLegend": {
-    "message": "Khi được kích hoạt, các bộ lọc phù hợp sẽ tự động đóng các tab trình duyệt không mong muốn do các trang web tạo ra.",
+    "message": "Khi được kích hoạt, các bộ lọc phù hợp sẽ tự động đóng các thẻ trình duyệt không mong muốn do các trang web tạo ra.",
     "description": "Short description for a checkbox in the options page"
   },
   "popupPolicyLabel": {
@@ -640,6 +640,14 @@
   "strictblockProceed": {
     "message": "Tiếp tục",
     "description": "A button to navigate to the blocked page"
+  },
+  "strictblockPlusUrlUnavailable": {
+    "message": "uBlock Plus+ không xác định được địa chỉ nào đã bị chặn, nên trang này không thể mở địa chỉ đó.",
+    "description": "Strict-block page: shown instead of the blocked address when the browser did not report it; Proceed and \"Don't warn\" are disabled"
+  },
+  "strictblockPlusUrlApproximate": {
+    "message": "Đây là địa chỉ nơi bắt đầu điều hướng. Trang bị chặn có thể là trang được chuyển hướng từ địa chỉ này. Khi đó, nút Tiếp tục có thể đưa bạn quay lại trang này, nên không thể tắt vĩnh viễn cảnh báo cho trang web này.",
+    "description": "Strict-block page: the shown address is where the navigation started, which may differ from the blocked page after a server redirect. Proceed may then lead back to the warning, and the permanent \"don't warn\" choice is disabled"
   },
   "zapperTipEnter": {
     "message": "Chuyển sang chế độ chặn phần tử tạm thời",
@@ -984,6 +992,106 @@
   },
   "diagnosticsUnavailable": {
     "message": "Không khả dụng"
+  },
+  "diagnosticsStrictBlockAddress": {
+    "message": "Địa chỉ hiển thị trên trang chặn nghiêm ngặt",
+    "description": "Dashboard > Diagnostics > Runtime capabilities: label of the row saying how the strict-blocking page learns the blocked address"
+  },
+  "diagnosticsStrictBlockAddressExact": {
+    "message": "Chính xác, do trình duyệt báo",
+    "description": "Dashboard > Diagnostics: the browser reports the exact blocked address (webRequest or rule-match events)"
+  },
+  "diagnosticsStrictBlockAddressFragment": {
+    "message": "Chính xác, lưu trong địa chỉ của trang",
+    "description": "Dashboard > Diagnostics: the redirect itself carries the exact blocked address in the strict-blocking page's own address (Firefox)"
+  },
+  "diagnosticsStrictBlockAddressApproximate": {
+    "message": "Gần đúng: nơi bắt đầu điều hướng",
+    "description": "Dashboard > Diagnostics: only the address where the navigation started is known"
+  },
+  "diagnosticsStrictBlockAddressUnavailable": {
+    "message": "Không có",
+    "description": "Dashboard > Diagnostics: the strict-blocking page cannot learn the blocked address"
+  },
+  "diagnosticsStrictBlockAddressGrantNote": {
+    "message": "Tùy chọn: khi có quyền quan sát mạng, trình duyệt báo chính xác địa chỉ bị chặn lúc chuyển hướng một trang sang trang chặn nghiêm ngặt. Đây là nguồn chính xác tốn ít tài nguyên nhất. Chỉ những lần chuyển hướng này được giữ lại. Nhật ký dùng cùng quyền này và chỉ ghi sau khi bạn bấm Bắt đầu.",
+    "description": "Dashboard > Diagnostics: explains the optional network-observation (webRequest) permission offered for the strict-blocking page"
+  },
+  "diagnosticsStrictBlockAddressGrant": {
+    "message": "Cấp quyền quan sát mạng",
+    "description": "Dashboard > Diagnostics: button which asks the browser for the optional network-observation (webRequest) permission"
+  },
+  "diagnosticsStrictBlockAddressGranted": {
+    "message": "Đã cấp quyền quan sát mạng.",
+    "description": "Dashboard > Diagnostics: status after the browser granted the optional network-observation permission"
+  },
+  "diagnosticsRegexTitle": {
+    "message": "Dung lượng quy tắc regex",
+    "description": "Dashboard > Diagnostics: title of the panel about the browser's regex rule limits"
+  },
+  "diagnosticsRegexUsage": {
+    "message": "$1 trên $2",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: $1 = rules in use, $2 = limit"
+  },
+  "diagnosticsRegexStatic": {
+    "message": "Danh sách tích hợp: quy tắc regex đang dùng",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: regex rules packaged in the enabled built-in lists, out of the browser's limit for packaged rulesets"
+  },
+  "diagnosticsRegexVerifiedWith": {
+    "message": "Quy tắc regex được kiểm tra khi đóng gói phiên bản này bằng",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: label followed by a browser version such as \"Chrome/153.0.8010.53\""
+  },
+  "diagnosticsRegexNotVerified": {
+    "message": "Chưa được kiểm tra khi đóng gói phiên bản này",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: this version was built without checking the regex rules in a browser"
+  },
+  "diagnosticsRegexRejectedAtBuild": {
+    "message": "Bộ lọc regex tích hợp mà trình duyệt không chạy được",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: regex filters of the enabled built-in lists left out because the browser cannot run them"
+  },
+  "diagnosticsRegexSkipped": {
+    "message": "Quy tắc regex tích hợp mà trình duyệt này bỏ qua",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: packaged regex rules this browser version silently skips, counted by \"Check now\""
+  },
+  "diagnosticsRegexNotChecked": {
+    "message": "Chưa kiểm tra",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: \"Check now\" was not run for this version and browser"
+  },
+  "diagnosticsRegexVerify": {
+    "message": "Kiểm tra ngay",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: button which checks every packaged regex rule of the enabled lists with this browser"
+  },
+  "diagnosticsRegexShared": {
+    "message": "Giới hạn dùng chung (bộ lọc của bạn, danh sách đã nhập, chặn nghiêm ngặt): quy tắc regex đang dùng",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: regex rules in the browser's limit shared by dynamic and session rules"
+  },
+  "diagnosticsRegexUser": {
+    "message": "Bộ lọc của tôi và danh sách đã nhập đang dùng",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: shared regex rules used by My filters and imported lists"
+  },
+  "diagnosticsRegexStrictBlock": {
+    "message": "Chặn nghiêm ngặt đang dùng",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: shared regex rules used by the strict-blocking page redirects"
+  },
+  "diagnosticsRegexStockFallback": {
+    "message": "Danh sách tích hợp đang dùng (quy tắc động)",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: shared regex rules used by built-in lists installed as dynamic rules (shown only when not zero)"
+  },
+  "diagnosticsRegexOther": {
+    "message": "Tính năng khác đang dùng",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: shared regex rules used by other features (shown only when not zero)"
+  },
+  "diagnosticsRegexFree": {
+    "message": "Còn trống cho bộ lọc của bạn",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: shared regex rules still free"
+  },
+  "diagnosticsRegexDropped": {
+    "message": "Không cài được vì đã đầy giới hạn",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: regex rules which were not installed because the shared limit is full"
+  },
+  "diagnosticsRulesetsNotEnabled": {
+    "message": "Danh sách đã chọn nhưng trình duyệt không bật",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: selected built-in lists which the browser did not enable"
   },
   "performanceDetailsTitle": {
     "message": "Ngân sách hiệu năng đang dùng"

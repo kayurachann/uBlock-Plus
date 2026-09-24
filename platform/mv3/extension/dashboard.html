@@ -351,11 +351,22 @@
         <div class="powerPanel">
             <h3 data-i18n="runtimeCapabilitiesTitle">_</h3>
             <dl id="runtimeCapabilities"></dl>
+            <div id="strictBlockAddressSetup" hidden>
+                <p data-i18n="diagnosticsStrictBlockAddressGrantNote">_</p>
+                <button id="grantStrictBlockWebRequest" type="button" data-i18n="diagnosticsStrictBlockAddressGrant">_</button>
+            </div>
         </div>
         <div class="powerPanel">
             <h3 data-i18n="performanceDetailsTitle">_</h3>
             <dl id="performanceDetails"></dl>
         </div>
+    </div>
+    <div id="regexCapacityPanel" class="powerPanel" hidden>
+        <div class="panelHeading">
+            <div><h3 data-i18n="diagnosticsRegexTitle">_</h3></div>
+            <button id="verifyStaticRegex" type="button" data-i18n="diagnosticsRegexVerify">_</button>
+        </div>
+        <dl id="regexCapacity"></dl>
     </div>
     <div class="powerPanel">
         <div class="panelHeading">

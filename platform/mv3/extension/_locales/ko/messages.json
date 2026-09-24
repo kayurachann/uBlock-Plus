@@ -575,6 +575,14 @@
     "message": "계속",
     "description": "A button to navigate to the blocked page"
   },
+  "strictblockPlusUrlUnavailable": {
+    "message": "uBlock Plus+가 차단된 주소를 확인하지 못해 이 페이지에서 열 수 없습니다.",
+    "description": "Strict-block page: shown instead of the blocked address when the browser did not report it; Proceed and \"Don't warn\" are disabled"
+  },
+  "strictblockPlusUrlApproximate": {
+    "message": "이 주소는 탐색이 시작된 주소입니다. 차단된 페이지는 이 주소에서 리디렉션된 페이지일 수 있습니다. 이 경우 '계속'을 누르면 이 페이지로 다시 돌아올 수 있으므로, 이 사이트에 대한 경고를 영구적으로 끌 수 없습니다.",
+    "description": "Strict-block page: the shown address is where the navigation started, which may differ from the blocked page after a server redirect. Proceed may then lead back to the warning, and the permanent \"don't warn\" choice is disabled"
+  },
   "zapperTipEnter": {
     "message": "요소 제거하기",
     "description": "Tooltip for the button used to enter zapper mode"
@@ -918,6 +926,106 @@
   },
   "diagnosticsUnavailable": {
     "message": "사용 불가"
+  },
+  "diagnosticsStrictBlockAddress": {
+    "message": "엄격한 차단 페이지에 표시되는 주소",
+    "description": "Dashboard > Diagnostics > Runtime capabilities: label of the row saying how the strict-blocking page learns the blocked address"
+  },
+  "diagnosticsStrictBlockAddressExact": {
+    "message": "정확함, 브라우저가 보고함",
+    "description": "Dashboard > Diagnostics: the browser reports the exact blocked address (webRequest or rule-match events)"
+  },
+  "diagnosticsStrictBlockAddressFragment": {
+    "message": "정확함, 페이지 주소에 보관됨",
+    "description": "Dashboard > Diagnostics: the redirect itself carries the exact blocked address in the strict-blocking page's own address (Firefox)"
+  },
+  "diagnosticsStrictBlockAddressApproximate": {
+    "message": "대략적: 탐색이 시작된 위치",
+    "description": "Dashboard > Diagnostics: only the address where the navigation started is known"
+  },
+  "diagnosticsStrictBlockAddressUnavailable": {
+    "message": "사용할 수 없음",
+    "description": "Dashboard > Diagnostics: the strict-blocking page cannot learn the blocked address"
+  },
+  "diagnosticsStrictBlockAddressGrantNote": {
+    "message": "선택 사항: 네트워크 관찰 권한을 허용하면 브라우저가 페이지를 엄격한 차단 페이지로 리디렉션할 때 차단된 정확한 주소를 알려 줍니다. 정확한 주소를 얻는 방법 중 부담이 가장 적습니다. 이 리디렉션만 보관합니다. 로거도 같은 권한을 사용하며, 수집을 시작한 뒤에만 기록합니다.",
+    "description": "Dashboard > Diagnostics: explains the optional network-observation (webRequest) permission offered for the strict-blocking page"
+  },
+  "diagnosticsStrictBlockAddressGrant": {
+    "message": "네트워크 관찰 권한 허용",
+    "description": "Dashboard > Diagnostics: button which asks the browser for the optional network-observation (webRequest) permission"
+  },
+  "diagnosticsStrictBlockAddressGranted": {
+    "message": "네트워크 관찰 권한이 허용되었습니다.",
+    "description": "Dashboard > Diagnostics: status after the browser granted the optional network-observation permission"
+  },
+  "diagnosticsRegexTitle": {
+    "message": "정규식 규칙 용량",
+    "description": "Dashboard > Diagnostics: title of the panel about the browser's regex rule limits"
+  },
+  "diagnosticsRegexUsage": {
+    "message": "$2개 중 $1개",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: $1 = rules in use, $2 = limit"
+  },
+  "diagnosticsRegexStatic": {
+    "message": "기본 제공 목록: 사용 중인 정규식 규칙",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: regex rules packaged in the enabled built-in lists, out of the browser's limit for packaged rulesets"
+  },
+  "diagnosticsRegexVerifiedWith": {
+    "message": "이 버전을 빌드할 때 정규식 규칙을 검사한 브라우저",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: label followed by a browser version such as \"Chrome/153.0.8010.53\""
+  },
+  "diagnosticsRegexNotVerified": {
+    "message": "이 버전을 빌드할 때 검사하지 않음",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: this version was built without checking the regex rules in a browser"
+  },
+  "diagnosticsRegexRejectedAtBuild": {
+    "message": "브라우저가 실행할 수 없는 기본 제공 정규식 필터",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: regex filters of the enabled built-in lists left out because the browser cannot run them"
+  },
+  "diagnosticsRegexSkipped": {
+    "message": "이 브라우저가 건너뛰는 기본 제공 정규식 규칙",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: packaged regex rules this browser version silently skips, counted by \"Check now\""
+  },
+  "diagnosticsRegexNotChecked": {
+    "message": "아직 확인하지 않음",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: \"Check now\" was not run for this version and browser"
+  },
+  "diagnosticsRegexVerify": {
+    "message": "지금 확인",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: button which checks every packaged regex rule of the enabled lists with this browser"
+  },
+  "diagnosticsRegexShared": {
+    "message": "공유 한도(내 필터, 가져온 목록, 엄격한 차단): 사용 중인 정규식 규칙",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: regex rules in the browser's limit shared by dynamic and session rules"
+  },
+  "diagnosticsRegexUser": {
+    "message": "내 필터와 가져온 목록이 사용",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: shared regex rules used by My filters and imported lists"
+  },
+  "diagnosticsRegexStrictBlock": {
+    "message": "엄격한 차단이 사용",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: shared regex rules used by the strict-blocking page redirects"
+  },
+  "diagnosticsRegexStockFallback": {
+    "message": "기본 제공 목록이 사용(동적 규칙)",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: shared regex rules used by built-in lists installed as dynamic rules (shown only when not zero)"
+  },
+  "diagnosticsRegexOther": {
+    "message": "기타 기능이 사용",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: shared regex rules used by other features (shown only when not zero)"
+  },
+  "diagnosticsRegexFree": {
+    "message": "필터에 아직 사용할 수 있음",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: shared regex rules still free"
+  },
+  "diagnosticsRegexDropped": {
+    "message": "한도가 가득 차서 설치되지 않음",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: regex rules which were not installed because the shared limit is full"
+  },
+  "diagnosticsRulesetsNotEnabled": {
+    "message": "선택했지만 브라우저가 켜지 않은 목록",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: selected built-in lists which the browser did not enable"
   },
   "performanceDetailsTitle": {
     "message": "유효 성능 예산"

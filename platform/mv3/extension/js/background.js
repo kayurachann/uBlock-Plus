@@ -43,6 +43,11 @@ import {
 } from './compiled-storage.js';
 
 import {
+    PLAN_STORAGE_KEY as STRICTBLOCK_PLAN_KEY,
+    createStrictBlockTracker,
+} from './strictblock-tracker.js';
+
+import {
     addCustomFilters,
     customFiltersFromHostname,
     getAllCustomFilters,
@@ -121,12 +126,16 @@ import {
     getEffectiveUserRules,
     getEnabledRulesets,
     getEnabledRulesetsDetails,
+    getRegexCapacity,
     getRulesetDetails,
     getRulesetRules,
     patchDefaultRulesets,
+    reconcileStrictBlockSessionRules,
     recoverStockBadfilters,
     restoreNativeRulesetState,
     setStrictBlockMode,
+    setStrictBlockPlanListener,
+    setStrictBlockUrlSourceProvider,
     snapshotNativeRulesetState,
     updateDynamicAndSessionRules,
     updateSessionRules,
@@ -184,6 +193,7 @@ import {
 import { syncToolbarIconMode, toggleToolbarIcon } from './action.js';
 import { COMPILED_FILTERS_REVISION } from './compiled-cache.js';
 import { POPUP_RUNTIME_ROUTE_CODE } from './compiled-popup-matcher.js';
+import { STRICTBLOCK_PAGE_PATH } from './strictblock-rules.js';
 import { capturePopupFrameContext } from './popup-frame-context.js';
 import { createFirewallManager } from './firewall-manager.js';
 import { createPopupBlocker } from './popup-blocker.js';
@@ -201,6 +211,14 @@ const canShowBlockedCount = typeof dnr.setExtensionActionOptions === 'function';
 const COMPILED_FILTERS_DIRTY_KEY = 'compiledFilters.dirtySources';
 const COMPILED_FILTERS_REVISION_KEY = 'compiledFilters.compilerRevision';
 const COMPILED_FILTERS_RETRY_JOB = 'retryCompiledFilters';
+// Deferred jobs (alarms.js) are dispatched through onMessage() by the worker
+// itself, without a sender. A browser message always has one. A new job name
+// must be added here.
+const DEFERRED_JOB_MESSAGES = new Set([
+    COMPILED_FILTERS_RETRY_JOB,
+    'pruneCSSCache',
+    'updateImportedLists',
+]);
 const COMPILED_FILTERS_RETRY_DELAY = 5 * 60 * 1000;
 const COMPILED_FILTERS_MAX_RETRY_DELAY = 6 * 60 * 60 * 1000;
 const COMPILED_FILTER_WARNINGS_KEY = 'compiledFilters.lastWarnings';
@@ -476,6 +494,98 @@ const webRequestFirewall = createWebRequestFirewall({
         };
     },
 });
+
+// Strict blocking: a strict-block redirect is a plain extensionPath redirect,
+// so strictblock.html asks which address it replaced (strictblock-tracker.js).
+// The tracker's listeners are registered synchronously here, so that the
+// events which wake the worker reach them. Only Chromium builds use such
+// redirects: Firefox builds carry the address in the redirect itself, and
+// Safari has no strict blocking.
+const strictBlockTracker = createStrictBlockTracker({
+    dnr,
+    // The optional webRequest permission can be granted and removed while
+    // the worker runs.
+    webRequest: ( ) => browser.webRequest,
+    webNavigation: ( ) => browser.webNavigation,
+    permissions: browser.permissions,
+    sessionRead,
+    sessionWrite,
+});
+if ( webextFlavor === 'chromium' ) {
+    strictBlockTracker.registerTopLevelListeners();
+}
+
+// The onRuleMatchedDebug listener sees every matched rule: the tracker keeps
+// it only while the installed session plan has a redirect.
+let strictBlockPlanRevision = 0;
+function onStrictBlockPlan(plan) {
+    strictBlockPlanRevision += 1;
+    strictBlockTracker.setPlan(plan);
+}
+setStrictBlockPlanListener(onStrictBlockPlan);
+
+// Redirects for My filters and imported lists are installed only while the
+// page can learn the exact address; otherwise they stay plain blocks.
+setStrictBlockUrlSourceProvider(( ) => strictBlockTracker.isExact());
+
+// A restarted worker finds the installed plan in storage.session.
+async function syncStrictBlockTracker() {
+    const revision = strictBlockPlanRevision;
+    const plan = await sessionRead(STRICTBLOCK_PLAN_KEY).catch(( ) => undefined);
+    // A plan installed meanwhile already reached the tracker.
+    if ( revision !== strictBlockPlanRevision ) { return; }
+    strictBlockTracker.setPlan(plan);
+}
+syncStrictBlockTracker();
+
+// How the strict-block page learns the blocked address on this browser, for
+// the runtime capabilities (runtime-capabilities-core.js).
+function strictBlockUrlSource() {
+    if ( webextFlavor === 'firefox' ) { return 'regex-substitution'; }
+    if ( webextFlavor === 'safari' ) { return 'unavailable'; }
+    return strictBlockTracker.urlSource();
+}
+
+// Strict-block redirects need broad host access: without it a redirect
+// shadows the block below it and the page loads. Redirects for My filters
+// and imported lists also need an exact address source, which the optional
+// webRequest permission can add. Either change rebuilds the session plan.
+function onStrictBlockPermissionsChanged(permissions) {
+    const sourceChecked = strictBlockTracker.permissionsChanged().catch(reason => {
+        ublockPlusErr(`strictBlockPermissions/${reason}`);
+    });
+    const origins = Array.isArray(permissions?.origins) ? permissions.origins : [];
+    const apis = Array.isArray(permissions?.permissions) ? permissions.permissions : [];
+    if ( origins.length === 0 && apis.includes('webRequest') === false ) { return; }
+    return Promise.all([ sourceChecked, isFullyInitialized ]).then(( ) =>
+        updateSessionRules()
+    ).then(result => {
+        if ( result?.error === undefined ) { return; }
+        ublockPlusErr(`strictBlockPermissions/${result.error}`);
+    }).catch(reason => {
+        ublockPlusErr(`strictBlockPermissions/${reason}`);
+    });
+}
+
+// The low-memory profile gives up the onRuleMatchedDebug source, which keeps
+// the worker alive while the user browses (docs/POWER-RUNTIME.md). A changed
+// source changes which redirects the session plan may install.
+function followStrictBlockMemoryProfile(profile) {
+    if ( profile instanceof Object === false ) { return false; }
+    return strictBlockTracker.setLowMemory(profile.effective === 'low-memory');
+}
+
+function onStrictBlockMemoryProfile(profile) {
+    if ( followStrictBlockMemoryProfile(profile) === false ) { return; }
+    isFullyInitialized.then(( ) =>
+        updateSessionRules()
+    ).then(result => {
+        if ( result?.error === undefined ) { return; }
+        ublockPlusErr(`strictBlockMemoryProfile/${result.error}`);
+    }).catch(reason => {
+        ublockPlusErr(`strictBlockMemoryProfile/${reason}`);
+    });
+}
 
 // Automatic updates: the worker reads public release metadata; the optional,
 // separately installed native updater downloads, verifies and installs.
@@ -1383,6 +1493,14 @@ async function onMessage(request, sender) {
         return onUpdateMessage(request, sender);
     }
 
+    // Only the strict-block page itself may ask which address its tab was
+    // redirected from. The answer does not wait for initialization: the
+    // tracker keeps its own state, and the page gives up after 5 s.
+    if ( request.what === 'getStrictBlockDetails' ) {
+        if ( isStrictBlockPageSender(sender) === false ) { return; }
+        return strictBlockTracker.getDetails(sender.tab.id, request.timeOrigin);
+    }
+
     // Does not require extension to be fully initialized
 
     // Does not require a trusted origin.
@@ -1473,17 +1591,14 @@ async function onMessage(request, sender) {
 
     // Requires a trusted origin.
 
-    // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/runtime/MessageSender
-    //   Firefox API does not set `sender.origin`
-    const isTrustedOrigin = sender?.origin === undefined ||
-        sender.origin.toLowerCase() === UBLOCK_PLUS_ORIGIN;
-    if ( isTrustedOrigin === false ) { return; }
-    if ( [ 'getFirewallState', 'previewFirewallRules', 'applyFirewallRules',
-        'testFirewallRequest' ].includes(request.what) ) {
-        if ( sender?.id !== runtime.id ||
-            sender?.url?.toLowerCase().startsWith(`${UBLOCK_PLUS_ORIGIN}/`) !== true ) {
-            return;
+    if ( isTrustedSender(sender, request) === false ) {
+        if ( sender === undefined ) {
+            ublockPlusErr(`Deferred job ${request.what} is not in DEFERRED_JOB_MESSAGES`);
         }
+        return;
+    }
+    if ( EXTENSION_PAGE_MESSAGES.has(request.what) ) {
+        if ( isExtensionPageSender(sender) === false ) { return; }
     }
 
     switch ( request.what ) {
@@ -1531,16 +1646,26 @@ async function onMessage(request, sender) {
         return rulesetConfig;
 
     case 'getRuntimeCapabilities':
-        return getRuntimeCapabilities();
+        return getRuntimeCapabilities({
+            strictBlockUrlSource: strictBlockUrlSource(),
+        });
 
-    case 'getMemoryProfile':
-        return getMemoryProfileConfig(request.deviceMemoryGiB);
+    case 'getRegexCapacity':
+        return getRegexCapacity({ verifyStatic: request.verifyStatic === true });
+
+    case 'getMemoryProfile': {
+        // Auto follows the device memory hint of the asking page.
+        const profile = await getMemoryProfileConfig(request.deviceMemoryGiB);
+        onStrictBlockMemoryProfile(profile);
+        return profile;
+    }
 
     case 'setMemoryProfile': {
         const profile = await setMemoryProfile(
             request.profile,
             request.deviceMemoryGiB
         );
+        onStrictBlockMemoryProfile(profile);
         if ( profile.retainScriptingMetadata === false ) {
             releaseScriptingMetadata();
         }
@@ -1931,6 +2056,73 @@ async function onMessage(request, sender) {
 
 /******************************************************************************/
 
+// Who may send what (tools/test-sender-trust.mjs):
+// - any sender, content scripts included: the messages onMessage() handles
+//   before it checks the sender;
+// - a trusted sender: an extension page, or the worker itself dispatching a
+//   deferred job (no sender);
+// - an extension page, by extension ID and URL: EXTENSION_PAGE_MESSAGES and
+//   the update messages (onUpdateMessage() checks the same inline);
+// - the strict-block page in the top frame of a tab: getStrictBlockDetails;
+// - user scripts run in a less trusted world than content scripts, and only
+//   reach USER_SCRIPT_MESSAGES.
+
+const EXTENSION_PAGE_MESSAGES = new Set([
+    'applyFirewallRules',
+    'getFirewallState',
+    'getRegexCapacity',
+    'previewFirewallRules',
+    'testFirewallRequest',
+]);
+
+const USER_SCRIPT_MESSAGES = new Set([
+    'getLoggerCapture',
+    'recordContentDiagnostic',
+]);
+
+function isExtensionPageSender(sender) {
+    if ( typeof sender !== 'object' || sender === null ) { return false; }
+    if ( sender.id !== runtime.id ) { return false; }
+    if ( typeof sender.url !== 'string' ) { return false; }
+    if ( sender.url.toLowerCase().startsWith(`${UBLOCK_PLUS_ORIGIN}/`) === false ) {
+        return false;
+    }
+    return sender.origin === undefined ||
+        typeof sender.origin === 'string' &&
+            sender.origin.toLowerCase() === UBLOCK_PLUS_ORIGIN;
+}
+
+// https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/runtime/MessageSender
+//   Firefox API does not set `sender.origin`: there the extension ID and the
+//   URL of the sender decide, and a content script is never trusted.
+function isTrustedSender(sender, request) {
+    if ( sender === undefined ) {
+        return DEFERRED_JOB_MESSAGES.has(request?.what);
+    }
+    if ( typeof sender !== 'object' || sender === null ) { return false; }
+    if ( sender.origin !== undefined ) {
+        return typeof sender.origin === 'string' &&
+            sender.origin.toLowerCase() === UBLOCK_PLUS_ORIGIN;
+    }
+    return isExtensionPageSender(sender);
+}
+
+function isStrictBlockPageSender(sender) {
+    if ( isExtensionPageSender(sender) === false ) { return false; }
+    if ( Number.isInteger(sender.tab?.id) === false || sender.tab.id < 0 ) {
+        return false;
+    }
+    // Strict blocking only redirects top-level documents.
+    if ( sender.frameId !== 0 ) { return false; }
+    try {
+        return new URL(sender.url).pathname === STRICTBLOCK_PAGE_PATH;
+    } catch {
+    }
+    return false;
+}
+
+/******************************************************************************/
+
 function onCommand(command, tab) {
     switch ( command ) {
     case 'enter-zapper-mode': {
@@ -2137,6 +2329,8 @@ async function start() {
         loadRulesetConfig(),
         initializeMemoryProfile(),
     ]);
+    // Before the strict-block reconcile below, which follows the URL source.
+    followStrictBlockMemoryProfile(memoryProfile);
     // The toolbar icon mode is derived from stored modes, not worker memory.
     syncToolbarIconMode().catch(reason => {
         ublockPlusErr(`syncToolbarIconMode/${reason}`);
@@ -2159,6 +2353,17 @@ async function start() {
             await runMemoryCleanup();
         }
     }
+
+    // On every start, also a wake: strict-block redirects must not outlive
+    // the broad host access they need, and a plan lost with storage.session
+    // is rebuilt. Then the tracker follows the installed plan.
+    await reconcileStrictBlockSessionRules().then(result => {
+        if ( result?.error === undefined ) { return; }
+        ublockPlusErr(`Strict-block reconcile/${result.error}`);
+    }).catch(reason => {
+        ublockPlusErr(`Strict-block reconcile/${reason}`);
+    });
+    await syncStrictBlockTracker();
 
     const scripts = await getRegisteredContentScripts();
     if ( scripts.length === 0 ) {
@@ -2258,6 +2463,7 @@ if ( supportsUserScripts() && runtime.onUserScriptMessage ) {
     });
     runtime.onUserScriptMessage.addListener((request, sender, callback) => {
         if ( typeof request?.what !== 'string' ) { return; }
+        if ( USER_SCRIPT_MESSAGES.has(request.what) === false ) { return; }
         onMessage(request, sender).then(callback, reason => {
             ublockPlusErr(`onUserScriptMessage/${request.what}/${reason}`);
             callback(messageErrorReply(reason));
@@ -2268,6 +2474,7 @@ if ( supportsUserScripts() && runtime.onUserScriptMessage ) {
 
 browser.permissions.onRemoved.addListener((...args) => {
     webRequestFirewall.permissionsChanged();
+    onStrictBlockPermissionsChanged(args[0]);
     isFullyInitialized.then(( ) => {
         return onPermissionsChanged('removed', ...args);
     }).catch(reason => {
@@ -2277,6 +2484,7 @@ browser.permissions.onRemoved.addListener((...args) => {
 
 browser.permissions.onAdded.addListener((...args) => {
     webRequestFirewall.permissionsChanged();
+    onStrictBlockPermissionsChanged(args[0]);
     isFullyInitialized.then(( ) => {
         return onPermissionsChanged('added', ...args);
     }).catch(reason => {
@@ -2322,6 +2530,7 @@ browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 browser.webNavigation?.onBeforeNavigate?.addListener(details => {
     webRequestFirewall.observeNavigation(details);
     if ( details.frameId !== 0 ) { return; }
+    strictBlockTracker.onBeforeNavigate(details);
     isFullyInitialized.then(( ) => popupBlocker.onBeforeNavigate(details)).catch(reason => {
         ublockPlusErr(`popupBeforeNavigate/${reason}`);
     });
@@ -2340,6 +2549,7 @@ browser.webNavigation?.onErrorOccurred?.addListener(details => {
 
 browser.tabs.onRemoved.addListener(tabId => {
     webRequestFirewall.forgetTab(tabId);
+    strictBlockTracker.onTabRemoved(tabId);
     popupBlocker.onTabRemoved(tabId).catch(reason => {
         ublockPlusErr(`popupTabRemoved/${reason}`);
     });

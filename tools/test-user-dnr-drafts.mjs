@@ -31,8 +31,10 @@ const oldDynamic = [
     { id: 9000000, action: { type: 'block' }, condition: { urlFilter: '||old.example^' } },
     { id: 9000001, action: { type: 'allow' }, condition: { urlFilter: '||trusted.example^' } },
 ];
+// Another owner's session rule (the firewall's ID range): user-rules updates
+// rebuild only the strict-block plan (IDs 1..999,999) and never touch it.
 const oldSession = [ {
-    id: 15, action: { type: 'allow' }, condition: { initiatorDomains: [ 'trusted.example' ] },
+    id: 7000015, action: { type: 'allow' }, condition: { initiatorDomains: [ 'trusted.example' ] },
 } ];
 let dynamicRules;
 let sessionRules;
@@ -121,6 +123,7 @@ assert.equal(recovered.fatalError, '');
 assert.equal(recovered.added, 1);
 assert.equal(dynamicRules.some(rule => rule.condition.urlFilter === '||new.example^'), true);
 assert.deepEqual(dynamicRules.filter(rule => rule.id < 9000000), oldDynamic.slice(0, 2));
+assert.deepEqual(sessionRules, oldSession);
 assert.equal(stored.get('userDnrRules.applied'), validDraft,
     'a successful update records the developer rules it installed');
 

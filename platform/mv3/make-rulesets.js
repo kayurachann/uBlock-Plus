@@ -29,6 +29,14 @@ import {
     classifyPopupCondition,
 } from './js/compiled-popup-matcher.js';
 import {
+    STATIC_REGEX_BUDGET,
+    annotateRegexRules,
+    createStaticRegexPlacement,
+    makeRegexDetails,
+    staticRegexEntries,
+    toJSONRuleset,
+} from './stock-regex.js';
+import {
     STOCK_POPUP_CORPUS_SCHEMA_VERSION,
     STOCK_POPUP_DEFERRED_ROUTE_CODE,
     STOCK_POPUP_RUNTIME_ROUTE_CODE,
@@ -52,10 +60,15 @@ import {
     mergeRules,
 } from './js/static-dnr-filtering.js';
 import {
+    foldStockStrictBlockRules,
+    isStrictBlockCandidate,
+} from './js/strictblock-rules.js';
+import {
     listCacheMaxAgeDays,
     readCachedList,
 } from './list-cache-policy.js';
 
+import { createRegexVerdictResolver } from './regex-verdicts.mjs';
 import { execSync } from 'node:child_process';
 import { fetchList } from './js/offscreen/fetch-list.js';
 import fs from 'fs/promises';
@@ -109,6 +122,21 @@ const env = [
 
 if ( platform === 'edge' ) {
     env.push('chromium');
+}
+
+// Chromium and Edge: stock regex rules are packaged in the lists' static
+// rulesets, once checked against Chrome's RE2, and strict-blocked documents
+// are redirected with extensionPath rules which keep their original URL
+// predicate. Firefox and Safari keep regex rules on the dynamic path and the
+// regexSubstitution strict-block rules.
+const staticRegex = platform === 'chromium' || platform === 'edge';
+// `chrome=<path>`: the Chrome which checks the regexes (see
+// regex-verdicts.mjs). `regexVerdicts=required` fails the build when that
+// Chrome cannot answer (release builds); `optional` (default) falls back to
+// cached verdicts, then to unverified portable regexes.
+const regexVerdictsMode = commandLineArgs.get('regexVerdicts') || 'optional';
+if ( /^(?:optional|required)$/.test(regexVerdictsMode) === false ) {
+    throw new Error(`Invalid regexVerdicts: ${regexVerdictsMode}`);
 }
 
 /******************************************************************************/
@@ -217,6 +245,22 @@ const requiredRedirectResources = new Set();
 const rejectedReasonTotals = new Map();
 let rejectedTotal = 0;
 let networkBad = new Set();
+const regexResolver = staticRegex ? createRegexVerdictResolver({
+    chromePath: commandLineArgs.get('chrome') || '',
+    cacheFile: `${cacheDir}/regex-verdicts.json`,
+    required: regexVerdictsMode === 'required',
+    log: text => log(text, false),
+}) : undefined;
+const staticRegexPlacement = createStaticRegexPlacement(STATIC_REGEX_BUDGET);
+const staticRegexDetails = [];
+const re2RejectedTotals = { memory: 0, syntax: 0, other: 0 };
+const sbRe2RejectedTotals = { memory: 0, syntax: 0, other: 0 };
+
+const addRe2Rejected = (totals, verdicts) => {
+    totals.memory += verdicts.memory;
+    totals.syntax += verdicts.syntax + verdicts.portable;
+    totals.other += verdicts.other;
+};
 
 /******************************************************************************/
 
@@ -430,66 +474,10 @@ function pruneHostnameArray(hostnames) {
     return assemble(rootMap, '', []);
 }
 
-/*******************************************************************************
- * 
- * For large rulesets, one rule per line for compromise between size and
- * readability. This also means that the number of lines in resulting file
- * representative of the number of rules in the ruleset.
- * 
- * */
-
-function toJSONRuleset(ruleset) {
-    const nodupProps = [
-        'domains',
-        'excludedDomains',
-        'requestDomains',
-        'excludedRequestDomains',
-        'initiatorDomains',
-        'excludedInitiatorDomains',
-        'topDomains',
-        'excludedTopDomains',
-    ];
-    for ( const { condition } of ruleset ) {
-        if ( condition === undefined ) { continue; }
-        for ( const prop of nodupProps ) {
-            if ( condition[prop] === undefined ) { continue; }
-            condition[prop] = Array.from(new Set(condition[prop]));
-        }
-    }
-    const sortProps = [ 'requestDomains', 'initiatorDomains', 'domains' ];
-    ruleset.sort((a, b) => {
-        let aLen = 0, bLen = 0;
-        for ( const prop of sortProps ) {
-            aLen += a.condition[prop]?.length ?? 0;
-            bLen += b.condition[prop]?.length ?? 0;
-        }
-        return bLen - aLen;
-    });
-    const replacer = (k, v) => {
-        if ( k.startsWith('_') ) { return; }
-        if ( Array.isArray(v) ) {
-            return v.sort();
-        }
-        if ( v instanceof Object ) {
-            const sorted = {};
-            for ( const kk of Object.keys(v).sort() ) {
-                sorted[kk] = v[kk];
-            }
-            return sorted;
-        }
-        return v;
-    };
-    const indent = ruleset.length > 10 ? undefined : 1;
-    const out = [];
-    let id = 1;
-    for ( const rule of ruleset ) {
-        rule.id = id++;
-        out.push(JSON.stringify(rule, replacer, indent));
-    }
-    return `[\n${out.join(',\n')}\n]\n`;
-}
-
 /******************************************************************************/
+
+// Firefox and Safari: the blocked URL is carried to strictblock.html in the
+// fragment, through a regexSubstitution which captures the whole URL.
 
 function toStrictBlockRule(rule, out) {
     const { condition } = rule;
@@ -569,15 +557,25 @@ function isStrictBlockRule(rule) {
     return rePatternIsHostname.test(condition.urlFilter);
 }
 
+// Chromium and Edge use the definition shared with the runtime
+// (strictblock-rules.js), which also leaves rules narrowed by `top=` or
+// tab conditions as plain main_frame blocks.
+const isStrictBlockSource = staticRegex
+    ? rule => isStrictBlockCandidate(rule, { hostnameOnly: true })
+    : isStrictBlockRule;
+
 /******************************************************************************/
 
 // Rules which could not be converted (`_error`) are set aside so that they
-// are counted and reported, never emitted.
+// are counted and reported, never emitted. `soleStrictBlockCopies` pairs the
+// strict-block copy of a rule which blocks documents only with that rule:
+// the copy is then all that is left of the filter.
 function splitDnrRules(rules) {
     const dnrRules = [];
     const popupRules = [];
     const sbRules = [];
     const rejectedRules = [];
+    const soleStrictBlockCopies = [];
     for ( const rule of rules ) {
         if ( rule._error ) {
             rejectedRules.push(rule);
@@ -593,8 +591,9 @@ function splitDnrRules(rules) {
             }
         }
         let types = rule.condition?.resourceTypes;
-        if ( isStrictBlockRule(rule) ) {
-            const sbRule = structuredClone(rule);
+        let sbRule;
+        if ( isStrictBlockSource(rule) ) {
+            sbRule = structuredClone(rule);
             sbRule.condition.resourceTypes = undefined;
             sbRules.push(sbRule);
             if ( types ) {
@@ -610,12 +609,35 @@ function splitDnrRules(rules) {
             }
         }
         if ( types ) {
-            if ( types.length === 0 ) { continue; }
+            if ( types.length === 0 ) {
+                if ( sbRule !== undefined ) {
+                    soleStrictBlockCopies.push([ sbRule, rule ]);
+                }
+                continue;
+            }
             rule.condition.resourceTypes = types;
         }
         dnrRules.push(rule);
     }
-    return { dnrRules, sbRules, popupRules, rejectedRules };
+    return { dnrRules, sbRules, popupRules, rejectedRules, soleStrictBlockCopies };
+}
+
+// Chromium: a filter which blocks documents only keeps no rule but its
+// strict-block copy. When Chrome cannot run that copy's regex, the filter is
+// enforced nowhere: the compiler's rule is rejected with the same reason, so
+// that the list's rejected and converted counts, the tooltip and Diagnostics
+// report it like any filter DNR cannot express. The copy itself is still
+// dropped and counted in `strictblockRejected` (processStrictBlockRules()).
+async function rejectSoleStrictBlockCopies(soleStrictBlockCopies, rejectedRules) {
+    if ( staticRegex === false ) { return; }
+    const copies = soleStrictBlockCopies.filter(([ sbRule ]) => isRegex(sbRule));
+    if ( copies.length === 0 ) { return; }
+    await annotateRegexRules(copies.map(([ sbRule ]) => sbRule), regexResolver);
+    for ( const [ sbRule, rule ] of copies ) {
+        if ( isUnsupported(sbRule) === false ) { continue; }
+        rule._error = sbRule._error.slice();
+        rejectedRules.push(rule);
+    }
 }
 
 /******************************************************************************/
@@ -648,6 +670,20 @@ async function processDnrRules(assetDetails, network, dnrRules, rejectedRules) {
         }
     }
 
+    // Chromium: a regex rule is packaged only inside the portable RE2
+    // subset and when Chrome's RE2 accepts it (see stock-regex.js). The
+    // others get `_error`: they are counted and reported below like any
+    // filter DNR cannot express, instead of being skipped by Chrome.
+    if ( staticRegex ) {
+        const verdicts = await annotateRegexRules(
+            dnrRules.filter(rule => isGood(rule) && isRegex(rule)),
+            regexResolver
+        );
+        addRe2Rejected(re2RejectedTotals, verdicts);
+        log(`\tRegex verdicts: ${verdicts.ok} ok, ` +
+            `${verdicts.unverified} unverified, ${verdicts.rejected} rejected`);
+    }
+
     const staticRules = await patchRuleset(
         dnrRules.filter(rule => isGood(rule) && isRegex(rule) === false)
     );
@@ -662,6 +698,26 @@ async function processDnrRules(assetDetails, network, dnrRules, rejectedRules) {
     );
     const minimizedRegexRuleset = minimizeRuleset(regexRules);
     log(`\tMaybe good regexes (raw/minimized): ${regexRules.length}/${minimizedRegexRuleset.length}`);
+
+    // Chromium: the list's regex rules are appended to its static ruleset as
+    // long as all the static rulesets stay within Chrome's static regex
+    // limit; otherwise they stay in rulesets/regex/, installed as dynamic
+    // rules and validated at runtime.
+    let staticRegexRules = [];
+    let dynamicRegexRules = minimizedRegexRuleset;
+    if ( staticRegex ) {
+        const count = minimizedRegexRuleset.length;
+        if ( staticRegexPlacement.place(assetDetails.id, count) ) {
+            staticRegexRules = minimizedRegexRuleset;
+            dynamicRegexRules = [];
+        } else {
+            log(`!!! ${assetDetails.id}: ${count} regex rules do not fit in ` +
+                `the static regex limit (${staticRegexPlacement.used}/` +
+                `${staticRegexPlacement.budget} used), kept as dynamic rules`);
+        }
+        log(`\tStatic regex rules: ${staticRegexRules.length}`);
+        log(`\tDynamic fallback regex rules: ${dynamicRegexRules.length}`);
+    }
 
     staticRules.forEach(rule => {
         if ( rule.action.redirect?.extensionPath === undefined ) { return; }
@@ -747,8 +803,14 @@ async function processDnrRules(assetDetails, network, dnrRules, rejectedRules) {
     rejectedTotal += rejected.count;
     log(bad.flatMap(rule => rule._error.map(v => `\t\t${v}`)).join('\n'), true);
 
-    const staticJSON = toJSONRuleset(minimizedStaticRuleset);
+    // Static regex rules come last, numbered after the other rules, whose
+    // IDs are therefore those of a ruleset without regex rules. The digest
+    // covers the whole file.
+    const staticJSON = toJSONRuleset(minimizedStaticRuleset, {
+        tail: staticRegexRules,
+    });
     writeFile(`${rulesetDir}/main/${assetDetails.id}.json`, staticJSON);
+    staticRegexDetails.push(...staticRegexEntries(assetDetails.id, staticRegexRules));
     badfilterDetails[assetDetails.id] = {
         badfilterKeys: assetDetails.badfilterKeys ?? [],
         digest: createHash('sha256').update(staticJSON).digest('hex'),
@@ -774,9 +836,9 @@ async function processDnrRules(assetDetails, network, dnrRules, rejectedRules) {
             })),
     }));
 
-    if ( minimizedRegexRuleset.length !== 0 ) {
+    if ( dynamicRegexRules.length !== 0 ) {
         writeFile(`${rulesetDir}/regex/${assetDetails.id}.json`,
-            toJSONRuleset(minimizedRegexRuleset)
+            toJSONRuleset(dynamicRegexRules)
         );
     }
 
@@ -786,10 +848,14 @@ async function processDnrRules(assetDetails, network, dnrRules, rejectedRules) {
         );
     }
 
+    // `plain` and `regexStatic` are the rules of main/<id>.json, `regex`
+    // those of regex/<id>.json (installed as dynamic rules).
     return {
-        total: minimizedStaticRuleset.length + minimizedRegexRuleset.length,
+        total: minimizedStaticRuleset.length + staticRegexRules.length +
+            dynamicRegexRules.length,
         plain: minimizedStaticRuleset.length,
-        regex: minimizedRegexRuleset.length,
+        regexStatic: staticRegex ? staticRegexRules.length : undefined,
+        regex: dynamicRegexRules.length,
         rejected: rejected.count,
         rejectedReasons: rejected.count !== 0 ? rejected.reasons : undefined,
         urlskip: urlskips.size || undefined,
@@ -1151,6 +1217,56 @@ function isPopupRule(rule) {
 
 /******************************************************************************/
 
+// rulesets/strictblock/<id>.json, installed at runtime as session rules
+// while strict blocking is enabled.
+//
+// Chromium: extensionPath redirects which keep the filters' own URL
+// predicate (foldStockStrictBlockRules()), so that only regex filters use a
+// regex rule; the page learns the blocked URL from the service worker. The
+// regex rules go through the same RE2 checks as the static ones, and those
+// Chrome cannot run are dropped and counted in `strictblockRejected`.
+//
+// Firefox and Safari: one regexSubstitution rule per pattern, which carries
+// the blocked URL in the fragment.
+
+async function processStrictBlockRules(assetDetails, sbRules) {
+    const file = `${rulesetDir}/strictblock/${assetDetails.id}.json`;
+    if ( staticRegex === false ) {
+        const strictBlocked = new Map();
+        for ( const rule of sbRules ) {
+            toStrictBlockRule(rule, strictBlocked);
+        }
+        if ( strictBlocked.size !== 0 ) {
+            mergeRules(strictBlocked, 'requestDomains');
+            writeFile(file, toJSONRuleset(Array.from(strictBlocked.values())));
+        }
+        return { count: strictBlocked.size };
+    }
+    const folded = foldStockStrictBlockRules(sbRules);
+    const verdicts = await annotateRegexRules(folded, regexResolver);
+    addRe2Rejected(sbRe2RejectedTotals, verdicts);
+    const kept = folded.filter(rule => isUnsupported(rule) === false);
+    const rejected = dnrErrorSummary(folded.filter(rule => isUnsupported(rule)));
+    log(`\tStrict-block rules: ${kept.length} (regex: ${kept.filter(isRegex).length})`);
+    if ( rejected.count !== 0 ) {
+        log(`\tStrict-block regex filters rejected: ${rejected.count}`);
+        log(folded.filter(rule => isUnsupported(rule))
+            .flatMap(rule => rule._error.map(v => `\t\t${v}`))
+            .join('\n'), true
+        );
+    }
+    if ( kept.length !== 0 ) {
+        writeFile(file, toJSONRuleset(kept));
+    }
+    return {
+        count: kept.length,
+        rejected: rejected.count || undefined,
+        rejectedReasons: rejected.count !== 0 ? rejected.reasons : undefined,
+    };
+}
+
+/******************************************************************************/
+
 async function rulesetFromURLs(assetDetails) {
     log('============================');
     log(`Listset for '${assetDetails.id}':`);
@@ -1195,16 +1311,14 @@ async function rulesetFromURLs(assetDetails) {
     // Release memory used by filter list content
     assetDetails.text = undefined;
 
-    writeFile(`${rulesetDir}/debug/${assetDetails.id}.all.json`,
-        JSON.stringify(results.network.ruleset, null, 2)
-    );
-    const convertedFilterCount = dnrConvertedFilterCount(results.network.ruleset);
     const {
         dnrRules,
         sbRules,
         popupRules,
         rejectedRules,
+        soleStrictBlockCopies,
     } = splitDnrRules(results.network.ruleset);
+    await rejectSoleStrictBlockCopies(soleStrictBlockCopies, rejectedRules);
     assetDetails.badfilterKeys = results.networkBadfilterKeys;
     assetDetails.badfilterDeferredKeys = [ ...sbRules, ...popupRules ]
         .flatMap(rule => rule._sourceKeys ?? []);
@@ -1221,18 +1335,15 @@ async function rulesetFromURLs(assetDetails) {
     const netStats = await processDnrRules(assetDetails, results.network,
         dnrRules, rejectedRules
     );
+    // After processDnrRules(), which marks the regex rules Chrome cannot use:
+    // the compiler output, the converted count and the rejected count then
+    // agree (validate-mv3.mjs recounts them from the debug file).
+    writeFile(`${rulesetDir}/debug/${assetDetails.id}.all.json`,
+        JSON.stringify(results.network.ruleset, null, 2)
+    );
+    const convertedFilterCount = dnrConvertedFilterCount(results.network.ruleset);
     const popupStats = await processPopupRules(assetDetails, popupRules);
-
-    const strictBlocked = new Map();
-    for ( const rule of sbRules ) {
-        toStrictBlockRule(rule, strictBlocked);
-    }
-    if ( strictBlocked.size !== 0 ) {
-        mergeRules(strictBlocked, 'requestDomains');
-        writeFile(`${rulesetDir}/strictblock/${assetDetails.id}.json`,
-            toJSONRuleset(Array.from(strictBlocked.values()))
-        );
-    }
+    const sbStats = await processStrictBlockRules(assetDetails, sbRules);
 
     // Split cosmetic filters into two groups: declarative and procedural
     const rejectedCosmetic = [];
@@ -1313,11 +1424,18 @@ async function rulesetFromURLs(assetDetails) {
         rules: {
             total: netStats.total,
             plain: netStats.plain,
+            // Chromium: regex rules packaged in main/<id>.json; `regex` are
+            // then only those which did not fit (regex/<id>.json)
+            regexStatic: netStats.regexStatic,
             regex: netStats.regex,
             removeparam: netStats.removeparam,
             redirect: netStats.redirect,
             modifyHeaders: netStats.modifyHeaders,
-            strictblock: strictBlocked.size || undefined,
+            strictblock: sbStats.count || undefined,
+            // Chromium: strict-block regex rules which Chrome's RE2 cannot
+            // run, counted in filters (not part of `rejected`)
+            strictblockRejected: sbStats.rejected,
+            strictblockRejectedReasons: sbStats.rejectedReasons,
             urlskip: netStats.urlskip,
             discarded: netStats.discarded,
             // Source filters which could not be converted into DNR rules, and
@@ -1355,6 +1473,12 @@ async function main() {
         version = `${yearPart}.${monthPart*100+dayPart}.${hourPart*100+minutePart}`;
     }
     log(`Version: ${version}`, false);
+
+    // A release build needs Chrome's regex verdicts: fail before compiling
+    // the lists rather than after.
+    if ( regexResolver !== undefined && regexVerdictsMode === 'required' ) {
+        await regexResolver.start();
+    }
 
     // Get list of rulesets
     const rulesets = await fs.readFile('rulesets.json', {
@@ -1416,6 +1540,37 @@ async function main() {
         log(`\t${reason}: ${count}`, false);
     }
 
+    if ( staticRegex ) {
+        const verifiedWith = regexResolver.chromeVersion();
+        const regexDetails = makeRegexDetails({
+            verifiedWith,
+            entries: staticRegexDetails,
+            limit: staticRegexPlacement.budget,
+        });
+        writeFile(`${rulesetDir}/regex-details.json`,
+            `${JSON.stringify(regexDetails, null, 1)}\n`
+        );
+        log(`Static regex rules: ${regexDetails.staticRegexCount}/` +
+            `${regexDetails.staticRegexLimit} (${verifiedWith !== ''
+                ? `verified with ${verifiedWith}`
+                : 'not verified with Chrome'})`, false);
+        const overflow = staticRegexPlacement.overflow;
+        if ( overflow.length !== 0 ) {
+            log(`\tKept as dynamic rules: ${overflow.map(a =>
+                `${a.rulesetId} (${a.count})`).join(', ')}`, false);
+        }
+        const re2Rejected = totals =>
+            `memory ${totals.memory}, syntax ${totals.syntax}` +
+            (totals.other !== 0 ? `, other ${totals.other}` : '');
+        log(`RE2 rejected: ${re2Rejected(re2RejectedTotals)}`, false);
+        log(`Strict-block RE2 rejected: ${re2Rejected(sbRe2RejectedTotals)}`, false);
+        if ( verifiedWith === '' && regexDetails.staticRegexCount !== 0 ) {
+            log('!!! Static regex rules were not checked by Chrome ' +
+                '(pass chrome=<path>): only the portable RE2 subset was ' +
+                'enforced', false);
+        }
+    }
+
     await Promise.all(writeOps);
 
     // Patch manifest
@@ -1451,6 +1606,7 @@ async function main() {
     await fs.writeFile(`${outputDir}/log.txt`, logContent);
 }
 
-main();
+// The browser which checks regexes is closed however the build ends.
+main().finally(( ) => regexResolver?.close());
 
 /******************************************************************************/

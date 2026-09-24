@@ -133,6 +133,15 @@ body[dir="rtl"] #toggleParse {
 #parsed span:first-of-type {
     font-weight: bold;
     }
+/* How exact the displayed address is, or why there is none. */
+#urlNote {
+    color: var(--ink-2);
+    font-size: var(--font-size-smaller);
+    font-style: italic;
+    }
+#theURL[hidden] {
+    display: none;
+    }
 
 #urlskip a {
     display: block;

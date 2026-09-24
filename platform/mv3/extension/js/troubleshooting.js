@@ -63,6 +63,7 @@ export async function getTroubleshootingInfo(details) {
         registeredScripts,
         hasOmnipotence,
         runtimeCapabilities,
+        regexCapacity,
     ] = await Promise.all([
         runtime.getPlatformInfo(),
         sendMessage({ what: 'getDefaultConfig' }),
@@ -75,6 +76,8 @@ export async function getTroubleshootingInfo(details) {
         sendMessage({ what: 'getRegisteredContentScripts' }),
         sendMessage({ what: 'hasBroadHostPermissions' }),
         sendMessage({ what: 'getRuntimeCapabilities' }),
+        // Optional: a report without it is still useful.
+        sendMessage({ what: 'getRegexCapacity' }).catch(( ) => undefined),
     ]);
     const vendor = (( ) => {
         const extURL = runtime.getURL('');
@@ -121,6 +124,19 @@ export async function getTroubleshootingInfo(details) {
             'smart popup': runtimeCapabilities.smartPopupObservation,
         },
     };
+    // Regex rules in use: the built-in lists' static pool and the pool
+    // shared by dynamic and session rules.
+    if ( regexCapacity?.schemaVersion === 1 ) {
+        const pool = (used, limit) => `${used ?? '?'}/${limit ?? '?'}`;
+        config.runtime.regex = [
+            `static ${pool(regexCapacity.static?.enabled, regexCapacity.static?.limit)}`,
+            `shared ${pool(regexCapacity.shared?.used, regexCapacity.shared?.limit)}`,
+        ].join(', ');
+    }
+    // How the strict-block page learns the blocked address.
+    if ( typeof runtimeCapabilities.strictBlockUrlSource === 'string' ) {
+        config.runtime['strictblock url'] = runtimeCapabilities.strictBlockUrlSource;
+    }
     if ( currentConfig.strictBlockMode !== defaultConfig.strictBlockMode ) {
         config.strictblock = currentConfig.strictBlockMode;
     }

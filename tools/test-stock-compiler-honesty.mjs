@@ -34,6 +34,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { promisify } from 'node:util';
 import redirectResources from '../src/js/redirect-resources.js';
+import { stageRulesetBuild } from './stock-ruleset-harness.mjs';
 
 const projectRoot = fileURLToPath(new URL('../', import.meta.url));
 const env = [ 'chromium', 'native_css_has', 'mv3', 'ublock', 'ubol' ];
@@ -346,7 +347,36 @@ const headerRules = rules => rules.filter(rule =>
 
 /******************************************************************************/
 
-// make-rulesets.js: stage it the way tools/make-mv3.ps1 does, compile two
+// Chromium builds: a regexFilter which Chrome's RE2 cannot run is counted
+// like any other filter DNR cannot express, with its own reason code. The
+// codes are those of platform/mv3/stock-regex.js.
+{
+    const regex = '^https?:\\/\\/x\\.fixture\\.test\\/';
+    for ( const [ message, reason ] of [
+        [ `regexFilter rejected by Chrome RE2 (syntaxError): ${regex}`, 'unsupported-regex-syntax' ],
+        [ `regexFilter rejected by Chrome RE2 (memoryLimitExceeded): ${regex}`, 'unsupported-regex-memory' ],
+        [ `regexFilter outside the portable RE2 subset (backreference-or-octal): ${regex}`, 'unsupported-regex-syntax' ],
+        [ `regexFilter is not RE2-compatible: ${regex}`, 'unsupported-regex' ],
+    ] ) {
+        assert.equal(dnrErrorReason(message), reason, message);
+    }
+    // Filters, not entries: one filter per `_sourceFilters` item.
+    assert.deepEqual(dnrErrorSummary([
+        { _error: [ `regexFilter rejected by Chrome RE2 (memoryLimitExceeded): ${regex}` ],
+            _sourceFilters: [ '/a/$script', '/a/$image' ] },
+        { _error: [ `regexFilter rejected by Chrome RE2 (memoryLimitExceeded): ${regex}` ],
+            _sourceFilters: [ '/a/$script' ] },
+        { _error: [ `regexFilter outside the portable RE2 subset (lookaround): ${regex}` ],
+            _sourceFilters: [ '/b/' ] },
+    ]), {
+        count: 3,
+        reasons: { 'unsupported-regex-memory': 2, 'unsupported-regex-syntax': 1 },
+    });
+}
+
+/******************************************************************************/
+
+// make-rulesets.js: stage it the way tools/make-mv3.ps1 does, compile three
 // fixture lists, and check the reports, the packaged redirect resources and
 // validate-mv3.mjs.
 
@@ -357,44 +387,30 @@ const temporaryRoot = await fs.mkdtemp(
 );
 const fromRoot = relative => path.join(projectRoot, relative);
 
-const stageRulesetBuild = async buildDir => {
-    const copy = (from, to) => fs.cp(fromRoot(from), path.join(buildDir, to),
-        { recursive: true });
-    await fs.mkdir(path.join(buildDir, 'js'), { recursive: true });
-    for ( const file of [
-        'arglist-parser.js', 'base64-custom.js', 'biditrie.js',
-        'dynamic-net-filtering.js', 'filtering-context.js', 'hnswitches.js',
-        'hntrie.js', 'jsonpath.js', 'redirect-resources.js',
-        'regex-analyzer.js', 's14e-serializer.js', 'static-dnr-filtering.js',
-        'static-filtering-parser.js', 'static-net-filtering.js',
-        'static-filtering-io.js', 'tasks.js', 'text-utils.js', 'urlskip.js',
-        'uri-utils.js', 'url-net-filtering.js',
-    ] ) {
-        await copy(`src/js/${file}`, `js/${file}`);
+// Regex filters Chrome cannot run: outside the portable RE2 subset, or
+// rejected by Chrome's RE2. Without a Chrome, make-rulesets takes Chrome's
+// verdicts from its cache (build/mv3-data/regex-verdicts.json), which this
+// test writes. The last filter only blocks documents: its strict-block rule
+// is all that is left of it, so when Chrome cannot run that rule the filter
+// is rejected like the others, and the rule is also counted apart
+// (`strictblockRejected`).
+const regexFixtures = new Map([
+    [ '/^https?:\\/\\/backref\\.fixture\\.test\\/(a+)\\1/$script', 'portable' ],
+    [ '/^https?:\\/\\/memory\\.fixture\\.test\\/[a-z]{1,9}/$script', 'memoryLimitExceeded' ],
+    [ '/^https?:\\/\\/syntax\\.fixture\\.test\\/[a-z]+/$script', 'syntaxError' ],
+    [ '/^https?:\\/\\/sb-memory\\.fixture\\.test\\/[a-z]+/$doc', 'memoryLimitExceeded' ],
+]);
+const regexVerdictCache = await (async ( ) => {
+    const { rules } = await compile(Array.from(regexFixtures.keys()));
+    const verdicts = {};
+    for ( const [ filter, verdict ] of regexFixtures ) {
+        const rule = rules.find(rule => rule._sourceFilters.includes(filter));
+        assert.equal(typeof rule?.condition.regexFilter, 'string', filter);
+        if ( verdict === 'portable' ) { continue; }
+        verdicts[JSON.stringify([ rule.condition.regexFilter, false, false ])] = verdict;
     }
-    await copy('src/lib/csstree', 'lib/csstree');
-    await copy('src/lib/punycode.js', 'lib/punycode.js');
-    await copy('src/lib/regexanalyzer', 'lib/regexanalyzer');
-    await copy('src/lib/publicsuffixlist', 'lib/publicsuffixlist');
-    for ( const file of await fs.readdir(fromRoot('platform/mv3')) ) {
-        if ( /\.(?:json|m?js)$/.test(file) === false ) { continue; }
-        await copy(`platform/mv3/${file}`, file);
-    }
-    for ( const file of [
-        'ubo-parser.js', 'compiled-popup-matcher.js', 'utils.js',
-        'imported-fetch-policy.js',
-    ] ) {
-        await copy(`platform/mv3/extension/js/${file}`, `js/${file}`);
-    }
-    await copy('src/lib/punycode.js', 'js/punycode.js');
-    await copy('src/lib/regexanalyzer', 'js/regexanalyzer');
-    await copy('src/js/resources', 'js/resources');
-    await copy('platform/mv3/scriptlets', 'scriptlets');
-    await copy('platform/mv3/extension/js/offscreen', 'js/offscreen');
-    await copy('src/js/regex-analyzer.js', 'js/offscreen/regex-analyzer.js');
-    await copy('src/web_accessible_resources', 'web_accessible_resources');
-    await copy('platform/mv3/chromium', 'chromium');
-};
+    return { schemaVersion: 1, chromeVersion: 'Chrome/153.0.0.0', verdicts };
+})();
 
 const fixtureRulesets = [ {
     id: 'honesty-a',
@@ -430,6 +446,29 @@ const fixtureRulesets = [ {
     filters: [
         '||clean.fixture.test^',
     ],
+}, {
+    id: 'honesty-c',
+    name: 'Honesty C',
+    group: 'default',
+    enabled: true,
+    urls: [],
+    filters: [
+        '||plain-c.fixture.test^',
+        ...regexFixtures.keys(),
+    ],
+}, {
+    // Chromium strict blocking uses the runtime's definition of a candidate
+    // (strictblock-rules.js): a document block narrowed by `top=` stays a
+    // plain main_frame block, since a redirect would ignore the narrowing.
+    id: 'honesty-d',
+    name: 'Honesty D',
+    group: 'default',
+    enabled: true,
+    urls: [],
+    filters: [
+        '||sb-top.fixture.test^$doc,top=frame-top.fixture.test',
+        '||sb-control.fixture.test^$doc',
+    ],
 } ];
 const expectedRejected = {
     'honesty-a': {
@@ -447,6 +486,20 @@ const expectedRejected = {
         converted: 5,
     },
     'honesty-b': { rejected: 0, rejectedReasons: undefined, converted: 1 },
+    'honesty-c': {
+        // The document-only regex filter's sole rule is the strict-block
+        // rule Chrome cannot run: the filter is enforced nowhere.
+        rejected: 4,
+        rejectedReasons: {
+            'unsupported-regex-memory': 2,
+            'unsupported-regex-syntax': 2,
+        },
+        // plain-c
+        converted: 1,
+        strictblockRejected: 1,
+        strictblockRejectedReasons: { 'unsupported-regex-memory': 1 },
+    },
+    'honesty-d': { rejected: 0, rejectedReasons: undefined, converted: 2 },
 };
 
 try {
@@ -461,6 +514,8 @@ try {
     await fs.mkdir(path.join(temporaryRoot, 'build', 'mv3-data'));
     await fs.writeFile(path.join(temporaryRoot, 'build', 'mv3-data', 'secret.txt'),
         '0123456789abcdef');
+    await fs.writeFile(path.join(temporaryRoot, 'build', 'mv3-data', 'regex-verdicts.json'),
+        JSON.stringify(regexVerdictCache));
     const built = await run(process.execPath, [
         '--no-warnings', 'make-rulesets.js',
         `output=${outputDir}`, 'platform=chromium',
@@ -482,13 +537,67 @@ try {
             .map(([ reason, count ]) => `\t\t${reason}: ${count}\n`).join('');
         assert.ok(section.includes(`\tUnsupported: ${expected.rejected}\n${reasonLines}`),
             `Build log reports the rejected filters of ${id}`);
+        assert.equal(entry.rules.strictblockRejected, expected.strictblockRejected, id);
+        assert.deepEqual(entry.rules.strictblockRejectedReasons,
+            expected.strictblockRejectedReasons, id);
+        // No regex rule of these lists can be packaged.
+        assert.equal(entry.rules.regexStatic, 0, id);
+        assert.equal(entry.rules.regex, 0, id);
     }
-    assert.match(built.stdout, /Unsupported filters in 2 rulesets: 8\n/);
+    assert.match(built.stdout, /Unsupported filters in 4 rulesets: 12\n/);
     assert.match(built.stdout, /\tunsupported-redirect-rule: 2\n/);
+    assert.match(built.stdout, /\tunsupported-regex-syntax: 2\n/);
+    assert.match(built.stdout, /\tunsupported-regex-memory: 2\n/);
+    assert.match(built.stdout, /\nRE2 rejected: memory 1, syntax 2\n/);
+    assert.match(built.stdout, /\nStrict-block RE2 rejected: memory 1, syntax 0\n/);
+    // Every regex was answered by the (cached) verdicts of one Chrome.
+    assert.match(built.stdout, /\nStatic regex rules: 0\/1000 \(verified with Chrome\/153\.0\.0\.0\)\n/);
+    const regexDetails = await readJSON('rulesets/regex-details.json');
+    assert.equal(regexDetails.verifiedWith, 'Chrome/153.0.0.0');
+    assert.equal(regexDetails.staticRegexCount, 0);
+    // The rejected regex rules are reported, never packaged.
+    for ( const file of [ 'main/honesty-c.json', 'strictblock/honesty-c.json' ] ) {
+        const text = await fs.readFile(path.join(outputDir, 'rulesets', file), 'utf8');
+        assert.equal(text.includes('regexFilter'), false, file);
+    }
+    await assert.rejects(fs.stat(path.join(outputDir, 'rulesets', 'regex', 'honesty-c.json')));
+    const compiledC = await readJSON('rulesets/debug/honesty-c.all.json');
+    const errorsC = compiledC.filter(rule => rule._error).map(rule => rule._error[0]);
+    assert.equal(errorsC.length, 4);
+    const documentOnly = compiledC.find(rule => rule._sourceFilters.some(filter =>
+        filter.includes('sb-memory')));
+    assert.match(documentOnly?._error?.[0] ?? '',
+        /^regexFilter rejected by Chrome RE2 \(memoryLimitExceeded\): /,
+        'a document-only filter whose strict-block regex Chrome cannot run is rejected');
+    assert.ok(buildLog.slice(buildLog.indexOf('Listset for \'honesty-c\':'))
+        .includes('\tStrict-block regex filters rejected: 1\n'));
+    assert.ok(errorsC.some(message => message.startsWith(
+        'regexFilter outside the portable RE2 subset (backreference-or-octal): ')));
+    assert.ok(errorsC.some(message => message.startsWith(
+        'regexFilter rejected by Chrome RE2 (memoryLimitExceeded): ')));
+    assert.ok(errorsC.some(message => message.startsWith(
+        'regexFilter rejected by Chrome RE2 (syntaxError): ')));
     // One line per error, also for an entry with several errors
     assert.ok(buildLog.includes('\t\tstrict1p not supported\n' +
         '\t\tCan\'t salvage rule with unsupported domain= option: example.*\n'));
     assert.equal(buildLog.includes(',\t\t'), false);
+
+    // top= narrows a document block: no redirect, the plain block stays.
+    const strictD = await readJSON('rulesets/strictblock/honesty-d.json');
+    assert.equal(JSON.stringify(strictD).includes('sb-top.fixture.test'), false,
+        'a top= document block is not a strict-block redirect');
+    assert.ok(strictD.some(rule =>
+        rule.condition.requestDomains?.includes('sb-control.fixture.test')),
+    'an unnarrowed document block is');
+    const mainD = await readJSON('rulesets/main/honesty-d.json');
+    const topBlock = mainD.find(rule =>
+        rule.condition.requestDomains?.includes('sb-top.fixture.test'));
+    assert.equal(topBlock?.action.type, 'block');
+    assert.deepEqual(topBlock.condition.resourceTypes, [ 'main_frame' ]);
+    assert.deepEqual(topBlock.condition.topDomains, [ 'frame-top.fixture.test' ]);
+    assert.equal(mainD.some(rule =>
+        rule.condition.requestDomains?.includes('sb-control.fixture.test')), false,
+    'the redirect replaces the plain main_frame block of an unnarrowed document block');
 
     // Unsupported entries are reported, never emitted.
     const mainRules = await readJSON('rulesets/main/honesty-a.json');

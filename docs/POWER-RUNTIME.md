@@ -26,6 +26,20 @@ Managed, native và custom browser là ba ranh giới quyền khác nhau. Một 
 
 Do constant và implementation có thể khác giữa Chrome version hoặc Chromium fork, UI chỉ công bố giá trị runtime probe được; tài liệu này không hứa một tổng rule cố định trên mọi browser.
 
+### Hai pool regex từ bước 2
+
+| Pool | Chủ sở hữu | List mặc định | Mọi list |
+| --- | --- | ---: | ---: |
+| Static, 1.000 cho mọi static ruleset | Regex stock đóng gói trong `main/<id>.json` | 174 | 473 |
+| Dynamic + session dùng chung, 1.000 | Strict-block của list stock | 111 | 123 |
+| | Bộ lọc của tôi, list nhập thêm, rule DNR developer, strict-block của chúng, và chủ sở hữu sau này khai báo trong `dnr-namespaces.js` | khoảng 889 còn trống | khoảng 877 còn trống |
+
+Số trên là của build 1.2.0 trên Chrome 153 ([số đo](MV3-LIMITS-RESEARCH-2026-09-24.md#pool-regex-sau-bước-2)).
+
+- **Build:** regex stock chỉ được đóng gói static sau khi qua tập con RE2 portable và `isRegexSupported` của Chrome thật. Build phát hành cần Chrome, chạy headless trong profile tạm (xem [threat model](THREAT-MODEL.md#chrome-headless-lúc-build)). Tổng regex của mọi static ruleset đã khai báo không vượt 1.000, nên mọi tổ hợp list bật đều vừa; phần vượt (hiện không có) quay lại đường dynamic.
+- **Runtime:** `regex-capacity.js` đếm pool dùng chung theo chủ sở hữu, dựa trên dải rule ID trong `dnr-namespaces.js`. Kế hoạch session strict-block chỉ dùng phần mà dynamic rule và các chủ session khác để lại. Khi một lần cập nhật rule người dùng không vừa, chỉ regex rule không phải ngoại lệ của list nhập thêm bị bỏ, từ cuối, kèm cảnh báo. Nếu vẫn không vừa thì lần cập nhật thất bại và rule cũ được giữ.
+- **Báo cáo:** message `getRegexCapacity` (chỉ trang của extension) trả số liệu cho bảng **Dung lượng quy tắc regex** (Regex rule capacity) trong mục **Chẩn đoán** (Diagnostics) của dashboard và cho ước lượng regex của Filter Store. Giá trị không biết được hiện là “chưa kiểm tra”, không bao giờ là 0. **Kiểm tra ngay** gọi `isRegexSupported` cho mọi regex static của list đang bật, vì Chrome bỏ qua im lặng regex static vượt giới hạn bộ nhớ của phiên bản đang chạy.
+
 ## Service worker không phải background page
 
 Theo [Chrome extension service-worker lifecycle](https://developer.chrome.com/docs/extensions/develop/concepts/service-workers/lifecycle), worker thường bị dừng sau khoảng 30 giây idle; một event/API call kéo dài khoảng 5 phút hoặc `fetch()` response quá khoảng 30 giây cũng có thể bị chấm dứt. Event mới có thể đánh thức worker, nhưng global variables cũ đã mất.
@@ -37,6 +51,28 @@ Vì vậy Power Runtime:
 - đọc lại immutable compiled generation sau wake và không trộn hai generation;
 - làm update/migration idempotent, có rollback/cleanup khi worker bị dừng;
 - fail open nếu popup/popunder cần initiator hoặc original-opener context mà checkpoint không thể khôi phục đầy đủ.
+
+### Chi phí của strict-block cho service worker
+
+Trang strict-block hỏi worker địa chỉ bị chặn (`strictblock-tracker.js`). Listener của tracker được đăng ký đồng bộ ở top level, nên sự kiện đánh thức được worker:
+
+- `webRequest.onBeforeRedirect` và `webRequest.onBeforeRequest` cho `main_frame`, khi quyền `webRequest` tùy chọn đã được cấp (luôn có trong Experimental). Chúng chỉ nhận request của document cấp cao nhất, nên là nguồn chính xác rẻ nhất. Sau server redirect, Chrome không phát `onBeforeRedirect` cho bước redirect tới `strictblock.html`, chỉ phát `onBeforeRequest` cho trang đó với cùng `requestId`; tracker nhớ địa chỉ web gần nhất của mỗi request (trong bộ nhớ, tối đa 64) để lấy địa chỉ bị chặn. Mục Chẩn đoán có nút cấp quyền này.
+- `declarativeNetRequest.onRuleMatchedDebug`, chỉ khi không có `webRequest`, có ít nhất một redirect strict-block và không ở low-memory profile. Chrome gửi sự kiện này cho **mọi** rule khớp của bản cài unpacked, nên worker thức trong suốt lúc duyệt web. Strict blocking bật mặc định, nên đây là trường hợp thường gặp của bản Standard unpacked chưa cấp `webRequest` ở profile balanced.
+- `webNavigation.onBeforeNavigate` (đã có sẵn cho popup blocker): nguồn gần đúng.
+
+Số đo trên Chrome 153, gói 1.2.0 unpacked (`tools/test-strictblock-chrome.mjs`, hai lượt; [chi tiết](MV3-LIMITS-RESEARCH-2026-09-24.md#pool-regex-sau-bước-2)):
+
+| Đại lượng | Không có `onRuleMatchedDebug` | Có |
+| --- | ---: | ---: |
+| Tải trang có 300 ảnh bị chặn | 125 / 127 ms | 151 / 139 ms |
+| Thời gian JS của worker bận cho trang đó | 1,32 / 1,21 ms | 1,82 / 1,50 ms |
+| Worker khi trang yêu cầu một ảnh bị chặn mỗi 2 s | dừng sau 30,1 s | không dừng trong suốt 40 s / 60 s đo |
+
+Probe thiết kế trước đó đo 72,4 và 87,0 ms cho cùng loại trang (khoảng 49 µs mỗi rule khớp, khoảng 2,5 ms CPU worker mỗi trang). Tracker chỉ giữ bản ghi cho tối đa 64 tab, trong bộ nhớ và `storage.session`, và xóa bản ghi ngay khi trang strict-block đã đọc nó. Nó gỡ listener `onRuleMatchedDebug` khi không còn redirect nào (strict blocking tắt hoặc không có quyền truy cập mọi trang web).
+
+Ở **low-memory profile** tracker không dùng `onRuleMatchedDebug`, để worker được nghỉ khi người dùng duyệt web: listener đăng ký ở top level (worker chưa biết profile lúc đó) bị gỡ ngay khi `start()` đọc được profile, và mỗi lần đổi profile. Nguồn khi ấy là lúc bắt đầu điều hướng (gần đúng): trang strict-block ghi rõ, không cho chọn **Đừng cảnh báo tôi lần nữa** trên host đoán ra, và filter `$doc` của Bộ lọc của tôi và list nhập thêm lại là block thường (trang lỗi của trình duyệt) vì kế hoạch session được dựng lại theo nguồn mới. Cấp quyền `webRequest` trong mục Chẩn đoán cho lại địa chỉ chính xác với chi phí chỉ một sự kiện mỗi request `main_frame`.
+
+Thời điểm: bản ghi được đánh dấu bằng `timeStamp` của chính sự kiện (`webRequest`, `webNavigation`); chỉ `onRuleMatchedDebug` không có nên dùng thời điểm worker nhận. Sau server redirect, `onBeforeNavigate` của địa chỉ bắt đầu tới worker sau sự kiện của địa chỉ bị chặn; nó bắt đầu trước nên không làm bản ghi cũ đi, và trang hiện địa chỉ sau khoảng 100–130 ms thay vì chờ hết 1,5 s (test Chrome kiểm dưới 1 s cho cả hai nguồn chính xác).
 
 ## Compiled popup observer
 
@@ -67,7 +103,8 @@ Module `runtime-capabilities.js` thu thập:
 - `installType` thực tế (`development`, `admin`, `normal`, `sideload` hoặc `other`);
 - permission được khai báo **và** được browser cấp;
 - sự tồn tại của DNR, `webRequest`, `webNavigation`, tabs và offscreen; riêng `userScripts` được probe bằng lời gọi API thật để không báo nhầm khi người dùng tắt **Allow User Scripts**;
-- quota DNR mà browser hiện tại công bố, gồm cả `getAvailableStaticRuleCount()`.
+- quota DNR mà browser hiện tại công bố, gồm cả `getAvailableStaticRuleCount()`;
+- `strictBlockUrlSource`: cách trang strict-block biết địa chỉ bị chặn, là `webrequest` hoặc `rule-match` (chính xác, do trình duyệt báo), `regex-substitution` (chính xác, nằm trong địa chỉ của trang; bản Firefox), `navigation-start` (gần đúng) hoặc `unavailable`. Worker báo nguồn mà nó thật sự đã đăng ký; mỗi nguồn chỉ được giữ khi trình duyệt vẫn cấp những gì nó cần, nếu không thì hạ xuống nguồn kế tiếp. `strictBlockUrlExact` chỉ đúng với ba nguồn chính xác. Mục Chẩn đoán hiện kết quả này trong dòng “Địa chỉ hiển thị trên trang chặn nghiêm ngặt” (Address shown on the strict-blocking page).
 
 Kết quả luôn giữ `activeNetworkEngine: "dnr"` cho tới khi một managed adapter hoàn chỉnh được đăng ký. Việc thấy `managed-webrequest` trong `eligibleNetworkEngines` chỉ có nghĩa môi trường đủ điều kiện; nó không âm thầm bật code chưa được kiểm thử.
 

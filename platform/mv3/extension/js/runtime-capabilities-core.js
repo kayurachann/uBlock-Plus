@@ -25,6 +25,31 @@ const finiteQuota = value => Number.isSafeInteger(value) && value >= 0
     ? value
     : undefined;
 
+// How the strict-block page learns the blocked address, best first (see
+// strictblock-tracker.js). 'regex-substitution' is the Firefox build, where
+// the redirect itself carries the address in the page's fragment.
+const strictBlockUrlSourceOrder = [
+    'webrequest', 'rule-match', 'navigation-start', 'unavailable',
+];
+const exactStrictBlockUrlSources = new Set([
+    'webrequest', 'rule-match', 'regex-substitution',
+]);
+
+// The worker reports the source it uses; each source is kept only while the
+// browser still grants what it needs, otherwise the next one down applies.
+// Nothing reported means nothing implemented: 'unavailable'.
+const classifyStrictBlockUrlSource = (reported, granted) => {
+    if ( granted.dnr === false ) { return 'unavailable'; }
+    if ( reported === 'regex-substitution' ) { return reported; }
+    let i = strictBlockUrlSourceOrder.indexOf(reported);
+    if ( i === -1 ) { return 'unavailable'; }
+    for ( ; i < strictBlockUrlSourceOrder.length; i++ ) {
+        const source = strictBlockUrlSourceOrder[i];
+        if ( source === 'unavailable' || granted[source] ) { return source; }
+    }
+    return 'unavailable';
+};
+
 /******************************************************************************/
 
 export function classifyRuntimeCapabilities(input = {}) {
@@ -72,6 +97,16 @@ export function classifyRuntimeCapabilities(input = {}) {
     const observationGranted = grantedPermissions.has('webRequest');
     const matchFeedbackAPI = manifestPermissions.has('declarativeNetRequestFeedback') &&
         api.nativeMatchFeedback === true;
+    const strictBlockUrlSource = classifyStrictBlockUrlSource(
+        input.strictBlockUrlSource,
+        {
+            dnr: dnrAvailable,
+            'webrequest': observationDeclared && observationGranted &&
+                api.webRequest === true,
+            'rule-match': matchFeedbackAPI,
+            'navigation-start': api.webNavigation === true,
+        }
+    );
 
     const eligibleNetworkEngines = [];
     if ( dnrAvailable ) {
@@ -111,6 +146,10 @@ export function classifyRuntimeCapabilities(input = {}) {
         inlineScriptFirewall: false,
         smartPopupObservation:
             api.tabs === true && api.webNavigation === true,
+        // 'webrequest' | 'rule-match' | 'regex-substitution' (exact),
+        // 'navigation-start' (approximate) or 'unavailable'.
+        strictBlockUrlSource,
+        strictBlockUrlExact: exactStrictBlockUrlSources.has(strictBlockUrlSource),
         userScripts: api.userScripts === true,
         offscreenCompilation: api.offscreen === true,
         quotas: {

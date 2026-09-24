@@ -149,6 +149,9 @@ cp platform/mv3/*.mjs "$RULESET_BUILD_DIR"/
 cp platform/mv3/extension/js/ubo-parser.js "$RULESET_BUILD_DIR"/js/
 cp platform/mv3/extension/js/compiled-popup-matcher.js "$RULESET_BUILD_DIR"/js/
 cp platform/mv3/extension/js/utils.js "$RULESET_BUILD_DIR"/js/
+# Stock strict-block rules are folded with the runtime's own module.
+cp platform/mv3/extension/js/strictblock-rules.js "$RULESET_BUILD_DIR"/js/
+cp platform/mv3/extension/js/dnr-namespaces.js "$RULESET_BUILD_DIR"/js/
 # make-rulesets imports offscreen/fetch-list.js, whose fetch-policy module
 # lives one directory above the copied offscreen tree.
 cp platform/mv3/extension/js/imported-fetch-policy.js "$RULESET_BUILD_DIR"/js/
@@ -162,8 +165,22 @@ mkdir -p "$RULESET_BUILD_DIR"/web_accessible_resources
 cp "$UBO_DIR"/src/web_accessible_resources/* "$RULESET_BUILD_DIR"/web_accessible_resources/
 cp -R platform/mv3/"$PLATFORM" "$RULESET_BUILD_DIR"/
 
+# Chromium and Edge: CHROME_PATH names a Chrome which checks the stock regex
+# rules at build time (platform/mv3/regex-verdicts.mjs starts it headless,
+# with a new temporary profile, and closes it).
+CHROME_ARG=""
+if [ -n "$CHROME_PATH" ] && { [ "$PLATFORM" = "chromium" ] || [ "$PLATFORM" = "edge" ]; }; then
+    CHROME_BIN=$(command -v "$CHROME_PATH" || echo "$CHROME_PATH")
+    case "$CHROME_BIN" in
+        /*) ;;
+        *) CHROME_BIN="$(pwd)/$CHROME_BIN" ;;
+    esac
+    echo "Regex checks: $CHROME_BIN"
+    CHROME_ARG="chrome=$CHROME_BIN"
+fi
+
 cd "$RULESET_BUILD_DIR"
-node --no-warnings make-rulesets.js output="$OUTPUT_DIR" platform="$PLATFORM"
+node --no-warnings make-rulesets.js output="$OUTPUT_DIR" platform="$PLATFORM" ${CHROME_ARG:+"$CHROME_ARG"}
 if [ -n "$BEFORE" ]; then
     echo "*** uBlock Plus+ MV3: salvaging rule ids to minimize diff size"
     echo "    before=$BEFORE/$PLATFORM"

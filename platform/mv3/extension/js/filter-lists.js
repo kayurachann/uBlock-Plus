@@ -96,7 +96,10 @@ function updateNodes(listEntries) {
 
 export function rulesetStatsFromDetails(rulesetDetails) {
     const { rules, filters } = rulesetDetails;
-    const ruleCount = rules.plain + rules.regex;
+    // Chromium packages keep the Chrome-validated regex rules in the list's
+    // static ruleset (`regexStatic`); `regex` is the dynamic fallback.
+    // Imported lists, Firefox and older packages have no `regexStatic`.
+    const ruleCount = rules.plain + (rules.regexStatic ?? 0) + rules.regex;
     // Stock rulesets: `accepted` also counts the filters which could not be
     // converted, and counts a filter once per type. Imported rulesets do not
     // count the filters they reject as `accepted`.

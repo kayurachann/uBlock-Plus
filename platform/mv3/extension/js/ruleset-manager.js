@@ -27,6 +27,21 @@ import {
 } from './compiled-storage.js';
 
 import {
+    SPECIAL_RULES_REALM,
+    TRUSTED_DIRECTIVE_BASE_RULE_ID,
+    TRUSTED_DIRECTIVE_PRIORITY,
+    USER_RULES_BASE_RULE_ID,
+    enqueueDNRMutation,
+    setDNRMutationErrorReporter,
+} from './dnr-namespaces.js';
+
+import {
+    USER_RULES_PRIORITY,
+    isStrictBlockSessionRule,
+    planStrictBlockSessionRules,
+} from './strictblock-rules.js';
+
+import {
     addImportedLists,
     getEnabledImportedLists,
     getImportedLists,
@@ -44,6 +59,11 @@ import {
 } from './ext.js';
 
 import {
+    planUserRegexBudget,
+    summarizeRegexCapacity,
+} from './regex-capacity.js';
+
+import {
     rulesetConfig,
     saveRulesetConfig,
 } from './config.js';
@@ -58,26 +78,26 @@ import { rulesFromText } from './dnr-parser.js';
 
 /******************************************************************************/
 
-const SPECIAL_RULES_REALM = 5000000;
-const USER_RULES_BASE_RULE_ID = 9000000;
-const USER_RULES_PRIORITY = 1000000;
-const TRUSTED_DIRECTIVE_BASE_RULE_ID = 8000000;
-const TRUSTED_DIRECTIVE_PRIORITY = USER_RULES_PRIORITY + 1000000;
-const STRICTBLOCK_PRIORITY = 29;
 // Developer DNR text installed by the last successful user-rules update.
 const USER_DNR_APPLIED_KEY = 'userDnrRules.applied';
+// Session storage: the installed strict-block session plan (owners, counts).
+const STRICTBLOCK_PLAN_KEY = 'strictBlock.plan';
+// Local (permanent) and session (temporary) "don't warn" hostnames.
+const STRICTBLOCK_EXCLUSIONS_KEY = 'excludedStrictBlockHostnames';
+// Local storage: regex usage per realm of the installed user rules, and the
+// last 'Check now' of the packaged static regex rules.
+const REGEX_CAPACITY_USER_KEY = 'regexCapacity.user';
+const REGEX_CAPACITY_STATIC_KEY = 'regexCapacity.staticCheck';
+const DEFAULT_MAX_SESSION_RULES = 5000;
 const stockBadfilterManager = createStockBadfilterManager({
     dnr, read: localRead, write: localWrite, remove: localRemove, fetchJSON,
 });
-let pendingDNRMutation = Promise.resolve();
 
-function enqueueDNRMutation(task) {
-    const result = pendingDNRMutation.then(task);
-    pendingDNRMutation = result.catch(reason => {
-        ublockPlusErr(`DNR transaction queue/${reason}`);
-    });
-    return result;
-}
+// Every dynamic and session DNR write, of every owner, goes through the one
+// queue of dnr-namespaces.js. It is re-exported here for the other writers.
+setDNRMutationErrorReporter(reason => {
+    ublockPlusErr(`DNR transaction queue/${reason}`);
+});
 
 function appendDNRResponseError(response, reason) {
     const message = `${reason}`;
@@ -86,9 +106,9 @@ function appendDNRResponseError(response, reason) {
         : `${response.error}; ${message}`;
 }
 
-async function refreshSessionRules(response = {}) {
+async function refreshSessionRules(response = {}, options = {}) {
     try {
-        const result = await updateSessionRulesNow();
+        const result = await updateSessionRulesNow(options);
         if ( result?.error ) {
             appendDNRResponseError(response, result.error);
         }
@@ -101,25 +121,11 @@ async function refreshSessionRules(response = {}) {
 
 /******************************************************************************/
 
-const isStrictBlockRule = rule => {
-    if ( rule.priority !== STRICTBLOCK_PRIORITY ) { return false; }
-    if ( rule.condition?.resourceTypes === undefined ) { return false; }
-    if ( rule.condition.resourceTypes.length !== 1 ) { return false; }
-    if ( rule.condition.resourceTypes[0] !== 'main_frame' ) { return false; }
-    if ( rule.action.type === 'redirect' ) {
-        const substitution = rule.action.redirect.regexSubstitution;
-        return substitution !== undefined &&
-            substitution.includes('/strictblock.');
-    }
-    if ( rule.action.type === 'allow' ) {
-        return Array.isArray(rule.condition?.requestDomains);
-    }
-    return false;
-};
-
+// Session rules with IDs 1..999,999 belong to the strict-block plan
+// (dnr-namespaces.js); every other session rule belongs to another owner.
 const nativeRulesetState = createRulesetNativeState({
     dnr, read: localRead, write: localWrite, remove: localRemove,
-    ownsSession: isStrictBlockRule,
+    ownsSession: isStrictBlockSessionRule,
     getPackageState: async ( ) => {
         const manifest = runtime.getManifest();
         const index = await fetchJSON('/rulesets/badfilter-details');
@@ -137,12 +143,28 @@ const nativeRulesetState = createRulesetNativeState({
 export function snapshotNativeRulesetState() {
     return enqueueDNRMutation(async ( ) => {
         await stockBadfilterManager.recover();
-        return nativeRulesetState.snapshot();
+        const state = await nativeRulesetState.snapshot();
+        // The plan describes the snapshot's strict-block session rules: the
+        // strict-block page and the logger resolve their IDs through it.
+        const plan = await sessionRead(STRICTBLOCK_PLAN_KEY);
+        if ( plan?.schemaVersion === 1 ) {
+            state.strictBlockPlan = plan;
+        }
+        return state;
     });
 }
 
 export function restoreNativeRulesetState(state) {
-    return enqueueDNRMutation(( ) => nativeRulesetState.restore(state));
+    return enqueueDNRMutation(async ( ) => {
+        await nativeRulesetState.restore(state);
+        // The restored dynamic rules belong to the generation the caller
+        // restores as active.
+        installedUserGeneration = undefined;
+        await storeStrictBlockPlan(state?.strictBlockPlan?.schemaVersion === 1
+            ? state.strictBlockPlan
+            : undefined
+        );
+    });
 }
 
 export function finalizeNativeRulesetRecovery() {
@@ -166,41 +188,39 @@ export function getRulesetDetails() {
 
 /******************************************************************************/
 
+// Chrome compiles a regex with the rule's own matching and capture flags.
+const regexOptionsOf = rule => ({
+    regex: rule.condition.regexFilter,
+    isCaseSensitive: rule.condition.isUrlFilterCaseSensitive === true,
+    requireCapturing: rule.action?.redirect?.regexSubstitution !== undefined,
+});
+
+// true, or the reason the browser gave. Verdicts are cached per exact
+// options for the lifetime of the worker.
+async function regexSupport(options) {
+    const key = JSON.stringify(options);
+    const known = pruneInvalidRegexRules.validated.get(key);
+    if ( known !== undefined ) { return known; }
+    const result = await dnr.isRegexSupported(options);
+    const verdict = result?.isSupported === true
+        ? true
+        : result?.reason || 'unsupported';
+    pruneInvalidRegexRules.validated.set(key, verdict);
+    return verdict;
+}
+
 async function pruneInvalidRegexRules(realm, rulesIn, rejected = []) {
-    const validateRegex = (options, key) => {
-        return dnr.isRegexSupported(options).then(result => {
-            pruneInvalidRegexRules.validated.set(key,
-                result?.isSupported === true ? true : result?.reason || 'unsupported');
-            if ( result.isSupported ) { return true; }
-            rejected.push({ regex: options.regex, reason: result?.reason });
-            return false;
-        });
-    };
-
     // Validate regex-based rules
-    const toCheck = [];
-    for ( const rule of rulesIn ) {
-        if ( rule.condition?.regexFilter === undefined ) {
-            toCheck.push(true);
-            continue;
-        }
-        const { regexFilter } = rule.condition;
-        const options = { regex: regexFilter,
-            isCaseSensitive: rule.condition.isUrlFilterCaseSensitive === true,
-            requireCapturing: rule.action?.redirect?.regexSubstitution !== undefined };
-        const key = JSON.stringify(options);
-        const reason = pruneInvalidRegexRules.validated.get(key);
-        if ( reason !== undefined ) {
-            toCheck.push(reason === true);
-            if ( reason === true  ) { continue; }
-            rejected.push({ regex: regexFilter, reason });
-            continue;
-        }
-        toCheck.push(validateRegex(options, key));
-    }
-
-    // Collate results
-    const isValid = await Promise.all(toCheck);
+    const verdicts = await Promise.all(rulesIn.map(rule =>
+        rule.condition?.regexFilter === undefined
+            ? true
+            : regexSupport(regexOptionsOf(rule))
+    ));
+    const isValid = verdicts.map((verdict, i) => {
+        if ( verdict === true ) { return true; }
+        rejected.push({ regex: rulesIn[i].condition.regexFilter, reason: verdict });
+        return false;
+    });
 
     for ( let i = 0; i < rulesIn.length; i++ ) {
         if ( isValid[i] ) { continue; }
@@ -234,9 +254,42 @@ const countRegexRules = rules => rules.reduce((count, rule) =>
     count + (rule?.condition?.regexFilter ? 1 : 0), 0
 );
 
-async function getDynamicRegexRuleCount() {
-    const rules = await dnr.getDynamicRules();
-    return countRegexRules(rules);
+const maxRegexRuleCount = ( ) => Number.isSafeInteger(
+    dnr.MAX_NUMBER_OF_REGEX_RULES
+) ? dnr.MAX_NUMBER_OF_REGEX_RULES : Number.MAX_SAFE_INTEGER;
+
+// Chromium accounts dynamic and session regex rules against one pool. Before
+// a dynamic update which needs more of it, the strict-block session regex
+// rules make room: they have lower precedence, and the session plan is
+// rebuilt into what is left afterwards. Other owners' session rules are
+// never displaced. Returns the removed rules, for a rollback.
+async function displaceStrictBlockRegexRules(
+    dynamicRegexCount, maxRegexCount, sessionRules
+) {
+    if ( sessionRules === undefined ) {
+        sessionRules = await dnr.getSessionRules();
+    }
+    if ( dynamicRegexCount + countRegexRules(sessionRules) <= maxRegexCount ) {
+        return [];
+    }
+    const displaced = sessionRules.filter(rule =>
+        isStrictBlockSessionRule(rule) && Boolean(rule.condition?.regexFilter)
+    );
+    if ( displaced.length === 0 ) { return []; }
+    await dnr.updateSessionRules({
+        removeRuleIds: displaced.map(rule => rule.id),
+    });
+    return displaced;
+}
+
+// After a rejected dynamic update: returns the failure reason, if any.
+async function restoreDisplacedRegexRules(displaced) {
+    if ( displaced.length === 0 ) { return; }
+    try {
+        await dnr.updateSessionRules({ addRules: displaced });
+    } catch ( reason ) {
+        return reason;
+    }
 }
 
 /******************************************************************************/
@@ -369,9 +422,7 @@ async function updateDynamicAndSessionRulesNow() {
         rule.id = ruleId++;
     }
     const dynamicRegexCountAfter = retainedRegexCount + addedRegexCount;
-    const maxRegexCount = Number.isSafeInteger(
-        dnr.MAX_NUMBER_OF_REGEX_RULES
-    ) ? dnr.MAX_NUMBER_OF_REGEX_RULES : Number.MAX_SAFE_INTEGER;
+    const maxRegexCount = maxRegexRuleCount();
     const response = {};
     if ( safePlan.warnings.length !== 0 ) {
         response.warnings = safePlan.warnings;
@@ -387,20 +438,11 @@ async function updateDynamicAndSessionRulesNow() {
     }
 
     let displacedSessionRegexRules = [];
-    let sessionRegexRemoved = false;
     try {
         if ( dynamicRegexCountAfter !== dynamicRegexCountBefore ) {
-            const sessionRules = await dnr.getSessionRules();
-            if ( dynamicRegexCountAfter + countRegexRules(sessionRules) >
-                maxRegexCount ) {
-                displacedSessionRegexRules = sessionRules.filter(rule =>
-                    Boolean(rule.condition?.regexFilter)
-                );
-                await dnr.updateSessionRules({
-                    removeRuleIds: displacedSessionRegexRules.map(a => a.id),
-                });
-                sessionRegexRemoved = true;
-            }
+            displacedSessionRegexRules = await displaceStrictBlockRegexRules(
+                dynamicRegexCountAfter, maxRegexCount
+            );
         }
         await dnr.updateDynamicRules({
             addRules: safeAddRules,
@@ -415,15 +457,11 @@ async function updateDynamicAndSessionRulesNow() {
     } catch(reason) {
         ublockPlusErr(`updateDynamicAndSessionRules/${reason}`);
         response.error = `${reason}`;
-        if ( sessionRegexRemoved ) {
-            try {
-                await dnr.updateSessionRules({
-                    addRules: displacedSessionRegexRules,
-                });
-            } catch ( restoreReason ) {
-                response.error +=
-                    `; session rollback failed (${restoreReason})`;
-            }
+        const restoreReason = await restoreDisplacedRegexRules(
+            displacedSessionRegexRules
+        );
+        if ( restoreReason !== undefined ) {
+            response.error += `; session rollback failed (${restoreReason})`;
         }
     }
 
@@ -446,164 +484,375 @@ export function updateDynamicAndSessionRules() {
 
 /******************************************************************************/
 
-async function updateStrictBlockRules(currentRules, addRules, removeRuleIds) {
-    // Remove existing strictblock-related rules
-    for ( const rule of currentRules ) {
-        if ( isStrictBlockRule(rule) === false ) { continue; }
-        removeRuleIds.push(rule.id);
+// Strict blocking: a blocked top-level document shows strictblock.html
+// instead of the browser's error page (classic uBO: "document blocked").
+// Session rule IDs 1..999,999 hold the plan of strictblock-rules.js: the
+// enabled stock lists' strict-block redirects, redirects for the $doc
+// filters of My filters and imported lists, and their exclusion allows. The
+// dynamic block of a user $doc filter is never modified: it stays the
+// fallback whenever its redirect is not installed.
+
+// The generation whose user rules this worker last installed as dynamic
+// rules; unknown after a restart, where the active generation applies.
+let installedUserGeneration;
+let strictBlockPlanListener;
+let strictBlockUrlSourceProvider = ( ) => false;
+let strictBlockExclusionProvider = readStoredStrictBlockExclusions;
+
+// Called with the stored plan whenever the installed plan changes.
+export function setStrictBlockPlanListener(fn) {
+    strictBlockPlanListener = typeof fn === 'function' ? fn : undefined;
+}
+
+// A function which returns true while the strict-block page can learn the
+// exact blocked address (strictblock-tracker.js). User redirects are only
+// installed then; otherwise user $doc filters stay plain blocks.
+export function setStrictBlockUrlSourceProvider(fn) {
+    strictBlockUrlSourceProvider = typeof fn === 'function' ? fn : ( ) => false;
+}
+
+// Where exclusions come from. Per-site switches (roadmap step 3) replace
+// the default, which reads the stored "don't warn" hostnames.
+export function setStrictBlockExclusionProvider(fn) {
+    strictBlockExclusionProvider = typeof fn === 'function'
+        ? fn
+        : readStoredStrictBlockExclusions;
+}
+
+const urlSourceIsExact = ( ) => {
+    try {
+        return strictBlockUrlSourceProvider() === true;
+    } catch {
+        return false;
     }
+};
 
-    if ( rulesetConfig.strictBlockMode === false ) { return; }
-
-    // https://github.com/uBlockOrigin/uBOL-home/issues/428#issuecomment-3172663563
-    // https://bugs.webkit.org/show_bug.cgi?id=298199
-    // https://developer.apple.com/forums/thread/756214
-    if ( webextFlavor === 'safari' ) { return; }
-
-    const [
-        hasOmnipotence,
-        rulesetDetails,
-        permanentlyExcluded = [],
-        temporarilyExcluded = [],
-    ] = await Promise.all([
-        hasBroadHostPermissions(),
-        getEnabledRulesetsDetails(true),
-        localRead('excludedStrictBlockHostnames'),
-        sessionRead('excludedStrictBlockHostnames'),
+async function readStoredStrictBlockExclusions() {
+    const [ permanent, temporary ] = await Promise.all([
+        localRead(STRICTBLOCK_EXCLUSIONS_KEY),
+        sessionRead(STRICTBLOCK_EXCLUSIONS_KEY),
     ]);
-
-    // Strict-block rules can only be enforced with omnipotence
-    if ( hasOmnipotence === false ) {
-        localRemove('excludedStrictBlockHostnames');
-        sessionRemove('excludedStrictBlockHostnames');
-        return;
+    const hosts = [];
+    for ( const list of [ permanent, temporary ] ) {
+        if ( Array.isArray(list) ) { hosts.push(...list); }
     }
+    return { all: false, hosts, layers: [] };
+}
 
-    // Fetch strick-block rules
-    const toFetch = [];
-    for ( const details of rulesetDetails ) {
-        if ( Boolean(details.rules.strictblock) === false ) { continue; }
-        toFetch.push(fetchJSON(`/rulesets/strictblock/${details.id}`));
-    }
-    const rulesets = await Promise.all(toFetch);
-
-    const substitution = `${runtime.getURL('/strictblock.html')}#\\0`;
-    const allRules = [];
-    for ( const rules of rulesets ) {
-        if ( Array.isArray(rules) === false ) { continue; }
-        for ( const rule of rules ) {
-            rule.action.redirect.regexSubstitution = substitution;
-            allRules.push(rule);
+// { all, hosts, layers }: `all` turns strict blocking off everywhere, `hosts`
+// are excluded with their subdomains, `layers` is reserved for per-site
+// switch layers (none yet).
+export async function getStrictBlockExclusions() {
+    const provided = await strictBlockExclusionProvider();
+    const hosts = new Set();
+    if ( Array.isArray(provided?.hosts) ) {
+        for ( const hostname of provided.hosts ) {
+            if ( typeof hostname !== 'string' || hostname === '' ) { continue; }
+            hosts.add(hostname.toLowerCase());
         }
     }
+    return {
+        all: provided?.all === true,
+        hosts: Array.from(hosts).sort(),
+        layers: Array.isArray(provided?.layers) ? provided.layers : [],
+    };
+}
 
-    const validRules = await pruneInvalidRegexRules('strictblock', allRules);
-    if ( validRules.length === 0 ) { return; }
-    ublockPlusLog(`Add ${validRules.length} DNR strictblock rules`);
-    for ( const rule of validRules ) {
-        rule.priority = STRICTBLOCK_PRIORITY;
-        addRules.push(rule);
+export async function isStrictBlockExcluded(hostname) {
+    const { all, hosts } = await getStrictBlockExclusions();
+    if ( all ) { return true; }
+    if ( typeof hostname !== 'string' || hostname === '' ) { return false; }
+    const excluded = new Set(hosts);
+    let hn = hostname.toLowerCase();
+    for (;;) {
+        if ( excluded.has(hn) ) { return true; }
+        const pos = hn.indexOf('.');
+        if ( pos === -1 ) { return false; }
+        hn = hn.slice(pos + 1);
     }
-
-    const allExcluded = permanentlyExcluded.concat(temporarilyExcluded);
-    if ( allExcluded.length === 0 ) { return; }
-    addRules.unshift({
-        action: { type: 'allow' },
-        condition: {
-            requestDomains: allExcluded,
-            resourceTypes: [ 'main_frame' ],
-        },
-        priority: STRICTBLOCK_PRIORITY,
-    });
-    ublockPlusLog(`Add 1 DNR session rule with ${allExcluded.length} for excluded strict-block domains`);
 }
 
 async function excludeFromStrictBlock(hostname, permanent) {
     if ( typeof hostname !== 'string' || hostname === '' ) { return; }
     const readFn = permanent ? localRead : sessionRead;
-    const hostnames = new Set(await readFn('excludedStrictBlockHostnames'));
+    const hostnames = new Set(await readFn(STRICTBLOCK_EXCLUSIONS_KEY));
     hostnames.add(hostname);
     const writeFn = permanent ? localWrite : sessionWrite;
-    await writeFn('excludedStrictBlockHostnames', Array.from(hostnames));
+    await writeFn(STRICTBLOCK_EXCLUSIONS_KEY, Array.from(hostnames));
     return updateSessionRules();
 }
 
+// Turning strict blocking off, like losing broad host access, only removes
+// the redirects: the "don't warn" choices are kept for when it returns.
 async function setStrictBlockMode(state, force = false) {
     const newState = Boolean(state);
     if ( force === false ) {
         if ( newState === rulesetConfig.strictBlockMode ) { return; }
     }
     rulesetConfig.strictBlockMode = newState;
-    const promises = [ saveRulesetConfig() ];
-    if ( newState === false ) {
-        promises.push(
-            localRemove('excludedStrictBlockHostnames'),
-            sessionRemove('excludedStrictBlockHostnames')
-        );
-    }
-    await Promise.all(promises);
+    await saveRulesetConfig();
     return updateSessionRules();
 }
 
 /******************************************************************************/
 
-async function updateSessionRulesNow() {
-    const addRulesUnfiltered = [];
-    const removeRuleIds = [];
-    const currentRules = await dnr.getSessionRules();
-    await updateStrictBlockRules(currentRules, addRulesUnfiltered, removeRuleIds);
-    if ( addRulesUnfiltered.length === 0 && removeRuleIds.length === 0 ) { return; }
-    // Chromium accounts dynamic and session regex rules against one shared
-    // pool. Use the exact remaining capacity; a synthetic 5% reserve silently
-    // discarded valid strict-block rules without protecting another owner.
-    const maxRegexCount = Number.isSafeInteger(
-        dnr.MAX_NUMBER_OF_REGEX_RULES
-    ) ? dnr.MAX_NUMBER_OF_REGEX_RULES : Number.MAX_SAFE_INTEGER;
-    const dynamicRegexCount = await getDynamicRegexRuleCount();
-    let sessionRegexCount = 0;
-    let ruleId = 1;
-    for ( const rule of addRulesUnfiltered ) {
-        rule.id = ruleId++;
-        if ( Boolean(rule.condition.regexFilter) === false ) { continue; }
-        if ( dynamicRegexCount + sessionRegexCount >= maxRegexCount ) {
-            rule.id = 0;
-            continue;
-        }
-        sessionRegexCount += 1;
-    }
-    const addRules = addRulesUnfiltered.filter(a => a.id !== 0);
-    const rejectedRuleCount = addRulesUnfiltered.length - addRules.length;
-    if ( rejectedRuleCount !== 0 ) {
-        ublockPlusLog(`Too many regex-based filters, ${rejectedRuleCount} session rules dropped`);
-    }
-    if ( sessionRegexCount !== 0 ) {
-        ublockPlusLog(`Using ${dynamicRegexCount + sessionRegexCount}/${maxRegexCount} shared dynamic/session regex-based DNR rules`);
-    }
-    const response = { droppedRegexRules: rejectedRuleCount };
+function notifyStrictBlockPlan(record) {
+    if ( strictBlockPlanListener === undefined ) { return; }
     try {
-        await dnr.updateSessionRules({ addRules, removeRuleIds });
-        if ( removeRuleIds.length !== 0 ) {
-            ublockPlusLog(`Remove ${removeRuleIds.length} session DNR rules`);
-        }
-        if ( addRules.length !== 0 ) {
-            ublockPlusLog(`Add ${addRules.length} session DNR rules`);
-        }
-    } catch(reason) {
-        ublockPlusErr(`updateSessionRules/${reason}`);
-        response.error = `${reason}`;
+        strictBlockPlanListener(record ?? { redirectCount: 0, owners: [] });
+    } catch ( reason ) {
+        ublockPlusErr(`strictBlockPlanListener/${reason}`);
     }
+}
+
+async function storeStrictBlockPlan(record) {
+    try {
+        if ( record === undefined ) {
+            await sessionRemove(STRICTBLOCK_PLAN_KEY);
+        } else {
+            await sessionWrite(STRICTBLOCK_PLAN_KEY, record);
+        }
+    } catch ( reason ) {
+        ublockPlusErr(`strictBlockPlan/${reason}`);
+    }
+    notifyStrictBlockPlan(record);
+}
+
+async function sessionPlanGeneration(generation) {
+    if ( typeof generation === 'string' ) { return generation; }
+    if ( typeof installedUserGeneration === 'string' ) {
+        return installedUserGeneration;
+    }
+    return await localRead(ACTIVE_COMPILED_GENERATION_KEY) || '';
+}
+
+async function readStockStrictBlockRules() {
+    const rulesetDetails = (await getEnabledRulesetsDetails(true))
+        .filter(details => Boolean(details.rules?.strictblock));
+    const rulesets = await Promise.all(rulesetDetails.map(details =>
+        fetchJSON(`/rulesets/strictblock/${details.id}`)
+    ));
+    const out = [];
+    for ( let i = 0; i < rulesetDetails.length; i++ ) {
+        if ( Array.isArray(rulesets[i]) === false ) { continue; }
+        out.push({ rulesetId: rulesetDetails[i].id, rules: rulesets[i] });
+    }
+    return out;
+}
+
+// Redirect templates stored by the compiler next to each realm's dnrRules.
+// A generation compiled before they existed has none: plain blocks only.
+async function readUserStrictBlockRules(generation) {
+    const out = [];
+    for ( const realm of [ 'sandbox', 'imported' ] ) {
+        const rules = await localRead(compiledStorageKey(
+            generation, `${realm}Filters.strictBlockRules`
+        ));
+        if ( Array.isArray(rules) === false || rules.length === 0 ) { continue; }
+        out.push({ realm, rules });
+    }
+    return out;
+}
+
+async function pruneStrictBlockCandidates(entries) {
+    let invalid = 0;
+    for ( const entry of entries ) {
+        const valid = await pruneInvalidRegexRules('strictblock', entry.rules);
+        invalid += entry.rules.length - valid.length;
+        entry.rules = valid;
+    }
+    return invalid;
+}
+
+// Chrome may return rules with its own key order.
+const canonicalRuleJSON = rule => JSON.stringify(rule, (key, value) => {
+    if ( value === null || typeof value !== 'object' || Array.isArray(value) ) {
+        return value;
+    }
+    return Object.fromEntries(Object.keys(value).sort().map(k => [ k, value[k] ]));
+});
+
+const sameRuleSet = (a, b) => {
+    if ( a.length !== b.length ) { return false; }
+    const byId = (x, y) => x.id - y.id;
+    const right = b.slice().sort(byId);
+    return a.slice().sort(byId).every((rule, i) =>
+        canonicalRuleJSON(rule) === canonicalRuleJSON(right[i])
+    );
+};
+
+// Rebuild the strict-block session plan. options.generation: the compiled
+// generation whose user rules are installed (default: the one this worker
+// installed last, else the active one). options.dynamicRegexCount: the
+// installed dynamic regex count, when the caller already knows it.
+// A failed update keeps the previous plan and its stored record.
+async function updateSessionRulesNow(options = {}) {
+    const currentRules = await dnr.getSessionRules();
+    const ownedRules = currentRules.filter(isStrictBlockSessionRule);
+    const otherRules = currentRules.filter(rule =>
+        isStrictBlockSessionRule(rule) === false
+    );
+    const exclusions = await getStrictBlockExclusions();
+    // https://github.com/uBlockOrigin/uBOL-home/issues/428#issuecomment-3172663563
+    // https://bugs.webkit.org/show_bug.cgi?id=298199
+    // https://developer.apple.com/forums/thread/756214
+    const active = rulesetConfig.strictBlockMode !== false &&
+        exclusions.all === false && webextFlavor !== 'safari';
+    // Strict-block redirects can only be enforced with omnipotence: without
+    // host access a redirect shadows the block below it and the page loads.
+    const hasOmnipotence = active
+        ? await hasBroadHostPermissions().catch(( ) => false)
+        : false;
+    const generation = await sessionPlanGeneration(options.generation);
+    let stock = [];
+    let user = [];
+    let exactUrlSource = false;
+    let stockInvalidRegex = 0;
+    let userInvalidRegex = 0;
+    if ( active && hasOmnipotence ) {
+        stock = await readStockStrictBlockRules();
+        stockInvalidRegex = await pruneStrictBlockCandidates(stock);
+        if ( webextFlavor === 'chromium' ) {
+            exactUrlSource = urlSourceIsExact();
+            user = await readUserStrictBlockRules(generation);
+        }
+    }
+    const userCandidates = user.reduce((sum, entry) =>
+        sum + entry.rules.length, 0
+    );
+    if ( exactUrlSource ) {
+        userInvalidRegex = await pruneStrictBlockCandidates(user);
+    }
+
+    const maxSessionRules = Number.isSafeInteger(dnr.MAX_NUMBER_OF_SESSION_RULES)
+        ? dnr.MAX_NUMBER_OF_SESSION_RULES
+        : DEFAULT_MAX_SESSION_RULES;
+    const maxRegexCount = maxRegexRuleCount();
+    const planned = exactUrlSource ? [ ...stock, ...user ] : stock;
+    const needsRegex = planned.some(entry =>
+        entry.rules.some(rule => Boolean(rule?.condition?.regexFilter))
+    );
+    let dynamicRegexCount = 0;
+    if ( needsRegex ) {
+        dynamicRegexCount = Number.isSafeInteger(options.dynamicRegexCount)
+            ? options.dynamicRegexCount
+            : countRegexRules(await dnr.getDynamicRules());
+    }
+    const otherRegexCount = countRegexRules(otherRules);
+    const plan = planStrictBlockSessionRules({
+        flavor: webextFlavor,
+        strictBlockMode: active,
+        hasOmnipotence,
+        exactUrlSource,
+        extensionPageURL: runtime.getURL('/strictblock.html'),
+        stock,
+        user,
+        excludedHostnames: exclusions.hosts,
+        sessionRuleBudget: maxSessionRules - otherRules.length,
+        regexRuleBudget: maxRegexCount - dynamicRegexCount - otherRegexCount,
+    });
+
+    const dropped = { ...plan.dropped, stockInvalidRegex, userInvalidRegex };
+    const response = {
+        droppedRegexRules: plan.dropped.stockRegexPool + plan.dropped.userRegexPool,
+        strictBlock: { redirectCount: plan.redirectCount, dropped },
+    };
+    if ( response.droppedRegexRules !== 0 ) {
+        ublockPlusLog(`Too many regex-based filters, ${response.droppedRegexRules} strict-block session rules dropped`);
+    }
+    const droppedSessionRules = plan.dropped.stockSessionLimit +
+        plan.dropped.userSessionLimit;
+    if ( droppedSessionRules !== 0 ) {
+        ublockPlusLog(`Session rule limit reached, ${droppedSessionRules} strict-block session rules dropped`);
+    }
+    if ( sameRuleSet(ownedRules, plan.rules) === false ) {
+        try {
+            await dnr.updateSessionRules({
+                removeRuleIds: ownedRules.map(rule => rule.id),
+                addRules: plan.rules,
+            });
+        } catch(reason) {
+            ublockPlusErr(`updateSessionRules/${reason}`);
+            response.error = `${reason}`;
+            return response;
+        }
+        if ( ownedRules.length !== 0 ) {
+            ublockPlusLog(`Remove ${ownedRules.length} strict-block session DNR rules`);
+        }
+        if ( plan.rules.length !== 0 ) {
+            ublockPlusLog(`Add ${plan.rules.length} strict-block session DNR rules (${plan.redirectCount} redirects)`);
+        }
+        if ( plan.counts.regex !== 0 ) {
+            ublockPlusLog(`Using ${dynamicRegexCount + otherRegexCount + plan.counts.regex}/${maxRegexCount} shared dynamic/session regex-based DNR rules`);
+        }
+    }
+    await storeStrictBlockPlan({
+        schemaVersion: 1,
+        generation,
+        // The setting, apart from `strictBlockMode`, which also folds in
+        // "exclude everything" and the platform.
+        configuredMode: rulesetConfig.strictBlockMode !== false,
+        strictBlockMode: active,
+        hasOmnipotence,
+        exactUrlSource,
+        owners: plan.owners,
+        counts: plan.counts,
+        dropped,
+        redirectCount: plan.redirectCount,
+        userCandidates,
+        builtAt: Date.now(),
+    });
     return response;
 }
 
-function updateSessionRules() {
+// Queued rebuild of the session plan: the trigger for any owner which changed
+// what the plan depends on (dynamic regex usage, exclusions, permissions).
+// A task already running in the DNR queue calls updateSessionRulesNow().
+function updateSessionRules(options = {}) {
     return enqueueDNRMutation(async ( ) => {
         try {
-            return await updateSessionRulesNow();
+            return await updateSessionRulesNow(options);
         } catch ( reason ) {
             ublockPlusErr(`updateSessionRules/${reason}`);
             return { error: `${reason}` };
         }
     });
+}
+
+// Called on every worker start. Redirects must not outlive the broad host
+// access they need, user redirects follow the exact URL source, and a plan
+// lost with the session storage is rebuilt.
+export async function reconcileStrictBlockSessionRules() {
+    const [ plan, hasOmnipotence ] = await Promise.all([
+        sessionRead(STRICTBLOCK_PLAN_KEY),
+        hasBroadHostPermissions().catch(( ) => false),
+    ]);
+    const configured = rulesetConfig.strictBlockMode !== false;
+    let stale = false;
+    if ( plan?.schemaVersion !== 1 ) {
+        stale = configured && hasOmnipotence ||
+            (await dnr.getSessionRules()).some(isStrictBlockSessionRule);
+    } else if ( plan.redirectCount > 0 && hasOmnipotence === false ) {
+        stale = true;
+    } else if ( (typeof plan.configuredMode === 'boolean'
+        ? plan.configuredMode
+        : plan.strictBlockMode) !== configured
+    ) {
+        // Turned off or on, and the worker stopped before the rebuild.
+        stale = true;
+    } else if ( plan.strictBlockMode && plan.hasOmnipotence !== hasOmnipotence ) {
+        stale = true;
+    } else if ( plan.userCandidates > 0 &&
+        plan.exactUrlSource !== urlSourceIsExact() ) {
+        stale = true;
+    }
+    if ( stale === false ) { return { rebuilt: false, plan }; }
+    const result = await updateSessionRules();
+    return {
+        ...result,
+        rebuilt: true,
+        plan: await sessionRead(STRICTBLOCK_PLAN_KEY),
+    };
 }
 
 async function filteringModesToDNRNow(modes) {
@@ -948,16 +1197,12 @@ async function updateUserRulesNow(generation, stockResidualRules, effectiveRules
     // pronounced peak in a MV3 service worker on low-memory devices.
     let removeRuleIds;
     let retainedDynamicRegexCount = 0;
-    let previousUserRegexCount = 0;
     {
         const currentRules = await dnr.getDynamicRules();
         removeRuleIds = [];
         for ( const rule of currentRules ) {
             if ( rule.id >= USER_RULES_BASE_RULE_ID ) {
                 removeRuleIds.push(rule.id);
-                if ( rule.condition?.regexFilter ) {
-                    previousUserRegexCount += 1;
-                }
             } else if ( rule.condition?.regexFilter ) {
                 retainedDynamicRegexCount += 1;
             }
@@ -980,6 +1225,8 @@ async function updateUserRulesNow(generation, stockResidualRules, effectiveRules
         return out;
     }
     const { rules } = parsed;
+    // The realm of every rule, for the regex overflow policy.
+    const ruleOwners = new Map(rules.map(rule => [ rule, 'developer' ]));
     {
         const sandboxRules = await localRead(compiledStorageKey(
             effectiveGeneration,
@@ -988,6 +1235,7 @@ async function updateUserRulesNow(generation, stockResidualRules, effectiveRules
         if ( Array.isArray(sandboxRules) ) {
             for ( const rule of sandboxRules ) {
                 rules.push(rule);
+                ruleOwners.set(rule, 'sandbox');
             }
         }
     }
@@ -1003,6 +1251,7 @@ async function updateUserRulesNow(generation, stockResidualRules, effectiveRules
         if ( Array.isArray(importedRules) ) {
             for ( const rule of importedRules ) {
                 rules.push(rule);
+                ruleOwners.set(rule, 'imported');
             }
         }
     }
@@ -1010,7 +1259,11 @@ async function updateUserRulesNow(generation, stockResidualRules, effectiveRules
     // These are exact original stock predicates reconstructed from packaged
     // source-domain provenance. Keep stock priority and include every residual
     // in the same atomic native update: a quota rejection retains last-good.
-    for ( const rule of stockResidualRules ) { rules.push(structuredClone(rule)); }
+    for ( const rule of stockResidualRules ) {
+        const residual = structuredClone(rule);
+        rules.push(residual);
+        ruleOwners.set(residual, 'stock-residual');
+    }
     let addRules;
     try {
         addRules = await pruneInvalidRegexRules('user', rules, rejectedRegexes);
@@ -1028,12 +1281,12 @@ async function updateUserRulesNow(generation, stockResidualRules, effectiveRules
 
     if ( removeRuleIds.length === 0 && addRules.length === 0 ) {
         await localRemove('userDnrRuleCount');
+        out.regexUsage = {
+            developer: 0, sandbox: 0, imported: 0, stockResidual: 0,
+            droppedImported: 0,
+        };
+        out.dynamicRegexCount = retainedDynamicRegexCount;
         return out;
-    }
-
-    let ruleId = 0;
-    for ( const rule of addRules ) {
-        rule.id = USER_RULES_BASE_RULE_ID + ruleId++;
     }
 
     let effectiveRuleCount = removeRuleIds.length;
@@ -1044,40 +1297,46 @@ async function updateUserRulesNow(generation, stockResidualRules, effectiveRules
         return out;
     }
     out.errors.push(...safePlan.warnings);
-    const safeAddRules = safePlan.rules;
-    const replacementRegexCount = countRegexRules(safeAddRules);
-    const projectedDynamicRegexCount =
-        retainedDynamicRegexCount + replacementRegexCount;
-    const maxRegexCount = Number.isSafeInteger(
-        dnr.MAX_NUMBER_OF_REGEX_RULES
-    ) ? dnr.MAX_NUMBER_OF_REGEX_RULES : Number.MAX_SAFE_INTEGER;
-    if ( projectedDynamicRegexCount > maxRegexCount ) {
+
+    // Other owners' session regex rules share the pool and are retained;
+    // strict-block session regex rules make room and are planned afterwards.
+    const maxRegexCount = maxRegexRuleCount();
+    const sessionRules = await dnr.getSessionRules();
+    const regexPlan = planUserRegexBudget({
+        rules: safePlan.rules,
+        owners: safePlan.rules.map(rule => ruleOwners.get(rule)),
+        retainedRegexCount: retainedDynamicRegexCount + countRegexRules(
+            sessionRules.filter(rule => isStrictBlockSessionRule(rule) === false)
+        ),
+        maxRegexCount,
+    });
+    ruleOwners.clear();
+    if ( regexPlan.fatal ) {
         out.fatalError =
-            `Dynamic regex plan requires ${projectedDynamicRegexCount}/` +
+            `Dynamic regex plan requires ${regexPlan.required}/` +
             `${maxRegexCount} rules; the previous generation remains active`;
         out.errors.push(out.fatalError);
         return out;
     }
+    if ( regexPlan.droppedImported !== 0 ) {
+        out.errors.push(
+            `${regexPlan.droppedImported} imported regex rule(s) were not ` +
+            `installed: the browser's ${maxRegexCount}-rule regex limit is full`
+        );
+    }
+    const safeAddRules = regexPlan.rules;
+    let ruleId = 0;
+    for ( const rule of safeAddRules ) {
+        rule.id = USER_RULES_BASE_RULE_ID + ruleId++;
+    }
+    const dynamicRegexCount = retainedDynamicRegexCount +
+        countRegexRules(safeAddRules);
 
-    const regexPlanChanged =
-        replacementRegexCount !== previousUserRegexCount;
     let displacedSessionRegexRules = [];
-    let sessionRegexRemoved = false;
     try {
-        if ( regexPlanChanged ) {
-            const sessionRules = await dnr.getSessionRules();
-            const sessionRegexCount = countRegexRules(sessionRules);
-            if ( projectedDynamicRegexCount + sessionRegexCount >
-                maxRegexCount ) {
-                displacedSessionRegexRules = sessionRules.filter(rule =>
-                    Boolean(rule.condition?.regexFilter)
-                );
-                await dnr.updateSessionRules({
-                    removeRuleIds: displacedSessionRegexRules.map(a => a.id),
-                });
-                sessionRegexRemoved = true;
-            }
-        }
+        displacedSessionRegexRules = await displaceStrictBlockRegexRules(
+            dynamicRegexCount, maxRegexCount, sessionRules
+        );
         // A single DNR update is atomic: if Chrome rejects any added rule or
         // the quota is exhausted, the previously active rules remain intact.
         await dnr.updateDynamicRules({
@@ -1093,38 +1352,22 @@ async function updateUserRulesNow(generation, stockResidualRules, effectiveRules
         out.added = safeAddRules.length;
         out.removed = removeRuleIds.length;
         effectiveRuleCount = safeAddRules.length;
-
-        if ( regexPlanChanged ) {
-            const sessionResult = await updateSessionRulesNow();
-            if ( sessionResult?.error ) {
-                out.errors.push(
-                    `Session regex rebuild failed: ${sessionResult.error}`
-                );
-            }
-            const displacedBySharedPool = Math.max(
-                sessionResult?.droppedRegexRules || 0,
-                projectedDynamicRegexCount +
-                    displacedSessionRegexRules.length - maxRegexCount,
-                0
-            );
-            if ( displacedBySharedPool > 0 ) {
-                out.errors.push(
-                    `${displacedBySharedPool} lower-priority ` +
-                    `session regex rule(s) could not fit the shared ` +
-                    `${maxRegexCount}-rule pool`
-                );
-            }
-        }
+        // For the caller, which rebuilds the session plan and records the
+        // regex usage once the whole update has committed.
+        out.regexUsage = {
+            ...regexPlan.counts,
+            droppedImported: regexPlan.droppedImported,
+        };
+        out.dynamicRegexCount = dynamicRegexCount;
     } catch(reason) {
         ublockPlusErr(`updateUserRules/${reason}`);
         out.fatalError = `${reason}`;
         out.errors.push(out.fatalError);
-        if ( sessionRegexRemoved && out.added === 0 ) {
-            try {
-                await dnr.updateSessionRules({
-                    addRules: displacedSessionRegexRules,
-                });
-            } catch ( restoreReason ) {
+        if ( out.added === 0 ) {
+            const restoreReason = await restoreDisplacedRegexRules(
+                displacedSessionRegexRules
+            );
+            if ( restoreReason !== undefined ) {
                 out.fatalError +=
                     `; session rollback failed (${restoreReason})`;
                 out.errors.push(
@@ -1146,6 +1389,44 @@ async function updateUserRulesNow(generation, stockResidualRules, effectiveRules
         }
     }
     return out;
+}
+
+async function recordUserRegexUsage(generation, usage) {
+    if ( usage === undefined ) { return; }
+    try {
+        await localWrite(REGEX_CAPACITY_USER_KEY, {
+            schemaVersion: 1,
+            generation,
+            ...usage,
+            updatedAt: Date.now(),
+        });
+    } catch ( reason ) {
+        ublockPlusErr(`updateUserRules/regexCapacity/${reason}`);
+    }
+}
+
+// The session plan always follows the installed user rules: their $doc
+// redirects, and the regex capacity the dynamic rules left.
+async function rebuildSessionAfterUserRules(generation, result) {
+    const { dynamicRegexCount } = result;
+    try {
+        const sessionResult = await updateSessionRulesNow({
+            generation, dynamicRegexCount,
+        });
+        if ( sessionResult?.error ) {
+            result.errors.push(`Session rule rebuild failed: ${sessionResult.error}`);
+        }
+        if ( sessionResult?.droppedRegexRules > 0 ) {
+            result.errors.push(
+                `${sessionResult.droppedRegexRules} lower-priority strict-block ` +
+                `regex rule(s) could not fit the shared ` +
+                `${maxRegexRuleCount()}-rule pool`
+            );
+        }
+    } catch ( reason ) {
+        ublockPlusErr(`updateUserRules/session/${reason}`);
+        result.errors.push(`Session rule rebuild failed: ${reason}`);
+    }
 }
 
 // Only an explicit save (strictDeveloperDraft) may fail because of the saved
@@ -1205,6 +1486,15 @@ async function updateUserRulesWithStockNow(generation, options) {
             await stockBadfilterManager.apply(plan);
             await stockBadfilterManager.commit(plan);
         }
+        // Only now, after the stock badfilter journal committed: its recovery
+        // restores the session regex rules it snapshotted, which must not
+        // collide with the IDs of a newer plan.
+        const { regexUsage } = result;
+        delete result.regexUsage;
+        installedUserGeneration = effectiveGeneration;
+        await recordUserRegexUsage(effectiveGeneration, regexUsage);
+        await rebuildSessionAfterUserRules(effectiveGeneration, result);
+        delete result.dynamicRegexCount;
         try { await stockBadfilterManager.report(plan); } catch { }
         try {
             if ( await localRead(USER_DNR_APPLIED_KEY) !== developerRulesText ) {
@@ -1241,8 +1531,148 @@ function updateUserRules(generation, options = {}) {
 
 /******************************************************************************/
 
+// Regex rule capacity (Dashboard > Diagnostics, Filter Store estimate).
+
+async function fetchPackagedJSON(path) {
+    try {
+        const response = await fetch(path);
+        if ( response.ok === false ) { return; }
+        return await response.json();
+    } catch {
+    }
+}
+
+const browserMajorVersion = ( ) => {
+    const match = /\b(?:Chrome|Firefox)\/(\d+)/.exec(
+        globalThis.navigator?.userAgent ?? ''
+    );
+    return match !== null ? parseInt(match[1], 10) : 0;
+};
+
+// 'Check now': ask this browser about every packaged static regex rule of
+// the enabled lists. Chrome silently skips a static regex it cannot run
+// (for example over its memory limit), so only this check can count them.
+// Rulesets are checked one at a time and only their regex rules are kept.
+async function verifyStaticRegexRules(enabledRulesetIds, stockRulesets) {
+    const manifest = runtime.getManifest();
+    const paths = new Map();
+    for ( const { id, path } of manifest.declarative_net_request?.rule_resources ?? [] ) {
+        paths.set(id, path);
+    }
+    const expected = new Map(stockRulesets.map(details =>
+        [ details.id, details.rules?.regexStatic ]
+    ));
+    const byRuleset = {};
+    const samples = [];
+    for ( const id of enabledRulesetIds ) {
+        const count = expected.get(id);
+        if ( Number.isSafeInteger(count) === false || count <= 0 ) { continue; }
+        if ( typeof paths.get(id) !== 'string' ) { continue; }
+        const regexRules = await fetchPackagedJSON(paths.get(id)).then(rules =>
+            Array.isArray(rules)
+                ? rules.filter(rule => Boolean(rule?.condition?.regexFilter))
+                : undefined
+        );
+        // A ruleset which could not be read stays unchecked (unknown).
+        if ( regexRules === undefined ) { continue; }
+        const verdicts = await Promise.all(regexRules.map(rule =>
+            regexSupport(regexOptionsOf(rule))
+        ));
+        let skipped = 0;
+        verdicts.forEach((verdict, i) => {
+            if ( verdict === true ) { return; }
+            skipped += 1;
+            if ( samples.length >= 10 ) { return; }
+            samples.push({
+                rulesetId: id,
+                ruleId: regexRules[i].id,
+                regex: regexRules[i].condition.regexFilter.slice(0, 160),
+                reason: verdict,
+            });
+        });
+        byRuleset[id] = { checked: regexRules.length, skipped };
+    }
+    const check = {
+        schemaVersion: 1,
+        extensionVersion: manifest.version,
+        chromeMajor: browserMajorVersion(),
+        byRuleset,
+        samples,
+        checkedAt: Date.now(),
+    };
+    try {
+        await localWrite(REGEX_CAPACITY_STATIC_KEY, check);
+    } catch ( reason ) {
+        ublockPlusErr(`getRegexCapacity/staticCheck/${reason}`);
+    }
+    return check;
+}
+
+export async function getRegexCapacity({ verifyStatic = false } = {}) {
+    const reImported = /^[a-z-]+:\/\//;
+    const [
+        rulesetDetails,
+        regexDetails,
+        enabledRulesetIds,
+        dynamicRules,
+        sessionRules,
+        userRecord,
+        plan,
+        adminIds,
+        exclusions,
+    ] = await Promise.all([
+        getRulesetDetails(),
+        fetchPackagedJSON('/rulesets/regex-details.json'),
+        dnr.getEnabledRulesets(),
+        dnr.getDynamicRules(),
+        dnr.getSessionRules(),
+        localRead(REGEX_CAPACITY_USER_KEY),
+        sessionRead(STRICTBLOCK_PLAN_KEY),
+        getAdminRulesets(),
+        getStrictBlockExclusions().catch(( ) => undefined),
+    ]);
+    const stockRulesets = Array.from(rulesetDetails.values())
+        .filter(details => reImported.test(details.id) === false);
+    const staticCheck = verifyStatic
+        ? await verifyStaticRegexRules(enabledRulesetIds, stockRulesets)
+        : await localRead(REGEX_CAPACITY_STATIC_KEY);
+    // Selected lists, with the admin overrides enableRulesets() applies,
+    // which the browser did not enable (for example at its ruleset limit).
+    const selected = new Set(rulesetConfig.enabledRulesets);
+    for ( const token of adminIds ?? [] ) {
+        if ( token.charAt(0) === '+' ) {
+            selected.add(token.slice(1));
+        } else if ( token.charAt(0) === '-' ) {
+            selected.delete(token.slice(1));
+        }
+    }
+    const known = new Set(stockRulesets.map(details => details.id));
+    const enabled = new Set(enabledRulesetIds);
+    const rulesetsNotEnabled = Array.from(selected).filter(id =>
+        known.has(id) && enabled.has(id) === false
+    );
+    return summarizeRegexCapacity({
+        sharedLimit: dnr.MAX_NUMBER_OF_REGEX_RULES,
+        dynamicRules,
+        sessionRules,
+        userRecord,
+        plan,
+        stockRulesets,
+        enabledRulesetIds,
+        regexDetails,
+        staticCheck,
+        extensionVersion: runtime.getManifest().version,
+        chromeMajor: browserMajorVersion(),
+        rulesetsNotEnabled,
+        exclusions,
+    });
+}
+
+/******************************************************************************/
+
 export {
     enableRulesets,
+    enqueueDNRMutation,
     excludeFromStrictBlock,
     filteringModesToDNR,
     getEffectiveUserRules,
@@ -1250,5 +1680,6 @@ export {
     recoverStockBadfilters,
     setStrictBlockMode,
     updateSessionRules,
+    updateSessionRulesNow,
     updateUserRules,
 };

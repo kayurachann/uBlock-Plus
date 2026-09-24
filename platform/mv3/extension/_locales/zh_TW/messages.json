@@ -641,6 +641,14 @@
     "message": "繼續",
     "description": "A button to navigate to the blocked page"
   },
+  "strictblockPlusUrlUnavailable": {
+    "message": "uBlock Plus+ 無法判斷被封鎖的是哪個網址，因此此頁面無法開啟它。",
+    "description": "Strict-block page: shown instead of the blocked address when the browser did not report it; Proceed and \"Don't warn\" are disabled"
+  },
+  "strictblockPlusUrlApproximate": {
+    "message": "這是開始導覽時的網址。被封鎖的頁面可能是從此網址重新導向而來。若是如此，按下「繼續」可能會回到此頁面，因此無法永久關閉此網站的警告。",
+    "description": "Strict-block page: the shown address is where the navigation started, which may differ from the blocked page after a server redirect. Proceed may then lead back to the warning, and the permanent \"don't warn\" choice is disabled"
+  },
   "zapperTipEnter": {
     "message": "移除元素",
     "description": "Tooltip for the button used to enter zapper mode"
@@ -984,6 +992,106 @@
   },
   "diagnosticsUnavailable": {
     "message": "不可用"
+  },
+  "diagnosticsStrictBlockAddress": {
+    "message": "嚴格阻擋頁面上顯示的網址",
+    "description": "Dashboard > Diagnostics > Runtime capabilities: label of the row saying how the strict-blocking page learns the blocked address"
+  },
+  "diagnosticsStrictBlockAddressExact": {
+    "message": "精確，由瀏覽器回報",
+    "description": "Dashboard > Diagnostics: the browser reports the exact blocked address (webRequest or rule-match events)"
+  },
+  "diagnosticsStrictBlockAddressFragment": {
+    "message": "精確，保存在頁面網址中",
+    "description": "Dashboard > Diagnostics: the redirect itself carries the exact blocked address in the strict-blocking page's own address (Firefox)"
+  },
+  "diagnosticsStrictBlockAddressApproximate": {
+    "message": "約略：開始導覽的位置",
+    "description": "Dashboard > Diagnostics: only the address where the navigation started is known"
+  },
+  "diagnosticsStrictBlockAddressUnavailable": {
+    "message": "無法取得",
+    "description": "Dashboard > Diagnostics: the strict-blocking page cannot learn the blocked address"
+  },
+  "diagnosticsStrictBlockAddressGrantNote": {
+    "message": "選用：授予網路觀察權限後，瀏覽器將頁面重新導向到嚴格阻擋頁面時，會回報被封鎖的精確網址。這是負擔最小的精確來源。只會保留這些重新導向。記錄器使用同一項權限，且只在您開始擷取後才記錄。",
+    "description": "Dashboard > Diagnostics: explains the optional network-observation (webRequest) permission offered for the strict-blocking page"
+  },
+  "diagnosticsStrictBlockAddressGrant": {
+    "message": "授予網路觀察權限",
+    "description": "Dashboard > Diagnostics: button which asks the browser for the optional network-observation (webRequest) permission"
+  },
+  "diagnosticsStrictBlockAddressGranted": {
+    "message": "已授予網路觀察權限。",
+    "description": "Dashboard > Diagnostics: status after the browser granted the optional network-observation permission"
+  },
+  "diagnosticsRegexTitle": {
+    "message": "正規表示式規則容量",
+    "description": "Dashboard > Diagnostics: title of the panel about the browser's regex rule limits"
+  },
+  "diagnosticsRegexUsage": {
+    "message": "$1 / $2",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: $1 = rules in use, $2 = limit"
+  },
+  "diagnosticsRegexStatic": {
+    "message": "內建清單：使用中的正規表示式規則",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: regex rules packaged in the enabled built-in lists, out of the browser's limit for packaged rulesets"
+  },
+  "diagnosticsRegexVerifiedWith": {
+    "message": "建置此版本時用來檢查正規表示式規則的瀏覽器",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: label followed by a browser version such as \"Chrome/153.0.8010.53\""
+  },
+  "diagnosticsRegexNotVerified": {
+    "message": "建置此版本時未檢查",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: this version was built without checking the regex rules in a browser"
+  },
+  "diagnosticsRegexRejectedAtBuild": {
+    "message": "瀏覽器無法執行的內建正規表示式過濾規則",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: regex filters of the enabled built-in lists left out because the browser cannot run them"
+  },
+  "diagnosticsRegexSkipped": {
+    "message": "此瀏覽器略過的內建正規表示式規則",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: packaged regex rules this browser version silently skips, counted by \"Check now\""
+  },
+  "diagnosticsRegexNotChecked": {
+    "message": "尚未檢查",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: \"Check now\" was not run for this version and browser"
+  },
+  "diagnosticsRegexVerify": {
+    "message": "立即檢查",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: button which checks every packaged regex rule of the enabled lists with this browser"
+  },
+  "diagnosticsRegexShared": {
+    "message": "共用上限（您的篩選器、已導入的清單、嚴格阻擋）：使用中的正規表示式規則",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: regex rules in the browser's limit shared by dynamic and session rules"
+  },
+  "diagnosticsRegexUser": {
+    "message": "「我的篩選器」和已導入的清單使用",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: shared regex rules used by My filters and imported lists"
+  },
+  "diagnosticsRegexStrictBlock": {
+    "message": "嚴格阻擋使用",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: shared regex rules used by the strict-blocking page redirects"
+  },
+  "diagnosticsRegexStockFallback": {
+    "message": "內建清單使用（動態規則）",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: shared regex rules used by built-in lists installed as dynamic rules (shown only when not zero)"
+  },
+  "diagnosticsRegexOther": {
+    "message": "其他功能使用",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: shared regex rules used by other features (shown only when not zero)"
+  },
+  "diagnosticsRegexFree": {
+    "message": "仍可供您的篩選器使用",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: shared regex rules still free"
+  },
+  "diagnosticsRegexDropped": {
+    "message": "因已達上限而未安裝",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: regex rules which were not installed because the shared limit is full"
+  },
+  "diagnosticsRulesetsNotEnabled": {
+    "message": "已選取但瀏覽器未啟用的清單",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: selected built-in lists which the browser did not enable"
   },
   "performanceDetailsTitle": {
     "message": "目前效能預算"

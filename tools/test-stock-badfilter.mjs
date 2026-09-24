@@ -298,6 +298,39 @@ try {
     assert.deepEqual(mapped.rules.map(row => row.id), [ 41, 40 ]);
     assert.equal(mapped.digest, actualDigest);
     assert.equal(mappedIndex.rulesets.sample.digest, actualDigest);
+
+    // Chromium main rulesets end with their static regex rules. Salvaged
+    // against a build without them (or with fewer), the regex rules stay
+    // last, new ones numbered after every other rule; reused IDs are kept.
+    const regexRule = (id, regexFilter) => ({ id, action: { type: 'block' },
+        condition: { regexFilter } });
+    await fs.writeFile(path.join(before, 'rulesets/main/tail.json'),
+        JSON.stringify([ rule(40, 'a'), rule(41, 'b'), regexRule(90, '^old$') ]));
+    await fs.writeFile(path.join(after, 'rulesets/main/tail.json'),
+        JSON.stringify([ rule(1, 'b'), rule(2, 'd'), rule(3, 'e'),
+            regexRule(4, '^new$'), regexRule(5, '^old$') ]));
+    await fs.writeFile(path.join(after, 'rulesets/badfilter/tail.json'), JSON.stringify({
+        schemaVersion: 1, digest: hash('old'), rules: [
+            { id: 4, keys: [ a ], complete: true }, { id: 1, keys: [ b ], complete: true },
+        ], badfilterKeys: [], deferredKeys: [],
+    }));
+    const index = JSON.parse(await fs.readFile(path.join(after,
+        'rulesets/badfilter-details.json'), 'utf8'));
+    index.rulesets.tail = { digest: hash('old'), badfilterKeys: [] };
+    await fs.writeFile(path.join(after, 'rulesets/badfilter-details.json'), JSON.stringify(index));
+    await promisify(execFile)(process.execPath, [
+        path.resolve(import.meta.dirname, '../platform/mv3/salvage-ruleids.mjs'),
+        `before=${before}`, `after=${after}`,
+    ]);
+    const salvaged = JSON.parse(await fs.readFile(path.join(after, 'rulesets/main/tail.json'), 'utf8'));
+    assert.deepEqual(salvaged.map(rule => [ rule.id, rule.condition.urlFilter ?? rule.condition.regexFilter ]), [
+        [ 1, 'd' ], [ 2, 'e' ], [ 41, 'b' ], [ 90, '^old$' ], [ 91, '^new$' ],
+    ], 'regex rules stay last');
+    const tailProvenance = JSON.parse(await fs.readFile(path.join(after,
+        'rulesets/badfilter/tail.json'), 'utf8'));
+    assert.deepEqual(tailProvenance.rules.map(row => row.id), [ 91, 41 ]);
+    assert.equal(tailProvenance.digest,
+        hash(await fs.readFile(path.join(after, 'rulesets/main/tail.json'))));
 } finally {
     assert.equal(path.resolve(temporary).startsWith(path.resolve(os.tmpdir()) + path.sep), true);
     await fs.rm(temporary, { recursive: true, force: true });

@@ -41,6 +41,11 @@ omitted, the version is date-generated, marking a development build; such
 builds never offer automatic updates. Every build declares
 declarativeNetRequestFeedback through the manifest template.
 
+Release builds need Google Chrome, found in the standard install folders or
+through the CHROME_PATH environment variable: it checks every packaged stock
+regex rule with Chrome's own RE2 (headless, in a new temporary profile which
+is deleted afterwards). Development builds use it when it is installed.
+
 .PARAMETER Before
 Path containing a previous chromium build whose rule IDs should be salvaged.
 
@@ -238,6 +243,33 @@ function New-ZipFromDirectory {
     } finally {
         $archive.Dispose()
     }
+}
+
+# The Chrome which checks the stock regexFilter rules at build time
+# (platform/mv3/regex-verdicts.mjs starts it headless, with a new temporary
+# profile, and closes it). CHROME_PATH overrides the standard locations.
+function Find-ChromeExecutable {
+    $candidates = [Collections.Generic.List[string]]::new()
+    if ( [string]::IsNullOrEmpty($env:CHROME_PATH) -eq $false ) {
+        if ( Test-Path -LiteralPath $env:CHROME_PATH -PathType Leaf ) {
+            return [IO.Path]::GetFullPath($env:CHROME_PATH)
+        }
+        Write-Warning "CHROME_PATH does not point to a file: $env:CHROME_PATH"
+    }
+    foreach ( $root in @(
+        [Environment]::GetEnvironmentVariable('ProgramFiles'),
+        [Environment]::GetEnvironmentVariable('ProgramFiles(x86)'),
+        [Environment]::GetEnvironmentVariable('LOCALAPPDATA')
+    ) ) {
+        if ( [string]::IsNullOrEmpty($root) ) { continue }
+        $candidates.Add((Join-Path $root 'Google\Chrome\Application\chrome.exe'))
+    }
+    foreach ( $candidate in $candidates ) {
+        if ( Test-Path -LiteralPath $candidate -PathType Leaf ) {
+            return [IO.Path]::GetFullPath($candidate)
+        }
+    }
+    return ''
 }
 
 function Test-ChromiumExtensionVersion {
@@ -507,6 +539,11 @@ try {
         (Join-Path $rulesetBuildDirectory 'js/compiled-popup-matcher.js')
     Copy-RequiredFile (Join-Path $extensionRoot 'js/utils.js') `
         (Join-Path $rulesetBuildDirectory 'js/utils.js')
+    # Stock strict-block rules are folded with the runtime's own module.
+    Copy-RequiredFile (Join-Path $extensionRoot 'js/strictblock-rules.js') `
+        (Join-Path $rulesetBuildDirectory 'js/strictblock-rules.js')
+    Copy-RequiredFile (Join-Path $extensionRoot 'js/dnr-namespaces.js') `
+        (Join-Path $rulesetBuildDirectory 'js/dnr-namespaces.js')
     # make-rulesets imports offscreen/fetch-list.js, whose fetch-policy module
     # lives one directory above the copied offscreen tree.
     Copy-RequiredFile (Join-Path $extensionRoot 'js/imported-fetch-policy.js') `
@@ -534,6 +571,19 @@ try {
         "output=$outputDirectory",
         "platform=$Platform"
     )
+    # A static regex which Chrome's RE2 rejects makes Chrome refuse the whole
+    # unpacked extension: release builds require Chrome's verdicts,
+    # development builds use them when Chrome is installed.
+    $chromeExecutable = Find-ChromeExecutable
+    if ( $chromeExecutable -ne '' ) {
+        Write-Host "Regex checks: $chromeExecutable"
+        $rulesetArguments += "chrome=$chromeExecutable"
+    } else {
+        Write-Host 'Regex checks: Chrome not found (set CHROME_PATH)'
+    }
+    if ( $Version -ne '' ) {
+        $rulesetArguments += 'regexVerdicts=required'
+    }
     $maximumAttempts = 3
     for ( $attempt = 1; $attempt -le $maximumAttempts; $attempt += 1 ) {
         try {

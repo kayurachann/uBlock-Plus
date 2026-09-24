@@ -164,4 +164,54 @@ assert.equal(experimentalInput.webRequestFirewall.ready, true, 'capability read 
 assert.match(webRequestFirewallStatusText(standard, 'en'), /separate Experimental/);
 assert.match(webRequestFirewallStatusText({ webRequestFirewall: { state: 'error' } }, 'vi'), /chỉ áp dụng DNR/);
 
+// How the strict-block page learns the blocked address. The worker reports
+// its source; the classification keeps it only while the browser grants what
+// it needs, and nothing reported is never promoted to a capability.
+{
+    const unpacked = {
+        installType: 'development',
+        manifestPermissions: [ 'declarativeNetRequest', 'declarativeNetRequestFeedback', 'webNavigation' ],
+        optionalPermissions: [ 'webRequest' ],
+        api: { declarativeNetRequest: true, nativeMatchFeedback: true, webNavigation: true },
+    };
+    const classify = (strictBlockUrlSource, extra = {}) => {
+        const result = classifyRuntimeCapabilities({ ...unpacked, ...extra, strictBlockUrlSource });
+        return [ result.strictBlockUrlSource, result.strictBlockUrlExact ];
+    };
+    const webRequestGranted = {
+        grantedPermissions: [ 'webRequest' ],
+        api: { ...unpacked.api, webRequest: true },
+    };
+    assert.deepEqual(classify('webrequest', webRequestGranted), [ 'webrequest', true ]);
+    assert.deepEqual(classify('rule-match'), [ 'rule-match', true ]);
+    assert.deepEqual(classify('navigation-start'), [ 'navigation-start', false ]);
+    assert.deepEqual(classify('unavailable'), [ 'unavailable', false ]);
+    assert.deepEqual(classify(undefined), [ 'unavailable', false ],
+        'no reported source means no implemented source');
+    assert.deepEqual(classify('everything'), [ 'unavailable', false ]);
+    // A stale report after the optional permission was removed.
+    assert.deepEqual(classify('webrequest'), [ 'rule-match', true ]);
+    assert.deepEqual(classify('webrequest', { grantedPermissions: [ 'webRequest' ] }), [ 'rule-match', true ],
+        'a granted permission without the API is not a source');
+    // Packed installs have no onRuleMatchedDebug.
+    const packed = { installType: 'normal', api: { declarativeNetRequest: true, webNavigation: true } };
+    assert.deepEqual(classify('rule-match', packed), [ 'navigation-start', false ]);
+    assert.deepEqual(classify('webrequest', packed), [ 'navigation-start', false ]);
+    assert.deepEqual(classify('rule-match', { manifestPermissions: [ 'declarativeNetRequest' ] }),
+        [ 'navigation-start', false ], 'the feedback permission is required');
+    assert.deepEqual(classify('navigation-start', { api: { declarativeNetRequest: true } }), [ 'unavailable', false ]);
+    // Firefox: the regexSubstitution redirect carries the address itself.
+    assert.deepEqual(classify('regex-substitution'), [ 'regex-substitution', true ]);
+    // No DNR, no strict-block page at all.
+    assert.deepEqual(classify('webrequest', { ...webRequestGranted, api: { webRequest: true } }), [ 'unavailable', false ]);
+    assert.deepEqual(classify('regex-substitution', { manifestPermissions: [] }), [ 'unavailable', false ]);
+    // Experimental: webRequest is a required permission.
+    assert.deepEqual([ experimental.strictBlockUrlSource, experimental.strictBlockUrlExact ], [ 'unavailable', false ]);
+    const experimentalTracked = classifyRuntimeCapabilities({ ...experimentalInput, strictBlockUrlSource: 'webrequest' });
+    assert.equal(experimentalTracked.strictBlockUrlSource, 'webrequest');
+    assert.equal(experimentalTracked.strictBlockUrlExact, true);
+    assert.equal(experimentalTracked.activeNetworkEngine, 'dnr+webrequest-firewall',
+        'the address source never changes the filtering engine');
+}
+
 console.log('Runtime capability negotiation tests passed.');

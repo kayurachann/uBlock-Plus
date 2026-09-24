@@ -641,6 +641,14 @@
     "message": "Продолжить",
     "description": "A button to navigate to the blocked page"
   },
+  "strictblockPlusUrlUnavailable": {
+    "message": "uBlock Plus+ не удалось определить, какой адрес был заблокирован, поэтому эта страница не может его открыть.",
+    "description": "Strict-block page: shown instead of the blocked address when the browser did not report it; Proceed and \"Don't warn\" are disabled"
+  },
+  "strictblockPlusUrlApproximate": {
+    "message": "Это адрес, с которого начался переход. Заблокированная страница может быть перенаправлением с него. В этом случае «Продолжить» может вернуть вас сюда, поэтому предупреждения для этого сайта нельзя отключить навсегда.",
+    "description": "Strict-block page: the shown address is where the navigation started, which may differ from the blocked page after a server redirect. Proceed may then lead back to the warning, and the permanent \"don't warn\" choice is disabled"
+  },
   "zapperTipEnter": {
     "message": "Убрать элемент",
     "description": "Tooltip for the button used to enter zapper mode"
@@ -984,6 +992,106 @@
   },
   "diagnosticsUnavailable": {
     "message": "Недоступно"
+  },
+  "diagnosticsStrictBlockAddress": {
+    "message": "Адрес на странице строгой блокировки",
+    "description": "Dashboard > Diagnostics > Runtime capabilities: label of the row saying how the strict-blocking page learns the blocked address"
+  },
+  "diagnosticsStrictBlockAddressExact": {
+    "message": "Точный, сообщён браузером",
+    "description": "Dashboard > Diagnostics: the browser reports the exact blocked address (webRequest or rule-match events)"
+  },
+  "diagnosticsStrictBlockAddressFragment": {
+    "message": "Точный, сохранён в адресе страницы",
+    "description": "Dashboard > Diagnostics: the redirect itself carries the exact blocked address in the strict-blocking page's own address (Firefox)"
+  },
+  "diagnosticsStrictBlockAddressApproximate": {
+    "message": "Приблизительный: откуда начался переход",
+    "description": "Dashboard > Diagnostics: only the address where the navigation started is known"
+  },
+  "diagnosticsStrictBlockAddressUnavailable": {
+    "message": "Недоступен",
+    "description": "Dashboard > Diagnostics: the strict-blocking page cannot learn the blocked address"
+  },
+  "diagnosticsStrictBlockAddressGrantNote": {
+    "message": "Необязательно: с разрешением на наблюдение за сетью браузер сообщает точный заблокированный адрес, когда перенаправляет страницу на страницу строгой блокировки. Это самый экономный точный источник. Сохраняются только такие перенаправления. Журнал использует то же разрешение и ведёт запись только после того, как вы его запустите.",
+    "description": "Dashboard > Diagnostics: explains the optional network-observation (webRequest) permission offered for the strict-blocking page"
+  },
+  "diagnosticsStrictBlockAddressGrant": {
+    "message": "Предоставить разрешение на наблюдение за сетью",
+    "description": "Dashboard > Diagnostics: button which asks the browser for the optional network-observation (webRequest) permission"
+  },
+  "diagnosticsStrictBlockAddressGranted": {
+    "message": "Разрешение на наблюдение за сетью предоставлено.",
+    "description": "Dashboard > Diagnostics: status after the browser granted the optional network-observation permission"
+  },
+  "diagnosticsRegexTitle": {
+    "message": "Ёмкость regex-правил",
+    "description": "Dashboard > Diagnostics: title of the panel about the browser's regex rule limits"
+  },
+  "diagnosticsRegexUsage": {
+    "message": "$1 из $2",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: $1 = rules in use, $2 = limit"
+  },
+  "diagnosticsRegexStatic": {
+    "message": "Встроенные списки: используемые regex-правила",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: regex rules packaged in the enabled built-in lists, out of the browser's limit for packaged rulesets"
+  },
+  "diagnosticsRegexVerifiedWith": {
+    "message": "Regex-правила проверены при сборке этой версии в",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: label followed by a browser version such as \"Chrome/153.0.8010.53\""
+  },
+  "diagnosticsRegexNotVerified": {
+    "message": "Не проверены при сборке этой версии",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: this version was built without checking the regex rules in a browser"
+  },
+  "diagnosticsRegexRejectedAtBuild": {
+    "message": "Встроенные regex-фильтры, которые браузер не может выполнить",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: regex filters of the enabled built-in lists left out because the browser cannot run them"
+  },
+  "diagnosticsRegexSkipped": {
+    "message": "Встроенные regex-правила, которые этот браузер пропускает",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: packaged regex rules this browser version silently skips, counted by \"Check now\""
+  },
+  "diagnosticsRegexNotChecked": {
+    "message": "Ещё не проверено",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: \"Check now\" was not run for this version and browser"
+  },
+  "diagnosticsRegexVerify": {
+    "message": "Проверить сейчас",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: button which checks every packaged regex rule of the enabled lists with this browser"
+  },
+  "diagnosticsRegexShared": {
+    "message": "Общий лимит (ваши фильтры, импортированные списки, строгая блокировка): используемые regex-правила",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: regex rules in the browser's limit shared by dynamic and session rules"
+  },
+  "diagnosticsRegexUser": {
+    "message": "Используются «Моими фильтрами» и импортированными списками",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: shared regex rules used by My filters and imported lists"
+  },
+  "diagnosticsRegexStrictBlock": {
+    "message": "Используются строгой блокировкой",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: shared regex rules used by the strict-blocking page redirects"
+  },
+  "diagnosticsRegexStockFallback": {
+    "message": "Используются встроенными списками (динамические правила)",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: shared regex rules used by built-in lists installed as dynamic rules (shown only when not zero)"
+  },
+  "diagnosticsRegexOther": {
+    "message": "Используются другими функциями",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: shared regex rules used by other features (shown only when not zero)"
+  },
+  "diagnosticsRegexFree": {
+    "message": "Ещё доступно для ваших фильтров",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: shared regex rules still free"
+  },
+  "diagnosticsRegexDropped": {
+    "message": "Не установлены, так как лимит исчерпан",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: regex rules which were not installed because the shared limit is full"
+  },
+  "diagnosticsRulesetsNotEnabled": {
+    "message": "Выбранные списки, которые браузер не включил",
+    "description": "Dashboard > Diagnostics > Regex rule capacity: selected built-in lists which the browser did not enable"
   },
   "performanceDetailsTitle": {
     "message": "Действующий бюджет производительности"
