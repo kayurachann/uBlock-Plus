@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /* uBlock Plus+ native anti-adblock regressions. GPL-3.0-or-later. */
-import { cp, mkdir, mkdtemp, readFile, readdir, writeFile } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { isAbsolute, resolve } from 'node:path';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
@@ -142,13 +142,34 @@ try {
             session: await chrome.declarativeNetRequest.getSessionRules(),
         }));
         const details = JSON.parse(await readFile(resolve(extension, 'rulesets/ruleset-details.json'), 'utf8'));
+        const manifest = JSON.parse(await readFile(resolve(extension, 'manifest.json'), 'utf8'));
+        const rulesetPath = list => manifest.declarative_net_request.rule_resources
+            .find(resource => resource.id === list)?.path.replace(/^\/+/, '');
         const allowRules = [];
         let stockRegexRules = 0;
+        let staticRegexRules = 0;
+        let dynamicRegexRules = 0;
         for ( const list of native.enabled ) {
-            if ( !details.find(entry => entry.id === list)?.rules.regex ) { continue; }
-            const rules = JSON.parse(await readFile(resolve(extension, `rulesets/regex/${list}.json`), 'utf8'));
-            stockRegexRules += rules.length;
-            for ( const rule of rules ) {
+            const counts = details.find(entry => entry.id === list)?.rules ?? {};
+            const packaged = [];
+            // Chromium packages since roadmap step 2: Chrome-checked regex
+            // rules at the end of the list's static ruleset (regexStatic);
+            // what did not fit Chrome's static regex limit stays in
+            // rulesets/regex/ and is installed as dynamic rules (regex).
+            if ( counts.regexStatic ) {
+                const rules = JSON.parse(await readFile(resolve(extension, rulesetPath(list)), 'utf8'))
+                    .filter(rule => typeof rule.condition?.regexFilter === 'string');
+                assert.equal(rules.length, counts.regexStatic, `${list}: packaged static regex rules`);
+                staticRegexRules += rules.length;
+                packaged.push(...rules);
+            }
+            if ( counts.regex ) {
+                const rules = JSON.parse(await readFile(resolve(extension, `rulesets/regex/${list}.json`), 'utf8'));
+                dynamicRegexRules += rules.length;
+                packaged.push(...rules);
+            }
+            stockRegexRules += packaged.length;
+            for ( const rule of packaged ) {
                 if ( ![ 'allow', 'allowAllRequests' ].includes(rule.action.type) ) { continue; }
                 if ( typeof rule.condition.regexFilter !== 'string' ) { continue; }
                 const options = { regex: rule.condition.regexFilter,
@@ -163,18 +184,33 @@ try {
         }
         const stockDynamicCount = native.dynamic.filter(rule =>
             rule.id > 0 && rule.id < 5000000 && typeof rule.condition.regexFilter === 'string').length;
-        report.nativeStockStartup = { enabled: native.enabled, stockRegexRules, stockDynamicCount,
-            dynamicCount: native.dynamic.length, sessionCount: native.session.length, allowRules };
+        report.nativeStockStartup = { enabled: native.enabled, stockRegexRules, staticRegexRules,
+            dynamicRegexRules, stockDynamicCount, dynamicCount: native.dynamic.length,
+            sessionCount: native.session.length, allowRules };
         assert.deepEqual(allowRules.filter(rule => rule.isSupported !== true), [],
             'Every packaged allow regex must be representable by the native engine');
         assert.ok(stockRegexRules > 0, 'The default package must contain stock regex rules');
-        // Native installation may finish while the per-rule probes run. After
-        // checking every allow, observe current DNR state instead of asserting
-        // against the snapshot taken before those asynchronous probes.
-        await initialDashboard.waitForFunction(async () =>
-            (await chrome.declarativeNetRequest.getDynamicRules()).some(rule =>
-                rule.id > 0 && rule.id < 5000000 && typeof rule.condition.regexFilter === 'string'),
-        null, { timeout: 30000, polling: 100 });
+        // Static regex rules are installed with their ruleset: the worker's
+        // own "Check now" asks Chrome about each of them.
+        if ( staticRegexRules !== 0 ) {
+            const capacity = await initialDashboard.evaluate(async () =>
+                (await import('./js/ext.js')).sendMessage({ what: 'getRegexCapacity', verifyStatic: true }));
+            report.nativeStockStartup.staticRegex = capacity?.static;
+            assert.equal(capacity?.static?.enabled, staticRegexRules,
+                'The static regex rules of the enabled lists are the packaged ones');
+            assert.equal(capacity.static.skippedByBrowser, 0,
+                'Chrome must run every static stock regex rule');
+        }
+        // Dynamic fallback regex rules: native installation may finish while
+        // the per-rule probes run. After checking every allow, observe
+        // current DNR state instead of asserting against the snapshot taken
+        // before those asynchronous probes.
+        if ( dynamicRegexRules !== 0 ) {
+            await initialDashboard.waitForFunction(async () =>
+                (await chrome.declarativeNetRequest.getDynamicRules()).some(rule =>
+                    rule.id > 0 && rule.id < 5000000 && typeof rule.condition.regexFilter === 'string'),
+            null, { timeout: 30000, polling: 100 });
+        }
         const installed = await initialDashboard.evaluate(async () => ({
             dynamic: await chrome.declarativeNetRequest.getDynamicRules(),
             session: await chrome.declarativeNetRequest.getSessionRules(),
@@ -183,8 +219,10 @@ try {
             rule.id > 0 && rule.id < 5000000 && typeof rule.condition.regexFilter === 'string').length;
         report.nativeStockStartup.dynamicCount = installed.dynamic.length;
         report.nativeStockStartup.sessionCount = installed.session.length;
-        assert.ok(report.nativeStockStartup.stockDynamicCount > 0,
-            'The default stock regex rules must actually be installed after initial startup');
+        if ( dynamicRegexRules !== 0 ) {
+            assert.ok(report.nativeStockStartup.stockDynamicCount > 0,
+                'The default dynamic stock regex rules must actually be installed after initial startup');
+        }
         const startupErrors = report.diagnostics.filter(event => event.kind === 'worker-error' &&
             /allow exception.*unsupported regex|startSession\/DNR refresh|updateDynamicAndSessionRules\//i.test(event.details.errorMessage));
         assert.deepEqual(startupErrors, [], 'Stock DNR startup must not report a failed refresh');
@@ -367,6 +405,11 @@ try {
 finally {
     await context?.close();
     await new Promise(resolve => server.close(resolve));
+    // The isolated profile and the package copy are this run's own.
+    for ( const directory of [ profile, extension ] ) {
+        await rm(directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 })
+            .catch(error => { diagnose('cleanup', { directory, error: error.message }); });
+    }
     report.finished = new Date().toISOString();
     report.passed = !report.fatal && report.cases.length === 11 && report.cases.every(value => value.passed);
     await writeFile(resolve(options.output, 'report.json'), JSON.stringify(report, null, 2));

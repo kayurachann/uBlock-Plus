@@ -180,19 +180,40 @@ body > * {
 }
 
 #runtimeCapabilities,
-#performanceDetails {
+#performanceDetails,
+#regexCapacity {
     display: grid;
     gap: var(--default-gap-small);
     grid-template-columns: minmax(10em, 1fr) minmax(8em, 1fr);
 }
 #runtimeCapabilities dt,
-#performanceDetails dt {
+#performanceDetails dt,
+#regexCapacity dt {
     color: var(--ink-2);
 }
 #runtimeCapabilities dd,
-#performanceDetails dd {
+#performanceDetails dd,
+#regexCapacity dd {
     margin: 0;
     overflow-wrap: anywhere;
+}
+#regexCapacity .definitionItems {
+    font-size: var(--font-size-smaller);
+    margin: var(--default-gap-xxsmall) 0 0;
+    padding-inline-start: var(--default-gap-large);
+}
+#strictBlockAddressSetup {
+    border-block-start: 1px solid var(--border-1);
+    margin-block-start: var(--default-gap-large);
+    padding-block-start: var(--default-gap-small);
+}
+#strictBlockAddressSetup p {
+    color: var(--ink-2);
+    margin-block: 0 var(--default-gap-small);
+}
+#strictBlockAddressSetup[hidden],
+#regexCapacityPanel[hidden] {
+    display: none;
 }
 
 body[data-forbid~="dashboard"] #dashboard-nav [data-pane="siteRules"],

@@ -326,6 +326,16 @@ for ( const relativePath of [
     'platform/mv3/extension/js/offscreen/compile-filters.js',
     'platform/mv3/extension/js/offscreen/fetch-list.js',
     'platform/mv3/extension/js/ruleset-manager.js',
+    'platform/mv3/extension/js/dnr-namespaces.js',
+    'platform/mv3/extension/js/regex-capacity.js',
+    'platform/mv3/extension/js/runtime-capabilities.js',
+    'platform/mv3/extension/js/runtime-capabilities-core.js',
+    'platform/mv3/extension/js/strictblock-rules.js',
+    'platform/mv3/extension/js/strictblock-tracker.js',
+    'platform/mv3/extension/js/strictblock.js',
+    'platform/mv3/re2-portable.js',
+    'platform/mv3/regex-verdicts.mjs',
+    'platform/mv3/stock-regex.js',
     'platform/mv3/extension/js/verified-source-handoff.js',
     'platform/mv3/extension/js/update-core.js',
     'platform/mv3/extension/js/update-manager.js',
@@ -476,6 +486,55 @@ assert(
         popupListenerBlock.includes('sourceContextPromise'),
     'Popup provenance must be captured before hydration and evaluated after it'
 );
+
+// Strict blocking: the address tracker's listeners are registered
+// synchronously at the top level of the worker, so the events which wake it
+// reach them; navigation and tab events feed it; host access and webRequest
+// changes rebuild the session plan; the plan decides whether the
+// onRuleMatchedDebug listener is kept.
+{
+    const text = background.replace(/\r\n/g, '\n');
+    assert(
+        /\nconst strictBlockTracker = createStrictBlockTracker\(\{\n/.test(text) &&
+            /\nif \( webextFlavor === 'chromium' \) \{\n {4}strictBlockTracker\.registerTopLevelListeners\(\);\n\}\n/
+                .test(text),
+        'The strict-block tracker must register its listeners at the top level'
+    );
+    assert(
+        /\nsetStrictBlockPlanListener\(onStrictBlockPlan\);\n/.test(text) &&
+            /\nsetStrictBlockUrlSourceProvider\(\( \) => strictBlockTracker\.isExact\(\)\);\n/
+                .test(text) &&
+            /\nsyncStrictBlockTracker\(\);\n/.test(text),
+        'The session plan and the tracker must be wired at the top level'
+    );
+    const listener = marker => {
+        const start = text.indexOf(`\n${marker}`);
+        assert(start !== -1, `Missing top-level listener ${marker}`);
+        return text.slice(start, text.indexOf('\n});\n', start));
+    };
+    assert(
+        /details\.frameId !== 0[^]*strictBlockTracker\.onBeforeNavigate\(details\)/
+            .test(listener('browser.webNavigation?.onBeforeNavigate?.addListener(')),
+        'Top-level navigation starts must reach the strict-block tracker'
+    );
+    assert(
+        listener('browser.tabs.onRemoved.addListener(')
+            .includes('strictBlockTracker.onTabRemoved(tabId);'),
+        'Closed tabs must be forgotten by the strict-block tracker'
+    );
+    for ( const event of [ 'onAdded', 'onRemoved' ] ) {
+        assert(
+            listener(`browser.permissions.${event}.addListener(`)
+                .includes('onStrictBlockPermissionsChanged(args[0]);'),
+            `permissions.${event} must rebuild the strict-block session plan`
+        );
+    }
+    assert(
+        /runtime\.onUserScriptMessage\.addListener\([^]{0,160}USER_SCRIPT_MESSAGES\.has\(request\.what\) === false/
+            .test(text),
+        'User scripts must only reach the allowlisted messages'
+    );
+}
 
 const backupRestore = await fs.readFile(
     path.join(extensionRoot, 'js', 'backup-restore.js'),

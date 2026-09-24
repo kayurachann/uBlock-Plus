@@ -9,7 +9,8 @@ Câu hỏi: MV3 hạn chế nhiều tính năng của uBlock Origin gốc. Giớ
 - Trong Google Chrome **không thể gỡ mọi giới hạn**. MV2 đã bị tắt vô điều kiện. Blocking `webRequest` cần tham số khởi động hoặc cài bằng policy. Quyết định chặn bất đồng bộ (Promise) cần cài bằng policy. Chrome không có API lọc body dạng stream hay trả chuỗi CNAME cho extension.
 - Phần lớn khoảng trống thực tế **vẫn thu hẹp được**. Nhiều mục chỉ là lỗi compiler hoặc tính năng chưa làm, không phải giới hạn trình duyệt: báo cáo filter bị bỏ, `$empty`/`$mp4`, lỗi biên dịch `$requestheader` thành rule chặn vô điều kiện (bản thân option vẫn cần engine Experimental), `##^responseheader()`, remote font, CSP report, media lớn, strict-block không tốn regex.
 - Thứ tự đề xuất: sửa trong bản **Standard** trước (bước 1–5), rồi đưa engine mạng cổ điển vào bản **Experimental** (bước 6–7). Ai muốn gỡ hết giới hạn thì con đường trung thực là **bản Firefox** (bước 8). Cài bằng policy, companion CNAME và bản debugger chỉ là tầng tùy chọn, có ghi rõ rủi ro, không bao giờ âm thầm thay đổi hệ thống.
-- **Bước 1 đã hoàn tất trong thay đổi này:** compiler báo phần lớn filter không chuyển được và các lỗi runtime/stock đã sửa. Những gì còn bỏ im lặng được liệt kê cuối phần [lộ trình](#lộ-trình-11-bước).
+- **Bước 1 đã hoàn tất:** compiler báo phần lớn filter không chuyển được và các lỗi runtime/stock đã sửa. Những gì còn bỏ im lặng được liệt kê cuối phần [lộ trình](#lộ-trình-11-bước).
+- **Bước 2 đã hoàn tất** (nhánh `feature/mv3-parity-upgrade`): strict-block dùng redirect `extensionPath` không cần regex và lấy đúng URL bị chặn từ sự kiện của trình duyệt; regex stock đã được Chrome kiểm tra lúc build nằm trong static ruleset. Với sáu list mặc định, pool regex dùng chung của dynamic + session còn **889/1.000** chỗ trống (trước đó 0) cho list nhập thêm và bộ lọc cá nhân. Xem [số đo](#pool-regex-sau-bước-2) và phần [đã giao](#lộ-trình-11-bước).
 
 ## Phương pháp
 
@@ -18,6 +19,7 @@ Câu hỏi: MV3 hạn chế nhiều tính năng của uBlock Origin gốc. Giớ
 - **Node 24.15.0:** biên dịch 55 list stock đã cache (443.276 filter, trong đó 244.330 network filter), khôi phục engine `static-net-filtering.js` từ snapshot và đo so khớp trên 15.301 URL request thật thu từ 46 website công khai (1.326 host).
 - **Chạy lại cả hai compiler** (stock lúc build và runtime `ubo-parser.js`) trên cùng các list cache để đếm filter bị bỏ.
 - **Kiểm chứng độc lập:** năm lượt kiểm chứng chạy lại các kết luận quan trọng nhất. Khi số liệu khác nhau, tài liệu dùng số đã kiểm chứng; các chỗ sửa được ghi rõ.
+- **Bước 2:** probe thiết kế trong `tmp/design/step2-regex-pool/` (đếm từng phương án strict-block, 13 trường hợp URL, priority giữa các namespace, quyền host bị giữ lại, chi phí `onRuleMatchedDebug`); build 1.2.0 có regex được Chrome 153 kiểm tra; hai test chạy gói đã build trong Chrome thật (`tools/test-static-regex-chrome.mjs`, `tools/test-strictblock-chrome.mjs`), nay chạy trong CI.
 - Máy đo: AMD Ryzen 5 5600H, 8 GB RAM. Hồ sơ thô nằm trong `tmp/research/` (không đưa vào Git): `plan.json` (bảng giới hạn, lộ trình), `step1-claims.json` (bằng chứng theo file:dòng), các thư mục probe `gap-inventory`, `platform-facts`, `engine`, `bodies`, `synth` và `verify-0` … `verify-4`.
 
 ## Kết luận
@@ -108,9 +110,62 @@ Theo [declarative_net_request.webidl](https://github.com/chromium/chromium/blob/
 | Static rule bị tắt bằng `updateStaticRules` | 5.000 |
 | Kích thước regex sau biên dịch | 2 KB; không lookaround, không backreference |
 
-Với sáu list mặc định: Chrome từ chối **80/254** regex rule stock (79 `memoryLimitExceeded`, 1 `syntaxError`). 174 regex còn lại cài thành dynamic rule, cộng 826 session rule của strict-block là đúng **1.000**. 278 strict-block rule hợp lệ bị bỏ, và filter nhập thêm hay cá nhân không còn chỗ cho regex.
+Trước bước 2, với sáu list mặc định: Chrome từ chối **80/254** regex rule stock (79 `memoryLimitExceeded`, 1 `syntaxError`). 174 regex còn lại cài thành dynamic rule, cộng 826 session rule của strict-block là đúng **1.000**. 278 strict-block rule hợp lệ bị bỏ, và filter nhập thêm hay cá nhân không còn chỗ cho regex. Bước 2 giải phóng pool này: xem [pool regex sau bước 2](#pool-regex-sau-bước-2).
 
 Probe pool regex: sau khi bật các static ruleset có tổng 902 regex, vẫn thêm được 1.000 dynamic regex. Với bản cài unpacked (cách Plus+ được phân phối), một regex sai cú pháp trong bất kỳ static ruleset nào, kể cả ruleset không bật, làm Chrome từ chối nạp cả extension. Ruleset làm tổng regex vượt 1.000 thì không được bật, và regex quá lớn bị bỏ qua mà không có cảnh báo.
+
+### Pool regex sau bước 2
+
+“Mặc định” là sáu list mặc định, “mọi list” là 55 list. Chrome 153.0.8010.53, profile tạm mới, server cục bộ.
+
+**Regex rule mà strict-block cần, theo từng phương án** (pool dùng chung 1.000):
+
+| Phương án | Mặc định / mọi list | Kết quả |
+| --- | ---: | --- |
+| A. `regexSubstitution` tới `/strictblock.html#\0` cho mọi rule (trước bước 2) | 1.132 / 1.622 | 1.104 regex hợp lệ với RE2 ở mặc định, nhưng chỉ 826 vừa chỗ cạnh 174 regex stock dynamic: 278 bị bỏ, pool hết chỗ |
+| B. Redirect `extensionPath` giữ nguyên `requestDomains`, `urlFilter` hoặc `regexFilter` của filter | 139 / 154, trong đó **111 / 123** hợp lệ | **Được chọn.** Chỉ filter vốn là regex mới cần regex rule |
+| B, lấy URL từ `webNavigation.onBeforeNavigate` | như B | URL sai sau server redirect, sau Back/Forward và trong tab nhân bản (lượt kiểm chứng `verify-3`) |
+| C. Nhóm hostname giữ `regexSubstitution` | 145 / 203 | Không chính xác hơn B mà tốn thêm regex |
+| D. Gói pattern `urlFilter` vào regex alternation, không dùng sự kiện | khoảng 708 ở mặc định | Loại: giới hạn 2 KB của RE2 chỉ cho trung vị 2, tối đa 4 pattern mỗi regex; 987 pattern mặc định cần 591 regex |
+
+**Kết quả sau bước 2** (build 1.2.0, regex được Chrome 153 kiểm tra):
+
+| Đại lượng | Mặc định | Mọi list |
+| --- | ---: | ---: |
+| Regex stock trong static ruleset (pool static 1.000) | **174** | **473** |
+| Filter regex stock mà RE2 của Chrome từ chối, nay được đếm (`unsupported-regex-memory` / `unsupported-regex-syntax`) | 108 (106 / 2) | 165 (160 / 5) |
+| Strict-block rule (redirect `extensionPath`, priority 29, chỉ `main_frame`) | 1.106 (trước đó 826) | 1.592 |
+| … trong đó regex rule (pool dùng chung) | **111** | **123** |
+| Strict-block regex mà RE2 từ chối (`strictblockRejected`) | 28 | 31 |
+| Pool dùng chung còn trống cho list nhập thêm và bộ lọc cá nhân | **889** | **877** |
+
+Probe đếm 80/254 regex **rule** stock bị từ chối ở mặc định (132 và 2 trên 607 ở mọi list); build đếm theo **filter nguồn**, như mọi lý do khác. Build giữ tổng regex của mọi static ruleset đã khai báo không quá 1.000, nên mọi tổ hợp list bật đều vừa pool static; nếu list stock sau này vượt mức, regex của các list xếp sau trong `rulesets.json` quay lại đường dynamic. Test Chrome nạp gói unpacked trong khoảng 1 s với sáu list mặc định, Chrome chấp nhận cả 473 regex static qua `isRegexSupported`, bật được 50 list có nhiều regex nhất, và khi 111 regex strict-block của list mặc định đã cài, vẫn nhận thêm 889 regex dynamic.
+
+**URL chính xác.** Redirect `extensionPath` không mang URL, nên trang `strictblock.html` hỏi service worker, theo thứ tự ưu tiên:
+
+1. `webRequest.onBeforeRedirect` và `webRequest.onBeforeRequest`, chỉ `main_frame`, khi quyền `webRequest` tùy chọn đã được cấp (luôn có trong Experimental). Chính xác, rẻ nhất. Sau server redirect, Chrome không phát `onBeforeRedirect` cho bước redirect DNR tới `strictblock.html`, chỉ phát `onBeforeRequest` cho trang đó với cùng `requestId`; địa chỉ bị chặn là địa chỉ web trước đó của request.
+2. `declarativeNetRequest.onRuleMatchedDebug`: Chrome chỉ gửi cho bản cài unpacked có `declarativeNetRequestFeedback`, đúng cách Plus+ được phân phối. Chính xác. Không dùng ở low-memory profile, vì nó giữ worker thức.
+3. `webNavigation.onBeforeNavigate` của frame trên cùng: gần đúng, vì không thấy server redirect sau lúc bắt đầu điều hướng. Trang ghi rõ đây là địa chỉ gần đúng và không cho chọn **Đừng cảnh báo tôi lần nữa** trên host đoán ra.
+4. Không có nguồn nào: trang nói không xác định được địa chỉ và khóa nút **Tiếp tục** (Proceed).
+
+Trang rồi giữ địa chỉ trong fragment và `history.state` của chính entry lịch sử (`history.replaceState`), nên Back/Forward, reload và tab nhân bản không cần sự kiện nào nữa. Probe thiết kế cho **13/13** trường hợp đúng với `onRuleMatchedDebug`: tab mới, gõ địa chỉ, liên kết, sau server redirect, Back, Forward, reload, tab nhân bản, worker đã dừng, popup `window.open`, hai điều hướng liên tiếp, bộ lọc cá nhân và bộ lọc cá nhân sau server redirect. Trong mọi trường hợp, kể cả worker đã dừng, sự kiện đã tới worker trước khi trang hỏi (chờ 3–8 ms); sự kiện đến 2–70 ms sau `performance.timeOrigin` của trang. `onBeforeRedirect` cho cùng URL; `redirectUrl` của nó dùng host GUID của `use_dynamic_url`, còn trang được commit với ID tĩnh của extension, nên popup vẫn nhận ra trang strict-block. `tools/test-strictblock-chrome.mjs` lặp lại 13 trường hợp trên gói đã build (rule stock của `ublock-badware` và filter `$doc` của Bộ lọc của tôi), cùng **Tiếp tục** và **Đừng cảnh báo tôi lần nữa về trang web này** (Don’t warn me again about this site) cho cả hai, với gói Standard (nguồn `onRuleMatchedDebug`) và gói Experimental (nguồn `webRequest`); trên Standard nó cấp thêm quyền `webRequest` tùy chọn và thử lại trực tiếp và sau server redirect, rồi thử low-memory profile. Sau server redirect, trang phải hiện địa chỉ trong vòng 1 s kể từ lúc bắt đầu điều hướng: đo được 94–135 ms với cả hai nguồn.
+
+**Priority giữa các namespace:** session redirect ở P+1 thắng dynamic block ở P; dynamic allow ở 30 thắng redirect; redirect bị loại bằng `excludedRequestDomains` cộng session allow ở P cho trang tải; redirect cùng priority với block thì thua. `excludedRequestDomains` thắng `requestDomains` ngay cả với cùng host, nên biểu diễn được **Tiếp tục**.
+
+**Quyền host bị giữ lại (fail-open):** khi quyền truy cập site đặt là “Khi nhấp” (On click), một redirect khớp mà không có quyền host sẽ che block có priority thấp hơn, và trang tải bình thường. Vì vậy redirect strict-block chỉ được cài khi có quyền truy cập mọi trang web; bộ redirect được dựng lại khi quyền thay đổi (`permissions.onAdded`/`onRemoved`) và mỗi lần worker khởi động. Block dynamic của filter `$doc` cá nhân không bao giờ bị sửa, nên vẫn chặn khi redirect bị gỡ. Còn lại: một khoảng vài mili giây sau khi quyền đổi, và policy doanh nghiệp `runtime_blocked_hosts` có thể giữ quyền trên một số host trong khi `<all_urls>` vẫn hiện là đã cấp (chưa xử lý).
+
+**Chi phí `onRuleMatchedDebug`** (listener nhận mọi rule khớp, không chỉ strict-block):
+
+| Phép đo | Không có listener | Có listener |
+| --- | ---: | ---: |
+| Probe thiết kế: tải trang có 300 ảnh bị chặn, n=5 xen kẽ | 72,4 ms | 87,0 ms (khoảng 49 µs mỗi rule khớp); khoảng 2,5 ms CPU worker mỗi trang |
+| Test Chrome, gói đã build, hai lượt: tải cùng trang (trung bình 3 trang sau trang đầu, worker gắn profiler) | 125 / 127 ms | 151 / 139 ms |
+| … thời gian JS của worker bận mỗi trang (lấy mẫu 100 µs) | 1,32 / 1,21 ms | 1,82 / 1,50 ms |
+| Thời gian worker sống khi trang yêu cầu một ảnh bị chặn mỗi 2 s | dừng sau 30,1 s | sống suốt 40 s / 60 s |
+
+Listener giữ worker thức trong lúc duyệt web vì mỗi rule khớp là một sự kiện. Do đó listener chỉ được đăng ký khi có ít nhất một redirect strict-block và không có `webRequest`; khi quyền `webRequest` được cấp, listener `main_frame` rẻ hơn thay thế nó. Mục **Chẩn đoán** (Diagnostics) của dashboard có nút cấp quyền này.
+
+**Cổng RE2 lúc build.** Regex static sai cú pháp làm Chrome từ chối nạp cả gói unpacked, nên mọi regex static phải qua hai lớp: `re2-portable.js` (tập con RE2 an toàn, bắt buộc kể cả khi không có Chrome; từ chối cả 7 regex mà Chrome 153 báo `syntaxError` đã thử và không từ chối regex nào trong 596 regex Chrome chấp nhận), rồi `isRegexSupported` của Chrome thật, chạy headless trong profile tạm (915 lần kiểm tra mất 220 ms). Regex vượt giới hạn bộ nhớ không làm hỏng việc nạp gói, Chrome chỉ bỏ qua im lặng; giới hạn đó phụ thuộc phiên bản, nên chỉ nút **Kiểm tra ngay** (Check now) trong mục Chẩn đoán đếm được các regex mà trình duyệt đang chạy bỏ qua.
 
 ### Báo cáo compiler stock sau bước 1
 
@@ -138,9 +193,11 @@ Tổng này gồm hai loại. Khoảng **1.155** filter hợp lệ nhưng DNR kh
 
 Build đạt validator: 55 ruleset, 70.310 static DNR rule (cộng 607 regex rule đóng gói trong `rulesets/regex`, cài thành dynamic rule lúc chạy khi list được bật). Rule được sinh ra giữ nguyên, trừ các chỗ sửa có chủ ý: hai rule removeparam phủ định trong `adguard-spyware-url` bị bỏ, rule `##^responseheader()` trong `ublock-filters`, `irn-0` và `rus-0` được dựng lại, và hai rule removeparam `main_frame` quá rộng trong `ublock-filters` bị bỏ.
 
+**Sau bước 2**, build còn đếm filter regex mà RE2 của Chrome không chạy được: `unsupported-regex-memory` 160 và `unsupported-regex-syntax` 5, nên tổng thành **1.378** filter trong 36/55 list (list mặc định: +108). Trong đó có 27 filter chỉ chặn document (24 ở list mặc định): rule duy nhất của chúng là strict-block rule mà RE2 từ chối, nên chúng không được áp dụng ở đâu cả. Trước đó các regex này bị runtime bỏ im lặng. Gói có 70.310 rule thường cộng 473 regex rule nằm ngay cuối `main/<id>.json` (70.783 static rule); `rulesets/regex/` chỉ còn cho regex phải đi đường dynamic, và không có trong build hiện tại.
+
 ## Bảng 41 giới hạn
 
-Cột **Kết luận** giữ nguyên phán quyết của nghiên cứu: **Standard** (gỡ được trong bản DNR), **Experimental** (cần bản có blocking `webRequest`), **Một phần**, **Companion** (cần process native), **Trình duyệt khác**. “Bước 1” đánh dấu các dòng đã sửa trong thay đổi này.
+Cột **Kết luận** giữ nguyên phán quyết của nghiên cứu: **Standard** (gỡ được trong bản DNR), **Experimental** (cần bản có blocking `webRequest`), **Một phần**, **Companion** (cần process native), **Trình duyệt khác**. “Bước 1” và “Bước 2” đánh dấu các dòng đã sửa ở bước đó của lộ trình.
 
 | # | Giới hạn | Hiện trạng | Kết luận | Cách gỡ và lưu ý |
 | ---: | --- | --- | --- | --- |
@@ -148,8 +205,8 @@ Cột **Kết luận** giữ nguyên phán quyết của nghiên cứu: **Standa
 | 2 | Không có blocking `webRequest` | Standard: không. Experimental: có qua launcher, chỉ dùng cho firewall `block` | Experimental | Đặt engine cổ điển lên đường launcher (bước 6). Đã xác minh cancel, redirect tới `data:` và resource web-accessible, redirect `main_frame`, thêm/xóa response header, thêm request header |
 | 3 | Không có background page thường trực; không giữ được request | Standard: DNR luôn chạy. Experimental: Promise bị bỏ qua, worker ngủ sau khoảng 30 s | Một phần | Đăng ký listener đồng bộ; khôi phục engine từ IndexedDB (60–95 ms) hoặc dựng đồng bộ ở top level (Chrome giữ request, trễ khoảng 100–115 ms với list mặc định); luôn giữ DNR nền. Tránh top-level `await` (worker không khởi động) và import JSON module (khởi động lại liên tục) |
 | 4 | Hạn mức rule DNR | Xem [hằng số](#hằng-số-dnr-trên-chrome-153) | Experimental | Engine cổ điển không có hạn mức (đã đo 203.598 filter); thêm 9–16 MiB bộ nhớ worker. Standard không nâng được |
-| 5 | Pool 1.000 regex dynamic + session đã đầy với list mặc định | 174 + 826 = 1.000; 278 strict-block rule bị bỏ | Standard | (a) Strict-block bằng redirect `extensionPath` tới `/strictblock.html`, lấy URL gốc từ `webNavigation.onBeforeNavigate`: không cần regex. (b) Chuyển regex stock hợp lệ sang static ruleset (pool riêng). Build phải kiểm cú pháp regex; runtime phải báo ruleset/regex không được bật. Trang strict-block chỉ hiện đúng URL với điều hướng `main_frame` trực tiếp. Sau server redirect nó hiện URL ban đầu của điều hướng (trang chuyển hướng) thay vì URL bị chặn; sau back/forward có thể hiện URL của một điều hướng khác; tab nhân bản (Duplicate) không có URL và hiện `null` |
-| 6 | RE2: không lookaround/backreference, tối đa 2 KB | 80/254 regex mặc định bị từ chối | Experimental | Engine cổ điển dùng `RegExp` của JavaScript; chỉ có hiệu lực sau khi engine sẵn sàng |
+| 5 | Pool 1.000 regex dynamic + session đã đầy với list mặc định | **Đã sửa (bước 2):** trước đó 174 + 826 = 1.000 và 278 strict-block rule bị bỏ. Nay regex stock nằm trong static ruleset (174/1.000 ở mặc định, 473 ở mọi list), strict-block chỉ dùng 111 regex (123), pool dùng chung còn 889 chỗ trống (877) | Standard | Theo [bảng phương án](#pool-regex-sau-bước-2): A (`regexSubstitution` mọi rule) cần 1.132 regex, B (redirect `extensionPath` giữ nguyên điều kiện URL) chỉ 111 regex hợp lệ, D (gói pattern vào regex) khoảng 708. Chọn B. URL bị chặn lấy chính xác từ `webRequest` (`onBeforeRedirect`, và `onBeforeRequest` sau server redirect) hoặc `onRuleMatchedDebug` rồi được giữ trong fragment của trang: đúng 13/13 trường hợp với mỗi nguồn, gồm server redirect, Back/Forward, tab nhân bản, reload và worker đã dừng. Đính chính: cách lấy URL từ `webNavigation.onBeforeNavigate` mà bản trước của dòng này đề xuất chỉ đúng với điều hướng trực tiếp (sai sau server redirect, sau Back/Forward, và tab nhân bản không có URL); nay nó chỉ là nguồn dự phòng, được ghi là gần đúng. Build kiểm mọi regex static bằng RE2 của Chrome; mục Chẩn đoán báo ruleset không được bật và regex mà trình duyệt bỏ qua. Redirect chỉ được cài khi có quyền truy cập mọi trang web ([fail-open khi thiếu quyền host](#pool-regex-sau-bước-2)) |
+| 6 | RE2: không lookaround/backreference, tối đa 2 KB | 80/254 regex rule mặc định bị từ chối. **Bước 2:** được đếm và báo là `unsupported-regex-memory`/`unsupported-regex-syntax` (108 filter ở mặc định, 165 ở mọi list) thay vì bị runtime bỏ im lặng | Experimental | Engine cổ điển dùng `RegExp` của JavaScript; chỉ có hiệu lực sau khi engine sẵn sàng |
 | 7 | `$redirect-rule` (530 filter) | Không hỗ trợ; nay được đếm và báo | Experimental | Engine chỉ redirect khi request vốn bị chặn. Rule DNR block trùng request phải bị loại khỏi bản này, vì DNR block thắng redirect của `webRequest` |
 | 8 | Resource `$redirect=` cho filter nhập thêm/cá nhân (10/47 chưa đóng gói) | **Đã sửa (bước 1):** đóng gói và khai báo web-accessible 46 resource cùng alias. `click2load.html` bị cả hai compiler từ chối và ghi trong `rulesets/redirect-resources.json` | Standard | Build dừng nếu thiếu file resource. Filter `redirect=` trỏ resource không dùng được bị bỏ (uBO cổ điển vẫn chặn request đó) |
 | 9 | `$empty`, `$mp4` ở runtime | **Đã sửa (bước 1):** redirect tới `empty` và `noop-1s.mp4` như stock thay vì chặn mọi loại request | Standard | Ngoại lệ `@@…$empty/$mp4/$redirect` bị từ chối (`unsupported-redirect-exception`) |
@@ -157,7 +214,7 @@ Cột **Kết luận** giữ nguyên phán quyết của nghiên cứu: **Standa
 | 11 | `$removeparam` regex, phủ định, không giá trị | **Bước 1:** bare `$removeparam` xóa cả query (`query: ''`); stock báo giá trị phủ định thay vì sinh rule không bao giờ khớp. Regex vẫn không hỗ trợ | Experimental | Engine xóa tham số bằng redirect; tránh vòng lặp redirect nếu DNR cũng có rule đó |
 | 12 | Ngoại lệ `$csp`/`$permissions` quá rộng | Ngoại lệ thành allow priority 1, hủy cả rule header/removeparam khác | Experimental | Standard (một phần): trừ domain của ngoại lệ lúc biên dịch. Experimental: chèn CSP chính xác ở `onHeadersReceived`, bỏ rule csp/permissions khỏi DNR |
 | 13 | `$header=` regex/phức tạp | Chỉ giá trị chính xác hoặc glob | Experimental | So khớp ở `onHeadersReceived` rồi hủy |
-| 14 | `$uritransform` | Bị từ chối; `@@…$uritransform` ở runtime nay bị từ chối (bước 1) thay vì thành redirect | Experimental | Redirect trong `onBeforeRequest`, chỉ cho nguồn tin cậy. Standard có thể dùng `regexSubstitution` khi pool regex được giải phóng |
+| 14 | `$uritransform` | Bị từ chối; `@@…$uritransform` ở runtime nay bị từ chối (bước 1) thay vì thành redirect | Experimental | Redirect trong `onBeforeRequest`, chỉ cho nguồn tin cậy. Standard có thể dùng `regexSubstitution`: bước 2 đã giải phóng pool regex, nhưng việc này cần chính sách nguồn tin cậy và thuộc bước 4 |
 | 15 | `$urlskip` | Chỉ list stock, dạng liên kết thủ công trên trang strict-block | Experimental | Tự chuyển hướng `main_frame` bằng `src/js/urlskip.js`, có kiểm tra độ tin cậy của nguồn |
 | 16 | `$strict1p`/`$strict3p` | Không hỗ trợ (DNR không có điều kiện hostname bằng nhau) | Experimental | Engine cổ điển |
 | 17 | Entity (`example.*`) và regex trong `domain=`, `to=`, `denyallow=` | 337 filter stock bị bỏ, có filter khác được “salvage” bằng cách bỏ phần không hỗ trợ. Hostname entity/regex bị phủ định (`domain=~example.*`) bị bỏ im lặng, không cảnh báo, không đếm, làm rule rộng hơn: 187 filter trong bản chụp này, ví dụ `/data/banner.json?$domain=~nintendo.*` (`kor-1`) thành rule chặn trên mọi site, kể cả site bị loại trừ | Experimental | Engine khớp chính xác. Standard (chưa thử): mở rộng `example.*` theo public suffix lúc build |
@@ -166,8 +223,8 @@ Cột **Kết luận** giữ nguyên phán quyết của nghiên cứu: **Standa
 | 20 | `$inline-script`, `$inline-font`, ô firewall inline-script | Bị từ chối/bỏ | Standard | Chèn CSP bằng DNR `modifyHeaders` trên `main_frame`/`sub_frame`, giới hạn bằng `topDomains`; đã xác minh |
 | 21 | `$ghide`/`$ehide`/`$shide` ở runtime | Runtime từ chối (1.743 trong corpus) | Standard | Sinh generic-cosmetic exclusion như stock (bước 4) |
 | 22 | `$badfilter` nhắm rule stock | Chỉ dựng lại nhóm hostname chặn; phần khác hoãn | Standard | Áp mọi `$badfilter` stock-stock lúc build; `disableRuleIds` cho filter người dùng (tối đa 5.000) |
-| 23 | Build stock bỏ rule im lặng | **Đã sửa (bước 1):** đếm theo lý do trong `log.txt`, `ruleset-details.json`, tổng lúc build; validator đối chiếu; tooltip của dashboard hiện số filter không chuyển được thành quy tắc Chrome | Standard | Vẫn chưa được đếm: hostname entity bị bỏ khỏi filter chuyển một phần, hostname entity/regex bị phủ định (dòng 17, bỏ im lặng) và hai trường hợp `$urlskip` |
-| 24 | Strict-block cho `$doc` nhập thêm/cá nhân | Chặn DNR thường, không có nút tiếp tục | Standard | Như dòng 5, cộng allow session tạm để tiếp tục |
+| 23 | Build stock bỏ rule im lặng | **Đã sửa (bước 1):** đếm theo lý do trong `log.txt`, `ruleset-details.json`, tổng lúc build; validator đối chiếu; tooltip của dashboard hiện số filter không chuyển được thành quy tắc Chrome. **Bước 2** thêm hai lý do RE2 (`unsupported-regex-memory`, `unsupported-regex-syntax`) và đếm strict-block regex bị từ chối trong `strictblockRejected` | Standard | Vẫn chưa được đếm: hostname entity bị bỏ khỏi filter chuyển một phần, hostname entity/regex bị phủ định (dòng 17, bỏ im lặng) và hai trường hợp `$urlskip` |
+| 24 | Strict-block cho `$doc` nhập thêm/cá nhân | **Đã sửa (bước 2):** khi strict blocking bật, extension có quyền truy cập mọi trang web và biết URL chính xác, filter `$doc`/`$document`/`$all` của list nhập thêm và Bộ lọc của tôi hiện trang strict-block với **Tiếp tục** và **Đừng cảnh báo tôi lần nữa về trang web này** (Don’t warn me again about this site); trang nêu nguồn chặn. Ngoài các điều kiện đó (hoặc trên Firefox, Safari) chúng vẫn chặn như cũ, với trang lỗi của trình duyệt | Standard | Như dòng 5 (phương án B): mỗi filter thành session redirect `extensionPath` ở P+1 trên chính block của nó (P); block dynamic giữ nguyên làm dự phòng, allow cùng list vẫn thắng. Site được loại trừ nhận `excludedRequestDomains` trên redirect cộng một allow ở P để thắng block dự phòng. Chỉ filter vốn là regex mới tốn regex. Bản cài packed hoặc policy không có `webRequest` chỉ có URL gần đúng, nên filter của người dùng vẫn là block thường. Filter chỉ có hostname (`\|\|host^` không `$doc`) chưa được strict-block (bước 4) |
 | 25 | Generic cosmetic, ngoại lệ generic, hostname chỉ phủ định, `*##` trong list nhập thêm | Runtime bỏ | Standard | Dùng lại pipeline generic-cosmetic của stock, chèn qua `userScripts` |
 | 26 | Cosmetic/scriptlet runtime cần công tắc Allow User Scripts | Extension không tự bật được | Một phần | Phát hiện và hướng dẫn; đường stock vẫn chạy khi tắt. Trên Chrome 153 API xuất hiện trong worker đang chạy mà không cần reload. [userScripts](https://developer.chrome.com/docs/extensions/reference/api/userScripts) |
 | 27 | Scriptlet `trusted-*` từ list nhập thêm | Không bao giờ tin | Standard | Tin list có URL khớp đúng tiền tố tin cậy của build, như uBO |
@@ -190,8 +247,8 @@ Cột **Kết luận** giữ nguyên phán quyết của nghiên cứu: **Standa
 
 | Bước | Nội dung | Công sức ước tính | Trạng thái |
 | ---: | --- | --- | --- |
-| 1 | Báo cáo trung thực và sửa lỗi compiler (cả hai bản) | 3–5 ngày | **Đã xong trong thay đổi này**, xem bên dưới |
-| 2 | Giải phóng pool regex ở Standard: strict-block không dùng regex, regex stock sang static ruleset | 5–8 ngày | Cần kiểm cú pháp regex lúc build và job CI nạp gói trong Chrome thật |
+| 1 | Báo cáo trung thực và sửa lỗi compiler (cả hai bản) | 3–5 ngày | **Đã xong**, xem bên dưới |
+| 2 | Giải phóng pool regex ở Standard: strict-block không dùng regex, regex stock sang static ruleset | 5–8 ngày | **Đã xong**, xem bên dưới: pool dùng chung còn 889/1.000 chỗ trống với list mặc định (877 với mọi list); regex static 174/1.000 (473); build kiểm regex bằng Chrome, CI nạp gói trong Chrome thật |
 | 3 | Công tắc theo site và option dựa trên CSP ở Standard: fonts, CSP report, scripting, media lớn, `$inline-script`/`$inline-font` | 6–10 ngày | Cần Chrome 145+ (`topDomains`) |
 | 4 | Một compiler cho stock, list nhập thêm và bộ lọc cá nhân | 10–15 ngày | Cần ghim phiên bản engine `src/js` và test đối chiếu hai đường |
 | 5 | Logger, picker và popup ngang uBO; `$ipaddress` cho `main_frame` | 7–10 ngày | Sau bước 4 |
@@ -222,12 +279,43 @@ Cột **Kết luận** giữ nguyên phán quyết của nghiên cứu: **Standa
 - Ngoại lệ `@@…$redirect=` ở stock thành block priority 21, chặn cả khi không có filter nào khác chặn.
 - Tooltip chỉ hiện số tổng cho list stock, và số đó gồm cả filter không hợp lệ dù chuỗi hiển thị gọi là network filter không được hỗ trợ; chưa có trang xem theo lý do hay dòng nguồn.
 
+**Bước 2 đã giao** (số liệu ở [pool regex sau bước 2](#pool-regex-sau-bước-2)):
+
+- **Build (Chromium, Edge):**
+  - Regex stock nằm cuối `main/<id>.json` của mỗi list, trong giới hạn 1.000 cho mọi static ruleset cộng lại. Mọi regex static phải qua `re2-portable.js`, rồi `isRegexSupported` của Chrome thật do `regex-verdicts.mjs` chạy headless trong profile tạm. Build phát hành (`-Version`) bắt buộc có Chrome (`regexVerdicts=required`, tìm trong thư mục cài chuẩn hoặc `CHROME_PATH`); build development dùng Chrome nếu có, nếu không thì dùng verdict đã cache, rồi chỉ tập con portable.
+  - Regex Chrome không chạy được bị đếm như filter không hỗ trợ khác.
+  - `rulesets/regex-details.json` ghi số regex static, phiên bản Chrome đã kiểm và digest.
+  - `rulesets/strictblock/<id>.json` là redirect `extensionPath` tới `/strictblock.html` ở priority 29, chỉ `main_frame`.
+  - `tools/validate-mv3.mjs` kiểm các điều trên, và CI nạp gói trong Chrome thật.
+- **Runtime:**
+  - Kế hoạch session strict-block dùng ID 1–999.999, ngân sách session và regex còn lại sau các chủ sở hữu khác, và chỉ một lần `updateSessionRules`.
+  - Redirect cho `$doc` của list nhập thêm và Bộ lọc của tôi.
+  - Khi pool dùng chung đầy, chỉ regex rule không phải ngoại lệ của list nhập thêm bị bỏ, từ cuối, kèm cảnh báo; trước đó cả lần kích hoạt thất bại.
+  - Bộ redirect được đối chiếu lại khi quyền thay đổi và mỗi lần worker khởi động.
+  - Tắt strict blocking hay mất quyền host chỉ gỡ redirect, không xóa danh sách site đã chọn **Đừng cảnh báo tôi lần nữa về trang web này**.
+- **Trang strict-block:** URL chính xác, gần đúng hoặc không có (khi đó nút **Tiếp tục** bị khóa); chỉ điều hướng tới URL `http(s)`; nêu nguồn chặn (tên list stock, “Danh sách đã nhập” hoặc “Bộ lọc của tôi”). Trang chỉ nhận chi tiết URL khi chính nó hỏi từ frame trên cùng của một tab.
+- **Mục Chẩn đoán (Diagnostics):** bảng “Dung lượng quy tắc regex” (Regex rule capacity) với nút **Kiểm tra ngay**; dòng capability nêu cách trang strict-block biết địa chỉ; nút cấp quyền `webRequest` tùy chọn. Ước lượng regex của Filter Store dùng dung lượng còn lại thật thay vì 1.000.
+- Compiled cache lên revision 5, nên list nhập thêm được biên dịch lại một lần để có redirect strict-block.
+- Test: `test-strictblock-rules`, `test-dnr-namespaces`, `test-strictblock-tracker`, `test-regex-capacity`, `test-regex-capacity-ui`, `test-re2-portable`, `test-stock-regex-placement`, `test-validate-mv3-regex`, `test-sender-trust`, cùng hai test Chrome thật `test-static-regex-chrome` và `test-strictblock-chrome` (trong `tools/`).
+
+**Còn mở sau bước 2:**
+
+- `onRuleMatchedDebug` là API gỡ lỗi: Chrome chỉ gửi cho bản cài unpacked, có thể giới hạn hoặc gỡ nó, và nó giữ worker thức trong lúc duyệt web ([chi phí](#pool-regex-sau-bước-2)). Bản cài packed, policy, hoặc low-memory profile không có `webRequest` chỉ có URL gần đúng, và filter `$doc` của người dùng vẫn là block thường. Với URL gần đúng sau server redirect, **Tiếp tục** mở lại trang redirect và có thể quay về trang cảnh báo.
+- Ngưỡng thời gian (sự kiện được coi là mới nếu đến không quá 100 ms trước `timeOrigin` của trang, chờ tối đa 1,5 s) đo trên một máy; máy chậm hơn có thể hiện ghi chú “gần đúng” hoặc “không có” thường hơn.
+- Khoảng vài mili giây sau khi quyền host đổi, và `runtime_blocked_hosts` của policy doanh nghiệp, vẫn có thể để redirect che block (fail-open).
+- 28 strict-block regex ở list mặc định (31 ở mọi list) mà RE2 từ chối không được cài; document khớp các filter đó không có trang strict-block, như trước khi runtime bỏ chúng. Với 24 filter (27 ở mọi list) chỉ chặn document, đó là rule duy nhất, nên các trang đó không bị chặn chút nào (như trước) và filter được đếm là không chuyển được. 160 filter regex stock vượt giới hạn bộ nhớ chưa được tách hay đơn giản hóa.
+- Giới hạn bộ nhớ RE2 phụ thuộc phiên bản: regex static mà Chrome build chấp nhận có thể bị Chrome khác bỏ qua im lặng, chỉ thấy qua **Kiểm tra ngay**. Chrome tối thiểu (130) có thể phân tích cú pháp khác; named group bị loại vì lý do này.
+- Allow loại trừ của Bộ lọc của tôi ở priority khoảng 1.000.010 cũng hủy các rule cấp trang có priority thấp hơn (chèn CSP, removeparam, xóa response header) trên document của chính site đó. Allow loại trừ `main_frame` ở 29 cho list stock vẫn được giữ, để **Tiếp tục** không kết thúc ở trang lỗi khi site còn khớp block `main_frame` thường (11 rule ở list mặc định, 18 ở mọi list); nó có cùng loại tác dụng phụ như trước.
+- Filter chỉ có hostname (`||host^` không `$doc`) trong list nhập thêm và Bộ lọc của tôi chưa được strict-block như list stock (bước 4). `$uritransform` qua `regexSubstitution` cũng thuộc bước 4.
+- Firefox và Safari không đổi: Firefox giữ strict-block `regexSubstitution` và regex stock dynamic, Safari không có strict blocking.
+- Lúc trình duyệt khởi động, trước khi session rule được cài, strict-block stock vẫn chưa có hiệu lực (không đổi).
+
 ## Lưu ý trung thực
 
 - **Tham số `--allowlisted-extension-id` là công cụ test.** Chromium kiểm tra nó bằng [`IsAllowlistedForTest`](https://github.com/chromium/chromium/blob/153.0.8010.53/extensions/common/features/simple_feature.cc#L735-L743); tham số nằm trong [danh sách cờ cảnh báo](https://github.com/chromium/chromium/blob/153.0.8010.53/chrome/browser/ui/startup/bad_flags_prompt.cc#L119-L121), nên Chrome hiện thanh cảnh báo mỗi phiên, và có thể bị gỡ ở bất kỳ bản phát hành nào.
 - Tham số mở **mọi** tính năng bị chặn theo allowlist hoặc vị trí cài cho ID đó, không chỉ `webRequestBlocking`: probe khai báo `dns` trong manifest cũng nhận được `chrome.dns`. Tham số không cấp quyền mà manifest không khai báo; gói Experimental không khai báo `dns`. Nó không biến bản cài thành policy-installed: `installType` vẫn là `development` và phản hồi Promise vẫn bị bỏ qua.
 - Chưa thử mở lại cùng một profile với tham số này qua nhiều lần khởi động, và chưa đo lần khởi động nguội của cả trình duyệt. Launcher hiện chỉ có cho Windows.
-- Mọi số đo là của một bản Chrome và một máy, phần lớn với server cục bộ; không phải khảo sát website thực tế. Các kết luận Standard về strict-block, pool regex, `topDomains` và `Content-Length` được xác minh hai lần (probe `synth` và lượt kiểm chứng `verify-3`), trên cùng một máy.
+- Mọi số đo là của một bản Chrome và một máy, phần lớn với server cục bộ; không phải khảo sát website thực tế. Các kết luận Standard về strict-block, pool regex, `topDomains` và `Content-Length` được xác minh hai lần (probe `synth` và lượt kiểm chứng `verify-3`), trên cùng một máy. Số đo của bước 2 (13 trường hợp URL, chi phí `onRuleMatchedDebug`, thời gian worker sống) cũng chỉ từ máy đó; hai lượt đo chi phí của test Chrome chênh nhau khá nhiều (+26 ms và +12 ms thời gian tải trang), nên chỉ nên đọc như độ lớn.
 - Công sức là ước tính của nhóm nghiên cứu, không phải cam kết. Bước 8 chưa được khảo sát chi tiết.
 - Số filter bị từ chối phụ thuộc bản chụp list ngày 23/9/2026 (build ngày 24/9, dùng lại list đã tải) và sẽ thay đổi khi list cập nhật.
 
@@ -237,5 +325,7 @@ Cột **Kết luận** giữ nguyên phán quyết của nghiên cứu: **Standa
 - **no-large-media:** DNR biểu diễn được bằng hai rule `Content-Length`, không cần debugger hay proxy. Giới hạn: kích thước đã nén, response chunked không được xét, và ngưỡng đã thử là 50.000 byte chứ không phải đúng 51.200 byte của uBO.
 - **Remote font và CSP report qua `report-uri`:** là khoảng trống sản phẩm mà DNR chặn được, không phải giới hạn trình duyệt. Upload qua Reporting API (`report-to`) không hiện với DNR lẫn `webRequest` trong probe; chặn được hay không vẫn chưa rõ (ví dụ bằng cách xóa header `Reporting-Endpoints`, chưa thử).
 - **Đường debugger:** bổ sung các lưu ý Local Network Access, service worker của trang, tab mới và auto-attach ở [trên](#lưu-ý-về-đường-debugger).
-- **Regex:** tài liệu ngày 6/9 nêu sáu ngoại lệ regex bị Chrome 152 từ chối; với list mặc định, Chrome 153 từ chối 80/254 regex rule stock.
+- **Regex:** tài liệu ngày 6/9 nêu sáu ngoại lệ regex bị Chrome 152 từ chối; với list mặc định, Chrome 153 từ chối 80/254 regex rule stock. Từ bước 2, build không đóng gói các regex đó mà đếm chúng theo filter nguồn (108 ở list mặc định). Bản trước của mục này ghi 84: nó bỏ sót 24 filter chỉ chặn document mà rule strict-block duy nhất bị RE2 từ chối.
+- **Nguồn `webRequest` của strict-block:** bản đầu của bước 2 chỉ nghe `webRequest.onBeforeRedirect`, và ghi là đúng 13/13 với gói Experimental. Thực tế sau server redirect Chrome không phát sự kiện đó cho bước redirect DNR: trang chờ 1,5 s rồi hiện địa chỉ bắt đầu điều hướng (trang redirect) như địa chỉ gần đúng. Nguồn `onRuleMatchedDebug` cũng chờ 1,5 s trong trường hợp đó, vì `onBeforeNavigate` của trang redirect tới sau và bị coi là điều hướng mới hơn. Cả hai đã được sửa (`onBeforeRequest` cùng `requestId`, và thời điểm lấy từ `timeStamp` của sự kiện) và test Chrome nay kiểm cả thời gian hiện trang.
+- **Strict-block (dòng 5):** bản đầu của tài liệu này đề xuất lấy URL bị chặn từ `webNavigation.onBeforeNavigate`. Cách đó sai sau server redirect, sau Back/Forward và trong tab nhân bản; bước 2 dùng `webRequest`/`onRuleMatchedDebug` cộng fragment, còn `onBeforeNavigate` chỉ là nguồn gần đúng. Dòng 5 và 24 đã được sửa tại chỗ.
 - **Báo cáo compiler:** bảng tương thích từng coi “không có silent drop” là điều kiện phát hành trong khi build stock vẫn ghi `Unsupported: 0`. Nay số filter bị từ chối được báo và kiểm tra, nhưng điều kiện đó vẫn chưa đạt: hostname entity/regex bị phủ định vẫn bị bỏ im lặng (xem [việc còn mở](#lộ-trình-11-bước)).

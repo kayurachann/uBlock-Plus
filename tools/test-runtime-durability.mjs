@@ -259,6 +259,9 @@ const rulesetManager = await import(pathToFileURL(
 // This suite exercises dynamic/session durability. Packaged provenance has no
 // badfilter directives here; stock cancellation and recovery have their own
 // native-API mock suite with nonempty, verified source metadata.
+// Every user-rules update rebuilds the strict-block session plan, which reads
+// the packaged ruleset details and strict-block rules of enabled lists.
+let strictBlockPackaged = [];
 const durabilityFetch = globalThis.fetch;
 globalThis.fetch = async (url, ...args) => {
     if ( url === '/rulesets/badfilter-details.json' ) {
@@ -266,8 +269,23 @@ globalThis.fetch = async (url, ...args) => {
             'stock-regex': { badfilterKeys: [], digest: 'a'.repeat(64) },
         } }; } };
     }
+    if ( url === '/rulesets/ruleset-details.json' ) {
+        return { async json() {
+            return [ { id: 'stock-regex', rules: { regex: 2, strictblock: 1 } } ];
+        } };
+    }
+    if ( url === '/rulesets/strictblock/stock-regex.json' ) {
+        return { async json() { return structuredClone(strictBlockPackaged); } };
+    }
     return durabilityFetch(url, ...args);
 };
+const strictBlockRegexRule = {
+    id: 1, priority: 29,
+    action: { type: 'redirect', redirect: { extensionPath: '/strictblock.html' } },
+    condition: { regexFilter: 'strict-document', resourceTypes: [ 'main_frame' ] },
+};
+// The session rule the plan installs for it (IDs 1..999,999 are the plan's).
+const strictBlockSessionRule = structuredClone(strictBlockRegexRule);
 
 const makeRule = id => ({
     id,
@@ -308,8 +326,9 @@ assert.equal(dynamicRulesReads, 1);
 assert.equal(local.values.get('userDnrRuleCount'), 3);
 
 // Chromium uses one regex pool for dynamic + session rules. Imported/user
-// regex growth must make room before the atomic dynamic update, then report
-// any lower-priority session rules that no longer fit.
+// regex growth must make room before the atomic dynamic update: the
+// strict-block session regex rules (IDs 1..999,999) are displaced, and the
+// session plan is rebuilt afterwards into what is left.
 const configModule = await import(pathToFileURL(
     path.join(extensionJS, 'config.js')
 ));
@@ -333,13 +352,38 @@ sessionRuleUpdates.length = 0;
 const regexSuccess = await rulesetManager.updateUserRules('regex-success');
 assert.equal(regexSuccess.fatalError, '');
 assert.equal(regexSuccess.added, 2);
-assert.match(regexSuccess.errors.join('\n'), /shared 3-rule pool/);
-assert.deepEqual(sessionRuleUpdates[0], { removeRuleIds: [ 88 ] });
+// Strict blocking is off: the displaced rule is not planned again, so
+// nothing is reported as not fitting.
+assert.doesNotMatch(regexSuccess.errors.join('\n'), /could not fit/);
+assert.deepEqual(sessionRuleUpdates, [ { removeRuleIds: [ 88 ] } ]);
 assert.equal(currentSessionRules.length, 0);
 assert.equal(
     currentDynamicRules.filter(rule => rule.condition.regexFilter).length,
     3
 );
+
+// With strict blocking on, the rebuilt plan reports the strict-block regex
+// rules which no longer fit the shared pool.
+configModule.rulesetConfig.strictBlockMode = true;
+enabledStaticRulesets = [ 'stock-regex' ];
+strictBlockPackaged = [ strictBlockRegexRule ];
+currentDynamicRules = [
+    makeRegexRule(1, 'retained-stock'),
+    makeRegexRule(9000000, 'old-user'),
+];
+currentSessionRules = [ structuredClone(strictBlockSessionRule) ];
+sessionRuleUpdates.length = 0;
+const regexDisplaced = await rulesetManager.updateUserRules('regex-success');
+assert.equal(regexDisplaced.fatalError, '');
+assert.equal(regexDisplaced.added, 2);
+assert.match(regexDisplaced.errors.join('\n'),
+    /1 lower-priority strict-block regex rule\(s\) could not fit the shared 3-rule pool/);
+assert.deepEqual(sessionRuleUpdates, [ { removeRuleIds: [ 1 ] } ]);
+assert.deepEqual(currentSessionRules, []);
+assert.equal(session.values.get('strictBlock.plan').dropped.stockRegexPool, 1);
+strictBlockPackaged = [];
+enabledStaticRulesets = [];
+configModule.rulesetConfig.strictBlockMode = false;
 
 // If Chrome rejects the dynamic transaction after session capacity was
 // displaced, restore the exact session snapshot and keep dynamic rules intact.
@@ -376,8 +420,8 @@ dnr.MAX_NUMBER_OF_REGEX_RULES = 1000;
 configModule.rulesetConfig.strictBlockMode = previousStrictBlockMode;
 
 // Stock-regex replacement must project retained imported/user regexes without
-// clearing unrelated non-regex session rules merely because the regex count
-// grew.
+// clearing unrelated session rules (another owner's ID range) merely because
+// the regex count grew.
 const originalFetch = globalThis.fetch;
 let stockRegexRules = [ 101, 102 ].map(id => ({
     id,
@@ -392,8 +436,11 @@ globalThis.fetch = async url => ({
         if ( url === '/rulesets/ruleset-details.json' ) {
             return [ {
                 id: 'stock-regex',
-                rules: { regex: 2 },
+                rules: { regex: 2, strictblock: 1 },
             } ];
+        }
+        if ( url === '/rulesets/strictblock/stock-regex.json' ) {
+            return structuredClone(strictBlockPackaged);
         }
         if ( url === '/rulesets/regex/stock-regex.json' ) {
             return structuredClone(stockRegexRules);
@@ -420,12 +467,12 @@ currentDynamicRules = [
         condition: { regexFilter: 'retained-user' },
     },
 ];
-currentSessionRules = [ makeRule(77) ];
+currentSessionRules = [ makeRule(7000077) ];
 sessionRuleUpdates.length = 0;
 const stockUpdate = await rulesetManager.updateDynamicAndSessionRules();
 assert.equal(stockUpdate.error, undefined);
 assert.deepEqual(sessionRuleUpdates, []);
-assert.deepEqual(currentSessionRules.map(rule => rule.id), [ 77 ]);
+assert.deepEqual(currentSessionRules.map(rule => rule.id), [ 7000077 ]);
 assert.equal(
     currentDynamicRules.filter(rule => rule.condition.regexFilter).length,
     4
@@ -438,25 +485,29 @@ assert.deepEqual(
     [ 'retained-imported', 'retained-user' ]
 );
 
-// A failed stock transaction restores any session regex snapshot displaced
-// to make room in Chromium's shared pool.
+// A failed stock transaction restores the strict-block session regex rules
+// displaced to make room in Chromium's shared pool. The rebuilt plan is the
+// same, so it does not touch them again.
 dnr.MAX_NUMBER_OF_REGEX_RULES = 4;
+strictBlockPackaged = [ strictBlockRegexRule ];
 currentDynamicRules = [
     makeRegexRule(1, 'old-stock'),
     makeRegexRule(8000000, 'retained-imported'),
     makeRegexRule(9000000, 'retained-user'),
 ];
-currentSessionRules = [ makeRegexRule(78, 'stock-session-restore') ];
+currentSessionRules = [ structuredClone(strictBlockSessionRule) ];
 sessionRuleUpdates.length = 0;
 rejectDynamicUpdate = true;
 const stockFailure = await rulesetManager.updateDynamicAndSessionRules();
 rejectDynamicUpdate = false;
 dnr.MAX_NUMBER_OF_REGEX_RULES = 1000;
+strictBlockPackaged = [];
 assert.match(stockFailure.error, /mock DNR rejection/);
 assert.deepEqual(sessionRuleUpdates, [
-    { removeRuleIds: [ 78 ] },
-    { addRules: [ makeRegexRule(78, 'stock-session-restore') ] },
+    { removeRuleIds: [ 1 ] },
+    { addRules: [ strictBlockSessionRule ] },
 ]);
+assert.deepEqual(currentSessionRules, [ strictBlockSessionRule ]);
 assert.deepEqual(
     currentDynamicRules.map(rule => rule.condition.regexFilter),
     [ 'old-stock', 'retained-imported', 'retained-user' ]
@@ -521,7 +572,7 @@ for ( const realm of [ 'stock', 'sandbox', 'imported' ] ) {
                 makeRegexRule(9000000, 'last-good-user'),
             ];
             currentDynamicRules = structuredClone(previous);
-            currentSessionRules = [ makeRule(78) ];
+            currentSessionRules = [ makeRule(7000078) ];
             sessionRuleUpdates.length = 0;
             local.values.set('userDnrRuleCount', 1);
             const legacy = await replaceRules([ scopedRule, supportedRule ]);

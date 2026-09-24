@@ -50,6 +50,7 @@ import {
     pendingImportedMetadataKey,
 } from '../imported-list-metadata.js';
 import { createCompilerStorageClient } from '../offscreen-storage.js';
+import { deriveUserStrictBlockRules } from '../strictblock-rules.js';
 import { fetchList } from './fetch-list.js';
 import { isCredentialFreeHTTPS } from '../imported-fetch-policy.js';
 import { isVerifiedSourceKey } from '../verified-source-handoff.js';
@@ -449,6 +450,10 @@ export async function toMv3Data(rulesetid, compiledData) {
                 `Merged DNR validation failed: ${reasons.join(',')}`
             );
         }
+        // Strict-block redirect templates for the $doc filters. The service
+        // worker installs them only while it can do so safely; the blocks
+        // above stay the fallback.
+        output.strictBlockRules = deriveUserStrictBlockRules(output.dnrRules);
     }
     if ( compiledData.popupFilters?.length ) {
         output.popupFilters = compiledData.popupFilters;
@@ -1027,6 +1032,15 @@ async function runCompiler() {
             values[dnrKey] = compiled.dnrRules;
         } else {
             toRemove.push(dnrKey);
+        }
+        const strictBlockKey = compiledStorageKey(
+            compiledGeneration,
+            `${id}Filters.strictBlockRules`
+        );
+        if ( compiled.strictBlockRules?.length ) {
+            values[strictBlockKey] = compiled.strictBlockRules;
+        } else {
+            toRemove.push(strictBlockKey);
         }
         const scriptsKey = compiledStorageKey(
             compiledGeneration,

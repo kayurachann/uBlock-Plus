@@ -56,6 +56,7 @@ let catalogs = [];
 let entries = [];
 let enabledIds = new Set();
 let importedDetails = new Map();
+let regexCapacity;
 let initialized = false;
 let working = false;
 
@@ -259,10 +260,30 @@ async function cleanupVerifiedSourceHandoffs() {
 
 /******************************************************************************/
 
+// Regex rules the imported lists can use, from the worker's regex capacity
+// report: what is free in the browser's shared dynamic+session pool plus
+// what imported lists use now, since the estimate counts the enabled ones
+// again. My filters, strict blocking and other owners keep their share.
+// Without a report, the browser's documented limit.
+export function regexQuotaFromCapacity(report) {
+    const shared = report?.schemaVersion === 1 ? report.shared : undefined;
+    if ( Number.isSafeInteger(shared?.free) === false || shared.free < 0 ) {
+        return FILTER_STORE_LIMITS.regexRules;
+    }
+    const count = value => Number.isSafeInteger(value) && value > 0 ? value : 0;
+    // The per-realm split is unknown when the installed rules were not
+    // written by the update which recorded it: count every user rule.
+    const imported = Number.isSafeInteger(shared.dynamic?.imported)
+        ? shared.dynamic.imported
+        : shared.dynamic?.user;
+    return shared.free + count(imported);
+}
+
 function getQuotaLimits() {
     return {
         staticRulesets: self.cachedRulesetData?.maxNumberOfEnabledRulesets ||
             FILTER_STORE_LIMITS.staticRulesets,
+        regexRules: regexQuotaFromCapacity(regexCapacity),
     };
 }
 
@@ -610,12 +631,15 @@ async function reloadCatalogs() {
 }
 
 async function refreshEnabled() {
-    const [ rulesets = [], imported = [] ] = await Promise.all([
+    const [ rulesets = [], imported = [], capacity ] = await Promise.all([
         strictSendMessage({ what: 'getEnabledRulesets' }),
         strictSendMessage({ what: 'getImportedLists' }),
+        // An estimate input only: its failure falls back to the limit.
+        strictSendMessage({ what: 'getRegexCapacity' }).catch(( ) => undefined),
     ]);
     enabledIds = new Set(rulesets);
     importedDetails = new Map(imported.map(list => [ list.id, list ]));
+    regexCapacity = capacity;
 }
 
 function quotaAllows(toEnable) {

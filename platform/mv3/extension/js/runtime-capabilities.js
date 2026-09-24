@@ -63,7 +63,11 @@ const getUserScriptsUsable = async ( ) => {
 
 /******************************************************************************/
 
-export async function getRuntimeCapabilities() {
+// strictBlockUrlSource: how the strict-block page learns the blocked address,
+// as reported by the service worker (strictblock-tracker.js urlSource(), or
+// 'regex-substitution' on Firefox). The classification drops it to what the
+// browser still grants.
+export async function getRuntimeCapabilities({ strictBlockUrlSource } = {}) {
     const manifest = runtime.getManifest();
     const [
         installType,
@@ -92,6 +96,7 @@ export async function getRuntimeCapabilities() {
         manifestPermissions: manifest.permissions,
         optionalPermissions: manifest.optional_permissions,
         grantedPermissions,
+        strictBlockUrlSource,
         webRequestFirewall: getWebRequestFirewallStatus(),
         api: {
             declarativeNetRequest:

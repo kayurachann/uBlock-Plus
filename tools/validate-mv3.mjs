@@ -29,6 +29,10 @@ import {
     STOCK_POPUP_DEFERRED_ROUTE_CODE,
     STOCK_POPUP_SOURCE_KIND_PRECISION,
 } from '../platform/mv3/popup-corpus.js';
+import {
+    STOCK_STRICTBLOCK_PRIORITY,
+    STRICTBLOCK_PAGE_PATH,
+} from '../platform/mv3/extension/js/strictblock-rules.js';
 import { experimentalManifestErrors, experimentalName } from './experimental-build-config.mjs';
 import { Buffer } from 'node:buffer';
 import { createHash } from 'node:crypto';
@@ -38,6 +42,8 @@ import { listPackageFiles } from './package-files.mjs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import process from 'node:process';
+import { re2PortableReason } from '../platform/mv3/re2-portable.js';
+import { regexDetailsDigest } from '../platform/mv3/stock-regex.js';
 
 /******************************************************************************/
 
@@ -54,6 +60,14 @@ const errors = [];
 let jsonFileCount = 0;
 let jsonByteCount = 0;
 let dnrRuleCount = 0;
+// [ rulesetId, regexFilter, isUrlFilterCaseSensitive ] of every regex rule
+// in the declared static rulesets, as rulesets/regex-details.json lists them.
+const staticRegexEntries = [];
+
+// Chrome's MAX_NUMBER_OF_REGEX_RULES, which applies to the static rulesets
+// of an extension as a whole (enabled or not), apart from the regex rules
+// shared by its dynamic and session rules.
+const CHROME_STATIC_REGEX_LIMIT = 1000;
 
 const reportError = message => {
     errors.push(message);
@@ -139,6 +153,8 @@ const validateDnrRuleset = async resource => {
         return;
     }
     const ids = new Set();
+    let regexSeen = false;
+    let misplacedRegex = false;
     for ( const rule of rules ) {
         dnrRuleCount += 1;
         if ( Number.isInteger(rule?.id) === false || rule.id < 1 ) {
@@ -156,7 +172,203 @@ const validateDnrRuleset = async resource => {
             Array.isArray(rule.condition)
         ) {
             reportError(`DNR rule ${resource.id}/${rule?.id} has no condition`);
+            continue;
         }
+        // A static regex which Chrome's RE2 rejects as a syntax error, in
+        // any declared ruleset (enabled or not), makes Chrome refuse to load
+        // the unpacked extension: the build packages only regexes inside
+        // the portable RE2 subset (platform/mv3/re2-portable.js).
+        const regex = rule.condition.regexFilter;
+        if ( regex === undefined ) {
+            misplacedRegex ||= regexSeen;
+            continue;
+        }
+        regexSeen = true;
+        if ( typeof regex !== 'string' || regex === '' ) {
+            reportError(`DNR rule ${resource.id}/${rule.id} has an invalid regexFilter`);
+            continue;
+        }
+        const reason = re2PortableReason(regex);
+        if ( reason !== '' ) {
+            reportError(
+                `Static regex rule ${resource.id}/${rule.id} is outside the ` +
+                `portable RE2 subset (${reason})`
+            );
+        }
+        staticRegexEntries.push([
+            resource.id,
+            regex,
+            rule.condition.isUrlFilterCaseSensitive === true,
+        ]);
+    }
+    // Static regex rules follow the other rules, whose IDs are then those
+    // of a ruleset without regex rules (stock-regex.js toJSONRuleset()).
+    if ( misplacedRegex ) {
+        reportError(`DNR ruleset ${resource.id} has regex rules before other rules`);
+    }
+};
+
+// rulesets/regex-details.json describes the static regex rules of all the
+// declared rulesets: how many, a digest of them, and which Chrome checked
+// them when the package was built ('' when none did: release builds must
+// be checked).
+const validateStaticRegexDetails = async () => {
+    const count = staticRegexEntries.length;
+    if ( count > CHROME_STATIC_REGEX_LIMIT ) {
+        reportError(
+            `Static rulesets have ${count} regex rules, over Chrome's limit ` +
+            `of ${CHROME_STATIC_REGEX_LIMIT}`
+        );
+    }
+    const details = await readExtensionJSON('rulesets/regex-details.json');
+    if ( isPlainObject(details) === false || details.schemaVersion !== 1 ) {
+        reportError('rulesets/regex-details.json is missing or invalid');
+        return;
+    }
+    const { verifiedWith, staticRegexLimit, staticRegexCount, digest } = details;
+    if ( typeof verifiedWith !== 'string' ) {
+        reportError('rulesets/regex-details.json has an invalid verifiedWith');
+    } else if (
+        verifiedWith !== '' &&
+        /^[A-Za-z][\w .-]*\/\d+(?:\.\d+){0,3}$/.test(verifiedWith) === false
+    ) {
+        reportError(
+            `rulesets/regex-details.json names no browser version: ${verifiedWith}`
+        );
+    } else if ( releaseMode && verifiedWith === '' ) {
+        reportError(
+            'Release builds must have their static regex rules checked by ' +
+            'Chrome (regex-details.json has no verifiedWith)'
+        );
+    }
+    if (
+        isNonnegativeInteger(staticRegexLimit) === false ||
+        staticRegexLimit > CHROME_STATIC_REGEX_LIMIT
+    ) {
+        reportError(
+            `rulesets/regex-details.json has an invalid static regex limit: ` +
+            staticRegexLimit
+        );
+    } else if ( count > staticRegexLimit ) {
+        reportError(
+            `Static rulesets have ${count} regex rules, over the ` +
+            `${staticRegexLimit} of regex-details.json`
+        );
+    }
+    if ( staticRegexCount !== count ) {
+        reportError(
+            `rulesets/regex-details.json counts ${staticRegexCount} static ` +
+            `regex rules, the package has ${count}`
+        );
+    }
+    if ( digest !== regexDetailsDigest(staticRegexEntries) ) {
+        reportError(
+            'rulesets/regex-details.json digest does not match the packaged ' +
+            'static regex rules'
+        );
+    }
+    // The build log (absent from packages) must report the same number.
+    const buildLog = await fs.readFile(path.join(extensionDir, 'log.txt'), 'utf8')
+        .catch(( ) => undefined);
+    if ( buildLog === undefined ) { return; }
+    const logged = /\nStatic regex rules: (\d+)\/(\d+) \(/.exec(buildLog);
+    if (
+        logged === null ||
+        Number(logged[1]) !== count ||
+        Number(logged[2]) !== staticRegexLimit
+    ) {
+        reportError('Build log and regex-details.json disagree on static regex rules');
+    }
+};
+
+// Chromium strict-block rules (rulesets/strictblock/<id>.json) are installed
+// at runtime as session rules: plain extensionPath redirects of top-level
+// documents to the strict-block page, which keep their filters' own URL
+// predicate (strictblock-rules.js foldStockStrictBlockRules()). The page
+// learns the blocked address from the service worker, so no rule may carry
+// it in a regexSubstitution.
+const validateStrictBlockRulesets = async rulesetDetails => {
+    let packaged = 0;
+    for ( const details of rulesetDetails ) {
+        const id = details?.id;
+        if ( Boolean(details?.rules?.strictblock) === false ) { continue; }
+        const rules = await readExtensionJSON(`rulesets/strictblock/${id}.json`);
+        if ( Array.isArray(rules) === false ) { continue; }
+        packaged += rules.length;
+        const problems = new Map();
+        const note = (problem, rule) => {
+            const entry = problems.get(problem);
+            if ( entry !== undefined ) {
+                entry.count += 1;
+            } else {
+                problems.set(problem, { count: 1, first: rule?.id });
+            }
+        };
+        const ids = new Set();
+        for ( const rule of rules ) {
+            if ( Number.isInteger(rule?.id) === false || rule.id < 1 || ids.has(rule.id) ) {
+                note('have an invalid or duplicate ID', rule);
+            } else {
+                ids.add(rule.id);
+            }
+            const redirect = rule?.action?.redirect;
+            if ( rule?.action?.type !== 'redirect' || isPlainObject(redirect) === false ) {
+                note('are not redirects', rule);
+            } else if ( redirect.regexSubstitution !== undefined ) {
+                note('use a regexSubstitution', rule);
+            } else if (
+                Object.keys(redirect).length !== 1 ||
+                redirect.extensionPath !== STRICTBLOCK_PAGE_PATH
+            ) {
+                note(`do not redirect to extensionPath ${STRICTBLOCK_PAGE_PATH}`, rule);
+            }
+            if ( rule?.priority !== STOCK_STRICTBLOCK_PRIORITY ) {
+                note(`do not have priority ${STOCK_STRICTBLOCK_PRIORITY}`, rule);
+            }
+            const condition = isPlainObject(rule?.condition) ? rule.condition : {};
+            const types = condition.resourceTypes;
+            if (
+                Array.isArray(types) === false ||
+                types.length !== 1 || types[0] !== 'main_frame'
+            ) {
+                note('are not limited to resourceTypes [ main_frame ]', rule);
+            }
+            const predicates = [
+                Array.isArray(condition.requestDomains) &&
+                    condition.requestDomains.length !== 0,
+                typeof condition.urlFilter === 'string' && condition.urlFilter !== '',
+                typeof condition.regexFilter === 'string' && condition.regexFilter !== '',
+            ].filter(Boolean).length;
+            if ( predicates === 0 ) {
+                note('have no URL condition', rule);
+            }
+            if ( typeof condition.regexFilter === 'string' ) {
+                const reason = re2PortableReason(condition.regexFilter);
+                if ( reason !== '' ) {
+                    note(`have a regexFilter outside the portable RE2 subset (${reason})`, rule);
+                }
+            }
+            if ( hasPrivateKey(rule) ) {
+                note('carry private build properties', rule);
+            }
+        }
+        for ( const [ problem, { count, first } ] of problems ) {
+            reportError(
+                `Strict-block ruleset ${id}: ${count} rule(s) ${problem} ` +
+                `(first: rule ${first})`
+            );
+        }
+    }
+    if ( packaged === 0 ) { return; }
+    // An extensionPath redirect target must be web-accessible.
+    const accessible = (manifest.web_accessible_resources || []).some(entry =>
+        entry.matches?.includes('<all_urls>') === true &&
+        (entry.resources || []).some(resource =>
+            `/${resource.replace(/^\/+/, '')}` === STRICTBLOCK_PAGE_PATH
+        )
+    );
+    if ( accessible === false ) {
+        reportError(`${STRICTBLOCK_PAGE_PATH} must be web-accessible to <all_urls>`);
     }
 };
 
@@ -169,6 +381,15 @@ const isPlainObject = value => {
 
 const isNonnegativeInteger = value =>
     Number.isSafeInteger(value) && value >= 0;
+
+// Build-only properties start with '_': Chrome rejects rules carrying them.
+const hasPrivateKey = value => {
+    if ( Array.isArray(value) ) { return value.some(hasPrivateKey); }
+    if ( typeof value !== 'object' || value === null ) { return false; }
+    return Object.entries(value).some(([ key, item ]) =>
+        key.startsWith('_') || hasPrivateKey(item)
+    );
+};
 
 const validateStockPopupFilter = (filter, rulesetId, lineNumbers) => {
     if ( isPlainObject(filter) === false ) {
@@ -491,29 +712,59 @@ const sourceFilterCounts = entries => {
     return { rejected: rejected.size + unsourced, converted: convertedCount };
 };
 
+// A count of filters and its per-reason breakdown: no reasons for none,
+// otherwise stable reason codes which add up to the count.
+const validateReasonBreakdown = (subject, kind, count, reasons) => {
+    if ( isNonnegativeInteger(count) === false ) {
+        reportError(`${subject} has an invalid ${kind} count`);
+        return;
+    }
+    if ( reasons === undefined ) {
+        if ( count !== 0 ) {
+            reportError(`${subject} has ${count} ${kind} filters without reasons`);
+        }
+        return;
+    }
+    const entries = isPlainObject(reasons) ? Object.entries(reasons) : [];
+    const valid = entries.length !== 0 && entries.every(([ reason, n ]) =>
+        isReasonCode(reason) && Number.isSafeInteger(n) && n > 0
+    );
+    const sum = entries.reduce((total, [ , n ]) => total + n, 0);
+    if ( valid === false ) {
+        reportError(`${subject} has malformed ${kind} reasons`);
+    } else if ( sum !== count ) {
+        reportError(`${subject} ${kind} reasons add up to ${sum}, not ${count}`);
+    }
+};
+
 // The per-ruleset counts reported in ruleset-details.json (and in the build
-// log when it is present) must describe what is packaged: `plain`, `regex`,
-// `urlskip` and `strictblock` count the entries of the matching files,
-// `rejected`, the filters which could not be converted into DNR rules, must
-// add up from its per-reason breakdown `rejectedReasons`, and development
-// builds must agree with the compiler output on `rejected` and on
-// `filters.converted`.
+// log when it is present) must describe what is packaged: `plain` and
+// `regexStatic` count the entries of main/<id>.json without and with a
+// regexFilter, `regex` those of regex/<id>.json (regex rules which did not
+// fit in the static regex limit, installed as dynamic rules), `urlskip` and
+// `strictblock` those of the matching files; `total` is plain + regexStatic
+// + regex. `rejected`, the filters which could not be converted into DNR
+// rules, must add up from its per-reason breakdown `rejectedReasons` (as
+// must `strictblockRejected`, the strict-block regex filters Chrome's RE2
+// cannot run), and development builds must agree with the compiler output
+// on `rejected` and on `filters.converted`.
 const validateRulesetCounts = async ruleResources => {
     const rulesetDetails = await readExtensionJSON('rulesets/ruleset-details.json');
     if ( Array.isArray(rulesetDetails) === false ) {
         reportError('Ruleset counts cannot be checked: no ruleset details');
         return;
     }
+    await validateStrictBlockRulesets(rulesetDetails);
     const buildLog = await fs.readFile(path.join(extensionDir, 'log.txt'), 'utf8')
         .then(text => text.replace(/\r\n/g, '\n'))
         .catch(( ) => undefined);
     const declaredPaths = new Map(ruleResources.map(resource =>
         [ resource.id, resource.path ]
     ));
-    const entryCount = async (relativePath, optional) => {
+    const readEntries = async (relativePath, optional) => {
         const entries = await readExtensionJSON(relativePath);
-        if ( Array.isArray(entries) ) { return entries.length; }
-        if ( entries === undefined && optional ) { return 0; }
+        if ( Array.isArray(entries) ) { return entries; }
+        if ( entries === undefined && optional ) { return []; }
     };
     for ( const details of rulesetDetails ) {
         const id = details?.id;
@@ -526,28 +777,46 @@ const validateRulesetCounts = async ruleResources => {
             reportError(`Ruleset ${id} has no rule counts`);
             continue;
         }
+        // Chromium packages: regex rules which fit in the static regex limit
+        // are appended to the list's own static ruleset.
+        if ( isNonnegativeInteger(rules.regexStatic) === false ) {
+            reportError(`Ruleset ${id} has no valid static regex rule count`);
+        }
+        const main = await readEntries(declaredPaths.get(id), false);
+        const mainRegex = main?.filter(rule =>
+            rule?.condition?.regexFilter !== undefined
+        ).length;
+        const count = async relativePath =>
+            (await readEntries(relativePath, true))?.length;
         const actual = {
-            plain: await entryCount(declaredPaths.get(id), false),
-            regex: await entryCount(`rulesets/regex/${id}.json`, true),
-            urlskip: await entryCount(`rulesets/urlskip/${id}.json`, true),
-            strictblock: await entryCount(`rulesets/strictblock/${id}.json`, true),
+            plain: main && main.length - mainRegex,
+            regexStatic: mainRegex,
+            regex: await count(`rulesets/regex/${id}.json`),
+            urlskip: await count(`rulesets/urlskip/${id}.json`),
+            strictblock: await count(`rulesets/strictblock/${id}.json`),
         };
         const reported = {
             plain: rules.plain,
+            regexStatic: rules.regexStatic,
             regex: rules.regex,
             urlskip: rules.urlskip ?? 0,
             strictblock: rules.strictblock ?? 0,
         };
-        for ( const [ field, count ] of Object.entries(actual) ) {
-            if ( count === reported[field] ) { continue; }
+        for ( const [ field, n ] of Object.entries(actual) ) {
+            if ( n === reported[field] ) { continue; }
             reportError(
                 `Ruleset ${id} reports ${reported[field]} ${field} rules, ` +
-                `the package has ${count}`
+                `the package has ${n}`
             );
         }
-        if ( rules.total !== rules.plain + rules.regex ) {
+        if ( rules.total !== rules.plain + (rules.regexStatic ?? 0) + rules.regex ) {
             reportError(`Ruleset ${id} total rule count does not add up`);
         }
+        // Strict-block regex filters Chrome's RE2 cannot run: counted apart,
+        // the filter's other rules are still converted.
+        validateReasonBreakdown(`Ruleset ${id}`, 'strict-block rejected',
+            rules.strictblockRejected ?? 0, rules.strictblockRejectedReasons
+        );
         const converted = details.filters?.converted;
         if ( isNonnegativeInteger(converted) === false ) {
             reportError(`Ruleset ${id} has an invalid converted filter count`);
@@ -562,20 +831,7 @@ const validateRulesetCounts = async ruleResources => {
                 reportError(`Ruleset ${id} rejects ${rejected} filters without reasons`);
             }
         } else {
-            const entries = isPlainObject(rejectedReasons)
-                ? Object.entries(rejectedReasons)
-                : [];
-            const valid = entries.length !== 0 && entries.every(([ reason, count ]) =>
-                isReasonCode(reason) && Number.isSafeInteger(count) && count > 0
-            );
-            const sum = entries.reduce((total, [ , count ]) => total + count, 0);
-            if ( valid === false ) {
-                reportError(`Ruleset ${id} has malformed rejected reasons`);
-            } else if ( sum !== rejected ) {
-                reportError(
-                    `Ruleset ${id} rejected reasons add up to ${sum}, not ${rejected}`
-                );
-            }
+            validateReasonBreakdown(`Ruleset ${id}`, 'rejected', rejected, rejectedReasons);
         }
         // Development builds keep the whole compiler output, rejected
         // entries included.
@@ -871,6 +1127,7 @@ if ( Array.isArray(ruleResources) === false || ruleResources.length === 0 ) {
         );
         await validateDnrRuleset(resource);
     }
+    await validateStaticRegexDetails();
     await validateStockPopupCorpora(ruleResources);
     await validateStockBadfilterMetadata(ruleResources);
     await validateRulesetCounts(ruleResources);

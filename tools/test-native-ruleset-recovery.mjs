@@ -6,15 +6,24 @@ import {
 } from '../platform/mv3/extension/js/stock-badfilter.js';
 import assert from 'node:assert/strict';
 import { createRulesetNativeState } from '../platform/mv3/extension/js/ruleset-native-state.js';
+import { isStrictBlockSessionRule } from '../platform/mv3/extension/js/dnr-namespaces.js';
 import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
 
 const clone = value => structuredClone(value);
 const regex = (id, expression, action = 'block') => ({ id, priority: 1,
     action: { type: action }, condition: { regexFilter: expression } });
+// The strict-block plan owns session IDs 1..999,999, whatever their shape:
+// stock regex redirects at 29 and My filters redirects at 1,000,011.
 const strict = id => ({ id, priority: 29, action: { type: 'redirect',
-    redirect: { regexSubstitution: 'chrome-extension://test/strictblock.html#\\0' } },
+    redirect: { extensionPath: '/strictblock.html' } },
 condition: { resourceTypes: [ 'main_frame' ], regexFilter: `strict-${id}` } });
+const userRedirect = id => ({ id, priority: 1000011, action: { type: 'redirect',
+    redirect: { extensionPath: '/strictblock.html' } },
+condition: { resourceTypes: [ 'main_frame' ], requestDomains: [ `user-${id}.test` ] } });
+// Another owner's rule with the shape of the legacy strict-block allow.
+const lookalike = { id: 7000029, priority: 29, action: { type: 'allow' },
+    condition: { requestDomains: [ 'excluded.test' ], resourceTypes: [ 'main_frame' ] } };
 const regular = id => ({ id, priority: 100, action: { type: 'allow' },
     condition: { urlFilter: `owner-${id}` } });
 const sorted = rules => clone(rules).sort((a, b) => a.id - b.id);
@@ -41,7 +50,8 @@ function fixture() {
         ] },
         dynamic: [ regex(1, 'installed-stock-allow', 'allow'),
             regex(9000001, 'installed-user'), regex(5500000, 'unrelated-dynamic'), regular(8000000) ],
-        session: [ strict(1), regular(7000000), regular(8000001), regex(6500000, 'unrelated-session') ],
+        session: [ strict(1), userRedirect(2), regular(7000000), lookalike,
+            regular(8000001), regex(6500000, 'unrelated-session') ],
         enabled: [ 'stock-a' ], disabled: { 'stock-a': [ 12 ], 'stock-b': [ 33 ] },
         generation: 'old-generation', scriptGeneration: 'old-generation', failAPI: '', failScripts: false,
     };
@@ -88,7 +98,7 @@ function fixture() {
         write: async (key, value) => { values.set(key, clone(value)); },
         remove: async key => { events.push(`remove:${key}`); values.delete(key); },
         getPackageState: async ( ) => clone(state.package),
-        ownsSession: rule => rule.priority === 29,
+        ownsSession: isStrictBlockSessionRule,
     });
     const context = vm.createContext({
         Object, Array, Set, Error,
@@ -117,7 +127,8 @@ function fixture() {
     vm.runInContext(rollbackSource, context);
     const mutate = ( ) => {
         state.dynamic = [ regex(2, 'new-stock'), ...state.dynamic.filter(rule => rule.id >= 5000000 && rule.id < 9000000) ];
-        state.session = [ strict(2), strict(3), strict(4), ...state.session.filter(rule => rule.priority !== 29) ];
+        state.session = [ strict(3), strict(4), userRedirect(5),
+            ...state.session.filter(rule => isStrictBlockSessionRule(rule) === false) ];
         state.enabled = [ 'stock-b' ]; state.disabled = { 'stock-a': [], 'stock-b': [ 44 ] };
         state.generation = 'new-generation'; state.scriptGeneration = 'new-generation';
         values.set(STOCK_BADFILTER_STATE, { 'stock-b': { digest: 'b', ids: [ 44 ] } });
@@ -153,8 +164,11 @@ const checkRestored = f => {
     assert.deepEqual(f.values.get(STOCK_BADFILTER_STATUS), f.transaction.nativeState.status);
 };
 const normal = await prepared();
+assert.deepEqual(normal.transaction.nativeState.sessionRules.map(rule => rule.id), [ 1, 2 ],
+    'the snapshot owns strict-block IDs only, not the lookalike of another owner');
 await normal.context.rollbackRulesetTransaction(normal.transaction);
 checkRestored(normal);
+assert.ok(normal.state.session.some(rule => rule.id === lookalike.id));
 assert.ok(normal.events.indexOf('session-remove') < normal.events.indexOf('dynamic'));
 assert.ok(normal.events.indexOf('content') < normal.events.indexOf(`remove:${STOCK_BADFILTER_JOURNAL}`));
 assert.ok(normal.events.indexOf(`remove:${INNER}`) < normal.events.indexOf(`remove:${OUTER}`));

@@ -16,7 +16,9 @@ jobs:
   build:
     name: Lint and build on Windows
     runs-on: windows-latest
-    timeout-minutes: 45
+    # The builds check every stock regex with Chrome, and the packages are
+    # tested in Chrome.
+    timeout-minutes: 60
 
     steps:
       - name: Clone repository and submodules
@@ -54,6 +56,16 @@ jobs:
       - name: Validate MV3 Chromium artifact
         run: node tools/validate-mv3.mjs dist/build/uBlockPlus.chromium --release
 
+      # windows-latest ships Google Chrome. Each test uses a fresh temporary
+      # profile, closes the Chrome it started and has its own hard timeout.
+      - name: Test static regex rules in Chrome
+        timeout-minutes: 10
+        run: node tools/test-static-regex-chrome.mjs --extension dist/build/uBlockPlus.chromium --output dist/chrome-tests/static-regex-chrome.json
+
+      - name: Test strict blocking in Chrome
+        timeout-minutes: 15
+        run: node tools/test-strictblock-chrome.mjs --extension dist/build/uBlockPlus.chromium --output dist/chrome-tests/strictblock-chrome.json
+
       - name: Upload unpacked extension and zip
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -70,6 +82,23 @@ jobs:
 
       - name: Validate experimental WebRequest artifact
         run: node tools/validate-mv3.mjs dist/build/uBlockPlus.experimental.chromium --release --experimental-webrequest
+
+      - name: Test experimental static regex rules in Chrome
+        timeout-minutes: 10
+        run: node tools/test-static-regex-chrome.mjs --extension dist/build/uBlockPlus.experimental.chromium --output dist/chrome-tests/static-regex-chrome.experimental.json
+
+      # The experimental package learns blocked addresses from webRequest.
+      - name: Test experimental strict blocking in Chrome
+        timeout-minutes: 10
+        run: node tools/test-strictblock-chrome.mjs --extension dist/build/uBlockPlus.experimental.chromium --measure-seconds 0 --output dist/chrome-tests/strictblock-chrome.experimental.json
+
+      - name: Upload Chrome test reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: chrome-test-reports-${{ github.sha }}
+          if-no-files-found: ignore
+          path: dist/chrome-tests/
 
       - name: Upload experimental extension and launcher
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

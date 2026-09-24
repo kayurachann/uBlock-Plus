@@ -19,7 +19,8 @@ import {
 
 // Increment when compiler semantics change; older envelopes must be rebuilt
 // from source instead of reusing output which lost exceptions or metadata.
-export const COMPILED_FILTERS_REVISION = 4;
+// 5: generations store strict-block redirect templates (strictBlockRules).
+export const COMPILED_FILTERS_REVISION = 5;
 
 function isStats(value, fields) {
     if ( typeof value !== 'object' || value === null ) { return false; }

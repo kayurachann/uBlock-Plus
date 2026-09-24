@@ -4,6 +4,62 @@ Releases of this community fork. The upstream uBlock Origin changelog follows fu
 
 ## Unreleased
 
+### Strict blocking and regex capacity
+
+Strict blocking (Chromium):
+- Strict-block rules no longer use one regex rule each. They are plain redirects to the warning page that keep the filter's own address condition, so only filters that are regexes need a regex rule: 111 of 1,106 rules with the default lists, instead of 1,132.
+- Every valid stock strict-block rule is now installed: 1,106 with the default lists, up from 826. The 278 that did not fit before are back, so some sites that loaded before now show the warning page.
+- The warning page shows the exact blocked address. The browser reports it when the page is redirected: through the optional network-observation (`webRequest`) permission, or, on unpacked installations, through Chrome's matched-rule events. The page then keeps the address in its own URL, so Back, Forward, reload and duplicated tabs show it too. Tested in Chrome 153:
+  - a new tab, a typed address, a link and a `window.open` popup;
+  - after a server redirect, Back, Forward, reload and in a duplicated tab;
+  - with the service worker stopped, and for two quick navigations;
+  - for a stock list and for My filters, including after a server redirect;
+  - with both sources. After a server redirect Chrome reports the step to the warning page only as a new request, which the network-observation source now follows; the page shows the address within about 100–140 ms instead of after a 1.5 s wait.
+- When only the start of the navigation is known (packed installations without the optional permission, or the low-memory profile), the page says that the address is approximate and does not offer **Don't warn me again about this site**: after a server redirect that address belongs to the site which redirected, so **Proceed** may lead back to the warning. When no address is known, it says so and disables **Proceed** and **Don't warn me again about this site**. It never opens an address other than `http:` or `https:`.
+- The service worker forgets a blocked address as soon as the warning page has read it.
+- The page names what blocked the site: the stock list, "Imported lists" or "My filters". Before, the stock list was found by testing the address against the list's regexes.
+- `$doc`, `$document` and `$all` filters in My filters and imported lists show the warning page, with **Proceed** and **Don't warn me again about this site**, when strict blocking is on, the extension has access to all sites and the exact address is available. Otherwise they block as before, with the browser's error page. Hostname-only filters (`||example.com^`) in My filters and imported lists are not strict-blocked yet. Firefox and Safari are unchanged.
+- Chrome lets a page load when a redirect matches without host access. Strict-block redirects are therefore removed as soon as access to all sites is withdrawn, and checked again at every service-worker start.
+- Turning strict blocking off, or losing access to all sites, no longer erases the **Don't warn me again about this site** list.
+- **Dashboard → Diagnostics** states how the warning page learns the address: exact, approximate or not available. It offers a button to grant the optional network-observation permission, the cheapest exact source.
+  - Without that permission, unpacked installations listen to Chrome's matched-rule events. These arrive for every blocked request, so the service worker stays awake while you browse.
+  - The low-memory profile does not use these events, so that the service worker can stop: the address is then approximate unless the permission is granted, and `$doc` filters in My filters and imported lists block with the browser's error page.
+  - Measured on one machine: pages with 300 blocked images loaded 12–26 ms slower, and the worker did not stop while a page requested a blocked image every 2 seconds.
+
+Regex capacity:
+- Stock regex rules are part of each list's packaged ruleset and work as soon as the list is enabled; they are no longer installed as dynamic rules at runtime.
+- This frees Chrome's shared limit of 1,000 regex rules for dynamic and session rules, which the default lists used to fill completely. My filters and imported lists can now use about 889 regex rules with the default lists (877 with every list).
+- When that limit is full, only regex rules of imported lists that are not exceptions are skipped, from the end, with a warning. Before, the whole activation failed.
+- The Filter Store's regex estimate uses the capacity actually left instead of assuming 1,000.
+- New **Regex rule capacity** panel in **Dashboard → Diagnostics**:
+  - built-in regex rules in use out of 1,000, and the Chrome version that checked them when the package was built;
+  - built-in regex filters the browser cannot run;
+  - **Check now**, which counts the built-in regex rules this browser skips;
+  - the shared limit: rules used by My filters and imported lists and by strict blocking, free slots, and rules not installed because the limit is full;
+  - selected lists the browser did not enable.
+- Troubleshooting reports include the regex rule usage and the address source, never an address.
+
+Honest counts:
+- Regex filters that Chrome's RE2 engine cannot run are now counted in each list's tooltip as filters that could not be converted, with the reason codes `unsupported-regex-memory` (160) and `unsupported-regex-syntax` (5).
+  - The number grows by 108 in the default lists and by 165 across all lists, to 1,378 filters in 36 of the 55 lists.
+  - Nothing blocks less: Chrome already skipped these filters before, silently, at runtime.
+- The 28 strict-block regex rules in the default lists (31 across all lists) that RE2 rejects are counted in `strictblockRejected` in `ruleset-details.json`. As before, those pages get no warning page. For 24 of them (27 across all lists) the filter blocks only documents, so that rule was all there was of it: those pages are not blocked at all, as before, and the filters are counted among those that could not be converted.
+
+Security:
+- On Firefox, which reports no sender origin, a message counts as coming from an extension page only when its extension ID and URL match. Before, the missing origin was enough, so content scripts could send those messages.
+- User scripts can send only an allowlisted set of messages.
+- Only the warning page, in the top frame of a tab, can ask which address its tab was redirected from. Only extension pages can read the regex capacity.
+
+Build and validation:
+- Chromium and Edge builds check every static regex twice before packaging it: against the portable RE2 subset, then with Chrome's own `isRegexSupported`. Chrome refuses to load an unpacked extension when any static regex fails to parse.
+  - The check runs Chrome headless, in a new temporary profile that is deleted afterwards.
+  - Release builds (`-Version`) need Google Chrome, found in the standard install folders or through `CHROME_PATH`.
+- New `rulesets/regex-details.json` (count, checking Chrome version, digest).
+- `tools/validate-mv3.mjs` also checks the static regex rules, their total against Chrome's limit of 1,000, and the shape of the strict-block rules.
+- The CI and release workflows load both packages in a real Chrome (`tools/test-static-regex-chrome.mjs`, `tools/test-strictblock-chrome.mjs`). Their job timeouts were raised.
+- Imported lists are recompiled once after the update (compiled-cache revision 5) to add their strict-block redirects.
+- Rule-ID salvage (`make-mv3.ps1 -Before`, `make-mv3.sh BEFORE=`) keeps each list's static regex rules after its other rules, where the package validator expects them.
+
 ### Honest filter compilation
 
 Stock lists (build time):
@@ -51,6 +107,8 @@ Not yet done:
   - Remote fonts and `report-uri` CSP reports can be blocked by DNR; they are missing features, not browser limits.
   - The `chrome.debugger` route misses responses built by a page's service worker and the first document of a new tab, prompts for Local Network Access on local iframes, and needs auto-attach for subresources of cross-site iframes.
 - New tests: `tools/test-stock-compiler-honesty.mjs` and `tools/test-runtime-filter-options.mjs`.
+- The research marks roadmap step 2 as done. It records the measured strict-block options, the exact-address sources, the fail-open finding without host access and the cost of Chrome's matched-rule events. The feature matrix, runtime, architecture, threat model and privacy documents describe the two regex limits, the build-time RE2 check and the headless Chrome it starts, and the blocked addresses kept per tab.
+- New tests for step 2: `test-strictblock-rules`, `test-dnr-namespaces`, `test-strictblock-tracker`, `test-regex-capacity`, `test-regex-capacity-ui`, `test-re2-portable`, `test-stock-regex-placement`, `test-validate-mv3-regex` and `test-sender-trust`, plus the two real-Chrome tests above (all in `tools/`).
 
 ## 1.2.0
 

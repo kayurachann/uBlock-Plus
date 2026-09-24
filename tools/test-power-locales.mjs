@@ -56,8 +56,25 @@ const forkKeyPattern = new RegExp(
     '^(?:autoUpdate|firewall|logger|webRequestSetup|restore|siteRules|' +
     'report|backupFailed$|resetFailed$|resetSucceeded$|editorApplyFailed$|' +
     'defaultFilteringModeFailed$|customFiltersSaveFailed$|protectionProfile|' +
-    'pickerQuit$)'
+    'pickerQuit$|strictblockPlus)'
 );
+// Regex rule capacity and the strict-block page's address (roadmap step 2).
+const regexCapacityKeys = [
+    'diagnosticsRegexTitle', 'diagnosticsRegexUsage', 'diagnosticsRegexStatic',
+    'diagnosticsRegexVerifiedWith', 'diagnosticsRegexNotVerified',
+    'diagnosticsRegexRejectedAtBuild', 'diagnosticsRegexSkipped',
+    'diagnosticsRegexVerify', 'diagnosticsRegexNotChecked',
+    'diagnosticsRegexShared', 'diagnosticsRegexUser', 'diagnosticsRegexStrictBlock',
+    'diagnosticsRegexStockFallback', 'diagnosticsRegexOther',
+    'diagnosticsRegexFree', 'diagnosticsRegexDropped',
+    'diagnosticsRulesetsNotEnabled', 'diagnosticsStrictBlockAddress',
+    'diagnosticsStrictBlockAddressExact', 'diagnosticsStrictBlockAddressFragment',
+    'diagnosticsStrictBlockAddressApproximate',
+    'diagnosticsStrictBlockAddressUnavailable',
+    'diagnosticsStrictBlockAddressGrantNote', 'diagnosticsStrictBlockAddressGrant',
+    'diagnosticsStrictBlockAddressGranted',
+    'strictblockPlusUrlUnavailable', 'strictblockPlusUrlApproximate',
+];
 const legitimateEnglishCognates = new Set([
     'de:autoUpdatePopupAvailable',
     'de:loggerTab',
@@ -129,6 +146,12 @@ for ( const key of [
 ] ) {
     assert(forkKeys.includes(key), `${key} must be checked`);
 }
+for ( const key of regexCapacityKeys ) {
+    assert(
+        powerKeys.includes(key) || forkKeys.includes(key),
+        `${key} must exist and be checked`
+    );
+}
 
 for ( const locale of priorityLocales ) {
     const messages = localeMessages.get(locale);
@@ -137,6 +160,15 @@ for ( const locale of priorityLocales ) {
         englishKeys,
         `${locale} must keep key parity with the default locale`
     );
+    // Chrome reads `$name$` as a named placeholder: a literal dollar sign
+    // before a word must be written `$$`.
+    for ( const [ key, entry ] of Object.entries(messages) ) {
+        assert.doesNotMatch(
+            entry.message,
+            /(?<!\$)\$[A-Za-z_]/,
+            `${locale}: ${key} must write a literal $ before a word as $$`
+        );
+    }
     for ( const key of [ ...powerKeys, ...forkKeys ] ) {
         const message = messages[key]?.message;
         assert.equal(
@@ -180,7 +212,7 @@ const viEnglishUITerms = new RegExp(
     '\\b(?:[Rr]equest|[Ff]irewall|Off|Load unpacked|[Ll]auncher|[Pp]rofile|' +
     '[Ee]xtension|[Hh]ostname|[Tt]ab|[Ff]rame|[Rr]efresh)\\b'
 );
-for ( const key of forkKeys ) {
+for ( const key of [ ...powerKeys, ...forkKeys ] ) {
     // Literal Windows paths and file names (…\uBlockPlus\Extension,
     // updater\install-updater.cmd) are not UI terms.
     const message = localeMessages.get('vi')[key].message
@@ -203,6 +235,12 @@ for ( const key of [
         new RegExp(`aria-label=["']${key}["']`),
         `dashboard must localize the ${key} accessible label`
     );
+}
+// Every string the dashboard markup names exists in the default locale.
+for ( const [ , key ] of dashboard.matchAll(
+    /data-i18n(?:-title|-label|-placeholder)?="([^"]+)"/g
+) ) {
+    assert(Object.hasOwn(english, key), `dashboard.html names missing string ${key}`);
 }
 
 console.log(

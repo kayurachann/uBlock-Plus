@@ -46,7 +46,14 @@ function fixture({ incognito = false, wakeupRun = false } = {}) {
         COMPILED_FILTERS_RETRY_DELAY: 5 * 60 * 1000,
         COMPILED_FILTERS_MAX_RETRY_DELAY: 6 * 60 * 60 * 1000,
         loadRulesetConfig: async ( ) => { note('load-config'); },
-        initializeMemoryProfile: async ( ) => ({ retainScriptingMetadata: true }),
+        initializeMemoryProfile: async ( ) => ({
+            effective: incognito ? 'low-memory' : 'balanced',
+            retainScriptingMetadata: true,
+        }),
+        followStrictBlockMemoryProfile: profile => {
+            note(`strictblock-memory:${profile.effective}`);
+            return false;
+        },
         localRead: async key => structuredClone(values.get(key)),
         localWrite: async (key, value) => { values.set(key, structuredClone(value)); },
         localRemove: async key => { values.delete(key); },
@@ -67,6 +74,14 @@ function fixture({ incognito = false, wakeupRun = false } = {}) {
         },
         ensureCompiledFilterRevision: async ( ) => { note('ensure-revision'); },
         startSession: async ( ) => { note('start-session'); },
+        reconcileStrictBlockSessionRules: async ( ) => {
+            note('strictblock-reconcile');
+            fail('strictblock-reconcile');
+            return faults.has('strictblock-reconcile-error')
+                ? { error: 'Injected session update failure' }
+                : { rebuilt: false };
+        },
+        syncStrictBlockTracker: async ( ) => { note('strictblock-sync'); },
         releaseScriptingMetadata: ( ) => {},
         runMemoryCleanup: async ( ) => { note('memory-cleanup'); },
         getRegisteredContentScripts: async ( ) => [],
@@ -91,6 +106,42 @@ function fixture({ incognito = false, wakeupRun = false } = {}) {
     return { context, values, events, faults, releaseRetry };
 }
 const essential = [ 'popup-resume', 'firewall', 'webrequest-firewall' ];
+
+// Strict blocking: every start, also a wake, reconciles the session plan
+// with the host access its redirects need, then points the tracker at the
+// installed plan. On a first run the plan was just rebuilt by startSession.
+for ( const options of [ { wakeupRun: false }, { wakeupRun: true },
+    { wakeupRun: false, incognito: true }, { wakeupRun: true, incognito: true } ] ) {
+    const f = fixture(options);
+    await f.context.start();
+    const at = name => f.events.indexOf(name);
+    assert.ok(at('strictblock-reconcile') !== -1,
+        `${JSON.stringify(options)}: start() reconciles the strict-block session plan`);
+    assert.ok(at('strictblock-reconcile') < at('strictblock-sync'),
+        'the tracker follows the reconciled plan');
+    // The low-memory profile decides the URL source, which the reconcile
+    // compares with the installed plan.
+    const memory = `strictblock-memory:${options.incognito ? 'low-memory' : 'balanced'}`;
+    assert.ok(at(memory) !== -1 && at(memory) < at('strictblock-reconcile'),
+        'the tracker follows the memory profile before the reconcile');
+    if ( options.wakeupRun === false ) {
+        assert.ok(at('start-session') < at('strictblock-reconcile'));
+    } else {
+        assert.equal(at('start-session'), -1);
+    }
+    assert.ok(at('strictblock-sync') < at('popup-resume'));
+}
+// A failed reconcile is reported and never skips the rest of startup.
+for ( const fault of [ 'strictblock-reconcile', 'strictblock-reconcile-error' ] ) {
+    const f = fixture({ wakeupRun: true });
+    f.faults.add(fault);
+    await f.context.start();
+    for ( const name of [ 'strictblock-sync', 'register-content', ...essential ] ) {
+        assert.ok(f.events.includes(name), `${fault}: ${name} must still run`);
+    }
+    assert.ok(f.events.some(event => /^error:Strict-block reconcile\/.*Injected/.test(event)),
+        `${fault}: the failure is logged`);
+}
 
 // A stale-package or otherwise failing recovery must not skip startSession,
 // script registration, popup blocking or the firewall. The journal stays for
@@ -250,4 +301,111 @@ for ( const fault of [ 'rollback-ruleset', 'recover-activation', 'remove-generat
     assert.deepEqual(events, [ 'developer-mode:false', 'enqueue', 'user-rules' ]);
 }
 
-console.log('Startup resilience: failed recovery, deferred compiled retries, split incognito, permission sync and the develop lock passed.');
+// A permission change rebuilds the strict-block session plan: without broad
+// host access a redirect shadows the block below it and the page loads, and
+// the optional webRequest permission changes the address source. The rebuild
+// waits for startup and for the tracker's new source, never for the
+// filtering queue.
+{
+    const permissionCode = extract('onStrictBlockPermissionsChanged', 'function');
+    const run = async (permissions, { sessionError, trackerError } = {}) => {
+        const events = [];
+        let releaseSource;
+        let releaseStartup;
+        const context = vm.createContext({
+            Promise, Array,
+            isFullyInitialized: new Promise(resolve => { releaseStartup = resolve; }),
+            strictBlockTracker: {
+                permissionsChanged: ( ) => {
+                    events.push('tracker-source');
+                    return new Promise((resolve, reject) => {
+                        releaseSource = ( ) => trackerError
+                            ? reject(new Error('Injected tracker failure'))
+                            : resolve('webrequest');
+                    });
+                },
+            },
+            updateSessionRules: async ( ) => {
+                events.push('session-rebuild');
+                return sessionError ? { error: 'Injected session update failure' } : {};
+            },
+            ublockPlusErr: message => { events.push(`error:${message}`); },
+        });
+        vm.runInContext(permissionCode, context);
+        const done = context.onStrictBlockPermissionsChanged(permissions);
+        for ( let i = 0; i < 10; i++ ) { await turn(); }
+        const early = events.slice();
+        releaseStartup();
+        for ( let i = 0; i < 10; i++ ) { await turn(); }
+        const afterStartup = events.slice();
+        releaseSource();
+        await done;
+        for ( let i = 0; i < 10; i++ ) { await turn(); }
+        return { early, afterStartup, events };
+    };
+    for ( const permissions of [
+        { origins: [ '<all_urls>' ], permissions: [] },
+        { origins: [ 'https://*.example.com/*' ] },
+        { permissions: [ 'webRequest' ], origins: [] },
+    ] ) {
+        const r = await run(permissions);
+        assert.deepEqual(r.early, [ 'tracker-source' ],
+            'the tracker re-checks its address source at once');
+        assert.deepEqual(r.afterStartup, [ 'tracker-source' ],
+            'the rebuild waits for the new address source');
+        assert.deepEqual(r.events, [ 'tracker-source', 'session-rebuild' ],
+            `${JSON.stringify(permissions)} rebuilds the session plan`);
+    }
+    for ( const permissions of [ { permissions: [ 'nativeMessaging' ], origins: [] }, undefined ] ) {
+        const r = await run(permissions);
+        assert.deepEqual(r.events, [ 'tracker-source' ],
+            `${JSON.stringify(permissions)} does not concern strict blocking`);
+    }
+    const failed = await run({ origins: [ '<all_urls>' ] }, { sessionError: true });
+    assert.ok(failed.events.includes('error:strictBlockPermissions/Injected session update failure'));
+    const noSource = await run({ origins: [ '<all_urls>' ] }, { trackerError: true });
+    assert.ok(noSource.events.includes('error:strictBlockPermissions/Error: Injected tracker failure'));
+    assert.ok(noSource.events.includes('session-rebuild'),
+        'a failed source check still rebuilds, with the source the tracker kept');
+}
+
+// The tracker follows the plan in storage.session after a worker restart,
+// unless a newer plan was installed while it was read.
+{
+    const planStart = background.indexOf('let strictBlockPlanRevision = 0;');
+    assert.ok(planStart >= 0, 'the plan revision counter must exist');
+    const planCode = [
+        'let strictBlockPlanRevision = 0;',
+        extract('onStrictBlockPlan', 'function'),
+        extract('syncStrictBlockTracker'),
+    ].join('\n');
+    const plans = [];
+    const reads = [];
+    const context = vm.createContext({
+        Promise,
+        STRICTBLOCK_PLAN_KEY: 'strictBlock.plan',
+        strictBlockTracker: { setPlan: plan => { plans.push(plan); } },
+        sessionRead: key => new Promise(resolve => { reads.push({ key, resolve }); }),
+    });
+    vm.runInContext(planCode, context);
+    const stored = { redirectCount: 3, owners: [ [ 1, 3, 'stock:x', 'redirect' ] ] };
+    const first = context.syncStrictBlockTracker();
+    assert.equal(reads[0].key, 'strictBlock.plan');
+    reads[0].resolve(stored);
+    await first;
+    assert.deepEqual(plans, [ stored ]);
+    const second = context.syncStrictBlockTracker();
+    const installed = { redirectCount: 0, owners: [] };
+    context.onStrictBlockPlan(installed);
+    reads[1].resolve(stored);
+    await second;
+    assert.deepEqual(plans, [ stored, installed ],
+        'a stale read must not bring back the replaced plan');
+    const missing = context.syncStrictBlockTracker();
+    reads[2].resolve(undefined);
+    await missing;
+    assert.equal(plans.length, 3);
+    assert.equal(plans[2], undefined, 'no stored plan: the tracker goes inactive');
+}
+
+console.log('Startup resilience: failed recovery, deferred compiled retries, split incognito, permission sync, the develop lock and strict-block reconcile passed.');

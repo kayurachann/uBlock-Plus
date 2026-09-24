@@ -33,6 +33,11 @@ let siteRulesLoading = false;
 let siteRulesSaving = false;
 let diagnosticsLoaded = false;
 let diagnosticsLoading = false;
+let lastCapabilities;
+// Only the newest regex-capacity answer is shown: a slow refresh must not
+// replace the result of a later 'Check now'.
+let regexCapacityRequests = 0;
+let regexVerifying = false;
 let protectionRefreshTimer;
 // Profile whose radio this page last checked to show the live settings. Any
 // other checked radio, or none, is a choice the user has not applied yet.
@@ -453,13 +458,28 @@ async function loadSiteRules() {
     }
 }
 
+// [ label, value, title?, items? ]: `items` are shown as a list under the
+// value, where keyboard, touch and screen-reader users can read them too.
 function appendDefinitionList(list, entries) {
     list.replaceChildren();
-    for ( const [ label, value ] of entries ) {
+    for ( const [ label, value, title, items ] of entries ) {
         const term = document.createElement('dt');
         term.textContent = label;
         const definition = document.createElement('dd');
         definition.textContent = value;
+        if ( title ) { definition.title = title; }
+        if ( Array.isArray(items) && items.length !== 0 ) {
+            const itemList = document.createElement('ul');
+            itemList.className = 'definitionItems';
+            for ( const item of items ) {
+                const entry = document.createElement('li');
+                const code = document.createElement('code');
+                code.textContent = item;
+                entry.append(code);
+                itemList.append(entry);
+            }
+            definition.append(itemList);
+        }
         list.append(term, definition);
     }
 }
@@ -472,6 +492,26 @@ function formatQuota(value) {
     return Number.isSafeInteger(value) ? value.toLocaleString() : '—';
 }
 
+const countOf = value => Number.isSafeInteger(value) && value > 0 ? value : 0;
+
+// How the strict-block page learns the blocked address, as classified by
+// runtime-capabilities-core.js: the browser reports it (webRequest or
+// rule-match events), the redirect carries it in the page's own address
+// (Firefox), only the start of the navigation is known, or nothing is.
+const strictBlockAddressKeys = new Map([
+    [ 'webrequest', 'diagnosticsStrictBlockAddressExact' ],
+    [ 'rule-match', 'diagnosticsStrictBlockAddressExact' ],
+    [ 'regex-substitution', 'diagnosticsStrictBlockAddressFragment' ],
+    [ 'navigation-start', 'diagnosticsStrictBlockAddressApproximate' ],
+]);
+
+function strictBlockAddressText(source) {
+    return message(
+        strictBlockAddressKeys.get(source) ??
+            'diagnosticsStrictBlockAddressUnavailable'
+    );
+}
+
 function renderCapabilities(capabilities) {
     const quotas = capabilities?.quotas || {};
     appendDefinitionList(qs$('#runtimeCapabilities'), [
@@ -481,13 +521,170 @@ function renderCapabilities(capabilities) {
         [ message('diagnosticsUserScripts'), availability(capabilities.userScripts) ],
         [ message('diagnosticsOffscreenCompiler'), availability(capabilities.offscreenCompilation) ],
         ...capabilityDetailsRows(capabilities, i18n.getUILanguage?.() || navigator.language),
+        [ message('diagnosticsStrictBlockAddress'), strictBlockAddressText(capabilities.strictBlockUrlSource) ],
         [ message('diagnosticsStaticRules'), formatQuota(quotas.availableStaticRules) ],
         [ message('diagnosticsDynamicRules'), formatQuota(quotas.dynamicRules) ],
         [ message('diagnosticsSessionRules'), formatQuota(quotas.sessionRules) ],
         [ message('diagnosticsRegexRules'), formatQuota(quotas.regexRules) ],
     ]);
+    renderStrictBlockAddressSetup(capabilities);
     renderWebRequestSetup(capabilities);
 }
+
+// The optional webRequest permission is the cheapest exact address source
+// (main-frame redirects only). Offer it only where this browser can still
+// grant it and the page does not already get the address from it.
+function renderStrictBlockAddressSetup(capabilities) {
+    const setup = qs$('#strictBlockAddressSetup');
+    if ( setup === null ) { return; }
+    setup.hidden = capabilities.networkObservationRequestable !== true ||
+        capabilities.networkObservationPermissionGranted === true ||
+        capabilities.strictBlockUrlSource === 'webrequest' ||
+        capabilities.strictBlockUrlSource === 'regex-substitution';
+}
+
+dom.on('#grantStrictBlockWebRequest', 'click', async ( ) => {
+    const button = qs$('#grantStrictBlockWebRequest');
+    button.disabled = true;
+    try {
+        // Ask first, while the click is still a user gesture.
+        const granted = await browser.permissions.request({
+            permissions: [ 'webRequest' ],
+        }).catch(( ) => false);
+        if ( granted !== true ) {
+            setOperationStatus(message('loggerPermissionRefused'), 'error');
+            return;
+        }
+        setOperationStatus(message('diagnosticsStrictBlockAddressGranted'));
+        await refreshDiagnostics();
+        // The worker switches to the new source on permissions.onAdded,
+        // which can arrive after this page asked: show what it reports
+        // once more, without assuming the switch happened.
+        if ( lastCapabilities?.strictBlockUrlSource !== 'webrequest' ) {
+            await new Promise(resolve => { self.setTimeout(resolve, 1000); });
+            await refreshDiagnostics();
+        }
+    } finally {
+        button.disabled = false;
+    }
+});
+
+/******************************************************************************/
+
+// Regex rule capacity: the report of ruleset-manager.js getRegexCapacity()
+// (schema in regex-capacity.js summarizeRegexCapacity). Every number is what
+// the browser or the package reports; an unknown one is shown as such.
+
+function regexUsage(used, limit) {
+    return message('diagnosticsRegexUsage', [
+        formatQuota(used),
+        formatQuota(limit),
+    ]);
+}
+
+// Built-in regex rules this browser skipped at the last 'Check now' for this
+// version and browser. Not checked is not zero.
+function regexSkippedText(staticPool) {
+    if ( staticPool.enabled === 0 ) { return formatQuota(0); }
+    const skipped = staticPool.skippedByBrowser;
+    if ( Number.isSafeInteger(skipped) === false ) {
+        return message('diagnosticsRegexNotChecked');
+    }
+    if ( Number.isFinite(staticPool.checkedAt) === false ) {
+        return formatQuota(skipped);
+    }
+    return `${formatQuota(skipped)} · ${new Date(staticPool.checkedAt).toLocaleString()}`;
+}
+
+function regexCapacityRows(report) {
+    const staticPool = report.static ?? {};
+    const shared = report.shared ?? {};
+    const dynamic = shared.dynamic ?? {};
+    const session = shared.session ?? {};
+    const samples = Array.isArray(staticPool.skippedSamples)
+        ? staticPool.skippedSamples
+        : [];
+    const sampleLines = samples.map(sample =>
+        `${sample.rulesetId}: ${sample.regex}`
+    );
+    const rows = [
+        [ message('diagnosticsRegexStatic'), regexUsage(staticPool.enabled, staticPool.limit) ],
+        [ message('diagnosticsRegexVerifiedWith'), typeof staticPool.verifiedWith === 'string' &&
+            staticPool.verifiedWith !== ''
+            ? staticPool.verifiedWith
+            : message('diagnosticsRegexNotVerified') ],
+        [ message('diagnosticsRegexRejectedAtBuild'), formatQuota(staticPool.rejectedAtBuild) ],
+        [ message('diagnosticsRegexSkipped'), regexSkippedText(staticPool),
+            sampleLines.join('\n'), sampleLines ],
+        [ message('diagnosticsRegexShared'), regexUsage(shared.used, shared.limit) ],
+        [ message('diagnosticsRegexUser'), formatQuota(dynamic.user) ],
+        [ message('diagnosticsRegexStrictBlock'), formatQuota(session.strictBlock) ],
+    ];
+    // Only where they exist, so that the rows add up to the shared usage:
+    // built-in regex rules installed as dynamic rules (Firefox, or a list
+    // over the built-in limit) and the shared pool's other owners.
+    if ( countOf(dynamic.stockFallback) !== 0 ) {
+        rows.push([ message('diagnosticsRegexStockFallback'), formatQuota(dynamic.stockFallback) ]);
+    }
+    const other = countOf(dynamic.other) + countOf(session.other);
+    if ( other !== 0 ) {
+        rows.push([ message('diagnosticsRegexOther'), formatQuota(other) ]);
+    }
+    const notEnabled = Array.isArray(report.rulesetsNotEnabled)
+        ? report.rulesetsNotEnabled
+        : [];
+    rows.push(
+        [ message('diagnosticsRegexFree'), formatQuota(shared.free) ],
+        [ message('diagnosticsRegexDropped'), formatQuota(
+            countOf(shared.droppedStrictBlock) + countOf(shared.droppedImported)
+        ) ],
+        [ message('diagnosticsRulesetsNotEnabled'), notEnabled.length === 0
+            ? formatQuota(0)
+            : notEnabled.join(', ') ],
+    );
+    return rows;
+}
+
+function renderRegexCapacity(report) {
+    const panel = qs$('#regexCapacityPanel');
+    const list = qs$('#regexCapacity');
+    if ( panel === null || list === null ) { return; }
+    // A worker which does not provide the report answers nothing: show no
+    // numbers rather than assumed ones.
+    if ( report?.schemaVersion !== 1 ) {
+        panel.hidden = true;
+        return;
+    }
+    panel.hidden = false;
+    appendDefinitionList(list, regexCapacityRows(report));
+}
+
+async function loadRegexCapacity({ verifyStatic = false } = {}) {
+    // A 'Check now' in progress answers with the newer numbers.
+    if ( regexVerifying && verifyStatic === false ) { return; }
+    const request = ++regexCapacityRequests;
+    const report = await sendMessage(verifyStatic
+        ? { what: 'getRegexCapacity', verifyStatic: true }
+        : { what: 'getRegexCapacity' }
+    );
+    if ( request !== regexCapacityRequests ) { return; }
+    renderRegexCapacity(report);
+}
+
+dom.on('#verifyStaticRegex', 'click', async ( ) => {
+    if ( regexVerifying ) { return; }
+    const button = qs$('#verifyStaticRegex');
+    button.disabled = true;
+    regexVerifying = true;
+    try {
+        await loadRegexCapacity({ verifyStatic: true });
+    } catch {
+        setOperationStatus(message('diagnosticsLoadFailed'), 'error');
+    } finally {
+        regexVerifying = false;
+        button.disabled = false;
+    }
+});
 
 function renderWebRequestSetup(capabilities) {
     let panel = qs$('#webRequestSetup');
@@ -579,7 +776,12 @@ async function refreshDiagnostics() {
                 deviceMemoryGiB: globalThis.navigator?.deviceMemory,
             }),
             sendMessage({ what: 'getPopupDiagnostics' }),
+            // Its own failure does not hide the other diagnostics.
+            loadRegexCapacity().catch(( ) => {
+                setOperationStatus(message('diagnosticsLoadFailed'), 'error');
+            }),
         ]);
+        lastCapabilities = capabilities;
         renderCapabilities(capabilities);
         renderPerformance(profile);
         renderPopupDiagnostics(diagnostics);

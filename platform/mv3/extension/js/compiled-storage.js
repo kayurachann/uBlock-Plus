@@ -31,6 +31,10 @@ export const COMPILED_LOGICAL_KEYS = Object.freeze([
     'scriptletExceptions.schema',
     'sandboxFilters.popupFilters',
     'importedFilters.popupFilters',
+    // Strict-block redirect templates of each realm's $doc filters
+    // (strictblock-rules.js deriveUserStrictBlockRules).
+    'sandboxFilters.strictBlockRules',
+    'importedFilters.strictBlockRules',
 ]);
 
 export function newCompiledGeneration() {

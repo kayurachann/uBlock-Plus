@@ -93,14 +93,30 @@ async function main() {
                 afterRule.id = beforeId;
                 reusedIds.add(beforeId);
             }
-            // Assign new ids to unmatched rules
+            // Chromium main rulesets end with their static regex rules
+            // (stock-regex.js toJSONRuleset()), which must stay after the
+            // other rules whatever IDs they reuse: validate-mv3.mjs rejects
+            // a ruleset with a regex rule before another rule.
+            const isTail = folder === 'main'
+                ? rule => rule.condition?.regexFilter !== undefined
+                : ( ) => false;
+            // Assign new ids to unmatched rules: from 1 for the others, after
+            // every used id for new tail rules.
             let ruleIdGenerator = 1;
             for ( const afterRule of afterRules ) {
-                if ( afterRule.id !== 0 ) { continue; }
+                if ( afterRule.id !== 0 || isTail(afterRule) ) { continue; }
                 while ( reusedIds.has(ruleIdGenerator) ) { ruleIdGenerator += 1; }
                 afterRule.id = ruleIdGenerator++;
             }
-            afterRules.sort((a, b) => a.id - b.id);
+            let tailIdGenerator = afterRules.reduce((max, rule) =>
+                Math.max(max, rule.id), 0) + 1;
+            for ( const afterRule of afterRules ) {
+                if ( afterRule.id !== 0 ) { continue; }
+                afterRule.id = tailIdGenerator++;
+            }
+            afterRules.sort((a, b) =>
+                Number(isTail(a)) - Number(isTail(b)) || a.id - b.id
+            );
             const indent = afterRules.length > 10 ? undefined : 1;
             const lines = [];
             for ( const afterRule of afterRules ) {
