@@ -97,6 +97,177 @@ function addGenericCosmeticFilter(context, selector, isException) {
 
 /******************************************************************************/
 
+// Response header filtering
+//
+// Classic uBO (httpheader-filtering.js) removes the header from every
+// response whose own hostname (or a parent domain, an entity or a regex)
+// matches a filter, whatever the type of the request. Exceptions are keyed
+// on header name and hostname, not on the filter:
+// - `~hn` in `a.com,~hn##^responseheader(x)` excepts `hn` for every `x` filter
+// - `hn#@#^responseheader(x)` excepts `hn` for every `x` filter
+// - `#@#^responseheader(x)` and `*#@#^responseheader(x)` except `x` everywhere
+// - an empty name, `hn#@#^responseheader()`, excepts every header on `hn`
+//
+// All filters for a header name are collected here, then compiled into one
+// DNR rule per name: requestDomains for the hostnames, excludedRequestDomains
+// for the exceptions. DNR excludes sub-domains and gives excluded domains
+// precedence, which is what classic does. What DNR cannot express:
+// - entity (`example.*`) and regex hostnames: a filter, or an exception, with
+//   no other hostname is rejected, otherwise they are dropped with a warning
+//   (for an exception, the header is then still removed there)
+// - exceptions only apply within the same list, since each list is compiled
+//   into its own ruleset
+// - a matching DNR allow rule of higher priority (i.e. a network exception
+//   filter) also cancels the header removal, classic ignores those
+
+// Same set as the runtime compiler: DNR matches main_frame only when listed.
+const responseHeaderResourceTypes = [
+    'main_frame',
+    'sub_frame',
+    'stylesheet',
+    'script',
+    'image',
+    'font',
+    'object',
+    'xmlhttprequest',
+    'ping',
+    'csp_report',
+    'media',
+    'websocket',
+    'other',
+];
+
+const isEntity = hn => hn.endsWith('.*');
+
+function responseHeaderDetails(context, name) {
+    context.responseHeaders ??= new Map();
+    let details = context.responseHeaders.get(name);
+    if ( details === undefined ) {
+        details = {
+            generic: false,
+            hostnames: new Set(),
+            exceptions: new Set(),
+            warnings: [],
+        };
+        context.responseHeaders.set(name, details);
+    }
+    return details;
+}
+
+function addResponseHeaderFilter(context, parser) {
+    const name = parser.getResponseheaderName();
+    const details = responseHeaderDetails(context, name);
+    const unsupported = [];
+    context.responseHeaderGlobalExceptions ??= new Set();
+    if ( parser.isException() ) {
+        if ( parser.hasOptions() === false ) {
+            context.responseHeaderGlobalExceptions.add(name);
+            return;
+        }
+        let supported = 0;
+        for ( const { hn, not, bad } of parser.getExtFilterDomainIterator() ) {
+            if ( bad ) { continue; }
+            // https://github.com/gorhill/uBlock/issues/3375
+            //   There is no exception to an exception (classic's comment:
+            //   its code turns such a hostname into a filter).
+            if ( not ) { continue; }
+            if ( hn === '*' ) {
+                context.responseHeaderGlobalExceptions.add(name);
+                supported += 1;
+            } else if ( isEntity(hn) || isRegexOrPath(hn) ) {
+                unsupported.push(hn);
+            } else {
+                details.exceptions.add(hn);
+                supported += 1;
+            }
+        }
+        if ( unsupported.length === 0 ) { return; }
+        if ( supported === 0 ) {
+            context.invalid.add(`Unsupported responseheader() hostname: ${parser.raw}`);
+        } else {
+            details.warnings.push(`Ignored unsupported responseheader() exception hostname: ${parser.raw}`);
+        }
+        return;
+    }
+    // Only exception filters are allowed to be global
+    if ( parser.hasOptions() === false ) { return; }
+    const hostnames = [];
+    let generic = false;
+    for ( const { hn, not, bad } of parser.getExtFilterDomainIterator() ) {
+        if ( bad ) { continue; }
+        if ( isEntity(hn) || isRegexOrPath(hn) ) {
+            unsupported.push(hn);
+        } else if ( not ) {
+            details.exceptions.add(hn);
+        } else if ( hn === '*' ) {
+            generic = true;
+        } else {
+            hostnames.push(hn);
+        }
+    }
+    if ( generic ) {
+        details.generic = true;
+    } else if ( hostnames.length !== 0 ) {
+        for ( const hn of hostnames ) {
+            details.hostnames.add(hn);
+        }
+    } else if ( unsupported.length !== 0 ) {
+        context.invalid.add(`Unsupported responseheader() hostname: ${parser.raw}`);
+        return;
+    }
+    if ( unsupported.length !== 0 ) {
+        details.warnings.push(`Ignored unsupported responseheader() hostname: ${parser.raw}`);
+    }
+}
+
+function responseHeaderRulesFromContext(context) {
+    const rules = [];
+    if ( context.responseHeaders === undefined ) { return rules; }
+    const globalExceptions = context.responseHeaderGlobalExceptions;
+    if ( globalExceptions.has('') ) { return rules; }
+    const allHeaderExceptions = context.responseHeaders.get('')?.exceptions ?? [];
+    // The warnings of all-header exceptions are reported once, with the
+    // first rule.
+    let allHeaderWarnings = context.responseHeaders.get('')?.warnings ?? [];
+    for ( const [ name, details ] of context.responseHeaders ) {
+        if ( name === '' ) { continue; }
+        if ( globalExceptions.has(name) ) { continue; }
+        if ( details.generic === false && details.hostnames.size === 0 ) {
+            continue;
+        }
+        const rule = {
+            action: {
+                responseHeaders: [
+                    {
+                        header: name,
+                        operation: 'remove',
+                    }
+                ],
+                type: 'modifyHeaders'
+            },
+            condition: {
+                resourceTypes: responseHeaderResourceTypes.slice(),
+            },
+        };
+        if ( details.generic === false ) {
+            rule.condition.requestDomains = Array.from(details.hostnames).sort();
+        }
+        const excluded = new Set([ ...details.exceptions, ...allHeaderExceptions ]);
+        if ( excluded.size !== 0 ) {
+            rule.condition.excludedRequestDomains = Array.from(excluded).sort();
+        }
+        const warnings = [ ...details.warnings, ...allHeaderWarnings ];
+        allHeaderWarnings = [];
+        if ( warnings.length !== 0 ) {
+            rule._warning = warnings;
+        }
+        rules.push(rule);
+    }
+    return rules;
+}
+
+/******************************************************************************/
+
 function addExtendedToDNR(context, parser) {
     if ( parser.isExtendedFilter() === false ) { return false; }
 
@@ -139,53 +310,7 @@ function addExtendedToDNR(context, parser) {
     // Response header filtering
     if ( parser.isResponseheaderFilter() ) {
         if ( parser.hasError() ) { return; }
-        if ( parser.hasOptions() === false ) { return; }
-        if ( parser.isException() ) { return; }
-        const node = parser.getBranchFromType(sfp.NODE_TYPE_EXT_PATTERN_RESPONSEHEADER);
-        if ( node === 0 ) { return; }
-        const header = parser.getNodeString(node);
-        if ( context.responseHeaderRules === undefined ) {
-            context.responseHeaderRules = [];
-        }
-        const rule =  {
-            action: {
-                responseHeaders: [
-                    {
-                        header,
-                        operation: 'remove',
-                    }
-                ],
-                type: 'modifyHeaders'
-            },
-            condition: {
-                resourceTypes: [
-                    'main_frame',
-                    'sub_frame'
-                ]
-            },
-        };
-        for ( const { hn, not, bad } of parser.getExtFilterDomainIterator() ) {
-            if ( bad ) { continue; }
-            if ( isRegexOrPath(hn) ) { continue; }
-            if ( not ) {
-                if ( rule.condition.excludedInitiatorDomains === undefined ) {
-                    rule.condition.excludedInitiatorDomains = [];
-                }
-                rule.condition.excludedInitiatorDomains.push(hn);
-                continue;
-            }
-            if ( hn === '*' ) {
-                if ( rule.condition.initiatorDomains !== undefined ) {
-                    rule.condition.initiatorDomains = undefined;
-                }
-                continue;
-            }
-            if ( rule.condition.initiatorDomains === undefined ) {
-                rule.condition.initiatorDomains = [];
-            }
-            rule.condition.initiatorDomains.push(hn);
-        }
-        context.responseHeaderRules.push(rule);
+        addResponseHeaderFilter(context, parser);
         return;
     }
 
@@ -319,6 +444,20 @@ function addToDNR(context, list) {
 
         const sourceStart = writer.blocks.get('NETWORK_FILTERS:GOOD')?.length ?? 0;
         if ( compiler.compile(parser, writer) ) {
+            const lines = writer.blocks.get('NETWORK_FILTERS:GOOD') ?? [];
+            // The source filters of each compiled line, which the rules
+            // compiled from it carry as `_sourceFilters`: a filter compiles
+            // into one line per type, and lines can merge into one rule, so
+            // rule entries are not filters.
+            context.networkFilterSources ??= new Map();
+            for ( let i = sourceStart; i < lines.length; i++ ) {
+                const sources = context.networkFilterSources.get(lines[i]);
+                if ( sources === undefined ) {
+                    context.networkFilterSources.set(lines[i], [ line ]);
+                } else if ( sources.includes(line) === false ) {
+                    sources.push(line);
+                }
+            }
             if ( typeof context.networkSourceIdentity === 'function' ) {
                 context.networkSources ??= new Map();
                 const identities = context.networkSourceIdentity(parser);
@@ -328,7 +467,6 @@ function addToDNR(context, list) {
                         context.networkBadfilterKeys.add(identity.rawKey ?? identity.key);
                     }
                 }
-                const lines = writer.blocks.get('NETWORK_FILTERS:GOOD') ?? [];
                 for ( let i = sourceStart; i < lines.length; i++ ) {
                     const compiledLine = lines[i];
                     const fragment = JSON.parse(compiledLine)[2];
@@ -482,6 +620,98 @@ function finalizeRuleset(context, network) {
 
 /******************************************************************************/
 
+// Stable reason codes for the `_error` messages of the entries which could
+// not be converted into DNR rules, so that build reports can count them per
+// reason. Codes shared with the runtime compiler (ubo-parser.js) are spelled
+// the same. `invalid-*` filters are rejected by classic uBO too, the other
+// ones only because DNR cannot express them.
+
+const dnrErrorReasons = [
+    [ /^Incompatible with DNR: uritransform=/, 'unsupported-urltransform-regex' ],
+    [ /^Incompatible with DNR \(need regexFilter\): uritransform=/, 'unsupported-urltransform-pattern' ],
+    // The DNR parser excludes the `redirect-rule` option (see `badTypes`)
+    [ /^Incompatible with DNR: .*[$,]redirect-rule(?:[=,]|\s*$)/is, 'unsupported-redirect-rule' ],
+    [ /^Incompatible with DNR: /, 'unsupported-option' ],
+    [ /^Can't salvage rule with unsupported domain= option: /, 'unsupported-domain' ],
+    [ /^regexFilter is not RE2-compatible: /, 'unsupported-regex' ],
+    [ /^Unsupported regex-based removeParam: /, 'unsupported-removeparam-regex' ],
+    [ /^Unsupported negated removeParam: /, 'unsupported-removeparam-negated' ],
+    [ /^strict1p not supported/, 'unsupported-strict-first-party' ],
+    [ /^strict3p not supported/, 'unsupported-strict-third-party' ],
+    [ /^"ipaddress=.*" not supported$/s, 'unsupported-ipaddress' ],
+    [ /^responseheader=".*" not supported$/s, 'unsupported-header-value' ],
+    [ /^requestheader=".*" not supported$/s, 'unsupported-requestheader' ],
+    [ /^Unpatchable redirect filter: /, 'unsupported-redirect-resource' ],
+    [ /^Unsupported responseheader\(\) hostname: /, 'unsupported-responseheader-hostname' ],
+    [ /^urlFilter already defined: /, 'unsupported-pattern' ],
+    [ /^Unsupported modifier /, 'unsupported-modifier' ],
+    [ /^Rejected filter: /, 'invalid-filter' ],
+    [ /^Invalid network filter in /, 'invalid-network-filter' ],
+];
+
+function dnrErrorReason(message) {
+    if ( typeof message !== 'string' ) { return 'other'; }
+    for ( const [ re, reason ] of dnrErrorReasons ) {
+        if ( re.test(message) ) { return reason; }
+    }
+    return 'other';
+}
+
+// Count the filters which could not be converted, from the entries which
+// carry `_error`, and how many per reason. Filters are counted, not entries:
+// a filter compiles into one entry per type, and an entry can merge several
+// filters (`_sourceFilters`). An entry without sources (a filter rejected
+// before compilation) is one filter. A filter counts once, under the reason
+// of the first error of its first rejected entry, so that the reason counts
+// add up to the total.
+function dnrErrorSummary(rules) {
+    const reasons = new Map();
+    const counted = new Set();
+    let count = 0;
+    for ( const rule of rules ) {
+        if ( Boolean(rule._error) === false ) { continue; }
+        let filterCount = 1;
+        if ( rule._sourceFilters?.length ) {
+            filterCount = 0;
+            for ( const filter of rule._sourceFilters ) {
+                if ( counted.has(filter) ) { continue; }
+                counted.add(filter);
+                filterCount += 1;
+            }
+            if ( filterCount === 0 ) { continue; }
+        }
+        count += filterCount;
+        const reason = dnrErrorReason(rule._error[0]);
+        reasons.set(reason, (reasons.get(reason) ?? 0) + filterCount);
+    }
+    const sorted = Array.from(reasons).sort((a, b) =>
+        b[1] - a[1] || (a[0] < b[0] ? -1 : 1)
+    );
+    return { count, reasons: Object.fromEntries(sorted) };
+}
+
+// Count the network filters which were converted: they are the source of at
+// least one entry without `_error`, and of no entry with `_error` (those are
+// counted by dnrErrorSummary()).
+function dnrConvertedFilterCount(rules) {
+    const converted = new Set();
+    const rejected = new Set();
+    for ( const rule of rules ) {
+        const filters = rule._error ? rejected : converted;
+        for ( const filter of rule._sourceFilters ?? [] ) {
+            filters.add(filter);
+        }
+    }
+    let count = 0;
+    for ( const filter of converted ) {
+        if ( rejected.has(filter) ) { continue; }
+        count += 1;
+    }
+    return count;
+}
+
+/******************************************************************************/
+
 async function dnrRulesetFromRawLists(lists, options = {}) {
     const context = Object.assign({}, options);
     context.bad = options.networkBad;
@@ -506,13 +736,17 @@ async function dnrRulesetFromRawLists(lists, options = {}) {
         specificCosmetic: context.specificCosmeticFilters,
         scriptlet: context.scriptletFilters,
     };
-    if ( context.responseHeaderRules ) {
-        result.network.ruleset.push(...context.responseHeaderRules);
-    }
+    result.network.ruleset.push(...responseHeaderRulesFromContext(context));
     finalizeRuleset(context, result.network);
     return result;
 }
 
 /******************************************************************************/
 
-export { dnrRulesetFromRawLists, mergeRules };
+export {
+    dnrConvertedFilterCount,
+    dnrErrorReason,
+    dnrErrorSummary,
+    dnrRulesetFromRawLists,
+    mergeRules,
+};

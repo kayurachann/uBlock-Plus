@@ -2,6 +2,56 @@
 
 Releases of this community fork. The upstream uBlock Origin changelog follows further below.
 
+## Unreleased
+
+### Honest filter compilation
+
+Stock lists (build time):
+- Filters that cannot become DNR rules are now counted and reported instead of being dropped silently, with the exceptions listed under *Not yet done* below. Before, the build log said `Unsupported: 0` for every list.
+  - The build log shows `Unsupported: N` for each list with a count per reason code, and a total per reason for all rulesets at the end.
+  - `ruleset-details.json` adds `rules.rejectedReasons` and `filters.converted`.
+  - Source filters are counted, not the rule entries they compile into.
+  - With the list snapshot of 23 September 2026 (built on 24 September), 1,213 filters in 32 of the 55 lists are reported. Most are `$redirect-rule` (530) and entity or regex hostnames in `domain=`, `to=` or `denyallow=` (337).
+  - About 1,155 of them are valid filters that DNR cannot express. The other 58 are invalid filters that uBlock Origin rejects too; 51 of those are cosmetic or scriptlet filters with syntax errors.
+- `tools/validate-mv3.mjs` rejects a package when the reported counts do not match it: rule counts against the packaged rulesets, per-reason counts against the total, and the `Unsupported` lines of `log.txt`. In development builds it also compares them with the compiler output.
+- The dashboard tooltip of each stock list counts the filters actually converted. For uBlock filters it drops from 10,498 to 7,847: the old number counted a filter once per resource type and included filters that never become DNR rules. A second line gives the number of rejected filters, translated into the ten maintained languages.
+- `##^responseheader()` filters remove the header from responses of the hostnames they name. They used to act on navigations started from those sites instead.
+  - They apply to all resource types, as in uBlock Origin, and honour exceptions within the same list.
+  - A filter whose only hostnames are entities (`example.*`) or regexes is reported instead of becoming a rule for every site.
+- `removeparam=~name` is reported as unsupported instead of becoming a rule that never matches. Regex values written as `/re/i` or with the legacy `|` prefix are reported as regex.
+- Every built-in redirect resource is packaged and web-accessible, so `redirect=` filters in imported lists and personal filters can use all of them.
+  - `click2load.html` cannot work through DNR. Both compilers reject it, and `rulesets/redirect-resources.json` lists it as unavailable.
+  - The build fails when a resource file is missing.
+
+Imported lists and personal filters (runtime compiler):
+- `$requestheader` is rejected. It used to compile into an unconditional block, or an unconditional allow for `@@` filters.
+- `$empty` and `$mp4` redirect to the `empty` and `noop-1s.mp4` resources, as in stock lists, instead of blocking every request type. Redirect exceptions (`@@…$redirect`, `@@…$empty`, `@@…$mp4`) are rejected.
+- A bare `$removeparam` (or `$removeparam=|`) removes the whole query. It used to remove nothing.
+- `@@…$uritransform=…` is rejected. It used to compile into a real redirect, and exceptions skip the trusted-source check.
+- `$permissions` with several policies separated by `|` joins them with `, `. The `|` used to stay in the header value, which made the header invalid.
+- `important` is no longer dropped. On `removeparam` and `uritransform` it gives priority 2, which stays below every block; on `csp` and `permissions` it gives priority 31, as in stock lists.
+- `||host^$to=x` requires both the hostname pattern and `to=`. It used to block every request to `x`.
+- `redirect=click2load.html` is rejected, as in stock lists.
+- Imported lists compiled by an earlier version are recompiled with these rules (compiled-cache revision 4) instead of keeping their old output.
+
+Both compilers:
+- A `$removeparam` filter with `domain=` plus a hostname pattern or `to=` no longer strips parameters on every page load of the `domain=` sites. Its page-load rule keeps only the hostnames in both lists, and is dropped when none remain. Two over-broad rules in uBlock filters are gone.
+
+Not yet done:
+- Negated entity or regex hostnames in stock filters (`domain=~example.*`, and likewise in `to=` and `denyallow=`) are still dropped silently, with no warning and no count. The rule then also applies to the sites it should exclude. 187 filters in the list snapshot are affected.
+- Entity hostnames removed from partly converted stock filters are only logged as warnings, and only for non-regex static rules.
+- There is no per-reason view of rejected filters in the dashboard.
+
+### Documentation and tests
+
+- New [research into lifting MV3 limits](docs/MV3-LIMITS-RESEARCH-2026-09-24.md) (Vietnamese). It covers what cannot be done in Chrome, the Standard / Experimental / Firefox tiers, measurements on Chrome 153 and an 11-step roadmap.
+- Corrected documentation:
+  - `chrome.dns` is granted on Chrome Stable 153 with `--allowlisted-extension-id` to an extension whose manifest declares `dns`, but returns one IP address and never a CNAME chain. The Experimental package does not declare `dns`.
+  - Large-media blocking can be expressed with two DNR `Content-Length` rules, at an approximate threshold. The probe blocked from 50,000 bytes; uBlock Origin's default is 51,200 bytes and can be changed, and an exact threshold needs more patterns (not tried). Only responses that carry the header are covered, and the size is the compressed size.
+  - Remote fonts and `report-uri` CSP reports can be blocked by DNR; they are missing features, not browser limits.
+  - The `chrome.debugger` route misses responses built by a page's service worker and the first document of a new tab, prompts for Local Network Access on local iframes, and needs auto-attach for subresources of cross-site iframes.
+- New tests: `tools/test-stock-compiler-honesty.mjs` and `tools/test-runtime-filter-options.mjs`.
+
 ## 1.2.0
 
 ### Automatic updates

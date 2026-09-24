@@ -94,13 +94,23 @@ function updateNodes(listEntries) {
 
 /******************************************************************************/
 
+export function rulesetStatsFromDetails(rulesetDetails) {
+    const { rules, filters } = rulesetDetails;
+    const ruleCount = rules.plain + rules.regex;
+    // Stock rulesets: `accepted` also counts the filters which could not be
+    // converted, and counts a filter once per type. Imported rulesets do not
+    // count the filters they reject as `accepted`.
+    const filterCount = filters.converted ?? filters.accepted;
+    // Stock rulesets count the network filters DNR cannot express. Imported
+    // lists report theirs where they are imported.
+    const unsupportedCount = Number.isSafeInteger(rules.rejected) ? rules.rejected : 0;
+    return { ruleCount, filterCount, unsupportedCount };
+}
+
 function rulesetStats(rulesetId) {
     const rulesetDetails = rulesetMap.get(rulesetId);
     if ( rulesetDetails === undefined ) { return; }
-    const { rules, filters } = rulesetDetails;
-    const ruleCount = rules.plain + rules.regex;
-    const filterCount = filters.accepted;
-    return { ruleCount, filterCount };
+    return rulesetStatsFromDetails(rulesetDetails);
 }
 
 /******************************************************************************/
@@ -141,6 +151,7 @@ export async function renderFilterLists(incremental = false) {
     });
 
     const listStatsTemplate = i18n$('perRulesetStats');
+    const unsupportedTemplate = i18n$('perRulesetUnsupported');
     const beforeListEntries = new Set(qsa$('#lists .listEntry:not([data-role="root"])'));
 
     const initializeListEntry = (ruleset, listEntry) => {
@@ -166,6 +177,10 @@ export async function renderFilterLists(incremental = false) {
         listEntry.title = listStatsTemplate
             .replace('{{ruleCount}}', renderNumber(stats.ruleCount))
             .replace('{{filterCount}}', renderNumber(stats.filterCount));
+        if ( stats.unsupportedCount !== 0 ) {
+            listEntry.title += '\n' + unsupportedTemplate
+                .replace('{{count}}', renderNumber(stats.unsupportedCount));
+        }
         if ( isImported ) { return; }
         const fromAdmin = isAdminRuleset(ruleset.id);
         dom.cl.toggle(listEntry, 'fromAdmin', fromAdmin);

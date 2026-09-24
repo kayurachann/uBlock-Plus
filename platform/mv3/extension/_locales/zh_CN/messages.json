@@ -11,6 +11,10 @@
     "message": "{{ruleCount}} 条规则，转换自 {{filterCount}} 条网络规则",
     "description": "Appears aside each filter list in the _3rd-party filters_ pane"
   },
+  "perRulesetUnsupported": {
+    "message": "{{count}} 条过滤规则无法转换为 Chrome 规则，因此未应用",
+    "description": "Second line of the tooltip aside each filter list in the _3rd-party filters_ pane: filters (unsupported by DNR, or invalid) that could not be converted to DNR rules"
+  },
   "dashboardName": {
     "message": "uBlock Plus+ — 控制面板",
     "description": "English: uBlock Plus+ — Dashboard"
