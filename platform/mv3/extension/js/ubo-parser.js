@@ -50,9 +50,17 @@ const safeResourceTypes = [
 
 /******************************************************************************/
 
+// Same table as the stock build (make-rulesets.js). click2load.html needs
+// the MV2 messaging layer and URL parameters which a DNR extensionPath
+// cannot carry, so the stock build never redirects to it either.
+const unsupportedRedirectResources = new Set([
+    'click2load.html',
+]);
+
 const validRedirectResources = (( ) => {
     const out = new Map();
     for ( const [ name, resource ] of redirectResourceMap ) {
+        if ( unsupportedRedirectResources.has(name) ) { continue; }
         out.set(name, name);
         if ( resource.alias === undefined ) { continue; }
         if ( typeof resource.alias === 'string' ) {
@@ -418,41 +426,73 @@ export function attachStockBadfilterResiduals(rules) {
 
 /******************************************************************************/
 
+const isSameOrSubdomain = (hn, parent) =>
+    hn === parent || hn.endsWith(`.${parent}`);
+
+// Hostnames matched by both DNR domain lists. A list entry also matches its
+// subdomains, so of two related entries the more specific one is in both;
+// an entry under another one of the result is redundant.
+function intersectHostnames(a, b) {
+    const both = new Set();
+    for ( const x of a ) {
+        for ( const y of b ) {
+            if ( isSameOrSubdomain(x, y) ) {
+                both.add(x);
+            } else if ( isSameOrSubdomain(y, x) ) {
+                both.add(y);
+            }
+        }
+    }
+    const out = Array.from(both);
+    return out.filter(hn => out.every(other =>
+        other === hn || isSameOrSubdomain(hn, other) === false
+    )).sort();
+}
+
+// For a navigation, uBO matches `domain=` against the navigated hostname.
+// A request-side list (hostname pattern, `to=`) must match that hostname too:
+// DNR ORs the entries of one list, so the two lists are intersected. Returns
+// false, leaving the rule untouched, when no hostname is in both.
 function convertInitiatorDomainsToRequestDomains(rule) {
-    if ( rule.condition.initiatorDomains ) {
-        rule.condition.requestDomains ??= [];
-        rule.condition.requestDomains = [
-            ...rule.condition.requestDomains,
-            ...rule.condition.initiatorDomains,
-        ];
-        delete rule.condition.initiatorDomains;
+    const { condition } = rule;
+    if ( condition.initiatorDomains ) {
+        const requestDomains = condition.requestDomains === undefined
+            ? [ ...condition.initiatorDomains ]
+            : intersectHostnames(condition.requestDomains, condition.initiatorDomains);
+        if ( requestDomains.length === 0 ) { return false; }
+        condition.requestDomains = requestDomains;
+        delete condition.initiatorDomains;
     }
-    if ( rule.condition.excludedInitiatorDomains ) {
-        rule.condition.excludedRequestDomains ??= [];
-        rule.condition.excludedRequestDomains = [
-            ...rule.condition.excludedRequestDomains,
-            ...rule.condition.excludedInitiatorDomains,
+    if ( condition.excludedInitiatorDomains ) {
+        condition.excludedRequestDomains ??= [];
+        condition.excludedRequestDomains = [
+            ...condition.excludedRequestDomains,
+            ...condition.excludedInitiatorDomains,
         ];
-        delete rule.condition.excludedInitiatorDomains;
+        delete condition.excludedInitiatorDomains;
     }
+    return true;
 }
 
 /******************************************************************************/
 
 // https://github.com/uBlockOrigin/uBOL-home/discussions/736
 
+// Returns false when rule0, a main_frame-only rule, can match no navigation:
+// the caller must then discard it.
 export function expandRemoveparamsRule(rule0, out) {
-    if ( Boolean(rule0.condition.resourceTypes?.includes('main_frame')) === false ) { return; }
-    if ( rule0.condition.initiatorDomains === undefined ) { return; }
+    if ( Boolean(rule0.condition.resourceTypes?.includes('main_frame')) === false ) { return true; }
+    if ( rule0.condition.initiatorDomains === undefined ) { return true; }
     if ( rule0.condition.resourceTypes.length === 1 ) {
-        convertInitiatorDomainsToRequestDomains(rule0);
-        return;
+        return convertInitiatorDomainsToRequestDomains(rule0);
     }
     const rule1 = structuredClone(rule0);
     rule0.condition.resourceTypes = rule0.condition.resourceTypes.filter(a => a !== 'main_frame');
     rule1.condition.resourceTypes = [ 'main_frame' ];
-    convertInitiatorDomainsToRequestDomains(rule1);
-    out.push(rule1);
+    if ( convertInitiatorDomainsToRequestDomains(rule1) ) {
+        out.push(rule1);
+    }
+    return true;
 }
 
 /******************************************************************************/
@@ -520,11 +560,12 @@ export function validateRules(rules, rejections) {
 /******************************************************************************/
 
 // Priority:
-//   Removeparam: 1-4
+//   Removeparam: 1-4 (important: 2)
 //   Block: 10 (default priority)
 //   Redirect: 11-19
 //   Excepted redirect: 21-29
 //   Allow: 30
+//   Csp, permissions important: 31
 //   Block important: 40
 //   Redirect important: 41-49
 
@@ -633,6 +674,25 @@ export function parseNetworkFilter(parser, details = {}, out = []) {
     let subpriority = 0;
     let isImportant = false;
 
+    // `redirect=`, `empty` and `mp4` are the same modifier in classic uBO.
+    // An exception only cancels the redirection and leaves any block in
+    // place; DNR cannot express that without blocking by itself.
+    const processRedirect = token => {
+        if ( isException ) { return 'unsupported-redirect-exception'; }
+        if ( rule.action.type !== 'block' ) { return 'redirect-action-conflict'; }
+        const match = /:(\d+)$/.exec(token);
+        if ( match ) {
+            subpriority = Math.min(parseInt(match[1], 10) || 0, 8);
+            token = token.slice(0, match.index);
+        }
+        const resource = validRedirectResources.get(token);
+        if ( resource === undefined ) { return 'unsupported-redirect-resource'; }
+        rule.action.type = 'redirect';
+        rule.action.redirect = {
+            extensionPath: `/web_accessible_resources/${resource}`,
+        };
+    };
+
     for ( const type of parser.getNodeTypes() ) {
         switch ( type ) {
         case sfp.NODE_TYPE_NET_OPTION_NAME_1P:
@@ -658,6 +718,10 @@ export function parseNetworkFilter(parser, details = {}, out = []) {
             return reject('unsupported-redirect-rule');
         case sfp.NODE_TYPE_NET_OPTION_NAME_REPLACE:
             return reject('unsupported-replace');
+        // DNR has no request-header condition: without the option the
+        // filter would block or allow every matching request.
+        case sfp.NODE_TYPE_NET_OPTION_NAME_REQUESTHEADER:
+            return reject('unsupported-requestheader');
         case sfp.NODE_TYPE_NET_OPTION_NAME_SHIDE:
             return reject('unsupported-shide');
         case sfp.NODE_TYPE_NET_OPTION_NAME_URLSKIP:
@@ -725,6 +789,11 @@ export function parseNetworkFilter(parser, details = {}, out = []) {
         case sfp.NODE_TYPE_NET_OPTION_NAME_DOC:
             processResourceType('main_frame', type);
             break;
+        case sfp.NODE_TYPE_NET_OPTION_NAME_EMPTY: {
+            const reasonCode = processRedirect('empty');
+            if ( reasonCode ) { return reject(reasonCode); }
+            break;
+        }
         case sfp.NODE_TYPE_NET_OPTION_NAME_FONT:
             processResourceType('font', type);
             break;
@@ -796,6 +865,12 @@ export function parseNetworkFilter(parser, details = {}, out = []) {
             }
             break;
         }
+        case sfp.NODE_TYPE_NET_OPTION_NAME_MP4: {
+            const reasonCode = processRedirect('noopmp4-1s');
+            if ( reasonCode ) { return reject(reasonCode); }
+            processResourceType('media', type);
+            break;
+        }
         case sfp.NODE_TYPE_NET_OPTION_NAME_OBJECT:
             processResourceType('object', type);
             break;
@@ -807,10 +882,12 @@ export function parseNetworkFilter(parser, details = {}, out = []) {
                 return reject('response-header-action-conflict');
             }
             rule.action.type = 'modifyHeaders';
+            // `|` separates policies in filter syntax; left in place it
+            // makes the whole header unparseable, so nothing is enforced.
             rule.action.responseHeaders = [ {
                 header: 'permissions-policy',
                 operation: 'append',
-                value: parser.getNetOptionValue(type),
+                value: parser.getNetOptionValue(type).split('|').join(', '),
             } ];
             defaultResourceTypes.add('main_frame');
             defaultResourceTypes.add('sub_frame');
@@ -822,26 +899,18 @@ export function parseNetworkFilter(parser, details = {}, out = []) {
         case sfp.NODE_TYPE_NET_OPTION_NAME_REASON:
             break;
         case sfp.NODE_TYPE_NET_OPTION_NAME_REDIRECT: {
-            if ( rule.action.type !== 'block' ) {
-                return reject('redirect-action-conflict');
-            }
-            let value = parser.getNetOptionValue(type);
-            const match = /:(\d+)$/.exec(value);
-            if ( match ) {
-                subpriority = Math.min(parseInt(match[1], 10) || 0, 8);
-                value = value.slice(0, match.index);
-            }
-            if ( validRedirectResources.has(value) === false ) {
-                return reject('unsupported-redirect-resource');
-            }
-            rule.action.type = 'redirect';
-            rule.action.redirect = {
-                extensionPath: `/web_accessible_resources/${validRedirectResources.get(value)}`,
-            };
+            const reasonCode = processRedirect(parser.getNetOptionValue(type));
+            if ( reasonCode ) { return reject(reasonCode); }
             break;
         }
         case sfp.NODE_TYPE_NET_OPTION_NAME_REMOVEPARAM: {
-            const details = sfp.parseQueryPruneValue(parser.getNetOptionValue(type));
+            // A bare value, or its legacy `|` spelling, removes the whole
+            // query in classic uBO. DNR clears it with an empty `query`;
+            // an empty `removeParams` is accepted but removes nothing.
+            const value = parser.getNetOptionValue(type);
+            const details = value.trim() === '|'
+                ? { all: true }
+                : sfp.parseQueryPruneValue(value);
             if ( details.bad ) { return reject('invalid-removeparam'); }
             if ( details.not ) {
                 return reject('unsupported-removeparam-negated');
@@ -849,19 +918,19 @@ export function parseNetworkFilter(parser, details = {}, out = []) {
             if ( details.re ) {
                 return reject('unsupported-removeparam-regex');
             }
-            const removeParams = [];
-            if ( details.name ) {
-                removeParams.push(details.name);
+            rule.action.type = 'redirect';
+            if ( details.all ) {
+                rule.action.redirect = { transform: { query: '' } };
+            } else {
                 if ( rule.condition.urlFilter === undefined ) {
                     if ( rule.condition.regexFilter === undefined ) {
                         rule.condition.urlFilter = `^${details.name}=`;
                     }
                 }
+                rule.action.redirect = {
+                    transform: { queryTransform: { removeParams: [ details.name ] } }
+                };
             }
-            rule.action.type = 'redirect';
-            rule.action.redirect = {
-                transform: { queryTransform: { removeParams } }
-            };
             defaultResourceTypes.add('main_frame');
             defaultResourceTypes.add('sub_frame');
             defaultResourceTypes.add('xmlhttprequest');
@@ -911,6 +980,12 @@ export function parseNetworkFilter(parser, details = {}, out = []) {
             break;
         }
         case sfp.NODE_TYPE_NET_OPTION_NAME_URLTRANSFORM: {
+            // An exception only cancels a transform. Compiled like one, it
+            // would become a redirect, and exceptions skip the parser's
+            // trusted-source check.
+            if ( isException ) {
+                return reject('unsupported-urltransform-exception');
+            }
             const parsed = sfp.parseReplaceByRegexValue(parser.getNetOptionValue(type));
             if ( parsed === undefined ) {
                 return reject('invalid-urltransform');
@@ -941,6 +1016,14 @@ export function parseNetworkFilter(parser, details = {}, out = []) {
         rule.condition.excludedInitiatorDomains = Array.from(excludedInitiatorDomains).sort();
     }
     if ( requestDomains.size !== 0 ) {
+        // `to=` narrows a hostname pattern: both must match. Overwriting
+        // the pattern's requestDomains would block the whole `to=` list.
+        if ( parser.isHostnamePattern() ) {
+            const anchor = `||${pattern}^`;
+            rule.condition.urlFilter = rule.condition.urlFilter === undefined
+                ? anchor
+                : `${anchor}*${rule.condition.urlFilter}`;
+        }
         rule.condition.requestDomains = Array.from(requestDomains).sort();
     }
     if ( excludedRequestDomains.size !== 0 ) {
@@ -1043,7 +1126,7 @@ export function parseNetworkFilter(parser, details = {}, out = []) {
             } else {
                 priority = (isImportant ? 41 : 11) + subpriority;
             }
-        } else if ( rule.action.redirect.transform?.queryTransform?.removeParams ) {
+        } else if ( rule.action.redirect.transform ) {
             if ( isException ) {
                 rule.action.type = 'allow';
                 delete rule.action.redirect;
@@ -1056,12 +1139,24 @@ export function parseNetworkFilter(parser, details = {}, out = []) {
             delete rule.action.responseHeaders;
         }
     }
+    // `important` lifts a modifier above its own priority-1 exceptions. Header
+    // rules (csp, permissions) are matched apart from block rules, so like the
+    // stock build they also pass the priority-30 exceptions. A transform
+    // (removeparam, uritransform) stays below the blocks: DNR only applies the
+    // highest-priority matching rule, and a transform which leaves the URL
+    // unchanged does nothing, which would cancel a block that classic uBO
+    // applies before any removeparam.
+    if ( isImportant && priority === 1 && rule.action.type !== 'allow' ) {
+        priority = rule.action.type === 'modifyHeaders' ? 31 : 2;
+    }
     if ( priority !== 1 ) {
         rule.priority = priority;
     }
     const parsedRules = [ rule ];
-    if ( rule.action.redirect?.transform?.queryTransform?.removeParams ) {
-        expandRemoveparamsRule(rule, parsedRules);
+    if ( rule.action.redirect?.transform ) {
+        if ( expandRemoveparamsRule(rule, parsedRules) === false ) {
+            parsedRules.length = 0;
+        }
     }
     for ( const parsedRule of parsedRules ) {
         const validation = validateRule(parsedRule);
@@ -1234,7 +1329,7 @@ export class NetworkFilterCompiler {
             // rule. Merged with a sibling unit, validation already drops the
             // entity; alone, after the sibling was badfiltered, it would fail
             // validation and abort the whole compilation.
-            const rules = hostname === undefined || isNotEntity(hostname)
+            let rules = hostname === undefined || isNotEntity(hostname)
                 ? structuredClone(lineRules)
                 : [];
             const popupFilters = structuredClone(linePopupFilters);
@@ -1246,9 +1341,14 @@ export class NetworkFilterCompiler {
                         parser.getNodeTypes().includes(sfp.NODE_TYPE_NET_OPTION_NAME_REMOVEPARAM) &&
                         item.condition.resourceTypes?.length === 1 &&
                         item.condition.resourceTypes[0] === 'main_frame' ) {
-                        item.condition.requestDomains = [ hostname ];
+                        // Already the `domain=` list intersected with any
+                        // `to=` list: keep only this unit's share of it.
+                        item.condition.requestDomains = intersectHostnames(
+                            item.condition.requestDomains, [ hostname ]
+                        );
                     }
                 }
+                rules = rules.filter(rule => rule.condition.requestDomains?.length !== 0);
             }
             this.networkUnits.push({ key, dnrRules: rules, popupFilters });
         }

@@ -2,6 +2,8 @@
 
 Đợt triển khai tiếp theo [báo cáo rà soát](MV3-CAPABILITY-AUDIT-2026-09-06.md), ngày 6 tháng 9 năm 2026. Chuẩn đối chiếu là **uBlock Origin đầy đủ**. Tài liệu này thay thế các nhận định “chưa triển khai” tương ứng trong báo cáo trước; không thay đổi kết quả kiểm thử lịch sử.
 
+> Cập nhật 24/9/2026: [nghiên cứu gỡ giới hạn MV3](MV3-LIMITS-RESEARCH-2026-09-24.md) kiểm tra lại các giới hạn trên Chrome 153. Các đoạn về `chrome.dns`, chặn theo kích thước response, đường debugger và giới hạn regex dưới đây đã được đính chính tại chỗ và ghi ngày; kết quả kiểm thử ngày 6/9 giữ nguyên.
+
 ## Firewall động
 
 Mở **Dashboard → Site rules → Dynamic firewall**. Dùng cú pháp bốn cột của uBO:
@@ -75,8 +77,9 @@ Tra cứu stock chỉ đọc file được manifest khai báo; không dựng URL
 
 ## Giới hạn của cấu hình hiện tại và các đường mở rộng
 
-- `webRequest` dùng quan sát ở trên không cấp quyền blocking đồng bộ; `webRequestBlocking` MV3 thông thường chỉ có trong trường hợp cài bằng enterprise policy phù hợp.
-- Cấu hình DNR/`webRequest` hiện tại không có bộ lọc response body tổng quát, CNAME uncloaking hay chặn theo toàn bộ kích thước response tương đương uBO trên Firefox. Đây là giới hạn của đường thực thi đang dùng, không phải khẳng định mọi cách triển khai Chrome extension đều bất khả thi.
+- `webRequest` dùng quan sát ở trên không cấp quyền blocking đồng bộ; `webRequestBlocking` MV3 thông thường chỉ có trong trường hợp cài bằng enterprise policy phù hợp. Gói [Experimental WebRequest](EXPERIMENTAL-WEBREQUEST.md) dùng tham số test `--allowlisted-extension-id` thay cho policy.
+- Cấu hình DNR/`webRequest` hiện tại không có bộ lọc response body tổng quát hay CNAME uncloaking; uBO đầy đủ cũng chỉ có hai khả năng đó trên Firefox. Đây là giới hạn của đường thực thi đang dùng, không phải khẳng định mọi cách triển khai Chrome extension đều bất khả thi.
+- Cập nhật 24/9/2026: chặn media theo kích thước **không** cần body hay `webRequest`. uBO đầy đủ cũng chỉ đọc header `Content-Length`, và DNR biểu diễn được ngưỡng gần đúng bằng hai rule `responseHeaders`: probe Chrome 153 chặn đúng từ 50.000 byte, với mẫu glob chỉ xét chữ số đầu. Mặc định của uBO là 51.200 byte và người dùng đổi được; ngưỡng chính xác cần liệt kê thêm mẫu theo từng chữ số, chưa thử. Giới hạn khác: header là kích thước đã nén, response chunked không có header nên lọt. Tính năng này chưa được triển khai. Remote font và báo cáo CSP qua `report-uri` cũng chặn được bằng DNR (`font`, `csp_report`); đó là khoảng trống sản phẩm, không phải giới hạn trình duyệt. Upload qua Reporting API (`report-to`) không hiện với DNR lẫn `webRequest`.
 - Scriptlet có thể xử lý một số API/DOM trong trang bằng primitive đóng gói; không thể dùng nó thay một response filter toàn cục hoặc khẳng định thấy request ngoài phạm vi Chrome cho phép.
 - Tầng native, proxy hoặc browser tùy biến là sản phẩm triển khai khác, cần cài đặt/quyền/phân tích riêng. Đợt này không cài companion, chứng chỉ, sửa policy hoặc tắt sandbox/quota.
 
@@ -90,9 +93,19 @@ Tuy nhiên, Chrome **không cho khai báo `debugger` trong `optional_permissions
 
 Phiên debugger có thể bị Chrome kết thúc khi mở DevTools hoặc đóng tab; target iframe khác process cần xử lý riêng. Debugger đang hoạt động còn giữ service worker sống, nên đây không phải nâng cấp miễn phí về tài nguyên. Các điểm này cần benchmark và giao diện trạng thái trước khi phát hành, không được đánh đồng với logger nhẹ hiện có. [Vòng đời debugger](https://developer.chrome.com/docs/extensions/reference/api/debugger#event-onDetach), [Vòng đời service worker](https://developer.chrome.com/docs/extensions/develop/concepts/service-workers/lifecycle#chrome-118).
 
-Chrome còn có `chrome.dns`, nhưng tài liệu hiện giới hạn API này ở **Dev channel**; `resolve()` trả về địa chỉ IP và mã kết quả, không cung cấp chuỗi CNAME. API đó không phải giải pháp CNAME uncloaking cho gói nhắm Chrome Stable hiện tại. [Chrome DNS](https://developer.chrome.com/docs/extensions/reference/api/dns).
+Cập nhật 24/9/2026, probe Chrome 153 viết lại body qua `Fetch` ([chi tiết](MV3-LIMITS-RESEARCH-2026-09-24.md#lưu-ý-về-đường-debugger)):
+
+- iframe tới địa chỉ mạng cục bộ kích hoạt hộp thoại [Local Network Access](https://developer.chrome.com/blog/local-network-access); với cài đặt mặc định, trang thử không tải xong trong thời gian chờ;
+- response do service worker của trang tạo ra không đi qua `Fetch` của tab nên bị bỏ sót;
+- document đầu tiên của tab mở kèm URL bị bỏ sót, vì attach đến muộn vài mili giây;
+- subresource của iframe khác site chỉ bị xử lý khi dùng auto-attach ([`Target.setAutoAttach`](https://chromedevtools.github.io/devtools-protocol/tot/Target/)) cho target con;
+- body được đệm toàn bộ: 121–141 ms cho document 2,16 MB.
+
+Chrome còn có `chrome.dns`. Tài liệu giới hạn API này ở **Dev channel**, và trên Chrome Stable 153 không có tham số thì manifest báo đúng như vậy. Nhưng khi chạy với `--allowlisted-extension-id`, API được cấp trên Stable 153 cho extension khai báo `dns` trong manifest (cập nhật 24/9/2026; gói Experimental không khai báo quyền này). Dù được cấp, `resolve()` chỉ trả một địa chỉ IP và mã kết quả, không bao giờ trả chuỗi CNAME. API đó không phải giải pháp CNAME uncloaking cho Chrome. [Chrome DNS](https://developer.chrome.com/docs/extensions/reference/api/dns), [dns.webidl của Chromium 153](https://github.com/chromium/chromium/blob/153.0.8010.53/extensions/common/api/dns.webidl).
 
 **Giới hạn regex đã quan sát trong snapshot bộ lọc ngày 6/9/2026:** Chrome 152 từ chối sáu ngoại lệ `allow` trong corpus regex `ublock-filters` (ID 47, 48, 49, 50, 52, 53) với lý do `memoryLimitExceeded`. Các ngoại lệ này áp dụng cho ảnh first-party trong phạm vi `pussyspace.com`/`pussyspace.net`. Đây là ID của snapshot hiện tại, không phải danh sách cố định cho các lần cập nhật sau. Chrome giới hạn mỗi regex sau biên dịch dưới 2 KB, riêng với quota số rule. Runtime kiểm tra đúng cờ phân biệt hoa/thường và yêu cầu capture của rule; cài unpacked không gỡ giới hạn đó. [Chrome regex limits](https://developer.chrome.com/docs/extensions/reference/api/declarativeNetRequest#regex-rules), [RegexOptions](https://developer.chrome.com/docs/extensions/reference/api/declarativeNetRequest#type-RegexOptions).
+
+Cập nhật 24/9/2026: sáu ID trên chỉ là các ngoại lệ `allow`. Tính cả rule chặn, với sáu list mặc định Chrome 153 từ chối **80/254** regex rule stock (79 `memoryLimitExceeded`, 1 `syntaxError`). 174 regex còn lại cộng 826 session rule của strict-block dùng hết pool 1.000 regex dynamic + session. [Nghiên cứu](MV3-LIMITS-RESEARCH-2026-09-24.md#hằng-số-dnr-trên-chrome-153) đề xuất strict-block không dùng regex và chuyển regex stock sang static ruleset.
 
 Nếu một lựa chọn stock list yêu cầu ngoại lệ regex mà Chrome từ chối, giao dịch báo lỗi kèm lý do native, ID và đoạn đầu biểu thức, rồi khôi phục snapshot native trước đó. Không bỏ ngoại lệ để áp dụng các rule chặn mới, cũng không thay nó bằng ngoại lệ URL rộng hơn. Vì vậy một số thay đổi lựa chọn list có thể bị từ chối cho đến khi corpus hoặc trình duyệt biểu diễn được đầy đủ ngoại lệ; đây là giới hạn đang có, không được ghi là thay đổi đã áp dụng thành công.
 

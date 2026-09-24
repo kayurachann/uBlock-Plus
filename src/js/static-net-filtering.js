@@ -4673,6 +4673,13 @@ StaticNetFilteringEngine.prototype.dnrFromCompiled = function(op, context, ...ar
     const unserialize = CompiledListReader.unserialize;
     const buckets = new Map();
     const attachSources = (rule, line, property, hostname) => {
+        // The source filters of the rule (see addToDNR()), so that filters,
+        // not rule entries, can be counted.
+        const filters = context.networkFilterSources?.get(line);
+        if ( filters !== undefined ) {
+            rule._sourceFilters ??= [];
+            rule._sourceFilters.push(...filters);
+        }
         if ( context.networkSources === undefined ) { return; }
         const keys = context.networkSources.get(line);
         rule._sourceKeys ??= [];
@@ -4817,7 +4824,7 @@ StaticNetFilteringEngine.prototype.dnrFromCompiled = function(op, context, ...ar
         'popup',
     ]);
     const ruleset = [];
-    const seen = new Set();
+    const seen = new Map();
     for ( const [ realmBits, realmDetails ] of realms ) {
         for ( const [ partyBits, partyName ] of partyness ) {
             for ( const typeName in typeNameToTypeValue ) {
@@ -4841,9 +4848,21 @@ StaticNetFilteringEngine.prototype.dnrFromCompiled = function(op, context, ...ar
                             rule.condition = rule.condition || {};
                             rule.condition.resourceTypes = [ typeName ];
                         }
+                        // Source filters do not tell rules apart: those of
+                        // a duplicate go to the rule which is kept.
+                        const sources = rule._sourceFilters;
+                        rule._sourceFilters = undefined;
                         const hash = JSON.stringify(rule);
-                        if ( seen.has(hash) ) { continue; }
-                        seen.add(hash);
+                        rule._sourceFilters = sources;
+                        const kept = seen.get(hash);
+                        if ( kept !== undefined ) {
+                            if ( sources !== undefined ) {
+                                kept._sourceFilters ??= [];
+                                kept._sourceFilters.push(...sources);
+                            }
+                            continue;
+                        }
+                        seen.set(hash, rule);
                         ruleset.push(rule);
                     }
                 }
@@ -4851,6 +4870,10 @@ StaticNetFilteringEngine.prototype.dnrFromCompiled = function(op, context, ...ar
         }
     }
     seen.clear();
+    for ( const rule of ruleset ) {
+        if ( rule._sourceFilters === undefined ) { continue; }
+        rule._sourceFilters = Array.from(new Set(rule._sourceFilters));
+    }
 
     // Adjust `important` priority
     // Mind:
@@ -4974,6 +4997,12 @@ StaticNetFilteringEngine.prototype.dnrFromCompiled = function(op, context, ...ar
                     token = token.slice(0, match.index);
                 }
             }
+            // A resource which cannot be redirected to (unknown token, or
+            // click2load.html) rejects the whole filter. Classic uBO still
+            // blocks such requests, since there `redirect=` also compiles into
+            // a block filter, which is not generated for DNR (see compile()):
+            // these filters are dropped, not blocked, and the runtime
+            // compiler (ubo-parser.js) rejects them the same way.
             const resource = context.extensionPaths.get(token);
             if ( rule.__modifierValue !== '' && resource === undefined ) {
                 dnrAddRuleError(rule, `Unpatchable redirect filter: ${rule.__modifierValue}`);
@@ -5002,8 +5031,14 @@ StaticNetFilteringEngine.prototype.dnrFromCompiled = function(op, context, ...ar
                         }
                     }
                 };
-                if ( /^~?\/.+\/$/.test(paramName) ) {
+                // DNR removes exact parameter names only: a regex value
+                // (`/re/`, `/re/i`, legacy `|prefix`) or a negated value
+                // (`~name`, keep only `name`) would silently match nothing.
+                const parsed = sfp.parseQueryPruneValue(paramName);
+                if ( parsed.re !== undefined || /^~?\/.+\/$/.test(paramName) ) {
                     dnrAddRuleError(rule, `Unsupported regex-based removeParam: ${paramName}`);
+                } else if ( parsed.not ) {
+                    dnrAddRuleError(rule, `Unsupported negated removeParam: ${paramName}`);
                 }
             } else {
                 rule.action.redirect = {

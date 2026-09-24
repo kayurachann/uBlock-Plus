@@ -456,6 +456,250 @@ const validateStockBadfilterMetadata = async ruleResources => {
     }
 };
 
+const readExtensionJSON = relativePath => fs.readFile(
+    path.join(extensionDir, relativePath.replace(/^[/\\]+/, '')),
+    'utf8'
+).then(text => JSON.parse(text)).catch(( ) => undefined);
+
+const isReasonCode = value => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value);
+
+// Count source filters, not compiler entries, as the build does
+// (dnrErrorSummary() and dnrConvertedFilterCount() in static-dnr-filtering.js):
+// an entry lists the filters it comes from in `_sourceFilters`, an entry
+// without sources is one rejected filter, and a filter with any rejected
+// entry is not converted.
+const sourceFilterCounts = entries => {
+    const rejected = new Set();
+    const converted = new Set();
+    let unsourced = 0;
+    for ( const entry of entries ) {
+        const sources = Array.isArray(entry?._sourceFilters)
+            ? entry._sourceFilters
+            : [];
+        if ( Boolean(entry?._error) === false ) {
+            for ( const source of sources ) { converted.add(source); }
+        } else if ( sources.length === 0 ) {
+            unsourced += 1;
+        } else {
+            for ( const source of sources ) { rejected.add(source); }
+        }
+    }
+    let convertedCount = 0;
+    for ( const source of converted ) {
+        if ( rejected.has(source) === false ) { convertedCount += 1; }
+    }
+    return { rejected: rejected.size + unsourced, converted: convertedCount };
+};
+
+// The per-ruleset counts reported in ruleset-details.json (and in the build
+// log when it is present) must describe what is packaged: `plain`, `regex`,
+// `urlskip` and `strictblock` count the entries of the matching files,
+// `rejected`, the filters which could not be converted into DNR rules, must
+// add up from its per-reason breakdown `rejectedReasons`, and development
+// builds must agree with the compiler output on `rejected` and on
+// `filters.converted`.
+const validateRulesetCounts = async ruleResources => {
+    const rulesetDetails = await readExtensionJSON('rulesets/ruleset-details.json');
+    if ( Array.isArray(rulesetDetails) === false ) {
+        reportError('Ruleset counts cannot be checked: no ruleset details');
+        return;
+    }
+    const buildLog = await fs.readFile(path.join(extensionDir, 'log.txt'), 'utf8')
+        .then(text => text.replace(/\r\n/g, '\n'))
+        .catch(( ) => undefined);
+    const declaredPaths = new Map(ruleResources.map(resource =>
+        [ resource.id, resource.path ]
+    ));
+    const entryCount = async (relativePath, optional) => {
+        const entries = await readExtensionJSON(relativePath);
+        if ( Array.isArray(entries) ) { return entries.length; }
+        if ( entries === undefined && optional ) { return 0; }
+    };
+    for ( const details of rulesetDetails ) {
+        const id = details?.id;
+        const rules = details?.rules;
+        if ( declaredPaths.has(id) === false ) {
+            reportError(`Ruleset details describe an undeclared ruleset: ${id}`);
+            continue;
+        }
+        if ( isPlainObject(rules) === false ) {
+            reportError(`Ruleset ${id} has no rule counts`);
+            continue;
+        }
+        const actual = {
+            plain: await entryCount(declaredPaths.get(id), false),
+            regex: await entryCount(`rulesets/regex/${id}.json`, true),
+            urlskip: await entryCount(`rulesets/urlskip/${id}.json`, true),
+            strictblock: await entryCount(`rulesets/strictblock/${id}.json`, true),
+        };
+        const reported = {
+            plain: rules.plain,
+            regex: rules.regex,
+            urlskip: rules.urlskip ?? 0,
+            strictblock: rules.strictblock ?? 0,
+        };
+        for ( const [ field, count ] of Object.entries(actual) ) {
+            if ( count === reported[field] ) { continue; }
+            reportError(
+                `Ruleset ${id} reports ${reported[field]} ${field} rules, ` +
+                `the package has ${count}`
+            );
+        }
+        if ( rules.total !== rules.plain + rules.regex ) {
+            reportError(`Ruleset ${id} total rule count does not add up`);
+        }
+        const converted = details.filters?.converted;
+        if ( isNonnegativeInteger(converted) === false ) {
+            reportError(`Ruleset ${id} has an invalid converted filter count`);
+        }
+        const { rejected, rejectedReasons } = rules;
+        if ( isNonnegativeInteger(rejected) === false ) {
+            reportError(`Ruleset ${id} has an invalid rejected count`);
+            continue;
+        }
+        if ( rejectedReasons === undefined ) {
+            if ( rejected !== 0 ) {
+                reportError(`Ruleset ${id} rejects ${rejected} filters without reasons`);
+            }
+        } else {
+            const entries = isPlainObject(rejectedReasons)
+                ? Object.entries(rejectedReasons)
+                : [];
+            const valid = entries.length !== 0 && entries.every(([ reason, count ]) =>
+                isReasonCode(reason) && Number.isSafeInteger(count) && count > 0
+            );
+            const sum = entries.reduce((total, [ , count ]) => total + count, 0);
+            if ( valid === false ) {
+                reportError(`Ruleset ${id} has malformed rejected reasons`);
+            } else if ( sum !== rejected ) {
+                reportError(
+                    `Ruleset ${id} rejected reasons add up to ${sum}, not ${rejected}`
+                );
+            }
+        }
+        // Development builds keep the whole compiler output, rejected
+        // entries included.
+        const compiled = await readExtensionJSON(`rulesets/debug/${id}.all.json`);
+        if ( Array.isArray(compiled) ) {
+            const counts = sourceFilterCounts(compiled);
+            if ( counts.rejected !== rejected ) {
+                reportError(
+                    `Ruleset ${id} reports ${rejected} rejected filters, ` +
+                    `the compiler rejected ${counts.rejected}`
+                );
+            }
+            if ( counts.converted !== converted ) {
+                reportError(
+                    `Ruleset ${id} reports ${converted} converted filters, ` +
+                    `the compiler converted ${counts.converted}`
+                );
+            }
+        }
+        // The build log (absent from packages) must report the same numbers.
+        if ( buildLog === undefined ) { continue; }
+        const start = buildLog.indexOf(`\nListset for '${id}':\n`);
+        const end = buildLog.indexOf('\nListset for \'', start + 1);
+        const section = buildLog.slice(start, end !== -1 ? end : undefined);
+        const match = start !== -1
+            ? /\n\tUnsupported: (\d+)\n((?:\t\t[a-z0-9-]+: \d+\n)*)/.exec(section)
+            : null;
+        if ( match === null ) {
+            reportError(`Build log has no unsupported count for ruleset ${id}`);
+            continue;
+        }
+        const logged = Object.fromEntries(match[2].split('\n')
+            .filter(line => line !== '')
+            .map(line => line.trim().split(': '))
+            .map(([ reason, count ]) => [ reason, Number(count) ]));
+        if (
+            Number(match[1]) !== rejected ||
+            JSON.stringify(logged) !== JSON.stringify(rejectedReasons ?? {})
+        ) {
+            reportError(`Build log and ruleset details disagree on rejected filters in ${id}`);
+        }
+    }
+};
+
+// Every name a `redirect=` filter may use (redirect-resources.js, as used by
+// the runtime compiler) must be a packaged, web-accessible resource, or be
+// listed as unavailable in rulesets/redirect-resources.json.
+const validateRedirectResources = async () => {
+    const generated = await readExtensionJSON('rulesets/redirect-resources.json');
+    if (
+        generated?.schemaVersion !== 1 ||
+        isPlainObject(generated.resources) === false ||
+        isPlainObject(generated.unavailable) === false
+    ) {
+        reportError('rulesets/redirect-resources.json is missing or invalid');
+        return;
+    }
+    const source = await fs.readFile(
+        path.join(extensionDir, 'js', 'redirect-resources.js'), 'utf8'
+    ).catch(( ) => undefined);
+    let redirectResourceMap;
+    try {
+        // Self-contained module: import it from its text, the extension
+        // directory is not necessarily inside an ES module package.
+        redirectResourceMap = (await import(
+            `data:text/javascript,${encodeURIComponent(source)}`
+        )).default;
+    } catch {
+    }
+    if ( redirectResourceMap instanceof Map === false ) {
+        reportError('js/redirect-resources.js cannot be loaded');
+        return;
+    }
+    const webAccessible = new Set();
+    for ( const entry of manifest.web_accessible_resources || [] ) {
+        if ( entry.matches?.includes('<all_urls>') !== true ) { continue; }
+        for ( const resource of entry.resources || [] ) {
+            webAccessible.add(resource.replace(/^\/+/, ''));
+        }
+    }
+    const tokens = new Set();
+    for ( const [ name, details ] of redirectResourceMap ) {
+        tokens.add(name);
+        for ( const alias of [ details?.alias ?? [] ].flat() ) {
+            tokens.add(alias);
+        }
+    }
+    for ( const token of tokens ) {
+        const resourcePath = generated.resources[token];
+        const unavailable = generated.unavailable[token];
+        if ( (resourcePath === undefined) === (unavailable === undefined) ) {
+            reportError(
+                `Redirect resource ${token} must be either packaged or ` +
+                'listed as unavailable'
+            );
+            continue;
+        }
+        if ( unavailable !== undefined ) {
+            if ( isReasonCode(unavailable) === false ) {
+                reportError(`Unavailable redirect resource ${token} has no reason`);
+            }
+            continue;
+        }
+        if (
+            typeof resourcePath !== 'string' ||
+            resourcePath.startsWith('/web_accessible_resources/') === false
+        ) {
+            reportError(`Redirect resource ${token} has an invalid path`);
+            continue;
+        }
+        await validateFileReference(resourcePath, `Redirect resource ${token}`);
+        if ( webAccessible.has(resourcePath.slice(1)) === false ) {
+            reportError(`Redirect resource ${token} is not web-accessible`);
+        }
+    }
+    for ( const token of [
+        ...Object.keys(generated.resources),
+        ...Object.keys(generated.unavailable),
+    ] ) {
+        if ( tokens.has(token) ) { continue; }
+        reportError(`Unknown redirect resource listed: ${token}`);
+    }
+};
+
 const validateSharedScriptletData = async () => {
     const readJSON = name => fs.readFile(path.join(extensionDir, `rulesets/${name}.json`), 'utf8')
         .then(JSON.parse).catch(() => undefined);
@@ -629,6 +873,8 @@ if ( Array.isArray(ruleResources) === false || ruleResources.length === 0 ) {
     }
     await validateStockPopupCorpora(ruleResources);
     await validateStockBadfilterMetadata(ruleResources);
+    await validateRulesetCounts(ruleResources);
+    await validateRedirectResources();
     await validateSharedScriptletData();
 }
 

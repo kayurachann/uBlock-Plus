@@ -11,6 +11,10 @@
     "message": "{{ruleCount}} règles converties depuis {{filterCount}} filtres de réseau",
     "description": "Appears aside each filter list in the _3rd-party filters_ pane"
   },
+  "perRulesetUnsupported": {
+    "message": "{{count}} filtres n’ont pas pu être convertis en règles Chrome et ne sont pas appliqués",
+    "description": "Second line of the tooltip aside each filter list in the _3rd-party filters_ pane: filters (unsupported by DNR, or invalid) that could not be converted to DNR rules"
+  },
   "dashboardName": {
     "message": "uBlock Plus+ — Tableau de bord",
     "description": "English: uBlock Plus+ — Dashboard"

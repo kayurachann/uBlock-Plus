@@ -46,6 +46,8 @@ import {
     randomBytes,
 } from 'crypto';
 import {
+    dnrConvertedFilterCount,
+    dnrErrorSummary,
     dnrRulesetFromRawLists,
     mergeRules,
 } from './js/static-dnr-filtering.js';
@@ -212,6 +214,8 @@ const scriptletStats = new Map();
 const scriptletExceptionStats = new Map();
 const genericDetails = new Map();
 const requiredRedirectResources = new Set();
+const rejectedReasonTotals = new Map();
+let rejectedTotal = 0;
 let networkBad = new Set();
 
 /******************************************************************************/
@@ -226,6 +230,55 @@ const secret = await fs.readFile(`${cacheDir}/secret.txt`, {
 });
 log(`Secret: ${secret}`, false);
 log(`Reusing downloaded lists younger than ${cacheMaxAgeDays} day(s)`, false);
+
+/******************************************************************************/
+
+// Every resource a `redirect=` filter can name is packaged and declared
+// web-accessible, not only those used by the stock lists: the runtime
+// compiler accepts all the names in redirect-resources.js, and Chrome fails
+// a DNR redirect to an extension path which is missing or not web-accessible.
+// Resources which cannot be packaged are listed as unavailable in
+// rulesets/redirect-resources.json, which the runtime can read.
+
+const unpackagedRedirectResources = new Map([
+    // uBO's click-to-load page needs its own scripts and the URL of the
+    // blocked frame as a parameter, which a DNR extensionPath cannot carry.
+    [ 'click2load.html', 'requires-click-to-load-page' ],
+]);
+
+const redirectResources = await (async ( ) => {
+    const packaged = [];
+    const extensionPaths = [];
+    const unavailable = [];
+    for ( const [ fname, details ] of redirectResourcesMap ) {
+        const tokens = [ fname ];
+        if ( typeof details.alias === 'string' ) {
+            tokens.push(details.alias);
+        } else if ( Array.isArray(details.alias) ) {
+            tokens.push(...details.alias);
+        }
+        const reason = unpackagedRedirectResources.get(fname);
+        if ( reason !== undefined ) {
+            for ( const token of tokens ) {
+                unavailable.push([ token, reason ]);
+            }
+            continue;
+        }
+        // Stock filters using a missing resource would be dropped, and a
+        // redirect to it from a runtime-compiled filter would fail.
+        const stat = await fs.stat(`./web_accessible_resources/${fname}`)
+            .catch(( ) => { });
+        if ( stat?.isFile() !== true ) {
+            throw new Error(`Redirect resource not found: ${fname}`);
+        }
+        const path = `/web_accessible_resources/${fname}`;
+        packaged.push(path.slice(1));
+        for ( const token of tokens ) {
+            extensionPaths.push([ token, path ]);
+        }
+    }
+    return { packaged, extensionPaths, unavailable };
+})();
 
 /******************************************************************************/
 
@@ -518,12 +571,18 @@ function isStrictBlockRule(rule) {
 
 /******************************************************************************/
 
+// Rules which could not be converted (`_error`) are set aside so that they
+// are counted and reported, never emitted.
 function splitDnrRules(rules) {
     const dnrRules = [];
     const popupRules = [];
     const sbRules = [];
+    const rejectedRules = [];
     for ( const rule of rules ) {
-        if ( rule._error ) { continue; }
+        if ( rule._error ) {
+            rejectedRules.push(rule);
+            continue;
+        }
         const nottypes = rule.condition?.excludedResourceTypes;
         if ( nottypes ) {
             rule.condition.excludedResourceTypes = nottypes.filter(a =>
@@ -556,12 +615,12 @@ function splitDnrRules(rules) {
         }
         dnrRules.push(rule);
     }
-    return { dnrRules, sbRules, popupRules };
+    return { dnrRules, sbRules, popupRules, rejectedRules };
 }
 
 /******************************************************************************/
 
-async function processDnrRules(assetDetails, network, dnrRules) {
+async function processDnrRules(assetDetails, network, dnrRules, rejectedRules) {
     log(`Input filter count: ${network.filterCount}`);
     log(`\tAccepted filter count: ${network.acceptedFilterCount}`);
     log(`\tRejected filter count: ${network.rejectedFilterCount}`);
@@ -611,11 +670,20 @@ async function processDnrRules(assetDetails, network, dnrRules) {
         );
     });
 
-    // Patch removeParams rules as needed
+    // Patch removeParams rules as needed. A main_frame-only rule which can
+    // match no navigation (uBO matches `domain=` against the navigated
+    // hostname) is discarded, as the runtime compiler does.
+    const unmatchableRules = new Set();
     for ( const rule of staticRules ) {
         if ( rule.action.redirect?.transform?.queryTransform?.removeParams ) {
-            expandRemoveparamsRule(rule, staticRules);
+            if ( expandRemoveparamsRule(rule, staticRules) === false ) {
+                unmatchableRules.add(rule);
+            }
         }
+    }
+    for ( let i = staticRules.length - 1; i >= 0; i-- ) {
+        if ( unmatchableRules.has(staticRules[i]) === false ) { continue; }
+        staticRules.splice(i, 1);
     }
 
     // Minimize rulesets
@@ -664,11 +732,20 @@ async function processDnrRules(assetDetails, network, dnrRules) {
     }
     log(`\turlskip=: ${urlskips.size}`);
 
-    const bad = dnrRules.filter(rule =>
-        isUnsupported(rule)
-    );
-    log(`\tUnsupported: ${bad.length}`);
-    log(bad.map(rule => rule._error.map(v => `\t\t${v}`)).join('\n'), true);
+    const bad = [
+        ...rejectedRules,
+        ...dnrRules.filter(rule => isUnsupported(rule)),
+    ];
+    const rejected = dnrErrorSummary(bad);
+    log(`\tUnsupported: ${rejected.count}`);
+    for ( const [ reason, count ] of Object.entries(rejected.reasons) ) {
+        log(`\t\t${reason}: ${count}`);
+        rejectedReasonTotals.set(reason,
+            (rejectedReasonTotals.get(reason) ?? 0) + count
+        );
+    }
+    rejectedTotal += rejected.count;
+    log(bad.flatMap(rule => rule._error.map(v => `\t\t${v}`)).join('\n'), true);
 
     const staticJSON = toJSONRuleset(minimizedStaticRuleset);
     writeFile(`${rulesetDir}/main/${assetDetails.id}.json`, staticJSON);
@@ -713,7 +790,8 @@ async function processDnrRules(assetDetails, network, dnrRules) {
         total: minimizedStaticRuleset.length + minimizedRegexRuleset.length,
         plain: minimizedStaticRuleset.length,
         regex: minimizedRegexRuleset.length,
-        rejected: bad.length,
+        rejected: rejected.count,
+        rejectedReasons: rejected.count !== 0 ? rejected.reasons : undefined,
         urlskip: urlskips.size || undefined,
     };
 }
@@ -1099,24 +1177,7 @@ async function rulesetFromURLs(assetDetails) {
 
     if ( assetDetails.text === '' ) { return; }
 
-    const excludedResources = new Set([
-        'click2load.html',
-    ]);
-    const extensionPaths = [];
-    for ( const [ fname, details ] of redirectResourcesMap ) {
-        if ( excludedResources.has(fname) ) { continue; }
-        const path = `/web_accessible_resources/${fname}`;
-        extensionPaths.push([ fname, path ]);
-        if ( details.alias === undefined ) { continue; }
-        if ( typeof details.alias === 'string' ) {
-            extensionPaths.push([ details.alias, path ]);
-            continue;
-        }
-        if ( Array.isArray(details.alias) === false ) { continue; }
-        for ( const alias of details.alias ) {
-            extensionPaths.push([ alias, path ]);
-        }
-    }
+    const { extensionPaths } = redirectResources;
 
     const results = await dnrRulesetFromRawLists(
         [ { name: assetDetails.id, text: assetDetails.text } ],
@@ -1137,7 +1198,13 @@ async function rulesetFromURLs(assetDetails) {
     writeFile(`${rulesetDir}/debug/${assetDetails.id}.all.json`,
         JSON.stringify(results.network.ruleset, null, 2)
     );
-    const { dnrRules, sbRules, popupRules } = splitDnrRules(results.network.ruleset)
+    const convertedFilterCount = dnrConvertedFilterCount(results.network.ruleset);
+    const {
+        dnrRules,
+        sbRules,
+        popupRules,
+        rejectedRules,
+    } = splitDnrRules(results.network.ruleset);
     assetDetails.badfilterKeys = results.networkBadfilterKeys;
     assetDetails.badfilterDeferredKeys = [ ...sbRules, ...popupRules ]
         .flatMap(rule => rule._sourceKeys ?? []);
@@ -1151,7 +1218,9 @@ async function rulesetFromURLs(assetDetails) {
         JSON.stringify(popupRules, null, 2)
     );
 
-    const netStats = await processDnrRules(assetDetails, results.network, dnrRules);
+    const netStats = await processDnrRules(assetDetails, results.network,
+        dnrRules, rejectedRules
+    );
     const popupStats = await processPopupRules(assetDetails, popupRules);
 
     const strictBlocked = new Map();
@@ -1232,9 +1301,14 @@ async function rulesetFromURLs(assetDetails) {
         tags: assetDetails.tags,
         homeURL: assetDetails.homeURL,
         filters: {
+            // Compiled filters (one per type, as classic uBO counts them),
+            // `rejected` being those removed by `badfilter`
             total: results.network.filterCount,
             accepted: results.network.acceptedFilterCount,
             rejected: results.network.rejectedFilterCount,
+            // Source network filters converted into DNR rules, the unit of
+            // `rules.rejected` and of the imported lists' `accepted`
+            converted: convertedFilterCount,
         },
         rules: {
             total: netStats.total,
@@ -1246,7 +1320,10 @@ async function rulesetFromURLs(assetDetails) {
             strictblock: strictBlocked.size || undefined,
             urlskip: netStats.urlskip,
             discarded: netStats.discarded,
+            // Source filters which could not be converted into DNR rules, and
+            // how many per reason (see dnrErrorSummary())
             rejected: netStats.rejected,
+            rejectedReasons: netStats.rejectedReasons,
         },
         css: {
             generic: genericCosmeticStats,
@@ -1311,9 +1388,32 @@ async function main() {
         `${JSON.stringify(genericDetails, jsonSetMapReplacer, 1)}\n`
     );
 
-    // Copy required redirect resources
-    for ( const path of requiredRedirectResources ) {
+    // Copy all packageable redirect resources, stock lists use only some of
+    // them (requiredRedirectResources)
+    const packagedRedirectResources = new Set([
+        ...redirectResources.packaged,
+        ...requiredRedirectResources,
+    ]);
+    for ( const path of packagedRedirectResources ) {
         copyFile(`./${path}`, `${outputDir}/${path}`);
+    }
+    writeFile(`${rulesetDir}/redirect-resources.json`, `${JSON.stringify({
+        schemaVersion: 1,
+        resources: Object.fromEntries(redirectResources.extensionPaths),
+        unavailable: Object.fromEntries(redirectResources.unavailable),
+    }, null, 1)}\n`);
+    const unavailableRedirects = redirectResources.unavailable
+        .map(([ token, reason ]) => `${token} (${reason})`)
+        .join(', ') || 'none';
+    log(`Redirect resources: ${redirectResources.packaged.length} packaged, ` +
+        `${requiredRedirectResources.size} used by stock rulesets, ` +
+        `unavailable: ${unavailableRedirects}`, false);
+
+    log(`Unsupported filters in ${rulesetDetails.length} rulesets: ${rejectedTotal}`, false);
+    for ( const [ reason, count ] of Array.from(rejectedReasonTotals).sort(
+        (a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1)
+    ) ) {
+        log(`\t${reason}: ${count}`, false);
     }
 
     await Promise.all(writeOps);
@@ -1331,7 +1431,7 @@ async function main() {
     // Patch web_accessible_resources key
     manifest.web_accessible_resources = manifest.web_accessible_resources || [];
     const web_accessible_resources = {
-        resources: Array.from(requiredRedirectResources).map(path => `${path}`),
+        resources: Array.from(packagedRedirectResources).sort(),
         matches: [ '<all_urls>' ],
     };
     if ( env.includes('chromium') && env.includes('safari') === false ) {
